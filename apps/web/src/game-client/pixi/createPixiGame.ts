@@ -20,340 +20,363 @@ type Animation = {
   done?: () => void;
 };
 
+type Layout = {
+  width: number;
+  height: number;
+  topHudY: number;
+  mapTop: number;
+  mapHeight: number;
+  boardX: number;
+  boardY: number;
+  boardWidth: number;
+  boardHeight: number;
+  bottomY: number;
+};
+
 type GameRefs = {
   app: Application;
   stage: Container;
-  background: Container;
-  hud: Container;
-  lane: Container;
+  world: Container;
   board: Container;
+  hud: Container;
   controls: Container;
   effects: Container;
-  messageText: Text;
   state: GameState;
   random: ReturnType<typeof createSeededRandom>;
   animations: Animation[];
   lastSummonedIndex: number | null;
   flashBoard: boolean;
+  message: string;
 };
 
-const palette = {
-  bg: 0x050816,
-  panel: 0x101b31,
-  panelLight: 0x1f3358,
-  blue: 0x38bdf8,
-  orange: 0xf97316,
-  yellow: 0xfbbf24,
-  green: 0x86efac,
-  red: 0xfb7185,
-  purple: 0xc084fc,
-  white: 0xf8fafc,
-  muted: 0x94a3b8,
+const colors = {
+  sky: 0x7bbf43,
+  forestDark: 0x3f7d2c,
+  forest: 0x5f9f38,
+  grass: 0x6fbf45,
+  grassLight: 0x87d957,
+  field: 0x5dae36,
+  fieldLight: 0x72c84a,
+  dirt: 0xe7c46b,
+  dirtDark: 0xae7d38,
+  wood: 0x6e4a2f,
+  panel: 0x604a3d,
+  panelDark: 0x3f302a,
+  white: 0xffffff,
+  black: 0x1c1a16,
+  red: 0xd94b4b,
+  blue: 0x2f7fd5,
+  yellow: 0xffd84a,
+  orange: 0xff9f1c,
+  green: 0x45b85f,
+  purple: 0x9b5de5,
 };
 
-function makeText(text: string, size = 18, color = palette.white, weight: "normal" | "bold" = "bold") {
+function text(value: string, size = 18, fill = colors.white, weight: "normal" | "bold" = "bold") {
   return new Text({
-    text,
+    text: value,
     style: {
-      fill: color,
+      fill,
       fontFamily: "Arial, sans-serif",
       fontSize: size,
       fontWeight: weight,
+      stroke: { color: colors.black, width: size > 18 ? 4 : 2 },
     },
   });
 }
 
-function roundedRect(width: number, height: number, color: number, alpha = 1, strokeColor = 0x263955, radius = 18) {
-  const graphics = new Graphics();
-  graphics.roundRect(0, 0, width, height, radius);
-  graphics.fill({ color, alpha });
-  graphics.stroke({ color: strokeColor, alpha: 0.85, width: 2 });
-  return graphics;
+function panel(w: number, h: number, fill: number, stroke = colors.panelDark, radius = 16) {
+  const g = new Graphics();
+  g.roundRect(0, 0, w, h, radius);
+  g.fill({ color: fill, alpha: 1 });
+  g.stroke({ color: stroke, width: 3, alpha: 0.9 });
+  return g;
 }
 
-function clear(container: Container) {
-  container.removeChildren();
+function clear(c: Container) {
+  c.removeChildren();
 }
 
-function addAnimation(refs: GameRefs, animation: Omit<Animation, "age">) {
-  refs.animations.push({ ...animation, age: 0 });
+function layout(width: number, height: number): Layout {
+  const safeTop = 10;
+  const bottomY = height - 132;
+  const mapTop = 82;
+  const mapHeight = Math.max(510, bottomY - mapTop - 8);
+  const boardWidth = width - 76;
+  const boardHeight = Math.min(370, mapHeight * 0.52);
+  const boardX = 38;
+  const boardY = mapTop + Math.max(142, mapHeight * 0.28);
+  return { width, height, topHudY: safeTop, mapTop, mapHeight, boardX, boardY, boardWidth, boardHeight, bottomY };
 }
 
-function getGradeColor(grade?: string) {
-  if (grade === "legendary") return palette.yellow;
-  if (grade === "epic") return palette.purple;
-  if (grade === "rare") return palette.blue;
-  return 0x94a3b8;
+function addAnim(refs: GameRefs, anim: Omit<Animation, "age">) {
+  refs.animations.push({ ...anim, age: 0 });
 }
 
-function createButton(label: string, subLabel: string, width: number, height: number, color: number, onTap: () => void) {
-  const button = new Container();
-  button.eventMode = "static";
-  button.cursor = "pointer";
-
-  const bg = roundedRect(width, height, color, 1, 0xffffff, 16);
-  button.addChild(bg);
-
-  const top = makeText(subLabel, 10, color === palette.orange ? 0x7c2d12 : palette.blue, "bold");
-  top.x = 12;
-  top.y = 8;
-  button.addChild(top);
-
-  const text = makeText(label, 15, color === palette.orange ? 0x111827 : palette.white, "bold");
-  text.x = 12;
-  text.y = 25;
-  button.addChild(text);
-
-  button.on("pointertap", () => {
-    button.scale.set(0.96);
-    window.setTimeout(() => button.scale.set(1), 80);
-    onTap();
-  });
-
-  return button;
+function gradeColor(grade?: string) {
+  if (grade === "legendary") return colors.yellow;
+  if (grade === "epic") return colors.purple;
+  if (grade === "rare") return colors.blue;
+  return colors.white;
 }
 
-function drawBackground(refs: GameRefs, width: number, height: number) {
-  clear(refs.background);
+function drawBackground(refs: GameRefs, l: Layout) {
+  clear(refs.world);
+
   const bg = new Graphics();
-  bg.rect(0, 0, width, height);
-  bg.fill({ color: palette.bg, alpha: 1 });
-  refs.background.addChild(bg);
+  bg.rect(0, 0, l.width, l.height);
+  bg.fill(colors.sky);
+  refs.world.addChild(bg);
 
-  for (let x = 0; x < width; x += 32) {
-    const line = new Graphics();
-    line.moveTo(x, 0);
-    line.lineTo(x, height);
-    line.stroke({ color: 0x1e3a5f, alpha: 0.16, width: 1 });
-    refs.background.addChild(line);
+  for (let i = 0; i < 42; i += 1) {
+    const x = (i * 47) % l.width;
+    const y = 34 + ((i * 29) % Math.max(80, l.height - 170));
+    const tree = new Graphics();
+    tree.circle(x, y, 22 + (i % 3) * 4);
+    tree.fill({ color: i % 2 ? colors.forest : colors.forestDark, alpha: 0.9 });
+    tree.circle(x + 16, y + 9, 18);
+    tree.fill({ color: colors.forest, alpha: 0.9 });
+    refs.world.addChild(tree);
   }
 
-  for (let y = 0; y < height; y += 32) {
-    const line = new Graphics();
-    line.moveTo(0, y);
-    line.lineTo(width, y);
-    line.stroke({ color: 0x1e3a5f, alpha: 0.12, width: 1 });
-    refs.background.addChild(line);
-  }
+  const road = new Graphics();
+  const left = 18;
+  const right = l.width - 18;
+  const top = l.mapTop + 100;
+  const middle = l.mapTop + l.mapHeight * 0.47;
+  const bottom = l.mapTop + l.mapHeight - 118;
+  road.moveTo(right, top);
+  road.lineTo(left, top);
+  road.lineTo(left, middle);
+  road.lineTo(right, middle);
+  road.lineTo(right, bottom);
+  road.lineTo(left, bottom);
+  road.stroke({ color: colors.dirtDark, width: 42, alpha: 1 });
+  road.stroke({ color: colors.dirt, width: 34, alpha: 1 });
+  refs.world.addChild(road);
+
+  const boardShadow = panel(l.boardWidth + 14, l.boardHeight + 14, colors.wood, 0x4f3424, 18);
+  boardShadow.x = l.boardX - 7;
+  boardShadow.y = l.boardY - 7;
+  refs.world.addChild(boardShadow);
+
+  const field = panel(l.boardWidth, l.boardHeight, colors.field, 0x4f7d2a, 16);
+  field.x = l.boardX;
+  field.y = l.boardY;
+  refs.world.addChild(field);
+
+  const fieldGlow = new Graphics();
+  fieldGlow.roundRect(l.boardX + 8, l.boardY + 8, l.boardWidth - 16, l.boardHeight - 16, 12);
+  fieldGlow.fill({ color: colors.fieldLight, alpha: 0.18 });
+  refs.world.addChild(fieldGlow);
 }
 
-function drawHud(refs: GameRefs, width: number) {
+function drawTopHud(refs: GameRefs, l: Layout) {
   clear(refs.hud);
-  const state = refs.state;
-  const itemWidth = Math.max(64, (width - 24) / 5);
-  const labels = [
-    ["WAVE", `${state.currentWave}/30`, palette.blue],
-    ["CORE", `${state.lives}`, palette.red],
-    ["COIN", `${state.resources}`, palette.yellow],
-    ["SCORE", `${state.score}`, palette.green],
-    ["STATE", state.status.toUpperCase(), palette.white],
-  ] as const;
 
-  labels.forEach(([label, value, valueColor], index) => {
-    const box = roundedRect(itemWidth - 6, 58, palette.panel, 0.96, 0x2b4264, 15);
-    box.x = 12 + index * itemWidth;
-    box.y = 10;
-    refs.hud.addChild(box);
+  const waveBox = panel(150, 58, colors.panel, 0x3b2d26, 12);
+  waveBox.x = l.width / 2 - 75;
+  waveBox.y = l.topHudY;
+  refs.hud.addChild(waveBox);
+  const wave = text(`WAVE ${refs.state.currentWave}`, 18, colors.white);
+  wave.anchor.set(0.5, 0);
+  wave.x = l.width / 2;
+  wave.y = l.topHudY + 7;
+  refs.hud.addChild(wave);
+  const timer = text(refs.state.currentWave % 5 === 0 ? "BOSS" : "00:30", 20, refs.state.currentWave % 5 === 0 ? colors.red : colors.white);
+  timer.anchor.set(0.5, 0);
+  timer.x = l.width / 2;
+  timer.y = l.topHudY + 30;
+  refs.hud.addChild(timer);
 
-    const labelText = makeText(label, 10, palette.muted, "bold");
-    labelText.x = box.x + 10;
-    labelText.y = 18;
-    refs.hud.addChild(labelText);
+  const hpBg = panel(l.width - 92, 24, 0x4d2228, 0x2f1519, 12);
+  hpBg.x = 46;
+  hpBg.y = l.topHudY + 66;
+  refs.hud.addChild(hpBg);
+  const hpRatio = Math.max(0, Math.min(1, refs.state.lives / 20));
+  const hp = new Graphics();
+  hp.roundRect(50, l.topHudY + 70, (l.width - 100) * hpRatio, 16, 8);
+  hp.fill({ color: colors.red, alpha: 1 });
+  refs.hud.addChild(hp);
+  const hpText = text(`${refs.state.lives} / 20`, 16, colors.white);
+  hpText.anchor.set(0.5, 0);
+  hpText.x = l.width / 2;
+  hpText.y = l.topHudY + 67;
+  refs.hud.addChild(hpText);
 
-    const valueText = makeText(value, index === 3 ? 13 : 17, valueColor, "bold");
-    valueText.x = box.x + 10;
-    valueText.y = 34;
-    refs.hud.addChild(valueText);
-  });
+  const coin = text(`${refs.state.resources}`, 22, colors.yellow);
+  coin.x = 24;
+  coin.y = l.bottomY - 32;
+  refs.hud.addChild(coin);
+  const score = text(`${refs.state.score}`, 18, colors.white);
+  score.x = l.width - 132;
+  score.y = l.bottomY - 30;
+  refs.hud.addChild(score);
 }
 
-function drawLane(refs: GameRefs, width: number, height: number) {
-  clear(refs.lane);
-  const top = 82;
-  const laneHeight = Math.max(172, Math.min(235, height * 0.27));
-  const bg = roundedRect(width - 24, laneHeight, 0x0b1426, 0.98, 0x244466, 24);
-  bg.x = 12;
-  bg.y = top;
-  refs.lane.addChild(bg);
-
-  const title = makeText(refs.state.currentWave % 5 === 0 ? "BOSS WAVE" : "BUG WAVE", 22, refs.state.currentWave % 5 === 0 ? palette.red : palette.blue, "bold");
-  title.x = 28;
-  title.y = top + 18;
-  refs.lane.addChild(title);
-
-  const gate = roundedRect(78, 42, 0x2a0f1a, 0.9, palette.red, 14);
-  gate.x = 26;
-  gate.y = top + 68;
-  refs.lane.addChild(gate);
-  const gateText = makeText("GATE", 12, palette.red, "bold");
-  gateText.x = gate.x + 20;
-  gateText.y = gate.y + 13;
-  refs.lane.addChild(gateText);
-
-  const core = roundedRect(88, 52, 0x082f49, 1, palette.blue, 14);
-  core.x = width - 116;
-  core.y = top + 62;
-  refs.lane.addChild(core);
-  const coreText = makeText("CORE", 14, palette.blue, "bold");
-  coreText.x = core.x + 22;
-  coreText.y = core.y + 16;
-  refs.lane.addChild(coreText);
-
-  const trackY = top + 136;
-  const track = new Graphics();
-  track.roundRect(28, trackY, width - 56, 30, 16);
-  track.fill({ color: 0x050816, alpha: 0.86 });
-  track.stroke({ color: 0x385d8f, alpha: 0.9, width: 2 });
-  refs.lane.addChild(track);
-
-  const progress = Math.min(0.88, Math.max(0.08, refs.state.currentWave / 30));
-  const marker = new Graphics();
-  marker.circle(0, 0, 9);
-  marker.fill({ color: palette.orange, alpha: 0.85 });
-  marker.x = 28 + (width - 56) * progress;
-  marker.y = trackY + 15;
-  refs.lane.addChild(marker);
-
-  refs.messageText.x = 28;
-  refs.messageText.y = top + laneHeight - 44;
-  refs.messageText.style.fontSize = 14;
-  refs.messageText.style.wordWrap = true;
-  refs.messageText.style.wordWrapWidth = width - 56;
-  refs.lane.addChild(refs.messageText);
-}
-
-function drawBoard(refs: GameRefs, width: number, height: number) {
+function drawBoard(refs: GameRefs, l: Layout) {
   clear(refs.board);
-  const boardSize = Math.min(width - 28, height * 0.47);
-  const startX = (width - boardSize) / 2;
-  const startY = Math.max(280, height * 0.39);
   const gap = 8;
-  const cell = (boardSize - gap * 3) / 4;
-
-  const title = makeText("SQUAD BOARD", 14, palette.muted, "bold");
-  title.x = startX;
-  title.y = startY - 34;
-  refs.board.addChild(title);
+  const cols = 4;
+  const rows = 4;
+  const cell = Math.min((l.boardWidth - 34 - gap * (cols - 1)) / cols, (l.boardHeight - 32 - gap * (rows - 1)) / rows);
+  const startX = l.boardX + (l.boardWidth - cell * cols - gap * (cols - 1)) / 2;
+  const startY = l.boardY + 18;
 
   refs.state.board.forEach((slot, index) => {
-    const row = Math.floor(index / 4);
-    const col = index % 4;
+    const row = Math.floor(index / cols);
+    const col = index % cols;
     const x = startX + col * (cell + gap);
     const y = startY + row * (cell + gap);
-    const stroke = getGradeColor(slot?.grade);
     const isNew = refs.lastSummonedIndex === index;
-    const scale = isNew ? 1.08 : 1;
-    const inset = (cell * (scale - 1)) / 2;
+    const pulse = isNew ? 1.08 : 1;
+    const inset = (cell * (pulse - 1)) / 2;
+    const g = new Graphics();
+    g.roundRect(x - inset, y - inset, cell * pulse, cell * pulse, 12);
+    g.fill({ color: slot ? 0x6ac144 : 0x539832, alpha: slot ? 0.96 : 0.45 });
+    g.stroke({ color: slot ? gradeColor(slot.grade) : 0x3e7629, width: slot ? 3 : 2, alpha: refs.flashBoard && slot ? 1 : 0.85 });
+    refs.board.addChild(g);
 
-    const cellBg = new Graphics();
-    cellBg.roundRect(x - inset, y - inset, cell * scale, cell * scale, 16);
-    cellBg.fill({ color: slot ? 0x17223a : 0x0b1222, alpha: 0.98 });
-    cellBg.stroke({ color: refs.flashBoard && slot ? palette.white : stroke, alpha: slot ? 0.96 : 0.45, width: slot ? 3 : 2 });
-    refs.board.addChild(cellBg);
+    if (!slot) return;
 
-    if (slot) {
-      const glow = new Graphics();
-      glow.circle(x + cell / 2, y + cell * 0.39, cell * 0.27);
-      glow.fill({ color: stroke, alpha: 0.24 });
-      refs.board.addChild(glow);
+    const shadow = new Graphics();
+    shadow.ellipse(x + cell / 2, y + cell * 0.74, cell * 0.24, cell * 0.08);
+    shadow.fill({ color: 0x244f1e, alpha: 0.35 });
+    refs.board.addChild(shadow);
 
-      const hero = new Graphics();
-      hero.circle(x + cell / 2, y + cell * 0.39, cell * 0.2);
-      hero.fill({ color: stroke, alpha: 1 });
-      hero.stroke({ color: palette.white, alpha: 0.42, width: 2 });
-      refs.board.addChild(hero);
+    const body = new Graphics();
+    body.circle(x + cell / 2, y + cell * 0.46, cell * 0.22);
+    body.fill({ color: gradeColor(slot.grade), alpha: 1 });
+    body.stroke({ color: colors.black, width: 3, alpha: 0.5 });
+    refs.board.addChild(body);
 
-      const label = makeText(slot.grade.toUpperCase(), 10, palette.white, "bold");
-      label.anchor.set(0.5);
-      label.x = x + cell / 2;
-      label.y = y + cell * 0.76;
-      refs.board.addChild(label);
-    } else {
-      const empty = makeText("+", 28, 0x475569, "bold");
-      empty.anchor.set(0.5);
-      empty.x = x + cell / 2;
-      empty.y = y + cell / 2;
-      refs.board.addChild(empty);
-    }
+    const head = new Graphics();
+    head.circle(x + cell / 2, y + cell * 0.28, cell * 0.16);
+    head.fill({ color: 0xffd0a6, alpha: 1 });
+    head.stroke({ color: colors.black, width: 2, alpha: 0.5 });
+    refs.board.addChild(head);
+
+    const label = text(slot.grade[0].toUpperCase(), 13, colors.white);
+    label.anchor.set(0.5);
+    label.x = x + cell / 2;
+    label.y = y + cell * 0.88;
+    refs.board.addChild(label);
   });
 }
 
-function drawControls(refs: GameRefs, width: number, height: number) {
+function button(label: string, sub: string, w: number, h: number, color: number, onTap: () => void) {
+  const c = new Container();
+  c.eventMode = "static";
+  c.cursor = "pointer";
+  const bg = panel(w, h, color, 0x51351e, 14);
+  c.addChild(bg);
+  const s = text(sub, 12, colors.black);
+  s.x = 16;
+  s.y = 9;
+  c.addChild(s);
+  const t = text(label, 22, colors.white);
+  t.anchor.set(0.5, 0);
+  t.x = w / 2;
+  t.y = 31;
+  c.addChild(t);
+  c.on("pointertap", () => {
+    c.scale.set(0.96);
+    window.setTimeout(() => c.scale.set(1), 80);
+    onTap();
+  });
+  return c;
+}
+
+function drawControls(refs: GameRefs, l: Layout) {
   clear(refs.controls);
-  const bottom = height - 86;
-  const gap = 7;
-  const buttonWidth = (width - 24 - gap * 3) / 4;
-  const buttonHeight = 62;
 
-  const actions = [
-    ["호출", "CALL", palette.orange, () => summonAction(refs)],
-    ["일반", "MERGE", palette.panelLight, () => mergeByGrade(refs, "normal")],
-    ["희귀", "MERGE", palette.panelLight, () => mergeByGrade(refs, "rare")],
-    ["방어", "WAVE", palette.blue, () => waveAction(refs)],
-  ] as const;
+  const summonW = l.width * 0.54;
+  const summon = button("소환", `${Math.max(10, 10 + refs.state.summonCount * 2)}`, summonW, 82, colors.yellow, () => summonAction(refs));
+  summon.x = (l.width - summonW) / 2;
+  summon.y = l.height - 108;
+  refs.controls.addChild(summon);
 
-  actions.forEach(([label, sub, color, action], index) => {
-    const button = createButton(label, sub, buttonWidth, buttonHeight, color, action);
-    button.x = 12 + index * (buttonWidth + gap);
-    button.y = bottom;
-    refs.controls.addChild(button);
+  const left = button("일반", "합성", 96, 64, 0x516478, () => mergeByGrade(refs, "normal"));
+  left.x = 20;
+  left.y = l.height - 100;
+  refs.controls.addChild(left);
+
+  const right = button("희귀", "합성", 96, 64, 0x516478, () => mergeByGrade(refs, "rare"));
+  right.x = l.width - 116;
+  right.y = l.height - 100;
+  refs.controls.addChild(right);
+
+  const wave = button("웨이브", "START", 104, 48, colors.orange, () => waveAction(refs));
+  wave.x = l.width - 124;
+  wave.y = l.mapTop + 105;
+  refs.controls.addChild(wave);
+}
+
+function floatText(refs: GameRefs, value: string, x: number, y: number, color: number) {
+  const t = text(value, 22, color);
+  t.anchor.set(0.5);
+  t.x = x;
+  t.y = y;
+  refs.effects.addChild(t);
+  addAnim(refs, {
+    duration: 700,
+    update: (p) => {
+      t.y = y - p * 46;
+      t.alpha = 1 - p;
+      t.scale.set(1 + p * 0.2);
+    },
+    done: () => t.destroy(),
   });
 }
 
-function showFloatText(refs: GameRefs, text: string, x: number, y: number, color = palette.white) {
-  const label = makeText(text, 20, color, "bold");
-  label.anchor.set(0.5);
-  label.x = x;
-  label.y = y;
-  refs.effects.addChild(label);
-  addAnimation(refs, {
-    duration: 650,
-    update: (progress) => {
-      label.y = y - progress * 42;
-      label.alpha = 1 - progress;
-      label.scale.set(1 + progress * 0.25);
-    },
-    done: () => label.destroy(),
-  });
-}
+function spawnMonsters(refs: GameRefs) {
+  const l = layout(refs.app.renderer.width, refs.app.renderer.height);
+  const count = refs.state.currentWave % 5 === 0 ? 1 : 7;
+  for (let i = 0; i < count; i += 1) {
+    const monster = new Graphics();
+    const boss = refs.state.currentWave % 5 === 0;
+    const size = boss ? 22 : 12;
+    monster.roundRect(-size, -size, size * 2, size * 1.8, size * 0.4);
+    monster.fill({ color: boss ? 0x8b5e34 : 0x54b336, alpha: 1 });
+    monster.stroke({ color: 0x2b331d, width: 2 });
+    monster.x = l.width - 36 - i * 18;
+    monster.y = l.mapTop + 110;
+    refs.effects.addChild(monster);
 
-function spawnEnemyRun(refs: GameRefs) {
-  const width = refs.app.renderer.width;
-  const top = 82;
-  const y = top + 151;
-  const enemy = new Graphics();
-  const isBoss = refs.state.currentWave % 5 === 0;
-  enemy.circle(0, 0, isBoss ? 25 : 17);
-  enemy.fill({ color: isBoss ? palette.red : palette.orange, alpha: 1 });
-  enemy.stroke({ color: palette.white, alpha: 0.38, width: 2 });
-  enemy.x = 44;
-  enemy.y = y;
-  refs.effects.addChild(enemy);
-  addAnimation(refs, {
-    duration: 760,
-    update: (progress) => {
-      enemy.x = 44 + (width - 118) * progress;
-      enemy.rotation += 0.08;
-      enemy.scale.set(1 + Math.sin(progress * Math.PI) * 0.22);
-    },
-    done: () => enemy.destroy(),
-  });
+    addAnim(refs, {
+      duration: 900 + i * 90,
+      update: (p) => {
+        const phase = p * 3;
+        if (phase < 1) {
+          monster.x = l.width - 36 - (l.width - 72) * phase;
+          monster.y = l.mapTop + 110;
+        } else if (phase < 2) {
+          monster.x = 36;
+          monster.y = l.mapTop + 110 + (l.mapHeight * 0.44) * (phase - 1);
+        } else {
+          monster.x = 36 + (l.width - 72) * (phase - 2);
+          monster.y = l.mapTop + 110 + l.mapHeight * 0.44;
+        }
+        monster.rotation = Math.sin(p * 24) * 0.08;
+      },
+      done: () => monster.destroy(),
+    });
+  }
 }
 
 function summonAction(refs: GameRefs) {
-  const before = refs.state.board.findIndex((slot) => slot === null);
+  const index = refs.state.board.findIndex((slot) => slot === null);
   const result = summonHero(refs.state, refs.random);
   refs.state = result.state;
-  refs.lastSummonedIndex = result.summonedHero ? before : null;
-  refs.messageText.text = result.summonedHero ? "지원 영웅 호출 완료!" : "호출 실패. 코인이나 슬롯을 확인해.";
+  refs.lastSummonedIndex = result.summonedHero ? index : null;
   render(refs);
+  floatText(refs, result.summonedHero ? "소환!" : "실패", refs.app.renderer.width / 2, refs.app.renderer.height - 140, result.summonedHero ? colors.yellow : colors.red);
   if (result.summonedHero) {
-    showFloatText(refs, "CALL!", refs.app.renderer.width / 2, refs.app.renderer.height * 0.38, palette.orange);
-    addAnimation(refs, {
+    addAnim(refs, {
       duration: 420,
-      update: (progress) => {
-        if (progress > 0.85) refs.lastSummonedIndex = null;
-        drawBoard(refs, refs.app.renderer.width, refs.app.renderer.height);
+      update: (p) => {
+        if (p > 0.8) refs.lastSummonedIndex = null;
+        drawBoard(refs, layout(refs.app.renderer.width, refs.app.renderer.height));
       },
     });
   }
@@ -363,48 +386,44 @@ function mergeByGrade(refs: GameRefs, grade: HeroGrade) {
   const result = mergeHeroes(refs.state, grade, refs.random);
   refs.state = result.state;
   refs.flashBoard = Boolean(result.mergedHero);
-  refs.messageText.text = result.mergedHero ? "팀합 성공! 상위 영웅 등장." : "같은 등급 3명이 필요해.";
   render(refs);
+  floatText(refs, result.mergedHero ? "합성!" : "3명 필요", refs.app.renderer.width / 2, refs.app.renderer.height * 0.55, result.mergedHero ? colors.yellow : colors.red);
   if (result.mergedHero) {
-    showFloatText(refs, "MERGE!", refs.app.renderer.width / 2, refs.app.renderer.height * 0.5, palette.yellow);
-    addAnimation(refs, {
-      duration: 480,
-      update: (progress) => {
-        if (progress > 0.65) refs.flashBoard = false;
-        drawBoard(refs, refs.app.renderer.width, refs.app.renderer.height);
+    addAnim(refs, {
+      duration: 520,
+      update: (p) => {
+        if (p > 0.65) refs.flashBoard = false;
+        drawBoard(refs, layout(refs.app.renderer.width, refs.app.renderer.height));
       },
     });
   }
 }
 
 function waveAction(refs: GameRefs) {
-  spawnEnemyRun(refs);
+  spawnMonsters(refs);
   const result = completeCurrentWave(startWave(refs.state));
-  refs.state = result.state;
-  refs.messageText.text = result.state.status === "cleared" ? "30웨이브 클리어!" : `${result.wave?.waveNumber ?? "?"}웨이브 방어 성공!`;
   window.setTimeout(() => {
+    refs.state = result.state;
     render(refs);
-    showFloatText(refs, `+${result.reward} COIN`, refs.app.renderer.width * 0.72, 130, palette.green);
-  }, 420);
+    floatText(refs, `+${result.reward}`, refs.app.renderer.width / 2, refs.app.renderer.height - 132, colors.green);
+  }, 620);
 }
 
 function render(refs: GameRefs) {
-  const width = refs.app.renderer.width;
-  const height = refs.app.renderer.height;
-  drawBackground(refs, width, height);
-  drawHud(refs, width);
-  drawLane(refs, width, height);
-  drawBoard(refs, width, height);
-  drawControls(refs, width, height);
+  const l = layout(refs.app.renderer.width, refs.app.renderer.height);
+  drawBackground(refs, l);
+  drawTopHud(refs, l);
+  drawBoard(refs, l);
+  drawControls(refs, l);
 }
 
-function tickAnimations(refs: GameRefs, deltaMs: number) {
-  refs.animations = refs.animations.filter((animation) => {
-    animation.age += deltaMs;
-    const progress = Math.min(1, animation.age / animation.duration);
-    animation.update(progress);
-    if (progress >= 1) {
-      animation.done?.();
+function tick(refs: GameRefs, deltaMs: number) {
+  refs.animations = refs.animations.filter((a) => {
+    a.age += deltaMs;
+    const p = Math.min(1, a.age / a.duration);
+    a.update(p);
+    if (p >= 1) {
+      a.done?.();
       return false;
     }
     return true;
@@ -418,25 +437,24 @@ export function createPixiGame(parent: HTMLElement): PixiGameHandle {
   const refs = {
     app,
     stage,
-    background: new Container(),
-    hud: new Container(),
-    lane: new Container(),
+    world: new Container(),
     board: new Container(),
+    hud: new Container(),
     controls: new Container(),
     effects: new Container(),
-    messageText: makeText("랜덤 호출로 서버 코어를 방어해.", 15, palette.white, "bold"),
     state: createInitialGameState(seed),
     random: createSeededRandom(seed),
     animations: [],
     lastSummonedIndex: null,
     flashBoard: false,
+    message: "",
   } satisfies GameRefs;
 
   let destroyed = false;
 
   async function init() {
     await app.init({
-      background: palette.bg,
+      background: colors.sky,
       resizeTo: parent,
       antialias: true,
       resolution: Math.min(window.devicePixelRatio || 1, 2),
@@ -450,10 +468,10 @@ export function createPixiGame(parent: HTMLElement): PixiGameHandle {
 
     parent.appendChild(app.canvas);
     app.stage.addChild(stage);
-    stage.addChild(refs.background, refs.lane, refs.board, refs.hud, refs.controls, refs.effects);
+    stage.addChild(refs.world, refs.board, refs.hud, refs.controls, refs.effects);
     render(refs);
     app.renderer.on("resize", () => render(refs));
-    app.ticker.add((ticker) => tickAnimations(refs, ticker.deltaMS));
+    app.ticker.add((ticker) => tick(refs, ticker.deltaMS));
   }
 
   void init();
