@@ -29,6 +29,11 @@ function getBoardIndex(hero: BoardHero, columns: number): number {
   return hero.position.row * columns + hero.position.column;
 }
 
+function createMergedHeroId(targets: BoardHero[], nextHeroId: string): string {
+  const consumedIds = targets.map((target) => target.instanceId).join("+");
+  return `merged:${nextHeroId}:${consumedIds}`;
+}
+
 export function mergeHeroes(state: GameState, grade: HeroGrade, random: SeededRandom): MergeResult {
   const mergeTargets = state.board
     .filter((slot): slot is BoardHero => slot !== null && slot.grade === grade)
@@ -72,7 +77,7 @@ export function mergeHeroes(state: GameState, grade: HeroGrade, random: SeededRa
   }
 
   const mergedHero: BoardHero = {
-    instanceId: `merged-${state.summonCount + 1}-${Date.now()}`,
+    instanceId: createMergedHeroId(mergeTargets, nextHeroDefinition.id),
     heroId: nextHeroDefinition.id,
     grade: nextHeroDefinition.grade,
     position: primaryTarget.position,
