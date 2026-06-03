@@ -1,0 +1,26 @@
+{
+  "name": "@discord-random-defense/web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0",
+    "build": "tsc -p tsconfig.json && vite build",
+    "preview": "vite preview --host 0.0.0.0",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@discord-random-defense/game": "workspace:*",
+    "@discord-random-defense/types": "workspace:*",
+    "@vitejs/plugin-react": "latest",
+    "vite": "latest",
+    "typescript": "^5.8.3",
+    "react": "latest",
+    "react-dom": "latest",
+    "react-router-dom": "latest"
+  },
+  "devDependencies": {
+    "@types/react": "latest",
+    "@types/react-dom": "latest"
+  }
+}
