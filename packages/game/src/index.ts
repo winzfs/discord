@@ -33,6 +33,9 @@ export function createInitialGameState(seed = "mvp-placeholder-seed"): GameState
     currentWave: 1,
     score: 0,
     summonCount: 0,
+    defeatedEnemies: 0,
+    defeatedBosses: 0,
+    clearedWaves: 0,
     status: "ready",
   };
 }
