@@ -19,7 +19,7 @@ export function pickSummonGrade(random: SeededRandom): HeroGrade {
     if (roll <= 0) return rate.grade;
   }
 
-  return summonGradeRates[summonGradeRates.length - 1]?.grade ?? "normal";
+  return summonGradeRates[summonGradeRates.length - 1]?.grade ?? "common";
 }
 
 export function pickHeroByGrade(grade: HeroGrade, random: SeededRandom): HeroDefinition | null {
