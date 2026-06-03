@@ -5,7 +5,7 @@ compatibility_date = "2026-06-03"
 [[d1_databases]]
 binding = "DB"
 database_name = "discord_random_defense"
-database_id = "replace-with-d1-database-id"
+database_id = "0fdde997-1f97-4693-a15d-4c69d488a4d4"
 
 [vars]
 PUBLIC_APP_URL = "http://localhost:5173"
