@@ -9,10 +9,15 @@ export type AppEnv = {
     SESSION_SECRET?: string;
     ADMIN_DISCORD_IDS?: string;
     PUBLIC_APP_URL?: string;
+    ALLOW_MOCK_AUTH?: string;
   };
 };
 
 export function getEnvValue(env: AppEnv["Bindings"], key: keyof AppEnv["Bindings"]): string | undefined {
   const value = env[key];
   return typeof value === "string" && value.length > 0 ? value : undefined;
+}
+
+export function isMockAuthEnabled(env: AppEnv["Bindings"]): boolean {
+  return getEnvValue(env, "ALLOW_MOCK_AUTH") === "true";
 }
