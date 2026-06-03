@@ -11,7 +11,7 @@ export type MergeResult = {
   reason?: "not_enough_same_grade" | "max_grade" | "no_hero_for_next_grade";
 };
 
-const gradeOrder: HeroGrade[] = ["normal", "rare", "epic", "legendary"];
+const gradeOrder: HeroGrade[] = ["common", "rare", "epic", "legendary"];
 
 export function getNextGrade(grade: HeroGrade): HeroGrade | null {
   const gradeIndex = gradeOrder.indexOf(grade);
