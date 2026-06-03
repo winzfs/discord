@@ -11,33 +11,34 @@ type GameControlsProps = {
 };
 
 function describeSummonResult(result: SummonResult): string {
-  if (result.summonedHero) return "영웅을 소환했어.";
-  if (result.reason === "board_full") return "필드가 가득 찼어. 합성을 먼저 해줘.";
-  if (result.reason === "not_enough_resources") return "코인이 부족해.";
+  if (result.summonedHero) return "지원 영웅 호출 완료! 조합을 굴려보자.";
+  if (result.reason === "board_full") return "배치판이 꽉 찼어. 합성으로 자리를 만들어야 해.";
+  if (result.reason === "not_enough_resources") return "코인이 부족해. 웨이브를 막고 보상을 챙기자.";
   if (result.reason === "no_hero_for_grade") return "해당 등급 영웅 풀이 비어 있어.";
-  return "소환하지 못했어.";
+  return "호출 실패. 다시 눌러보자.";
 }
 
 function describeMergeResult(result: MergeResult): string {
-  if (result.mergedHero) return "합성 성공! 상위 등급 영웅이 등장했어.";
-  if (result.reason === "not_enough_same_grade") return "같은 등급 영웅이 3명 필요해.";
-  if (result.reason === "max_grade") return "전설 등급은 아직 더 합성할 수 없어.";
+  if (result.mergedHero) return "팀합 성공! 상위 등급 영웅이 합류했어.";
+  if (result.reason === "not_enough_same_grade") return "같은 등급 영웅 3명이 필요해.";
+  if (result.reason === "max_grade") return "전설 등급은 현재 최고 등급이야.";
   if (result.reason === "no_hero_for_next_grade") return "다음 등급 영웅 풀이 비어 있어.";
-  return "합성하지 못했어.";
+  return "합성 실패. 조합을 다시 확인해줘.";
 }
 
 function describeWaveResult(result: WaveProgressResult): string {
-  if (result.reason === "already_finished") return "이미 게임이 종료됐어.";
+  if (result.reason === "already_finished") return "이미 작전이 종료됐어.";
   if (result.reason === "missing_wave") return "웨이브 데이터를 찾지 못했어.";
-  if (result.state.status === "cleared") return "30웨이브 클리어! 서버를 지켰어.";
-  if (result.state.status === "failed") return "서버 코어가 터졌어. 다시 도전해보자.";
-  return `${result.wave?.waveNumber ?? "?"}웨이브 클리어! 보상 ${result.reward}코인 획득.`;
+  if (result.state.status === "cleared") return "30웨이브 클리어! 서버 코어 방어 성공!";
+  if (result.state.status === "failed") return "서버 코어가 무너졌어. 다음 판에 다시 가자.";
+  return `${result.wave?.waveNumber ?? "?"}웨이브 방어 성공. ${result.reward}코인 확보!`;
 }
 
 export function GameControls({ canInteract, onSummon, onMerge, onClearWave, onLeakWave, onReset, onMessage }: GameControlsProps) {
   return (
-    <div className="game-controls">
+    <footer className="action-bar">
       <button
+        className="action-button primary-action"
         type="button"
         disabled={!canInteract}
         onClick={() => {
@@ -45,9 +46,11 @@ export function GameControls({ canInteract, onSummon, onMerge, onClearWave, onLe
           onMessage(describeSummonResult(result));
         }}
       >
-        랜덤 영웅 소환
+        <span>CALL</span>
+        랜덤 호출
       </button>
       <button
+        className="action-button"
         type="button"
         disabled={!canInteract}
         onClick={() => {
@@ -55,9 +58,11 @@ export function GameControls({ canInteract, onSummon, onMerge, onClearWave, onLe
           onMessage(describeMergeResult(result));
         }}
       >
-        일반 3명 합성
+        <span>MERGE</span>
+        일반 합성
       </button>
       <button
+        className="action-button"
         type="button"
         disabled={!canInteract}
         onClick={() => {
@@ -65,9 +70,11 @@ export function GameControls({ canInteract, onSummon, onMerge, onClearWave, onLe
           onMessage(describeMergeResult(result));
         }}
       >
-        희귀 3명 합성
+        <span>MERGE</span>
+        희귀 합성
       </button>
       <button
+        className="action-button"
         type="button"
         disabled={!canInteract}
         onClick={() => {
@@ -75,9 +82,11 @@ export function GameControls({ canInteract, onSummon, onMerge, onClearWave, onLe
           onMessage(describeMergeResult(result));
         }}
       >
-        영웅 3명 합성
+        <span>MERGE</span>
+        영웅 합성
       </button>
       <button
+        className="action-button wave-action"
         type="button"
         disabled={!canInteract}
         onClick={() => {
@@ -85,21 +94,25 @@ export function GameControls({ canInteract, onSummon, onMerge, onClearWave, onLe
           onMessage(describeWaveResult(result));
         }}
       >
-        웨이브 클리어 테스트
+        <span>WAVE</span>
+        방어 성공
       </button>
       <button
+        className="action-button danger-action"
         type="button"
         disabled={!canInteract}
         onClick={() => {
           const result = onLeakWave();
-          onMessage(`${describeWaveResult(result)} 일부 적이 새어 나갔어.`);
+          onMessage(`${describeWaveResult(result)} 일부 적이 코어에 도달했어.`);
         }}
       >
-        적 누수 테스트
+        <span>LEAK</span>
+        누수 처리
       </button>
-      <button type="button" onClick={onReset}>
-        새 게임
+      <button className="action-button reset-action" type="button" onClick={onReset}>
+        <span>RESET</span>
+        새 작전
       </button>
-    </div>
+    </footer>
   );
 }
