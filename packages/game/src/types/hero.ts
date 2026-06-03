@@ -1,7 +1,7 @@
 import type { AssetKey } from "@discord-random-defense/types";
 
 export type HeroRole = "tank" | "damage" | "support";
-export type HeroGrade = "normal" | "rare" | "epic" | "legendary";
+export type HeroGrade = "common" | "rare" | "epic" | "legendary";
 export type AttackType = "single" | "area" | "support" | "control";
 
 export type HeroDefinition = {
