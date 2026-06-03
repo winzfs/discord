@@ -8,7 +8,7 @@ import {
   summonHero,
 } from "@discord-random-defense/game";
 import type { GameState, HeroGrade, MergeResult, SummonResult, WaveProgressResult } from "@discord-random-defense/game";
-import { PageSection } from "../components/common/PageSection";
+import { BattleLane } from "../game-client/BattleLane";
 import { GameBoard } from "../game-client/GameBoard";
 import { GameControls } from "../game-client/GameControls";
 import { GameStatsPanel } from "../game-client/GameStatsPanel";
@@ -19,7 +19,7 @@ function createNewGame(): GameState {
 
 export function GamePage() {
   const [state, setState] = useState<GameState>(() => createNewGame());
-  const [message, setMessage] = useState("랜덤 영웅을 소환해서 30웨이브까지 버텨보자.");
+  const [message, setMessage] = useState("작전 개시. 랜덤 호출로 서버 코어를 방어해.");
   const random = useMemo(() => createSeededRandom(state.seed), [state.seed]);
   const canInteract = state.status !== "cleared" && state.status !== "failed";
 
@@ -53,30 +53,34 @@ export function GamePage() {
 
   function handleReset() {
     setState(createNewGame());
-    setMessage("새 게임 시작. 이번 판은 전설 가자.");
+    setMessage("새 작전 시작. 이번 판은 전설 가자.");
   }
 
   return (
-    <PageSection
-      title="싱글 랜덤 디펜스 프로토타입"
-      description="아직 전투 애니메이션 전 단계야. 먼저 4x4 필드, 소환, 합성, 웨이브 진행, 점수 계산을 버튼으로 테스트할 수 있게 연결했어."
-    >
-      <div className="game-prototype">
-        <GameStatsPanel state={state} />
-        <div className="game-message" role="status">
-          {message}
+    <main className="game-screen" aria-label="싱글 랜덤 디펜스">
+      <GameStatsPanel state={state} />
+      <section className="battle-stage">
+        <BattleLane state={state} message={message} />
+        <div className="summon-board-panel">
+          <div className="board-title-row">
+            <div>
+              <span className="panel-kicker">SQUAD BOARD</span>
+              <h2>영웅 배치판</h2>
+            </div>
+            <strong>4 × 4</strong>
+          </div>
+          <GameBoard board={state.board} columns={state.boardSize.columns} />
         </div>
-        <GameBoard board={state.board} columns={state.boardSize.columns} />
-        <GameControls
-          canInteract={canInteract}
-          onSummon={handleSummon}
-          onMerge={handleMerge}
-          onClearWave={handleClearWave}
-          onLeakWave={handleLeakWave}
-          onReset={handleReset}
-          onMessage={setMessage}
-        />
-      </div>
-    </PageSection>
+      </section>
+      <GameControls
+        canInteract={canInteract}
+        onSummon={handleSummon}
+        onMerge={handleMerge}
+        onClearWave={handleClearWave}
+        onLeakWave={handleLeakWave}
+        onReset={handleReset}
+        onMessage={setMessage}
+      />
+    </main>
   );
 }
