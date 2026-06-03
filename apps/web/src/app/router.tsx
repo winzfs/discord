@@ -3,6 +3,7 @@ import { MainLayout } from "../components/layout/MainLayout";
 import { AdminPage } from "../pages/AdminPage";
 import { DashboardPage } from "../pages/DashboardPage";
 import { GamePage } from "../pages/GamePage";
+import { GameStartPage } from "../pages/GameStartPage";
 import { HomePage } from "../pages/HomePage";
 import { LeaderboardPage } from "../pages/LeaderboardPage";
 import { LoginPage } from "../pages/LoginPage";
@@ -20,7 +21,7 @@ export const router = createBrowserRouter([
       { index: true, element: <HomePage /> },
       { path: "login", element: <LoginPage /> },
       { path: "dashboard", element: <DashboardPage /> },
-      { path: "game", element: <GamePage /> },
+      { path: "game", element: <GameStartPage /> },
       { path: "leaderboard", element: <LeaderboardPage /> },
       { path: "profile", element: <ProfilePage /> },
       { path: "admin", element: <AdminPage /> },
