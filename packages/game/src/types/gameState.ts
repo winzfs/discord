@@ -1,6 +1,7 @@
 import type { BoardHero } from "./hero";
 
 export type GameMode = "single_random_wave_defense";
+export type GameStatus = "ready" | "playing" | "cleared" | "failed";
 
 export type GameState = {
   mode: GameMode;
@@ -15,5 +16,8 @@ export type GameState = {
   currentWave: number;
   score: number;
   summonCount: number;
-  status: "ready" | "playing" | "finished";
+  defeatedEnemies: number;
+  defeatedBosses: number;
+  clearedWaves: number;
+  status: GameStatus;
 };
