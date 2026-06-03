@@ -2,6 +2,7 @@ import { getEnemyById } from "../data/enemies";
 import { initialBalance } from "../data/balance";
 import { getWaveByNumber } from "../data/waves";
 import { calculateScore } from "../rules/scoring";
+import { resolveWaveCombat } from "./combatSystem";
 import type { GameState } from "../types/gameState";
 import type { WaveDefinition } from "../types/wave";
 
@@ -19,6 +20,10 @@ export type WaveProgressResult = {
   defeatedBosses: number;
   lostLives: number;
   reward: number;
+  boardPower: number;
+  waveThreat: number;
+  powerRatio: number;
+  leakedEnemies: NonNullable<WaveClearInput["leakedEnemies"]>;
   reason?: "missing_wave" | "already_finished";
 };
 
@@ -45,7 +50,7 @@ export function startWave(state: GameState): GameState {
   return { ...state, status: "playing" };
 }
 
-export function completeCurrentWave(state: GameState, input: WaveClearInput = {}): WaveProgressResult {
+export function completeCurrentWave(state: GameState, input?: WaveClearInput): WaveProgressResult {
   if (state.status === "cleared" || state.status === "failed") {
     return {
       state,
@@ -54,6 +59,10 @@ export function completeCurrentWave(state: GameState, input: WaveClearInput = {}
       defeatedBosses: 0,
       lostLives: 0,
       reward: 0,
+      boardPower: 0,
+      waveThreat: 0,
+      powerRatio: 0,
+      leakedEnemies: [],
       reason: "already_finished",
     };
   }
@@ -67,18 +76,23 @@ export function completeCurrentWave(state: GameState, input: WaveClearInput = {}
       defeatedBosses: 0,
       lostLives: 0,
       reward: 0,
+      boardPower: 0,
+      waveThreat: 0,
+      powerRatio: 0,
+      leakedEnemies: [],
       reason: "missing_wave",
     };
   }
 
+  const combat = resolveWaveCombat(state, state.currentWave);
+  const resolvedInput: WaveClearInput = input ?? { leakedEnemies: combat.leakedEnemies };
+  const leakedEnemies = resolvedInput.leakedEnemies ?? [];
   const totalEnemies = countWaveEnemies(wave);
   const totalBosses = countWaveBosses(wave);
-  const leakedCount = (input.leakedEnemies ?? []).reduce((sum, leakedEnemy) => sum + leakedEnemy.count, 0);
+  const leakedCount = leakedEnemies.reduce((sum, leakedEnemy) => sum + leakedEnemy.count, 0);
   const defeatedEnemies = Math.max(0, totalEnemies - leakedCount);
-  const defeatedBosses = input.leakedEnemies?.some((leakedEnemy) => getEnemyById(leakedEnemy.enemyId)?.type === "boss")
-    ? 0
-    : totalBosses;
-  const lostLives = calculateLostLives(input);
+  const defeatedBosses = leakedEnemies.some((leakedEnemy) => getEnemyById(leakedEnemy.enemyId)?.type === "boss") ? 0 : totalBosses;
+  const lostLives = calculateLostLives(resolvedInput);
   const nextLives = Math.max(0, state.lives - lostLives);
   const clearedWaves = nextLives > 0 ? state.clearedWaves + 1 : state.clearedWaves;
   const isFinalWave = wave.waveNumber >= initialBalance.maxWave;
@@ -94,9 +108,11 @@ export function completeCurrentWave(state: GameState, input: WaveClearInput = {}
     survived: nextStatus === "cleared",
   });
 
+  const reward = lostLives > 0 ? Math.ceil(wave.rewardOnClear * 0.65) : wave.rewardOnClear;
+
   const nextState: GameState = {
     ...state,
-    resources: state.resources + wave.rewardOnClear,
+    resources: state.resources + reward,
     lives: nextLives,
     currentWave: nextWave,
     defeatedEnemies: state.defeatedEnemies + defeatedEnemies,
@@ -112,7 +128,11 @@ export function completeCurrentWave(state: GameState, input: WaveClearInput = {}
     defeatedEnemies,
     defeatedBosses,
     lostLives,
-    reward: wave.rewardOnClear,
+    reward,
+    boardPower: combat.boardPower.totalPower,
+    waveThreat: combat.waveThreat.totalThreat,
+    powerRatio: combat.powerRatio,
+    leakedEnemies,
   };
 }
 
