@@ -29,6 +29,8 @@ button { font: inherit; }
 .section-heading p { margin: 0.5rem 0 0; color: #cbd5e1; }
 .hero-panel, .placeholder-card, .game-placeholder { border: 1px solid rgba(125, 211, 252, 0.25); border-radius: 1rem; padding: 1.25rem; background: linear-gradient(135deg, rgba(30, 41, 59, 0.9), rgba(15, 23, 42, 0.95)); box-shadow: 0 18px 40px rgba(8, 13, 24, 0.28); }
 .primary-link { display: inline-flex; margin-top: 1rem; padding: 0.75rem 1rem; border-radius: 0.75rem; background: #f97316; color: #111827; font-weight: 700; text-decoration: none; }
+.feature-list { margin: 1rem 0 0; padding-left: 1.2rem; color: #dbeafe; line-height: 1.8; }
+.notice-text { color: #94a3b8; font-size: 0.9rem; }
 .grid-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; }
 .game-placeholder { display: flex; align-items: center; gap: 1.25rem; }
 .placeholder-asset { width: 96px; height: 96px; flex: 0 0 auto; }
