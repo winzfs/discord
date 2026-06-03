@@ -3,11 +3,15 @@ import {
   completeCurrentWave,
   createInitialGameState,
   createSeededRandom,
+  getSummonCost,
   mergeHeroes,
   startWave,
   summonHero,
 } from "@discord-random-defense/game";
 import type { GameState, HeroGrade } from "@discord-random-defense/game";
+import { createGameLayout } from "./gameLayout";
+import type { GameLayout } from "./gameLayout";
+import { colors, gradeColor } from "./gameTheme";
 
 export type PixiGameHandle = {
   cleanup: () => void;
@@ -18,19 +22,6 @@ type Animation = {
   duration: number;
   update: (progress: number) => void;
   done?: () => void;
-};
-
-type Layout = {
-  width: number;
-  height: number;
-  topHudY: number;
-  mapTop: number;
-  mapHeight: number;
-  boardX: number;
-  boardY: number;
-  boardWidth: number;
-  boardHeight: number;
-  bottomY: number;
 };
 
 type GameRefs = {
@@ -46,30 +37,6 @@ type GameRefs = {
   animations: Animation[];
   lastSummonedIndex: number | null;
   flashBoard: boolean;
-  message: string;
-};
-
-const colors = {
-  sky: 0x7bbf43,
-  forestDark: 0x3f7d2c,
-  forest: 0x5f9f38,
-  grass: 0x6fbf45,
-  grassLight: 0x87d957,
-  field: 0x5dae36,
-  fieldLight: 0x72c84a,
-  dirt: 0xe7c46b,
-  dirtDark: 0xae7d38,
-  wood: 0x6e4a2f,
-  panel: 0x604a3d,
-  panelDark: 0x3f302a,
-  white: 0xffffff,
-  black: 0x1c1a16,
-  red: 0xd94b4b,
-  blue: 0x2f7fd5,
-  yellow: 0xffd84a,
-  orange: 0xff9f1c,
-  green: 0x45b85f,
-  purple: 0x9b5de5,
 };
 
 function text(value: string, size = 18, fill = colors.white, weight: "normal" | "bold" = "bold") {
@@ -97,40 +64,21 @@ function clear(c: Container) {
   c.removeChildren();
 }
 
-function layout(width: number, height: number): Layout {
-  const safeTop = 10;
-  const bottomY = height - 132;
-  const mapTop = 82;
-  const mapHeight = Math.max(510, bottomY - mapTop - 8);
-  const boardWidth = width - 76;
-  const boardHeight = Math.min(370, mapHeight * 0.52);
-  const boardX = 38;
-  const boardY = mapTop + Math.max(142, mapHeight * 0.28);
-  return { width, height, topHudY: safeTop, mapTop, mapHeight, boardX, boardY, boardWidth, boardHeight, bottomY };
-}
-
 function addAnim(refs: GameRefs, anim: Omit<Animation, "age">) {
   refs.animations.push({ ...anim, age: 0 });
 }
 
-function gradeColor(grade?: string) {
-  if (grade === "legendary") return colors.yellow;
-  if (grade === "epic") return colors.purple;
-  if (grade === "rare") return colors.blue;
-  return colors.white;
-}
-
-function drawBackground(refs: GameRefs, l: Layout) {
+function drawBackground(refs: GameRefs, layout: GameLayout) {
   clear(refs.world);
 
   const bg = new Graphics();
-  bg.rect(0, 0, l.width, l.height);
+  bg.rect(0, 0, layout.width, layout.height);
   bg.fill(colors.sky);
   refs.world.addChild(bg);
 
   for (let i = 0; i < 42; i += 1) {
-    const x = (i * 47) % l.width;
-    const y = 34 + ((i * 29) % Math.max(80, l.height - 170));
+    const x = (i * 47) % layout.width;
+    const y = 34 + ((i * 29) % Math.max(80, layout.height - 170));
     const tree = new Graphics();
     tree.circle(x, y, 22 + (i % 3) * 4);
     tree.fill({ color: i % 2 ? colors.forest : colors.forestDark, alpha: 0.9 });
@@ -141,10 +89,10 @@ function drawBackground(refs: GameRefs, l: Layout) {
 
   const road = new Graphics();
   const left = 18;
-  const right = l.width - 18;
-  const top = l.mapTop + 100;
-  const middle = l.mapTop + l.mapHeight * 0.47;
-  const bottom = l.mapTop + l.mapHeight - 118;
+  const right = layout.width - 18;
+  const top = layout.mapTop + 100;
+  const middle = layout.mapTop + layout.mapHeight * 0.47;
+  const bottom = layout.mapTop + layout.mapHeight - 118;
   road.moveTo(right, top);
   road.lineTo(left, top);
   road.lineTo(left, middle);
@@ -155,73 +103,79 @@ function drawBackground(refs: GameRefs, l: Layout) {
   road.stroke({ color: colors.dirt, width: 34, alpha: 1 });
   refs.world.addChild(road);
 
-  const boardShadow = panel(l.boardWidth + 14, l.boardHeight + 14, colors.wood, 0x4f3424, 18);
-  boardShadow.x = l.boardX - 7;
-  boardShadow.y = l.boardY - 7;
+  const boardShadow = panel(layout.boardWidth + 14, layout.boardHeight + 14, colors.wood, 0x4f3424, 18);
+  boardShadow.x = layout.boardX - 7;
+  boardShadow.y = layout.boardY - 7;
   refs.world.addChild(boardShadow);
 
-  const field = panel(l.boardWidth, l.boardHeight, colors.field, 0x4f7d2a, 16);
-  field.x = l.boardX;
-  field.y = l.boardY;
+  const field = panel(layout.boardWidth, layout.boardHeight, colors.field, 0x4f7d2a, 16);
+  field.x = layout.boardX;
+  field.y = layout.boardY;
   refs.world.addChild(field);
 
   const fieldGlow = new Graphics();
-  fieldGlow.roundRect(l.boardX + 8, l.boardY + 8, l.boardWidth - 16, l.boardHeight - 16, 12);
+  fieldGlow.roundRect(layout.boardX + 8, layout.boardY + 8, layout.boardWidth - 16, layout.boardHeight - 16, 12);
   fieldGlow.fill({ color: colors.fieldLight, alpha: 0.18 });
   refs.world.addChild(fieldGlow);
 }
 
-function drawTopHud(refs: GameRefs, l: Layout) {
+function drawTopHud(refs: GameRefs, layout: GameLayout) {
   clear(refs.hud);
 
   const waveBox = panel(150, 58, colors.panel, 0x3b2d26, 12);
-  waveBox.x = l.width / 2 - 75;
-  waveBox.y = l.topHudY;
+  waveBox.x = layout.width / 2 - 75;
+  waveBox.y = layout.topHudY;
   refs.hud.addChild(waveBox);
+
   const wave = text(`WAVE ${refs.state.currentWave}`, 18, colors.white);
   wave.anchor.set(0.5, 0);
-  wave.x = l.width / 2;
-  wave.y = l.topHudY + 7;
+  wave.x = layout.width / 2;
+  wave.y = layout.topHudY + 7;
   refs.hud.addChild(wave);
-  const timer = text(refs.state.currentWave % 5 === 0 ? "BOSS" : "00:30", 20, refs.state.currentWave % 5 === 0 ? colors.red : colors.white);
+
+  const isBossWave = refs.state.currentWave % 5 === 0;
+  const timer = text(isBossWave ? "BOSS" : "00:30", 20, isBossWave ? colors.red : colors.white);
   timer.anchor.set(0.5, 0);
-  timer.x = l.width / 2;
-  timer.y = l.topHudY + 30;
+  timer.x = layout.width / 2;
+  timer.y = layout.topHudY + 30;
   refs.hud.addChild(timer);
 
-  const hpBg = panel(l.width - 92, 24, 0x4d2228, 0x2f1519, 12);
+  const hpBg = panel(layout.width - 92, 24, 0x4d2228, 0x2f1519, 12);
   hpBg.x = 46;
-  hpBg.y = l.topHudY + 66;
+  hpBg.y = layout.topHudY + 66;
   refs.hud.addChild(hpBg);
+
   const hpRatio = Math.max(0, Math.min(1, refs.state.lives / 20));
   const hp = new Graphics();
-  hp.roundRect(50, l.topHudY + 70, (l.width - 100) * hpRatio, 16, 8);
+  hp.roundRect(50, layout.topHudY + 70, (layout.width - 100) * hpRatio, 16, 8);
   hp.fill({ color: colors.red, alpha: 1 });
   refs.hud.addChild(hp);
+
   const hpText = text(`${refs.state.lives} / 20`, 16, colors.white);
   hpText.anchor.set(0.5, 0);
-  hpText.x = l.width / 2;
-  hpText.y = l.topHudY + 67;
+  hpText.x = layout.width / 2;
+  hpText.y = layout.topHudY + 67;
   refs.hud.addChild(hpText);
 
   const coin = text(`${refs.state.resources}`, 22, colors.yellow);
   coin.x = 24;
-  coin.y = l.bottomY - 32;
+  coin.y = layout.bottomY - 32;
   refs.hud.addChild(coin);
+
   const score = text(`${refs.state.score}`, 18, colors.white);
-  score.x = l.width - 132;
-  score.y = l.bottomY - 30;
+  score.x = layout.width - 132;
+  score.y = layout.bottomY - 30;
   refs.hud.addChild(score);
 }
 
-function drawBoard(refs: GameRefs, l: Layout) {
+function drawBoard(refs: GameRefs, layout: GameLayout) {
   clear(refs.board);
   const gap = 8;
-  const cols = 4;
-  const rows = 4;
-  const cell = Math.min((l.boardWidth - 34 - gap * (cols - 1)) / cols, (l.boardHeight - 32 - gap * (rows - 1)) / rows);
-  const startX = l.boardX + (l.boardWidth - cell * cols - gap * (cols - 1)) / 2;
-  const startY = l.boardY + 18;
+  const cols = refs.state.boardSize.columns;
+  const rows = refs.state.boardSize.rows;
+  const cell = Math.min((layout.boardWidth - 34 - gap * (cols - 1)) / cols, (layout.boardHeight - 32 - gap * (rows - 1)) / rows);
+  const startX = layout.boardX + (layout.boardWidth - cell * cols - gap * (cols - 1)) / 2;
+  const startY = layout.boardY + 18;
 
   refs.state.board.forEach((slot, index) => {
     const row = Math.floor(index / cols);
@@ -287,28 +241,28 @@ function button(label: string, sub: string, w: number, h: number, color: number,
   return c;
 }
 
-function drawControls(refs: GameRefs, l: Layout) {
+function drawControls(refs: GameRefs, layout: GameLayout) {
   clear(refs.controls);
 
-  const summonW = l.width * 0.54;
-  const summon = button("소환", `${Math.max(10, 10 + refs.state.summonCount * 2)}`, summonW, 82, colors.yellow, () => summonAction(refs));
-  summon.x = (l.width - summonW) / 2;
-  summon.y = l.height - 108;
+  const summonW = layout.width * 0.54;
+  const summon = button("소환", `${getSummonCost(refs.state.summonCount)}`, summonW, 82, colors.yellow, () => summonAction(refs));
+  summon.x = (layout.width - summonW) / 2;
+  summon.y = layout.height - 108;
   refs.controls.addChild(summon);
 
-  const left = button("일반", "합성", 96, 64, 0x516478, () => mergeByGrade(refs, "normal"));
-  left.x = 20;
-  left.y = l.height - 100;
-  refs.controls.addChild(left);
+  const commonMerge = button("일반", "합성", 96, 64, 0x516478, () => mergeByGrade(refs, "common"));
+  commonMerge.x = 20;
+  commonMerge.y = layout.height - 100;
+  refs.controls.addChild(commonMerge);
 
-  const right = button("희귀", "합성", 96, 64, 0x516478, () => mergeByGrade(refs, "rare"));
-  right.x = l.width - 116;
-  right.y = l.height - 100;
-  refs.controls.addChild(right);
+  const rareMerge = button("희귀", "합성", 96, 64, 0x516478, () => mergeByGrade(refs, "rare"));
+  rareMerge.x = layout.width - 116;
+  rareMerge.y = layout.height - 100;
+  refs.controls.addChild(rareMerge);
 
   const wave = button("웨이브", "START", 104, 48, colors.orange, () => waveAction(refs));
-  wave.x = l.width - 124;
-  wave.y = l.mapTop + 105;
+  wave.x = layout.width - 124;
+  wave.y = layout.mapTop + 105;
   refs.controls.addChild(wave);
 }
 
@@ -330,7 +284,7 @@ function floatText(refs: GameRefs, value: string, x: number, y: number, color: n
 }
 
 function spawnMonsters(refs: GameRefs) {
-  const l = layout(refs.app.renderer.width, refs.app.renderer.height);
+  const layout = createGameLayout(refs.app.renderer.width, refs.app.renderer.height);
   const count = refs.state.currentWave % 5 === 0 ? 1 : 7;
   for (let i = 0; i < count; i += 1) {
     const monster = new Graphics();
@@ -339,8 +293,8 @@ function spawnMonsters(refs: GameRefs) {
     monster.roundRect(-size, -size, size * 2, size * 1.8, size * 0.4);
     monster.fill({ color: boss ? 0x8b5e34 : 0x54b336, alpha: 1 });
     monster.stroke({ color: 0x2b331d, width: 2 });
-    monster.x = l.width - 36 - i * 18;
-    monster.y = l.mapTop + 110;
+    monster.x = layout.width - 36 - i * 18;
+    monster.y = layout.mapTop + 110;
     refs.effects.addChild(monster);
 
     addAnim(refs, {
@@ -348,14 +302,14 @@ function spawnMonsters(refs: GameRefs) {
       update: (p) => {
         const phase = p * 3;
         if (phase < 1) {
-          monster.x = l.width - 36 - (l.width - 72) * phase;
-          monster.y = l.mapTop + 110;
+          monster.x = layout.width - 36 - (layout.width - 72) * phase;
+          monster.y = layout.mapTop + 110;
         } else if (phase < 2) {
           monster.x = 36;
-          monster.y = l.mapTop + 110 + (l.mapHeight * 0.44) * (phase - 1);
+          monster.y = layout.mapTop + 110 + layout.mapHeight * 0.44 * (phase - 1);
         } else {
-          monster.x = 36 + (l.width - 72) * (phase - 2);
-          monster.y = l.mapTop + 110 + l.mapHeight * 0.44;
+          monster.x = 36 + (layout.width - 72) * (phase - 2);
+          monster.y = layout.mapTop + 110 + layout.mapHeight * 0.44;
         }
         monster.rotation = Math.sin(p * 24) * 0.08;
       },
@@ -376,7 +330,7 @@ function summonAction(refs: GameRefs) {
       duration: 420,
       update: (p) => {
         if (p > 0.8) refs.lastSummonedIndex = null;
-        drawBoard(refs, layout(refs.app.renderer.width, refs.app.renderer.height));
+        drawBoard(refs, createGameLayout(refs.app.renderer.width, refs.app.renderer.height));
       },
     });
   }
@@ -393,7 +347,7 @@ function mergeByGrade(refs: GameRefs, grade: HeroGrade) {
       duration: 520,
       update: (p) => {
         if (p > 0.65) refs.flashBoard = false;
-        drawBoard(refs, layout(refs.app.renderer.width, refs.app.renderer.height));
+        drawBoard(refs, createGameLayout(refs.app.renderer.width, refs.app.renderer.height));
       },
     });
   }
@@ -410,11 +364,11 @@ function waveAction(refs: GameRefs) {
 }
 
 function render(refs: GameRefs) {
-  const l = layout(refs.app.renderer.width, refs.app.renderer.height);
-  drawBackground(refs, l);
-  drawTopHud(refs, l);
-  drawBoard(refs, l);
-  drawControls(refs, l);
+  const layout = createGameLayout(refs.app.renderer.width, refs.app.renderer.height);
+  drawBackground(refs, layout);
+  drawTopHud(refs, layout);
+  drawBoard(refs, layout);
+  drawControls(refs, layout);
 }
 
 function tick(refs: GameRefs, deltaMs: number) {
@@ -447,7 +401,6 @@ export function createPixiGame(parent: HTMLElement): PixiGameHandle {
     animations: [],
     lastSummonedIndex: null,
     flashBoard: false,
-    message: "",
   } satisfies GameRefs;
 
   let destroyed = false;
