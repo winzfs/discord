@@ -14,7 +14,7 @@ export const initialBalance = {
 } as const;
 
 export const summonGradeRates: Array<{ grade: HeroGrade; weight: number }> = [
-  { grade: "normal", weight: 65 },
+  { grade: "common", weight: 65 },
   { grade: "rare", weight: 25 },
   { grade: "epic", weight: 8 },
   { grade: "legendary", weight: 2 },
