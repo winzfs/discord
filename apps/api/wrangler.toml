@@ -1,0 +1,12 @@
+name = "discord-random-defense-api"
+main = "src/index.ts"
+compatibility_date = "2026-06-03"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "discord_random_defense"
+database_id = "replace-with-d1-database-id"
+
+[vars]
+PUBLIC_APP_URL = "http://localhost:5173"
+DISCORD_REDIRECT_URI = "http://localhost:8787/api/auth/callback"

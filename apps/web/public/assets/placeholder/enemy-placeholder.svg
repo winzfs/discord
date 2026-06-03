@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" role="img" aria-labelledby="title desc">
+  <title id="title">ENEMY placeholder</title>
+  <desc id="desc">Replaceable enemy placeholder asset for the random defense game.</desc>
+  <rect width="256" height="256" rx="32" fill="#0f172a"/>
+  <rect x="18" y="18" width="220" height="220" rx="24" fill="#1e293b" stroke="#7dd3fc" stroke-width="4"/>
+  <circle cx="128" cy="96" r="36" fill="#f97316" opacity="0.9"/>
+  <path d="M64 196c18-40 45-60 64-60s46 20 64 60" fill="none" stroke="#e2e8f0" stroke-width="14" stroke-linecap="round"/>
+  <text x="128" y="226" text-anchor="middle" fill="#7dd3fc" font-family="Arial, sans-serif" font-size="22" font-weight="700">ENEMY</text>
+</svg>

@@ -68,3 +68,19 @@
 - 문서 기획 단계
 - 코드 생성 전
 - Codex가 이후 `docs/07-mvp-roadmap.md`를 기준으로 초기 구조를 생성하는 것을 권장
+
+## 초기 개발 환경 실행
+
+이 저장소는 pnpm workspace 기반 monorepo로 구성됩니다.
+
+```bash
+pnpm install
+pnpm typecheck
+pnpm dev:web
+pnpm dev:api
+```
+
+- Web: `apps/web`에서 Vite + React + TypeScript로 실행됩니다.
+- API: `apps/api`에서 Cloudflare Workers + Hono로 실행되며 `/health`와 `/api/health`를 제공합니다.
+- Game Logic: `packages/game`은 React와 무관한 순수 TypeScript 패키지입니다.
+- 정적 이미지 교체는 `apps/web/public/assets/` 파일 교체 또는 `apps/web/src/assets/assetManifest.ts` 수정으로 처리합니다.

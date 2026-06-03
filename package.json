@@ -1,0 +1,17 @@
+{
+  "name": "discord-random-defense",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Discord-linked single-player random defense fan game monorepo.",
+  "packageManager": "pnpm@9.15.4",
+  "scripts": {
+    "dev": "pnpm --filter @discord-random-defense/web dev",
+    "dev:web": "pnpm --filter @discord-random-defense/web dev",
+    "dev:api": "pnpm --filter @discord-random-defense/api dev",
+    "build": "pnpm -r build",
+    "typecheck": "pnpm -r typecheck"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.3"
+  }
+}
