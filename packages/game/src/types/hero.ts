@@ -11,6 +11,9 @@ export type HeroDefinition = {
   grade: HeroGrade;
   attackType: AttackType;
   assetKey: AssetKey;
+  power: number;
+  attackSpeed: number;
+  range: number;
   skillIds: string[];
   tags: string[];
 };
