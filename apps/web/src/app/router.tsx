@@ -10,6 +10,10 @@ import { ProfilePage } from "../pages/ProfilePage";
 
 export const router = createBrowserRouter([
   {
+    path: "/play",
+    element: <GamePage />,
+  },
+  {
     path: "/",
     element: <MainLayout />,
     children: [
