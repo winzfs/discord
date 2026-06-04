@@ -2,8 +2,9 @@ import { getPowerUpgradeMultiplier } from "../data/balance";
 import { getEnemyById } from "../data/enemies";
 import { getHeroById } from "../data/heroes";
 import { getWaveByNumber } from "../data/waves";
+import { getAllBoardHeroes } from "./boardSystem";
 import type { GameState } from "../types/gameState";
-import type { BoardHero, HeroDefinition } from "../types/hero";
+import type { HeroDefinition } from "../types/hero";
 import type { WaveDefinition } from "../types/wave";
 
 export type BoardPowerBreakdown = {
@@ -68,8 +69,7 @@ function getHeroCombatPower(hero: HeroDefinition): number {
 }
 
 function getBoardHeroes(state: GameState): HeroDefinition[] {
-  return state.board
-    .filter((slot): slot is BoardHero => slot !== null)
+  return getAllBoardHeroes(state.board)
     .map((slot) => getHeroById(slot.heroId))
     .filter((hero): hero is HeroDefinition => hero !== null);
 }
