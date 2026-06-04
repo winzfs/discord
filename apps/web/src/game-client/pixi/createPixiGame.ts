@@ -28,36 +28,12 @@ import { createGameLayout } from "./gameLayout";
 import type { GameLayout } from "./gameLayout";
 import { colors, gradeColor } from "./gameTheme";
 
-export type PixiGameHandle = {
-  cleanup: () => void;
-};
+export type PixiGameHandle = { cleanup: () => void };
 
-type Animation = {
-  age: number;
-  duration: number;
-  update: (progress: number) => void;
-  done?: () => void;
-};
-
-type DragState = {
-  sourceIndex: number;
-  startX: number;
-  startY: number;
-  ghost: Container;
-  isMoving: boolean;
-};
-
-type BoardMetrics = {
-  cols: number;
-  rows: number;
-  cell: number;
-  gap: number;
-  startX: number;
-  startY: number;
-};
-
+type Animation = { age: number; duration: number; update: (progress: number) => void; done?: () => void };
+type DragState = { sourceIndex: number; startX: number; startY: number; ghost: Container; isMoving: boolean };
+type BoardMetrics = { cols: number; rows: number; cell: number; gap: number; startX: number; startY: number };
 type WavePhase = "countdown" | "combat" | "result";
-
 type ActiveEnemy = {
   id: number;
   enemyId: string;
@@ -73,16 +49,7 @@ type ActiveEnemy = {
   boss: boolean;
   sprite: Container;
 };
-
-type WaveSummary = {
-  killed: number;
-  leaked: number;
-  lostLives: number;
-  reward: number;
-  luckStoneReward: number;
-  perfect: boolean;
-};
-
+type WaveSummary = { killed: number; leaked: number; lostLives: number; reward: number; luckStoneReward: number; perfect: boolean };
 type GameRefs = {
   app: Application;
   stage: Container;
@@ -110,6 +77,7 @@ type GameRefs = {
   waveReward: number;
   waveLostLives: number;
   lastWaveSummary: WaveSummary | null;
+  lastHudKey: string;
 };
 
 const WAVE_COUNTDOWN_SECONDS = 8;
@@ -164,6 +132,10 @@ function clearDrag(refs: GameRefs) {
   refs.dragging = null;
 }
 
+function invalidateHud(refs: GameRefs) {
+  refs.lastHudKey = "";
+}
+
 function getCellIndexFromHero(state: GameState, hero: BoardHero | null) {
   if (!hero) return null;
   return hero.position.row * state.boardSize.columns + hero.position.column;
@@ -177,7 +149,6 @@ function getBoardMetrics(refs: GameRefs, layout: GameLayout): BoardMetrics {
     (layout.boardWidth - 34 - gap * (cols - 1)) / cols,
     (layout.boardHeight - 32 - gap * (rows - 1)) / rows,
   );
-
   return {
     cols,
     rows,
@@ -193,7 +164,6 @@ function getCellCenter(refs: GameRefs, cellIndex: number) {
   const metrics = getBoardMetrics(refs, layout);
   const row = Math.floor(cellIndex / metrics.cols);
   const col = cellIndex % metrics.cols;
-
   return {
     x: metrics.startX + col * (metrics.cell + metrics.gap) + metrics.cell / 2,
     y: metrics.startY + row * (metrics.cell + metrics.gap) + metrics.cell * 0.48,
@@ -204,17 +174,13 @@ function getCellCenter(refs: GameRefs, cellIndex: number) {
 function getCellIndexAtPoint(refs: GameRefs, x: number, y: number) {
   const layout = createGameLayout(refs.app.renderer.width, refs.app.renderer.height);
   const metrics = getBoardMetrics(refs, layout);
-
   for (let row = 0; row < metrics.rows; row += 1) {
     for (let col = 0; col < metrics.cols; col += 1) {
       const cellX = metrics.startX + col * (metrics.cell + metrics.gap);
       const cellY = metrics.startY + row * (metrics.cell + metrics.gap);
-      if (x >= cellX && x <= cellX + metrics.cell && y >= cellY && y <= cellY + metrics.cell) {
-        return row * metrics.cols + col;
-      }
+      if (x >= cellX && x <= cellX + metrics.cell && y >= cellY && y <= cellY + metrics.cell) return row * metrics.cols + col;
     }
   }
-
   return null;
 }
 
@@ -242,16 +208,10 @@ function drawUnitShape(target: Container, hero: Pick<BoardHero, "grade" | "heroI
   }
 
   const body = new Graphics();
-  if (role === "tank") {
-    body.roundRect(-cell * 0.24 * scale, -cell * 0.1 * scale, cell * 0.48 * scale, cell * 0.42 * scale, cell * 0.12 * scale);
-  } else if (role === "support") {
-    body.circle(0, cell * 0.02 * scale, cell * 0.2 * scale);
-  } else {
-    body.moveTo(0, -cell * 0.24 * scale);
-    body.lineTo(cell * 0.24 * scale, cell * 0.2 * scale);
-    body.lineTo(-cell * 0.24 * scale, cell * 0.2 * scale);
-    body.lineTo(0, -cell * 0.24 * scale);
-  }
+  if (role === "tank") body.roundRect(-cell * 0.24 * scale, -cell * 0.1 * scale, cell * 0.48 * scale, cell * 0.42 * scale, cell * 0.12 * scale);
+  else if (role === "support") body.circle(0, cell * 0.02 * scale, cell * 0.2 * scale);
+  else body.moveTo(0, -cell * 0.24 * scale).lineTo(cell * 0.24 * scale, cell * 0.2 * scale).lineTo(-cell * 0.24 * scale, cell * 0.2 * scale).lineTo(0, -cell * 0.24 * scale);
+
   body.fill({ color: gradeColor(hero.grade), alpha: 1 });
   body.stroke({ color: colors.black, width: Math.max(2, 3 * scale), alpha: 0.58 });
   target.addChild(body);
@@ -289,7 +249,6 @@ function beginCellDrag(refs: GameRefs, sourceIndex: number, globalX: number, glo
   const sourceCell = refs.state.board[sourceIndex];
   const movingHero = sourceCell?.units[sourceCell.units.length - 1];
   if (!movingHero) return;
-
   clearMenu(refs);
   clearDrag(refs);
   const ghost = createUnitGhost(movingHero, cell, 0);
@@ -303,13 +262,11 @@ function moveDragGhost(refs: GameRefs, globalX: number, globalY: number) {
   if (!refs.dragging) return;
   const dx = globalX - refs.dragging.startX;
   const dy = globalY - refs.dragging.startY;
-
   if (!refs.dragging.isMoving && Math.hypot(dx, dy) > 8) {
     refs.dragging.isMoving = true;
     refs.dragging.ghost.alpha = 0.84;
     refs.dragging.ghost.scale.set(1.08);
   }
-
   if (refs.dragging.isMoving) {
     refs.dragging.ghost.x = globalX;
     refs.dragging.ghost.y = globalY;
@@ -323,7 +280,6 @@ function animateWalk(refs: GameRefs, hero: BoardHero, fromIndex: number, toIndex
   ghost.x = from.x;
   ghost.y = from.y;
   refs.effects.addChild(ghost);
-
   addAnimation(refs, {
     duration: 420,
     update: (progress) => {
@@ -345,7 +301,6 @@ function animateMoveResult(refs: GameRefs, sourceIndex: number, targetIndex: num
   const sourceCell = previousState.board[sourceIndex];
   const targetCell = previousState.board[targetIndex];
   const movingHero = sourceCell?.units[sourceCell.units.length - 1];
-
   if (!movingHero) {
     refs.state = nextState;
     refs.movementLocked = false;
@@ -371,37 +326,29 @@ function animateMoveResult(refs: GameRefs, sourceIndex: number, targetIndex: num
     animateWalk(refs, targetCell.units[0], targetIndex, sourceIndex, onDone);
     return;
   }
-
   animateWalk(refs, movingHero, sourceIndex, targetIndex, finish);
 }
 
 function finishCellDrag(refs: GameRefs, globalX: number, globalY: number) {
   if (!refs.dragging) return;
-
   const sourceIndex = refs.dragging.sourceIndex;
   const wasMoving = refs.dragging.isMoving;
   const targetIndex = getCellIndexAtPoint(refs, globalX, globalY);
   clearDrag(refs);
-
   if (!wasMoving || targetIndex === sourceIndex) {
     showUnitMenu(refs, sourceIndex);
     return;
   }
-
   if (targetIndex === null) {
     floatText(refs, "이동 취소", refs.app.renderer.width / 2, refs.app.renderer.height * 0.52, colors.white);
     return;
   }
-
   const previousState = refs.state;
   const result = moveOneHeroToCell(refs.state, sourceIndex, targetIndex);
   if (!result.movedHero || !result.action) {
-    if (result.reason === "target_full") {
-      floatText(refs, "칸이 가득 찼어", refs.app.renderer.width / 2, refs.app.renderer.height * 0.52, colors.red);
-    }
+    if (result.reason === "target_full") floatText(refs, "칸이 가득 찼어", refs.app.renderer.width / 2, refs.app.renderer.height * 0.52, colors.red);
     return;
   }
-
   animateMoveResult(refs, sourceIndex, targetIndex, previousState, result.state, result.action);
 }
 
@@ -412,20 +359,17 @@ function makeMenuButton(label: string, x: number, y: number, enabled: boolean, o
   container.eventMode = enabled ? "static" : "none";
   container.cursor = enabled ? "pointer" : "default";
   container.addChild(makePanel(58, 34, enabled ? colors.panel : 0x655e59, enabled ? 0x2e241f : 0x3d3732, 10));
-
   const labelText = makeText(label, 14, enabled ? colors.white : 0xb7afa8);
   labelText.anchor.set(0.5);
   labelText.x = 29;
   labelText.y = 17;
   container.addChild(labelText);
-
   if (enabled) {
     container.on("pointertap", (event: any) => {
       event.stopPropagation();
       onTap();
     });
   }
-
   return container;
 }
 
@@ -433,7 +377,6 @@ function showUnitMenu(refs: GameRefs, cellIndex: number) {
   if (refs.movementLocked) return;
   const cell = refs.state.board[cellIndex];
   if (!cell || cell.units.length === 0) return;
-
   clearMenu(refs);
   const center = getCellCenter(refs, cellIndex);
   const canMerge = canMergeStackCell(refs.state, cellIndex);
@@ -457,7 +400,6 @@ function mergeMenuAction(refs: GameRefs, cellIndex: number) {
     floatText(refs, message, refs.app.renderer.width / 2, refs.app.renderer.height * 0.52, colors.red);
     return;
   }
-
   refs.state = result.state;
   refs.lastSummonedIndex = cellIndex;
   render(refs);
@@ -471,109 +413,104 @@ function sellMenuAction(refs: GameRefs, cellIndex: number) {
     floatText(refs, "판매 불가", refs.app.renderer.width / 2, refs.app.renderer.height * 0.52, colors.red);
     return;
   }
-
   refs.state = result.state;
   render(refs);
   floatText(refs, `판매 +${result.reward}`, refs.app.renderer.width / 2, refs.app.renderer.height * 0.52, colors.green);
 }
 
 function getPathPoint(layout: GameLayout, progress: number) {
-  const left = 26;
-  const right = layout.width - 26;
-  const top = Math.max(layout.mapTop + 78, layout.boardY - 48);
-  const bottom = Math.min(layout.boardY + layout.boardHeight + 48, layout.height - 184);
-  const phase = Math.max(0, Math.min(1, progress)) * 3;
-
-  if (phase < 1) return { x: right - (right - left) * phase, y: top };
-  if (phase < 2) return { x: left, y: top + (bottom - top) * (phase - 1) };
-  return { x: left + (right - left) * (phase - 2), y: bottom };
+  const left = Math.max(24, layout.boardX - 42);
+  const right = Math.min(layout.width - 24, layout.boardX + layout.boardWidth + 42);
+  const top = Math.max(layout.mapTop + 44, layout.boardY - 50);
+  const bottom = Math.min(layout.height - 176, layout.boardY + layout.boardHeight + 48);
+  const phase = Math.max(0, Math.min(1, progress)) * 4;
+  if (phase < 1) return { x: left, y: bottom - (bottom - top) * phase };
+  if (phase < 2) return { x: left + (right - left) * (phase - 1), y: top };
+  if (phase < 3) return { x: right, y: top + (bottom - top) * (phase - 2) };
+  return { x: right - (right - left) * (phase - 3), y: bottom };
 }
 
 function drawBackground(refs: GameRefs, layout: GameLayout) {
   clear(refs.world);
-
   const background = new Graphics();
   background.rect(0, 0, layout.width, layout.height);
   background.fill(colors.sky);
   refs.world.addChild(background);
-
   const road = new Graphics();
   const first = getPathPoint(layout, 0);
   road.moveTo(first.x, first.y);
-  for (let index = 1; index <= 80; index += 1) {
-    const point = getPathPoint(layout, index / 80);
+  for (let index = 1; index <= 96; index += 1) {
+    const point = getPathPoint(layout, index / 96);
     road.lineTo(point.x, point.y);
   }
   road.stroke({ color: colors.dirtDark, width: 42, alpha: 1 });
   road.stroke({ color: colors.dirt, width: 34, alpha: 1 });
   refs.world.addChild(road);
-
   const boardShadow = makePanel(layout.boardWidth + 14, layout.boardHeight + 14, colors.wood, 0x4f3424, 18);
   boardShadow.x = layout.boardX - 7;
   boardShadow.y = layout.boardY - 7;
   refs.world.addChild(boardShadow);
-
   const field = makePanel(layout.boardWidth, layout.boardHeight, colors.field, 0x4f7d2a, 16);
   field.x = layout.boardX;
   field.y = layout.boardY;
   refs.world.addChild(field);
 }
 
-function drawTopHud(refs: GameRefs, layout: GameLayout) {
-  clear(refs.hud);
+function getHudKey(refs: GameRefs) {
+  const timer = refs.wavePhase === "combat" ? Math.ceil(refs.combatTimer) : refs.wavePhase === "result" ? -1 : Math.ceil(refs.nextWaveTimer);
+  const alive = refs.activeEnemies.filter((enemy) => enemy.alive).length;
+  const firepower = getAllBoardHeroes(refs.state.board).reduce((sum, hero) => sum + getHeroDamage(refs, hero), 0);
+  return [refs.state.currentWave, refs.state.lives, refs.state.resources, refs.state.luckStones, getBoardUnitCount(refs.state.board), refs.wavePhase, timer, alive, firepower].join("|");
+}
 
+function drawTopHud(refs: GameRefs, layout: GameLayout, force = false) {
+  const key = getHudKey(refs);
+  if (!force && refs.lastHudKey === key) return;
+  refs.lastHudKey = key;
+  clear(refs.hud);
   const boss = isBossWave(refs.state);
   const waveBox = makePanel(150, 58, boss ? 0x5a2327 : colors.panel, boss ? colors.red : 0x3b2d26, 12);
   waveBox.x = layout.width / 2 - 75;
   waveBox.y = layout.topHudY;
   refs.hud.addChild(waveBox);
-
   const wave = makeText(`WAVE ${refs.state.currentWave}`, 18);
   wave.anchor.set(0.5, 0);
   wave.x = layout.width / 2;
   wave.y = layout.topHudY + 7;
   refs.hud.addChild(wave);
-
-  const timerLabel = refs.wavePhase === "combat" ? `${Math.ceil(refs.combatTimer)}s` : refs.wavePhase === "result" ? "RESULT" : `${Math.ceil(refs.nextWaveTimer)}s`;
-  const timer = makeText(boss ? `BOSS ${timerLabel}` : `NEXT ${timerLabel}`, 20, boss ? colors.red : colors.white);
+  const timerLabel = refs.wavePhase === "combat" ? `${Math.ceil(refs.combatTimer)}s` : refs.wavePhase === "result" ? "READY" : `${Math.ceil(refs.nextWaveTimer)}s`;
+  const timer = makeText(boss ? `BOSS ${timerLabel}` : refs.wavePhase === "countdown" ? `NEXT ${timerLabel}` : timerLabel, 20, boss ? colors.red : colors.white);
   timer.anchor.set(0.5, 0);
   timer.x = layout.width / 2;
   timer.y = layout.topHudY + 30;
   refs.hud.addChild(timer);
-
   const hpBackground = makePanel(layout.width - 92, 24, 0x4d2228, 0x2f1519, 12);
   hpBackground.x = 46;
   hpBackground.y = layout.topHudY + 66;
   refs.hud.addChild(hpBackground);
-
   const hpRatio = Math.max(0, Math.min(1, refs.state.lives / initialBalance.startingLives));
   const hp = new Graphics();
   hp.roundRect(50, layout.topHudY + 70, (layout.width - 100) * hpRatio, 16, 8);
   hp.fill({ color: colors.red, alpha: 1 });
   refs.hud.addChild(hp);
-
   const hpText = makeText(`${refs.state.lives} / ${initialBalance.startingLives}`, 16);
   hpText.anchor.set(0.5, 0);
   hpText.x = layout.width / 2;
   hpText.y = layout.topHudY + 67;
   refs.hud.addChild(hpText);
-
   const firepower = getAllBoardHeroes(refs.state.board).reduce((sum, hero) => sum + getHeroDamage(refs, hero), 0);
   const power = makeText(`화력 ${firepower}`, 15);
   power.x = 22;
   power.y = layout.topHudY + 98;
   refs.hud.addChild(power);
-
   const units = makeText(`${getBoardUnitCount(refs.state.board)} / ${getBoardCapacity(refs.state.board)}`, 15);
   units.x = layout.width - 96;
   units.y = layout.topHudY + 98;
   refs.hud.addChild(units);
-
   const coin = makeText(`코인 ${refs.state.resources}`, 18, colors.yellow);
   coin.x = 24;
   coin.y = layout.bottomY - 34;
   refs.hud.addChild(coin);
-
   const luck = makeText(`행운석 ${refs.state.luckStones}`, 16, colors.blue);
   luck.x = 24;
   luck.y = layout.bottomY - 58;
@@ -600,7 +537,6 @@ function drawUnitMarker(refs: GameRefs, x: number, y: number, cell: number, hero
 function drawBoard(refs: GameRefs, layout: GameLayout) {
   clear(refs.board);
   const metrics = getBoardMetrics(refs, layout);
-
   refs.state.board.forEach((boardCell, index) => {
     const row = Math.floor(index / metrics.cols);
     const col = index % metrics.cols;
@@ -609,15 +545,12 @@ function drawBoard(refs: GameRefs, layout: GameLayout) {
     const units = boardCell.units;
     const firstUnit = units[0];
     const canMerge = canMergeStackCell(refs.state, index);
-
     const cell = new Graphics();
     cell.roundRect(x, y, metrics.cell, metrics.cell, 12);
     cell.fill({ color: units.length > 0 ? 0x6ac144 : 0x539832, alpha: units.length > 0 ? 0.96 : 0.45 });
     cell.stroke({ color: canMerge ? colors.yellow : firstUnit ? gradeColor(firstUnit.grade) : 0x3e7629, width: units.length >= 3 ? 4 : units.length > 0 ? 3 : 2, alpha: 0.9 });
     refs.board.addChild(cell);
-
     units.forEach((unit, unitIndex) => drawUnitMarker(refs, x, y, metrics.cell, unit, units.length, unitIndex));
-
     const hit = new Graphics();
     hit.roundRect(x, y, metrics.cell, metrics.cell, 12);
     hit.fill({ color: 0xffffff, alpha: 0.001 });
@@ -636,18 +569,16 @@ function makeButton(label: string, sub: string, width: number, height: number, c
   container.eventMode = disabled ? "none" : "static";
   container.cursor = disabled ? "default" : "pointer";
   container.addChild(makePanel(width, height, disabled ? 0x6f6259 : color, disabled ? 0x3d332e : 0x51351e, 14));
-
-  const subText = makeText(sub, 12, disabled ? 0x2d2825 : colors.black);
-  subText.x = 16;
-  subText.y = 9;
+  const compact = height <= 56;
+  const subText = makeText(sub, compact ? 10 : 12, disabled ? 0x2d2825 : colors.black);
+  subText.x = compact ? 12 : 16;
+  subText.y = compact ? 5 : 9;
   container.addChild(subText);
-
-  const mainText = makeText(label, 22, disabled ? 0xd0c6bc : colors.white);
+  const mainText = makeText(label, compact ? 17 : 22, disabled ? 0xd0c6bc : colors.white);
   mainText.anchor.set(0.5, 0);
   mainText.x = width / 2;
-  mainText.y = 31;
+  mainText.y = compact ? 20 : 31;
   container.addChild(mainText);
-
   if (!disabled) {
     container.on("pointertap", () => {
       container.scale.set(0.96);
@@ -655,7 +586,6 @@ function makeButton(label: string, sub: string, width: number, height: number, c
       onTap();
     });
   }
-
   return container;
 }
 
@@ -674,30 +604,26 @@ function drawControls(refs: GameRefs, layout: GameLayout) {
   clear(refs.controls);
   const summonState = getSummonButtonState(refs.state);
   const summonWidth = layout.width * 0.52;
-  const summon = makeButton("소환", summonState.sub, summonWidth, 82, colors.yellow, () => summonAction(refs), summonState.disabled || refs.movementLocked);
+  const summon = makeButton("소환", summonState.sub, summonWidth, 78, colors.yellow, () => summonAction(refs), summonState.disabled || refs.movementLocked);
   summon.x = (layout.width - summonWidth) / 2;
-  summon.y = layout.height - 108;
+  summon.y = layout.height - 104;
   refs.controls.addChild(summon);
-
   const mythicReady = getMythicCraftAvailability(refs.state).some((item) => item.canCraft);
-  const mythic = makeButton("신화", mythicReady ? "가능" : "조합", 92, 68, colors.orange, () => showMythicMenu(refs), isFinished(refs.state) || refs.movementLocked);
+  const mythic = makeButton("신화", mythicReady ? "가능" : "조합", 92, 62, colors.orange, () => showMythicMenu(refs), isFinished(refs.state) || refs.movementLocked);
   mythic.x = 18;
-  mythic.y = layout.height - 104;
+  mythic.y = layout.height - 96;
   refs.controls.addChild(mythic);
-
-  const gamble = makeButton("도박", "행운석 2", 92, 68, colors.blue, () => gambleAction(refs), isFinished(refs.state) || isBoardFull(refs.state.board) || refs.state.luckStones < 2 || refs.movementLocked);
+  const gamble = makeButton("도박", "행운석 2", 92, 62, colors.blue, () => gambleAction(refs), isFinished(refs.state) || isBoardFull(refs.state.board) || refs.state.luckStones < 2 || refs.movementLocked);
   gamble.x = layout.width - 110;
-  gamble.y = layout.height - 104;
+  gamble.y = layout.height - 96;
   refs.controls.addChild(gamble);
-
   const upgradeCost = getPowerUpgradeCost(refs.state.powerUpgradeLevel);
-  const upgrade = makeButton("공격력 강화", `Lv.${refs.state.powerUpgradeLevel} / ${upgradeCost}`, 174, 42, 0x47584a, () => attackUpgradeAction(refs), isFinished(refs.state) || refs.state.resources < upgradeCost || refs.movementLocked);
-  upgrade.x = (layout.width - 174) / 2;
-  upgrade.y = layout.height - 154;
+  const upgrade = makeButton("공격력 강화", `비용 ${upgradeCost}`, 184, 50, 0x47584a, () => attackUpgradeAction(refs), isFinished(refs.state) || refs.state.resources < upgradeCost || refs.movementLocked);
+  upgrade.x = (layout.width - 184) / 2;
+  upgrade.y = layout.height - 166;
   refs.controls.addChild(upgrade);
-
-  const phaseLabel = refs.wavePhase === "combat" ? `${refs.activeEnemies.filter((enemy) => enemy.alive).length}마리` : refs.wavePhase === "result" ? "정산" : "자동 진행";
-  const wave = makeButton("웨이브", phaseLabel, 112, 48, refs.wavePhase === "combat" ? colors.red : colors.orange, () => featureAction(refs, "웨이브는 자동으로 진행돼요"), isFinished(refs.state) || refs.movementLocked);
+  const phaseLabel = refs.wavePhase === "combat" ? `${refs.activeEnemies.filter((enemy) => enemy.alive).length}마리` : refs.wavePhase === "result" ? "바로 시작" : "시작";
+  const wave = makeButton("웨이브", phaseLabel, 112, 48, refs.wavePhase === "combat" ? colors.red : colors.orange, () => waveButtonAction(refs), isFinished(refs.state) || refs.movementLocked || refs.wavePhase === "combat");
   wave.x = layout.width - 132;
   wave.y = layout.mapTop + 105;
   refs.controls.addChild(wave);
@@ -709,7 +635,6 @@ function floatText(refs: GameRefs, value: string, x: number, y: number, color: n
   floatingText.x = x;
   floatingText.y = y;
   refs.effects.addChild(floatingText);
-
   addAnimation(refs, {
     duration: 700,
     update: (progress) => {
@@ -721,8 +646,10 @@ function floatText(refs: GameRefs, value: string, x: number, y: number, color: n
   });
 }
 
-function featureAction(refs: GameRefs, message: string) {
-  floatText(refs, message, refs.app.renderer.width / 2, refs.app.renderer.height * 0.56, colors.white);
+function waveButtonAction(refs: GameRefs) {
+  if (refs.wavePhase === "combat") return;
+  refs.nextWaveTimer = 0;
+  startAutoWave(refs);
 }
 
 function drawMonsterShape(target: Container, boss: boolean, size: number, enemyId: string) {
@@ -732,7 +659,6 @@ function drawMonsterShape(target: Container, boss: boolean, size: number, enemyI
   body.fill({ color: fill, alpha: 1 });
   body.stroke({ color: 0x2b331d, width: boss ? 4 : 2 });
   target.addChild(body);
-
   const eyes = new Graphics();
   eyes.circle(-size * 0.35, -size * 0.15, Math.max(2, size * 0.12));
   eyes.circle(size * 0.35, -size * 0.15, Math.max(2, size * 0.12));
@@ -746,12 +672,10 @@ function drawEnemyHpBar(enemy: ActiveEnemy) {
   container.name = "hpbar";
   container.y = enemy.boss ? -38 : -24;
   const width = enemy.boss ? 56 : 32;
-
   const background = new Graphics();
   background.roundRect(-width / 2, 0, width, 5, 3);
   background.fill({ color: 0x2a1515, alpha: 0.9 });
   container.addChild(background);
-
   const fill = new Graphics();
   fill.roundRect(-width / 2, 0, width * Math.max(0, enemy.hp / enemy.maxHp), 5, 3);
   fill.fill({ color: enemy.boss ? colors.red : colors.green, alpha: 1 });
@@ -765,7 +689,6 @@ function showBossWarning(refs: GameRefs) {
   warning.x = refs.app.renderer.width / 2;
   warning.y = refs.app.renderer.height * 0.26;
   refs.effects.addChild(warning);
-
   addAnimation(refs, {
     duration: 1350,
     update: (progress) => {
@@ -779,7 +702,6 @@ function showBossWarning(refs: GameRefs) {
 function createEnemy(refs: GameRefs, enemyId: string, bossOverride = false): ActiveEnemy | null {
   const definition = getEnemyById(enemyId);
   if (!definition) return null;
-
   const boss = bossOverride || definition.type === "boss";
   const wave = refs.state.currentWave;
   const hpScale = 0.68 + wave * 0.11 + (boss ? wave * 0.16 : 0);
@@ -787,7 +709,6 @@ function createEnemy(refs: GameRefs, enemyId: string, bossOverride = false): Act
   const sprite = new Container();
   drawMonsterShape(sprite, boss, boss ? 24 : definition.type === "tank" || definition.type === "elite" ? 16 : 12, enemyId);
   refs.effects.addChild(sprite);
-
   const enemy: ActiveEnemy = {
     id: refs.nextEnemyId,
     enemyId,
@@ -814,11 +735,9 @@ function spawnMonsters(refs: GameRefs) {
   refs.waveKilled = 0;
   refs.waveReward = 0;
   refs.waveLostLives = 0;
-
   const wave = getWaveByNumber(refs.state.currentWave);
   if (!wave) return;
   if (wave.isBossWave) showBossWarning(refs);
-
   for (const group of wave.enemyGroups) {
     for (let index = 0; index < group.count; index += 1) {
       const enemy = createEnemy(refs, group.enemyId, wave.isBossWave && group.enemyId === "server-crasher");
@@ -831,19 +750,17 @@ function spawnMonsters(refs: GameRefs) {
 
 function updateEnemies(refs: GameRefs, deltaSeconds: number) {
   const layout = createGameLayout(refs.app.renderer.width, refs.app.renderer.height);
-
   for (const enemy of refs.activeEnemies) {
     if (!enemy.alive) continue;
     enemy.progress += (deltaSeconds * enemy.speed) / WAVE_COMBAT_SECONDS;
-
     if (enemy.progress >= 1) {
       enemy.alive = false;
       refs.waveLostLives += enemy.damageToLife;
       enemy.sprite.destroy({ children: true });
+      invalidateHud(refs);
       floatText(refs, `누수 -${enemy.damageToLife}`, refs.app.renderer.width / 2, refs.app.renderer.height * 0.35, colors.red);
       continue;
     }
-
     const point = getPathPoint(layout, Math.max(0, enemy.progress));
     enemy.x = point.x;
     enemy.y = point.y;
@@ -856,12 +773,10 @@ function updateEnemies(refs: GameRefs, deltaSeconds: number) {
 function pickAttackTarget(refs: GameRefs, role: HeroRole | undefined): ActiveEnemy | null {
   const liveEnemies = refs.activeEnemies.filter((enemy) => enemy.alive && enemy.progress >= 0);
   if (liveEnemies.length === 0) return null;
-
   if (role === "damage") {
     const boss = liveEnemies.find((enemy) => enemy.boss);
     if (boss) return boss;
   }
-
   liveEnemies.sort((a, b) => b.progress - a.progress);
   return liveEnemies[0] ?? null;
 }
@@ -876,11 +791,9 @@ function getHeroDamage(refs: GameRefs, hero: BoardHero) {
 
 function damageEnemy(refs: GameRefs, enemy: ActiveEnemy, damage: number) {
   if (!enemy.alive) return;
-
   enemy.hp = Math.max(0, enemy.hp - damage);
   drawEnemyHpBar(enemy);
   if (enemy.hp > 0) return;
-
   enemy.alive = false;
   refs.waveKilled += 1;
   refs.waveReward += enemy.reward;
@@ -891,9 +804,10 @@ function damageEnemy(refs: GameRefs, enemy: ActiveEnemy, damage: number) {
     defeatedBosses: refs.state.defeatedBosses + (enemy.boss ? 1 : 0),
     score: refs.state.score + enemy.reward * 3 + (enemy.boss ? 250 : 20),
   };
+  invalidateHud(refs);
   floatText(refs, `+${enemy.reward}`, enemy.x, enemy.y - 26, colors.green);
   enemy.sprite.destroy({ children: true });
-  drawTopHud(refs, createGameLayout(refs.app.renderer.width, refs.app.renderer.height));
+  drawTopHud(refs, createGameLayout(refs.app.renderer.width, refs.app.renderer.height), true);
   drawControls(refs, createGameLayout(refs.app.renderer.width, refs.app.renderer.height));
 }
 
@@ -904,22 +818,18 @@ function applyTankSlow(enemy: ActiveEnemy) {
 function applySupportSplash(refs: GameRefs, target: ActiveEnemy, damage: number) {
   for (const enemy of refs.activeEnemies) {
     if (!enemy.alive || enemy.id === target.id) continue;
-    if (Math.hypot(enemy.x - target.x, enemy.y - target.y) <= 72) {
-      damageEnemy(refs, enemy, Math.max(1, Math.floor(damage * 0.35)));
-    }
+    if (Math.hypot(enemy.x - target.x, enemy.y - target.y) <= 72) damageEnemy(refs, enemy, Math.max(1, Math.floor(damage * 0.35)));
   }
 }
 
 function spawnAttackEffects(refs: GameRefs) {
   const heroes = getAllBoardHeroes(refs.state.board);
   if (heroes.length === 0) return;
-
   heroes.slice(0, Math.min(heroes.length, MAX_ATTACKERS_PER_TICK)).forEach((hero, index) => {
     const definition = getHeroById(hero.heroId);
     const role = definition?.role ?? "damage";
     const target = pickAttackTarget(refs, role);
     if (!target) return;
-
     const fromIndex = hero.position.row * refs.state.boardSize.columns + hero.position.column;
     const from = getCellCenter(refs, fromIndex);
     const damage = getHeroDamage(refs, hero);
@@ -930,7 +840,6 @@ function spawnAttackEffects(refs: GameRefs) {
     projectile.y = from.y;
     refs.effects.addChild(projectile);
     const targetAtFire = { x: target.x, y: target.y };
-
     addAnimation(refs, {
       duration: 280 + index * 18,
       update: (progress) => {
@@ -958,7 +867,6 @@ function summonAction(refs: GameRefs) {
     floatText(refs, summonState.sub, refs.app.renderer.width / 2, refs.app.renderer.height - 140, colors.red);
     return;
   }
-
   const result = summonHero(refs.state, refs.random);
   refs.state = result.state;
   refs.lastSummonedIndex = getCellIndexFromHero(refs.state, result.summonedHero);
@@ -969,14 +877,12 @@ function summonAction(refs: GameRefs) {
 function gambleAction(refs: GameRefs) {
   clearMenu(refs);
   if (refs.movementLocked) return;
-
   const result = gambleSummon(refs.state, "epic-gamble", refs.random);
   if (!result.summonedHero) {
     const message = result.reason === "not_enough_luck_stones" ? "행운석 부족" : result.reason === "board_full" ? "보드 가득" : "도박 실패";
     floatText(refs, message, refs.app.renderer.width / 2, refs.app.renderer.height - 140, colors.red);
     return;
   }
-
   refs.state = result.state;
   refs.lastSummonedIndex = getCellIndexFromHero(refs.state, result.summonedHero);
   render(refs);
@@ -986,7 +892,6 @@ function gambleAction(refs: GameRefs) {
 function attackUpgradeAction(refs: GameRefs) {
   clearMenu(refs);
   if (refs.movementLocked) return;
-
   const result = upgradeAttack(refs.state);
   refs.state = result.state;
   render(refs);
@@ -1003,42 +908,43 @@ function showMythicMenu(refs: GameRefs) {
   clearMenu(refs);
   const list = getMythicCraftAvailability(refs.state);
   const width = Math.min(360, refs.app.renderer.width - 24);
-  const height = 64 + list.length * 54;
+  const height = 72 + list.length * 54;
   const menu = new Container();
   menu.x = refs.app.renderer.width / 2 - width / 2;
   menu.y = Math.max(18, refs.app.renderer.height * 0.14);
   menu.addChild(makePanel(width, height, 0x2d2925, colors.orange, 16));
-
   const title = makeText("신화 조합", 19, colors.yellow);
   title.anchor.set(0.5, 0);
   title.x = width / 2;
   title.y = 14;
   menu.addChild(title);
-
+  const close = makeMenuButton("닫기", width - 70, 12, true, () => clearMenu(refs));
+  menu.addChild(close);
   list.forEach((item, index) => {
-    const y = 52 + index * 54;
+    const y = 58 + index * 54;
     const row = new Container();
     row.x = 12;
     row.y = y;
     row.eventMode = item.canCraft ? "static" : "none";
     row.cursor = item.canCraft ? "pointer" : "default";
     row.addChild(makePanel(width - 24, 46, item.canCraft ? colors.orange : 0x655e59, item.canCraft ? 0x51351e : 0x3d332e, 10));
-
     const name = makeText(item.recipe.displayName, 14, item.canCraft ? colors.white : 0xb7afa8);
     name.x = 12;
     name.y = 5;
     row.addChild(name);
-
     const parts = item.recipe.ingredients.map((ingredient) => ingredientText(ingredient.grade, ingredient.role, ingredient.count)).join(" + ");
     const recipe = makeText(parts, 10, item.canCraft ? colors.yellow : 0xb7afa8);
     recipe.x = 12;
     recipe.y = 25;
     row.addChild(recipe);
-
-    if (item.canCraft) row.on("pointertap", () => mythicCraftAction(refs, item.recipe.id));
+    if (item.canCraft) {
+      row.on("pointertap", (event: any) => {
+        event.stopPropagation();
+        mythicCraftAction(refs, item.recipe.id);
+      });
+    }
     menu.addChild(row);
   });
-
   refs.menuLayer.addChild(menu);
   refs.menu = menu;
 }
@@ -1050,7 +956,6 @@ function mythicCraftAction(refs: GameRefs, recipeId: string) {
     floatText(refs, "조합 재료 부족", refs.app.renderer.width / 2, refs.app.renderer.height * 0.56, colors.red);
     return;
   }
-
   refs.state = result.state;
   refs.lastSummonedIndex = getCellIndexFromHero(refs.state, result.craftedHero);
   render(refs);
@@ -1067,6 +972,7 @@ function showWaveResult(refs: GameRefs, summary: WaveSummary) {
 
 function startAutoWave(refs: GameRefs) {
   if (isFinished(refs.state) || refs.wavePhase === "combat") return;
+  clearMenu(refs);
   refs.wavePhase = "combat";
   refs.combatTimer = WAVE_COMBAT_SECONDS;
   refs.attackTimer = 0.25;
@@ -1075,7 +981,7 @@ function startAutoWave(refs: GameRefs) {
   spawnMonsters(refs);
 }
 
-function finishAutoWave(refs: GameRefs) {
+function finishAutoWave(refs: GameRefs, readyImmediately = false) {
   const alive = refs.activeEnemies.filter((enemy) => enemy.alive);
   let lostLives = refs.waveLostLives;
   for (const enemy of alive) {
@@ -1083,7 +989,6 @@ function finishAutoWave(refs: GameRefs) {
     enemy.alive = false;
     enemy.sprite.destroy({ children: true });
   }
-
   const leaked = alive.length + refs.waveLostLives;
   const perfect = lostLives <= 0;
   const luckStoneReward = perfect ? (isBossWave(refs.state) ? 2 : refs.state.currentWave % 3 === 0 ? 1 : 0) : 0;
@@ -1091,16 +996,8 @@ function finishAutoWave(refs: GameRefs) {
   const finalWave = refs.state.currentWave >= initialBalance.maxWave;
   const nextStatus = nextLives <= 0 ? "failed" : finalWave ? "cleared" : "playing";
   const nextWave = nextStatus === "playing" ? refs.state.currentWave + 1 : refs.state.currentWave;
-
   refs.activeEnemies = [];
-  refs.lastWaveSummary = {
-    killed: refs.waveKilled,
-    leaked,
-    lostLives,
-    reward: refs.waveReward,
-    luckStoneReward,
-    perfect,
-  };
+  refs.lastWaveSummary = { killed: refs.waveKilled, leaked, lostLives, reward: refs.waveReward, luckStoneReward, perfect };
   refs.state = {
     ...refs.state,
     lives: nextLives,
@@ -1111,15 +1008,17 @@ function finishAutoWave(refs: GameRefs) {
     score: refs.state.score + refs.waveKilled * 10 + (perfect ? 50 : 0),
   };
   refs.wavePhase = "result";
-  refs.resultTimer = WAVE_RESULT_SECONDS;
+  refs.resultTimer = readyImmediately ? 0.35 : WAVE_RESULT_SECONDS;
+  refs.nextWaveTimer = readyImmediately ? 0 : WAVE_COUNTDOWN_SECONDS;
   render(refs);
   showWaveResult(refs, refs.lastWaveSummary);
 }
 
 function render(refs: GameRefs) {
   const layout = createGameLayout(refs.app.renderer.width, refs.app.renderer.height);
+  invalidateHud(refs);
   drawBackground(refs, layout);
-  drawTopHud(refs, layout);
+  drawTopHud(refs, layout, true);
   drawBoard(refs, layout);
   drawControls(refs, layout);
 }
@@ -1136,16 +1035,14 @@ function tick(refs: GameRefs, deltaMs: number) {
     }
     return true;
   });
-
   if (isFinished(refs.state)) return;
-
+  const layout = createGameLayout(refs.app.renderer.width, refs.app.renderer.height);
   if (refs.wavePhase === "countdown") {
     refs.nextWaveTimer -= deltaSeconds;
     if (refs.nextWaveTimer <= 0) startAutoWave(refs);
-    else drawTopHud(refs, createGameLayout(refs.app.renderer.width, refs.app.renderer.height));
+    else drawTopHud(refs, layout);
     return;
   }
-
   if (refs.wavePhase === "combat") {
     refs.combatTimer -= deltaSeconds;
     refs.attackTimer -= deltaSeconds;
@@ -1154,17 +1051,17 @@ function tick(refs: GameRefs, deltaMs: number) {
       refs.attackTimer = isBossWave(refs.state) ? 0.34 : 0.48;
       spawnAttackEffects(refs);
     }
-    drawTopHud(refs, createGameLayout(refs.app.renderer.width, refs.app.renderer.height));
-    drawControls(refs, createGameLayout(refs.app.renderer.width, refs.app.renderer.height));
-    if (refs.combatTimer <= 0 || refs.activeEnemies.every((enemy) => !enemy.alive)) finishAutoWave(refs);
+    drawTopHud(refs, layout);
+    if (refs.combatTimer <= 0) finishAutoWave(refs, false);
+    else if (refs.activeEnemies.length > 0 && refs.activeEnemies.every((enemy) => !enemy.alive)) finishAutoWave(refs, true);
     return;
   }
-
   refs.resultTimer -= deltaSeconds;
+  drawTopHud(refs, layout);
   if (refs.resultTimer <= 0) {
     refs.wavePhase = "countdown";
-    refs.nextWaveTimer = WAVE_COUNTDOWN_SECONDS;
-    render(refs);
+    drawControls(refs, layout);
+    drawTopHud(refs, layout, true);
   }
 }
 
@@ -1199,8 +1096,8 @@ export function createPixiGame(parent: HTMLElement): PixiGameHandle {
     waveReward: 0,
     waveLostLives: 0,
     lastWaveSummary: null,
+    lastHudKey: "",
   };
-
   let destroyed = false;
 
   async function init() {
@@ -1211,12 +1108,10 @@ export function createPixiGame(parent: HTMLElement): PixiGameHandle {
       resolution: Math.min(window.devicePixelRatio || 1, 2),
       autoDensity: true,
     });
-
     if (destroyed) {
       app.destroy(true);
       return;
     }
-
     parent.appendChild(app.canvas);
     app.stage.addChild(stage);
     stage.eventMode = "static";
@@ -1226,18 +1121,15 @@ export function createPixiGame(parent: HTMLElement): PixiGameHandle {
     stage.on("pointerupoutside", (event: any) => finishCellDrag(refs, event.global.x, event.global.y));
     stage.addChild(refs.world, refs.board, refs.hud, refs.controls, refs.effects, refs.menuLayer);
     render(refs);
-
     app.renderer.on("resize", () => {
       stage.hitArea = new Rectangle(0, 0, app.renderer.width, app.renderer.height);
       clearMenu(refs);
       render(refs);
     });
-
     app.ticker.add((ticker) => tick(refs, ticker.deltaMS));
   }
 
   void init();
-
   return {
     cleanup: () => {
       destroyed = true;
