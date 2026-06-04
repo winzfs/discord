@@ -1,4 +1,26 @@
-export const colors = {
+type GameColorName =
+  | "sky"
+  | "forestDark"
+  | "forest"
+  | "grass"
+  | "grassLight"
+  | "field"
+  | "fieldLight"
+  | "dirt"
+  | "dirtDark"
+  | "wood"
+  | "panel"
+  | "panelDark"
+  | "white"
+  | "black"
+  | "red"
+  | "blue"
+  | "yellow"
+  | "orange"
+  | "green"
+  | "purple";
+
+export const colors: Record<GameColorName, number> = {
   sky: 0x7bbf43,
   forestDark: 0x3f7d2c,
   forest: 0x5f9f38,
@@ -19,9 +41,9 @@ export const colors = {
   orange: 0xff9f1c,
   green: 0x45b85f,
   purple: 0x9b5de5,
-} as const;
+};
 
-export function gradeColor(grade?: string) {
+export function gradeColor(grade?: string): number {
   if (grade === "legendary") return colors.yellow;
   if (grade === "epic") return colors.purple;
   if (grade === "rare") return colors.blue;
