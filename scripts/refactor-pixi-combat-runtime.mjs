@@ -123,7 +123,9 @@ s = s.replace(
 );
 
 s = s.replace("const target = pickAttackTarget(refs.activeEnemies, role);", "const target = pickHeroAttackTarget(refs.activeEnemies, hero, role);");
+s = s.replace("const target = pickAttackTarget(refs, role);", "const target = pickHeroAttackTarget(refs.activeEnemies, hero, role);");
 s = s.replace("const damage = getHeroDamage(refs.state, hero);", "const damage = getHeroDamage(refs.state, hero);");
+s = s.replace("const damage = getHeroDamage(refs, hero);", "const damage = getHeroDamage(refs.state, hero);");
 s = s.replace("projectile.fill({ color: roleAccent(role), alpha: 1 });", "projectile.fill({ color: getRoleAccent(role), alpha: 1 });");
 s = s.replace("if (role === \"tank\") applyTankSlow(target);", "if (role === \"tank\") applyTankSlow(target, hero);");
 s = s.replace("damageEnemy(refs, target, damage);", "damageEnemy(refs, target, damage, hero);");
@@ -156,6 +158,11 @@ s = s.replaceAll('makePanel(width - 24, 46, item.canCraft ? colors.orange : 0x65
 s = s.replace(
   'const recipe = makeText(item.recipe.ingredients.map((ingredient) => ingredientText(ingredient)).join(" + "), 10, item.canCraft ? colors.yellow : 0xb7afa8);',
   'const progress = getMythicIngredientProgress(refs.state, item.recipe);\n    const recipe = makeText(progress.map((part) => part.label + " " + part.owned + "/" + part.required).join("  "), 10, item.canCraft ? colors.yellow : 0xb7afa8);',
+);
+
+s = s.replace(
+  'item.recipe.ingredients.map((ingredient) => ingredientText(ingredient.grade, ingredient.role, ingredient.count)).join(" + ")',
+  'progress.map((part) => part.label + " " + part.owned + "/" + part.required).join("  ")',
 );
 
 s = s.replace(
