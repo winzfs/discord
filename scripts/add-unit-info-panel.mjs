@@ -182,7 +182,9 @@ s = s.replace(
 
 s = s.replace(
   `    stage.on("pointermove", (event: any) => moveDragGhost(refs, event.global.x, event.global.y));`,
-  `    stage.on("pointerdown", () => clearUnitSelection(refs));
+  `    stage.on("pointerdown", (event: any) => {
+      if (event.target === stage) clearUnitSelection(refs);
+    });
     stage.on("pointermove", (event: any) => moveDragGhost(refs, event.global.x, event.global.y));`,
 );
 
