@@ -1,6 +1,7 @@
 import { Container } from "pixi.js";
 import { colors } from "./gameTheme";
 import { makePixiPanel, makePixiText } from "./pixiSharedView";
+import { makePixiTouchBoundary, stopPixiPropagation } from "./pixiPointerGuards";
 
 export type PixiUnitMenuCenter = {
   x: number;
@@ -31,6 +32,8 @@ function createUnitMenuButton(label: string, x: number, y: number, enabled: bool
   container.addChild(labelText);
 
   if (enabled) {
+    container.on("pointerdown", stopPixiPropagation);
+    container.on("pointerup", stopPixiPropagation);
     container.on("pointertap", (event: any) => {
       event.stopPropagation();
       onTap();
@@ -44,6 +47,7 @@ export function createPixiUnitMenuView(options: PixiUnitMenuViewOptions) {
   const menu = new Container();
   menu.x = Math.max(8, Math.min(options.rendererWidth - 132, options.center.x - 62));
   menu.y = Math.max(8, options.center.y - options.center.cell * 0.95 - 38);
+  makePixiTouchBoundary(menu, 124, 42);
 
   const background = makePixiPanel(124, 42, 0x2d2925, 0x1d1714, 12);
   background.alpha = 0.92;
