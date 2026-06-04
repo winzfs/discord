@@ -57,6 +57,7 @@ import { createFloatingText } from "./pixiFloatingTextView";
 import { mountPixiGameLayers } from "./pixiGameLayerOrder";
 import { createPixiMythicMenuView } from "./pixiMythicMenuView";
 import { createPixiUnitMenuView } from "./pixiUnitMenuView";
+import { clearPixiUnitInfoView, drawPixiUnitInfoView } from "./pixiUnitInfoView";
 import { formatMythicRecipeText } from "./pixiMythicRecipeText";
 import { clearPixiContainer, makePixiPanel, makePixiText } from "./pixiSharedView";
 import { getPixiPathPoint } from "./pixiPathRuntime";
@@ -119,6 +120,7 @@ type GameRefs = {
   lastSummonedIndex: number | null;
   dragging: DragState | null;
   movementLocked: boolean;
+  selectedCellIndex: number | null;
   menu: Container | null;
   wavePhase: WavePhase;
   nextWaveTimer: number;
@@ -166,6 +168,38 @@ function addAnimation(refs: GameRefs, animation: Omit<Animation, "age">) {
 function clearMenu(refs: GameRefs) {
   refs.menu?.destroy({ children: true });
   refs.menu = null;
+}
+
+function clearUnitSelection(refs: GameRefs) {
+  refs.selectedCellIndex = null;
+  clearPixiUnitInfoView(refs.info);
+}
+
+function drawSelectedUnitInfo(refs: GameRefs) {
+  if (refs.selectedCellIndex === null) {
+    clearPixiUnitInfoView(refs.info);
+    return;
+  }
+
+  const cell = refs.state.board[refs.selectedCellIndex];
+  const hero = cell?.units[cell.units.length - 1];
+  if (!cell || !hero) {
+    clearUnitSelection(refs);
+    return;
+  }
+
+  drawPixiUnitInfoView(refs.info, {
+    hero,
+    stackCount: cell.units.length,
+    cellIndex: refs.selectedCellIndex,
+    rendererWidth: refs.app.renderer.width,
+    rendererHeight: refs.app.renderer.height,
+  });
+}
+
+function clearMenuAndUnitInfo(refs: GameRefs) {
+  clearMenu(refs);
+  clearUnitSelection(refs);
 }
 
 function clearDrag(refs: GameRefs) {
@@ -252,6 +286,7 @@ function beginCellDrag(refs: GameRefs, sourceIndex: number, globalX: number, glo
   if (!movingHero) return;
 
   clearMenu(refs);
+  clearUnitSelection(refs);
   clearDrag(refs);
 
   const ghost = createUnitGhost(movingHero, cell, 0);
@@ -371,6 +406,8 @@ function showUnitMenu(refs: GameRefs, cellIndex: number) {
   if (!cell || cell.units.length === 0) return;
 
   clearMenu(refs);
+  refs.selectedCellIndex = cellIndex;
+  drawSelectedUnitInfo(refs);
 
   const menu = createPixiUnitMenuView({
     center: getCellCenter(refs, cellIndex),
@@ -384,7 +421,7 @@ function showUnitMenu(refs: GameRefs, cellIndex: number) {
 }
 
 function mergeMenuAction(refs: GameRefs, cellIndex: number) {
-  clearMenu(refs);
+  clearMenuAndUnitInfo(refs);
   const result = mergeStackedCell(refs.state, cellIndex, refs.random);
   if (!result.mergedHero) {
     const message = result.reason === "not_full_stack" ? "3마리 필요" : result.reason === "max_grade" ? "최고 등급" : "합성 불가";
@@ -399,7 +436,7 @@ function mergeMenuAction(refs: GameRefs, cellIndex: number) {
 }
 
 function sellMenuAction(refs: GameRefs, cellIndex: number) {
-  clearMenu(refs);
+  clearMenuAndUnitInfo(refs);
   const result = sellTopUnitInCell(refs.state, cellIndex);
   if (!result.soldHero) {
     floatText(refs, "판매 불가", refs.app.renderer.width / 2, refs.app.renderer.height * 0.52, colors.red);
@@ -692,7 +729,7 @@ function spawnAttackEffects(refs: GameRefs) {
 }
 
 function summonAction(refs: GameRefs) {
-  clearMenu(refs);
+  clearMenuAndUnitInfo(refs);
   const summonState = getSummonButtonState(refs.state);
   if (summonState.disabled || refs.movementLocked) {
     floatText(refs, summonState.sub, refs.app.renderer.width / 2, refs.app.renderer.height - 140, colors.red);
@@ -706,7 +743,7 @@ function summonAction(refs: GameRefs) {
 }
 
 function gambleAction(refs: GameRefs) {
-  clearMenu(refs);
+  clearMenuAndUnitInfo(refs);
   if (refs.movementLocked) return;
   const result = gambleSummon(refs.state, "epic-gamble", refs.random);
   if (!result.summonedHero) {
@@ -721,7 +758,7 @@ function gambleAction(refs: GameRefs) {
 }
 
 function attackUpgradeAction(refs: GameRefs) {
-  clearMenu(refs);
+  clearMenuAndUnitInfo(refs);
   if (refs.movementLocked) return;
   const result = upgradeAttack(refs.state);
   refs.state = result.state;
@@ -779,7 +816,7 @@ function showWaveResult(refs: GameRefs, summary: WaveSummary) {
 
 function startAutoWave(refs: GameRefs) {
   if (isFinished(refs.state) || refs.wavePhase === "combat") return;
-  clearMenu(refs);
+  clearMenuAndUnitInfo(refs);
   refs.wavePhase = "combat";
   refs.combatTimer = WAVE_COMBAT_SECONDS;
   refs.attackTimer = 0.25;
@@ -829,6 +866,7 @@ function render(refs: GameRefs) {
   drawBackground(refs, layout);
   drawTopHud(refs, layout);
   drawBoard(refs, layout);
+  drawSelectedUnitInfo(refs);
   drawControls(refs, layout);
 }
 
@@ -893,6 +931,7 @@ export function createPixiGame(parent: HTMLElement): PixiGameHandle {
     lastSummonedIndex: null,
     dragging: null,
     movementLocked: false,
+    selectedCellIndex: null,
     menu: null,
     wavePhase: "countdown",
     nextWaveTimer: WAVE_COUNTDOWN_SECONDS,
@@ -927,6 +966,11 @@ export function createPixiGame(parent: HTMLElement): PixiGameHandle {
     app.stage.addChild(stage);
     stage.eventMode = "static";
     stage.hitArea = new Rectangle(0, 0, app.renderer.width, app.renderer.height);
+    stage.on("pointerdown", (event: any) => {
+      const cellIndex = getCellIndexAtPoint(refs, event.global.x, event.global.y);
+      const cell = cellIndex === null ? null : refs.state.board[cellIndex];
+      if (!cell || cell.units.length === 0) clearMenuAndUnitInfo(refs);
+    });
     stage.on("pointermove", (event: any) => moveDragGhost(refs, event.global.x, event.global.y));
     stage.on("pointerup", (event: any) => finishCellDrag(refs, event.global.x, event.global.y));
     stage.on("pointerupoutside", (event: any) => finishCellDrag(refs, event.global.x, event.global.y));
@@ -942,7 +986,7 @@ export function createPixiGame(parent: HTMLElement): PixiGameHandle {
     render(refs);
     app.renderer.on("resize", () => {
       stage.hitArea = new Rectangle(0, 0, app.renderer.width, app.renderer.height);
-      clearMenu(refs);
+      clearMenuAndUnitInfo(refs);
       invalidateHud(refs);
       invalidateControls(refs);
       render(refs);
@@ -955,7 +999,7 @@ export function createPixiGame(parent: HTMLElement): PixiGameHandle {
   return {
     cleanup: () => {
       destroyed = true;
-      clearMenu(refs);
+      clearMenuAndUnitInfo(refs);
       clearDrag(refs);
       refs.activeEnemies.forEach(destroyActiveEnemy);
       app.destroy(true, { children: true });
