@@ -17,7 +17,7 @@ const shopItems = [
   { name: "폭풍거인", amount: "10", price: "3600", tag: "10% 할인" },
 ];
 
-const heroes = [
+const initialHeroes = [
   { name: "오크주술사", level: 1, shard: "207/5", role: "원거리", attack: "9.3K", speed: "2" },
   { name: "필스생성기", level: 1, shard: "207/5", role: "지원", attack: "7.8K", speed: "1.6" },
   { name: "발바", level: 1, shard: "207/5", role: "근거리", attack: "8.8K", speed: "1.4" },
@@ -26,7 +26,7 @@ const heroes = [
   { name: "드래곤", level: 6, shard: "207/70", role: "광역", attack: "8.9K", speed: "1.1" },
 ];
 
-const artifacts = [
+const initialArtifacts = [
   { name: "강화 장갑", level: 1, progress: "0/2", effect: "치명타 피해 증가" },
   { name: "비전서", level: 1, progress: "1/2", effect: "스킬 피해 증가" },
   { name: "빙결봉", level: 1, progress: "1/2", effect: "빙결 확률 증가" },
@@ -49,14 +49,14 @@ const tabs: { id: TabId; label: string }[] = [
   { id: "artifacts", label: "유물" },
 ];
 
-function LobbyTopBar() {
+function LobbyTopBar({ gold, crystals }: { gold: number; crystals: number }) {
   return (
     <header className="lobby-topbar">
       <div className="lobby-profile">
         <div className="lobby-avatar">오</div>
         <div><strong>오파후</strong><span>Lv.12</span></div>
       </div>
-      <div className="lobby-currencies"><span>30/30</span><span>13580</span><span>4550</span></div>
+      <div className="lobby-currencies"><span>30/30</span><span>{gold}</span><span>{crystals}</span></div>
     </header>
   );
 }
@@ -73,20 +73,22 @@ function LobbyStage({ difficulty, onDifficulty }: { difficulty: number; onDiffic
   );
 }
 
-function ShopView() {
+function ShopView({ onPick }: { onPick: (name: string, price: string) => void }) {
   return (
     <section className="lobby-panel">
       <h2>상점</h2>
       <div className="shop-grid">
         {shopItems.map((item) => (
-          <article className="shop-card" key={item.name}><b>{item.tag}</b><h3>{item.name}</h3><div className="shop-icon">{item.amount}</div><strong className="price">{item.price}</strong></article>
+          <button className="shop-card" key={item.name} type="button" onClick={() => onPick(item.name, item.price)}>
+            <b>{item.tag}</b><h3>{item.name}</h3><div className="shop-icon">{item.amount}</div><strong className="price">{item.price}</strong>
+          </button>
         ))}
       </div>
     </section>
   );
 }
 
-function HeroesView({ onDetail }: { onDetail: (detail: Detail) => void }) {
+function HeroesView({ heroes, onDetail }: { heroes: typeof initialHeroes; onDetail: (detail: Detail) => void }) {
   return (
     <section className="lobby-panel">
       <div className="panel-tabs"><b>영웅</b><span>신화</span></div>
@@ -112,7 +114,7 @@ function BattleView({ difficulty }: { difficulty: number }) {
   );
 }
 
-function ArtifactsView({ onDetail }: { onDetail: (detail: Detail) => void }) {
+function ArtifactsView({ artifacts, onDetail }: { artifacts: typeof initialArtifacts; onDetail: (detail: Detail) => void }) {
   return (
     <section className="lobby-panel">
       <h2>유물</h2>
@@ -127,7 +129,7 @@ function ArtifactsView({ onDetail }: { onDetail: (detail: Detail) => void }) {
   );
 }
 
-function DetailPanel({ detail, onClose }: { detail: Detail; onClose: () => void }) {
+function DetailPanel({ detail, onClose, onUpgrade }: { detail: Detail; onClose: () => void; onUpgrade: () => void }) {
   return (
     <div className="detail-drawer">
       <button type="button" onClick={onClose}>닫기</button>
@@ -135,7 +137,7 @@ function DetailPanel({ detail, onClose }: { detail: Detail; onClose: () => void 
       <h2>{detail.title}</h2>
       <p>{detail.subtitle}</p>
       {detail.stats.map((stat) => <strong key={stat}>{stat}</strong>)}
-      <button className="lobby-upgrade" type="button">업그레이드</button>
+      <button className="lobby-upgrade" type="button" onClick={onUpgrade}>업그레이드</button>
     </div>
   );
 }
@@ -143,17 +145,50 @@ function DetailPanel({ detail, onClose }: { detail: Detail; onClose: () => void 
 export function LobbyPage() {
   const [activeTab, setActiveTab] = useState<TabId>("battle");
   const [difficulty, setDifficulty] = useState(3);
+  const [gold, setGold] = useState(13580);
+  const [crystals, setCrystals] = useState(4550);
+  const [heroes, setHeroes] = useState(initialHeroes);
+  const [artifacts, setArtifacts] = useState(initialArtifacts);
   const [detail, setDetail] = useState<Detail | null>(null);
+  const [notice, setNotice] = useState("상점, 영웅, 전투, 유물을 확인해보세요.");
+
+  const buyShopItem = (name: string, price: string) => {
+    const cost = Number(price);
+    if (Number.isNaN(cost)) {
+      setCrystals((value) => value + 30);
+      setNotice(name + " 수령 완료");
+      return;
+    }
+    if (gold < cost) {
+      setNotice("골드 부족");
+      return;
+    }
+    setGold((value) => value - cost);
+    setNotice(name + " 구매 완료");
+  };
+
+  const upgradeSelected = () => {
+    if (!detail) return;
+    if (gold < 1000) {
+      setNotice("골드 부족");
+      return;
+    }
+    setGold((value) => value - 1000);
+    setHeroes((list) => list.map((hero) => hero.name === detail.title ? { ...hero, level: hero.level + 1 } : hero));
+    setArtifacts((list) => list.map((item) => item.name === detail.title ? { ...item, level: item.level + 1 } : item));
+    setNotice(detail.title + " 업그레이드 완료");
+  };
 
   return (
     <main className="lobby-shell">
-      <LobbyTopBar />
+      <LobbyTopBar gold={gold} crystals={crystals} />
       <LobbyStage difficulty={difficulty} onDifficulty={() => setDifficulty((value) => (value >= 5 ? 1 : value + 1))} />
-      {activeTab === "shop" && <ShopView />}
-      {activeTab === "heroes" && <HeroesView onDetail={setDetail} />}
+      <p className="lobby-notice">{notice}</p>
+      {activeTab === "shop" && <ShopView onPick={buyShopItem} />}
+      {activeTab === "heroes" && <HeroesView heroes={heroes} onDetail={setDetail} />}
       {activeTab === "battle" && <BattleView difficulty={difficulty} />}
-      {activeTab === "artifacts" && <ArtifactsView onDetail={setDetail} />}
-      {detail && <DetailPanel detail={detail} onClose={() => setDetail(null)} />}
+      {activeTab === "artifacts" && <ArtifactsView artifacts={artifacts} onDetail={setDetail} />}
+      {detail && <DetailPanel detail={detail} onClose={() => setDetail(null)} onUpgrade={upgradeSelected} />}
       <nav className="lobby-bottom-nav">
         {tabs.map((tab) => <button className={activeTab === tab.id ? "active" : ""} key={tab.id} type="button" onClick={() => { setActiveTab(tab.id); setDetail(null); }}>{tab.label}</button>)}
       </nav>
