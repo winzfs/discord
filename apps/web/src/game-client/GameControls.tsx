@@ -54,7 +54,7 @@ export function GameControls({ canInteract, onSummon, onMerge, onClearWave, onLe
         type="button"
         disabled={!canInteract}
         onClick={() => {
-          const result = onMerge("normal");
+          const result = onMerge("common");
           onMessage(describeMergeResult(result));
         }}
       >
