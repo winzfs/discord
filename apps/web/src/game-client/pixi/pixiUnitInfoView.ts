@@ -1,7 +1,15 @@
 import { Container } from "pixi.js";
 import { getHeroById, type BoardHero } from "@discord-random-defense/game";
-import { colors, gradeLabel } from "./gameTheme";
+import { colors } from "./gameTheme";
 import { clearPixiContainer, makePixiPanel, makePixiText } from "./pixiSharedView";
+
+function gradeLabel(grade: string | undefined) {
+  if (grade === "mythic") return "신화";
+  if (grade === "legendary") return "전설";
+  if (grade === "epic") return "영웅";
+  if (grade === "rare") return "희귀";
+  return "일반";
+}
 
 function roleLabel(role: string | undefined) {
   if (role === "tank") return "탱커";
