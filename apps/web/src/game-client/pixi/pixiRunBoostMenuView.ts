@@ -12,6 +12,8 @@ export type PixiRunBoostMenuOptions = {
   onSelect: (boostId: RunBoostId) => void;
 };
 
+const mutedText = 0xb8aaa0;
+
 const labels: Record<RunBoostId, { name: string; desc: string }> = {
   attack: { name: "공격 강화", desc: "이번 판 전체 피해 증가" },
   economy: { name: "경제 강화", desc: "처치 코인 보상 증가" },
@@ -52,7 +54,7 @@ export function createPixiRunBoostMenuView(options: PixiRunBoostMenuOptions) {
   title.y = y + 30;
   root.addChild(title);
 
-  const subtitle = makePixiText("코인을 사용해 이번 판만 적용되는 효과를 고르세요", 13, colors.muted);
+  const subtitle = makePixiText("코인을 사용해 이번 판만 적용되는 효과를 고르세요", 13, mutedText);
   subtitle.anchor.set(0.5);
   subtitle.x = options.rendererWidth / 2;
   subtitle.y = y + 56;
@@ -68,7 +70,7 @@ export function createPixiRunBoostMenuView(options: PixiRunBoostMenuOptions) {
     const button = new Graphics();
     button.roundRect(x + 16, rowY, width - 32, 54, 14);
     button.fill({ color: disabled ? 0x3f3634 : 0x5a463f, alpha: 1 });
-    button.stroke({ color: disabled ? 0x5f514d : colors.gold, width: disabled ? 1 : 2 });
+    button.stroke({ color: disabled ? 0x5f514d : colors.yellow, width: disabled ? 1 : 2 });
     button.eventMode = disabled ? "none" : "static";
     button.cursor = disabled ? "default" : "pointer";
     button.hitArea = new Rectangle(x + 16, rowY, width - 32, 54);
@@ -80,12 +82,12 @@ export function createPixiRunBoostMenuView(options: PixiRunBoostMenuOptions) {
     name.y = rowY + 8;
     root.addChild(name);
 
-    const desc = makePixiText(`${label.desc} / 현재 +${formatPercent(getRunBoostEffect(boost.id, level))}`, 11, colors.muted);
+    const desc = makePixiText(`${label.desc} / 현재 +${formatPercent(getRunBoostEffect(boost.id, level))}`, 11, mutedText);
     desc.x = x + 30;
     desc.y = rowY + 30;
     root.addChild(desc);
 
-    const price = makePixiText(level >= boost.maxLevel ? "MAX" : `${cost}C`, 15, disabled ? colors.muted : colors.gold);
+    const price = makePixiText(level >= boost.maxLevel ? "MAX" : `${cost}C`, 15, disabled ? mutedText : colors.yellow);
     price.anchor.set(1, 0.5);
     price.x = x + width - 30;
     price.y = rowY + 27;
