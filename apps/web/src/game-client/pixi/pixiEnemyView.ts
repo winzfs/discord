@@ -68,5 +68,6 @@ export function updateEnemyViewHp(view: EnemyView, hp: number, maxHp: number) {
 }
 
 export function destroyEnemyView(view: EnemyView) {
+  view.root.parent?.removeChild(view.root);
   view.root.destroy({ children: true });
 }
