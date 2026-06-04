@@ -2,12 +2,12 @@ import {
   craftMythicHero,
   gambleSummon,
   summonHero,
-  upgradeAttack,
 } from "@discord-random-defense/game";
 import type { BoardHero, GameState } from "@discord-random-defense/game";
 import { colors } from "./gameTheme";
 import type { GameRefs } from "./pixiGameTypes";
 import { createPixiMythicMenuView } from "./pixiMythicMenuView";
+import { showRunBoostMenu } from "./pixiRunBoostRuntime";
 
 export type SummonButtonState = {
   cost: number;
@@ -93,21 +93,8 @@ export function gambleAction(refs: GameRefs, options: PixiControlActionRuntimeOp
 }
 
 export function attackUpgradeAction(refs: GameRefs, options: PixiControlActionRuntimeOptions) {
-  options.clearMenuAndUnitInfo(refs);
-
   if (refs.movementLocked) return;
-
-  const result = upgradeAttack(refs.state);
-  refs.state = result.state;
-
-  options.render(refs);
-  options.floatText(
-    refs,
-    result.upgraded ? `공격력 강화 +${refs.state.powerUpgradeLevel}` : `코인 부족 ${result.cost}`,
-    refs.app.renderer.width / 2,
-    refs.app.renderer.height * 0.56,
-    result.upgraded ? colors.yellow : colors.red,
-  );
+  showRunBoostMenu(refs, options);
 }
 
 export function showMythicMenu(refs: GameRefs, options: PixiControlActionRuntimeOptions) {
