@@ -1,0 +1,159 @@
+import {
+  craftMythicHero,
+  gambleSummon,
+  summonHero,
+  upgradeAttack,
+} from "@discord-random-defense/game";
+import type { BoardHero, GameState } from "@discord-random-defense/game";
+import { colors } from "./gameTheme";
+import type { GameRefs } from "./pixiGameTypes";
+import { createPixiMythicMenuView } from "./pixiMythicMenuView";
+
+export type SummonButtonState = {
+  cost: number;
+  disabled: boolean;
+  sub: string;
+};
+
+export type PixiControlActionRuntimeOptions = {
+  clearMenu: (refs: GameRefs) => void;
+  clearMenuAndUnitInfo: (refs: GameRefs) => void;
+  getSummonButtonState: (state: GameState) => SummonButtonState;
+  getCellIndexFromHero: (state: GameState, hero: BoardHero | null) => number | null;
+  render: (refs: GameRefs) => void;
+  floatText: (refs: GameRefs, value: string, x: number, y: number, color: number) => void;
+};
+
+export function summonAction(refs: GameRefs, options: PixiControlActionRuntimeOptions) {
+  options.clearMenuAndUnitInfo(refs);
+
+  const summonState = options.getSummonButtonState(refs.state);
+
+  if (summonState.disabled || refs.movementLocked) {
+    options.floatText(
+      refs,
+      summonState.sub,
+      refs.app.renderer.width / 2,
+      refs.app.renderer.height - 140,
+      colors.red,
+    );
+    return;
+  }
+
+  const result = summonHero(refs.state, refs.random);
+  refs.state = result.state;
+  refs.lastSummonedIndex = options.getCellIndexFromHero(refs.state, result.summonedHero);
+
+  options.render(refs);
+  options.floatText(
+    refs,
+    result.summonedHero ? "소환!" : "실패",
+    refs.app.renderer.width / 2,
+    refs.app.renderer.height - 140,
+    result.summonedHero ? colors.yellow : colors.red,
+  );
+}
+
+export function gambleAction(refs: GameRefs, options: PixiControlActionRuntimeOptions) {
+  options.clearMenuAndUnitInfo(refs);
+
+  if (refs.movementLocked) return;
+
+  const result = gambleSummon(refs.state, "epic-gamble", refs.random);
+
+  if (!result.summonedHero) {
+    const message =
+      result.reason === "not_enough_luck_stones"
+        ? "행운석 부족"
+        : result.reason === "board_full"
+          ? "보드 가득"
+          : "도박 실패";
+
+    options.floatText(
+      refs,
+      message,
+      refs.app.renderer.width / 2,
+      refs.app.renderer.height - 140,
+      colors.red,
+    );
+    return;
+  }
+
+  refs.state = result.state;
+  refs.lastSummonedIndex = options.getCellIndexFromHero(refs.state, result.summonedHero);
+
+  options.render(refs);
+  options.floatText(
+    refs,
+    result.success ? "도박 성공!" : "보정 소환",
+    refs.app.renderer.width / 2,
+    refs.app.renderer.height - 140,
+    result.success ? colors.yellow : colors.blue,
+  );
+}
+
+export function attackUpgradeAction(refs: GameRefs, options: PixiControlActionRuntimeOptions) {
+  options.clearMenuAndUnitInfo(refs);
+
+  if (refs.movementLocked) return;
+
+  const result = upgradeAttack(refs.state);
+  refs.state = result.state;
+
+  options.render(refs);
+  options.floatText(
+    refs,
+    result.upgraded ? `공격력 강화 +${refs.state.powerUpgradeLevel}` : `코인 부족 ${result.cost}`,
+    refs.app.renderer.width / 2,
+    refs.app.renderer.height * 0.56,
+    result.upgraded ? colors.yellow : colors.red,
+  );
+}
+
+export function showMythicMenu(refs: GameRefs, options: PixiControlActionRuntimeOptions) {
+  options.clearMenu(refs);
+
+  const menu = createPixiMythicMenuView({
+    state: refs.state,
+    rendererWidth: refs.app.renderer.width,
+    rendererHeight: refs.app.renderer.height,
+    onClose: () => options.clearMenu(refs),
+    onCraft: (recipeId) => mythicCraftAction(refs, recipeId, options),
+  });
+
+  refs.menuLayer.addChild(menu);
+  refs.menu = menu;
+}
+
+export function mythicCraftAction(
+  refs: GameRefs,
+  recipeId: string,
+  options: PixiControlActionRuntimeOptions,
+) {
+  options.clearMenu(refs);
+
+  const result = craftMythicHero(refs.state, recipeId);
+
+  if (!result.craftedHero) {
+    options.floatText(
+      refs,
+      "조합 재료 부족",
+      refs.app.renderer.width / 2,
+      refs.app.renderer.height * 0.56,
+      colors.red,
+    );
+    return;
+  }
+
+  refs.state = result.state;
+  refs.lastSummonedIndex = options.getCellIndexFromHero(refs.state, result.craftedHero);
+
+  options.render(refs);
+  options.floatText(
+    refs,
+    "신화 조합 완성!",
+    refs.app.renderer.width / 2,
+    refs.app.renderer.height * 0.52,
+    colors.yellow,
+  );
+}

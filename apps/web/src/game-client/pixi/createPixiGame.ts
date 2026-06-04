@@ -1,9 +1,7 @@
 import { Application, Container, Rectangle } from "pixi.js";
 import {
-  craftMythicHero,
   createInitialGameState,
   createSeededRandom,
-  gambleSummon,
   getBoardCapacity,
   getBoardUnitCount,
   getMythicCraftAvailability,
@@ -12,8 +10,6 @@ import {
   initialBalance,
   isBoardFull,
   startWave,
-  summonHero,
-  upgradeAttack,
 } from "@discord-random-defense/game";
 import type { BoardHero, GameState } from "@discord-random-defense/game";
 import {
@@ -63,11 +59,17 @@ import {
   showUnitMenu,
   type PixiUnitActionRuntimeOptions,
 } from "./pixiUnitActionRuntime";
+import {
+  attackUpgradeAction,
+  gambleAction,
+  showMythicMenu,
+  summonAction,
+  type PixiControlActionRuntimeOptions,
+} from "./pixiControlActionRuntime";
 import { submitGameRun } from "../submitGameRun";
 import { addPixiAnimation, tickPixiAnimations, type PixiAnimation } from "./animation/animationManager";
 import { createFloatingText } from "./pixiFloatingTextView";
 import { mountPixiGameLayers } from "./pixiGameLayerOrder";
-import { createPixiMythicMenuView } from "./pixiMythicMenuView";
 import { clearPixiUnitInfoView, drawPixiUnitInfoView } from "./pixiUnitInfoView";
 import { formatMythicRecipeText } from "./pixiMythicRecipeText";
 import { clearPixiContainer, makePixiPanel, makePixiText } from "./pixiSharedView";
@@ -198,6 +200,17 @@ function drawTopHud(refs: GameRefs, layout: GameLayout) {
   });
 }
 
+function createControlActionRuntimeOptions(): PixiControlActionRuntimeOptions {
+  return {
+    clearMenu,
+    clearMenuAndUnitInfo,
+    getSummonButtonState,
+    getCellIndexFromHero,
+    render,
+    floatText,
+  };
+}
+
 function createUnitActionRuntimeOptions(): PixiUnitActionRuntimeOptions {
   return {
     clearMenu,
@@ -243,10 +256,10 @@ function getSummonButtonState(state: GameState) {
 function drawControls(refs: GameRefs, layout: GameLayout) {
   if (!refs.controlsView) {
     refs.controlsView = createPixiControlsView(refs.controls, {
-      onSummon: () => summonAction(refs),
-      onMythic: () => showMythicMenu(refs),
-      onGamble: () => gambleAction(refs),
-      onUpgrade: () => attackUpgradeAction(refs),
+      onSummon: () => summonAction(refs, createControlActionRuntimeOptions()),
+      onMythic: () => showMythicMenu(refs, createControlActionRuntimeOptions()),
+      onGamble: () => gambleAction(refs, createControlActionRuntimeOptions()),
+      onUpgrade: () => attackUpgradeAction(refs, createControlActionRuntimeOptions()),
       onWave: () => waveButtonAction(refs),
     });
   }
@@ -293,71 +306,6 @@ function showBossWarning(refs: GameRefs) {
     },
     done: () => warning.destroy(),
   });
-}
-
-function summonAction(refs: GameRefs) {
-  clearMenuAndUnitInfo(refs);
-  const summonState = getSummonButtonState(refs.state);
-  if (summonState.disabled || refs.movementLocked) {
-    floatText(refs, summonState.sub, refs.app.renderer.width / 2, refs.app.renderer.height - 140, colors.red);
-    return;
-  }
-  const result = summonHero(refs.state, refs.random);
-  refs.state = result.state;
-  refs.lastSummonedIndex = getCellIndexFromHero(refs.state, result.summonedHero);
-  render(refs);
-  floatText(refs, result.summonedHero ? "소환!" : "실패", refs.app.renderer.width / 2, refs.app.renderer.height - 140, result.summonedHero ? colors.yellow : colors.red);
-}
-
-function gambleAction(refs: GameRefs) {
-  clearMenuAndUnitInfo(refs);
-  if (refs.movementLocked) return;
-  const result = gambleSummon(refs.state, "epic-gamble", refs.random);
-  if (!result.summonedHero) {
-    const message = result.reason === "not_enough_luck_stones" ? "행운석 부족" : result.reason === "board_full" ? "보드 가득" : "도박 실패";
-    floatText(refs, message, refs.app.renderer.width / 2, refs.app.renderer.height - 140, colors.red);
-    return;
-  }
-  refs.state = result.state;
-  refs.lastSummonedIndex = getCellIndexFromHero(refs.state, result.summonedHero);
-  render(refs);
-  floatText(refs, result.success ? "도박 성공!" : "보정 소환", refs.app.renderer.width / 2, refs.app.renderer.height - 140, result.success ? colors.yellow : colors.blue);
-}
-
-function attackUpgradeAction(refs: GameRefs) {
-  clearMenuAndUnitInfo(refs);
-  if (refs.movementLocked) return;
-  const result = upgradeAttack(refs.state);
-  refs.state = result.state;
-  render(refs);
-  floatText(refs, result.upgraded ? `공격력 강화 +${refs.state.powerUpgradeLevel}` : `코인 부족 ${result.cost}`, refs.app.renderer.width / 2, refs.app.renderer.height * 0.56, result.upgraded ? colors.yellow : colors.red);
-}
-
-
-function showMythicMenu(refs: GameRefs) {
-  clearMenu(refs);
-  const menu = createPixiMythicMenuView({
-    state: refs.state,
-    rendererWidth: refs.app.renderer.width,
-    rendererHeight: refs.app.renderer.height,
-    onClose: () => clearMenu(refs),
-    onCraft: (recipeId) => mythicCraftAction(refs, recipeId),
-  });
-  refs.menuLayer.addChild(menu);
-  refs.menu = menu;
-}
-
-function mythicCraftAction(refs: GameRefs, recipeId: string) {
-  clearMenu(refs);
-  const result = craftMythicHero(refs.state, recipeId);
-  if (!result.craftedHero) {
-    floatText(refs, "조합 재료 부족", refs.app.renderer.width / 2, refs.app.renderer.height * 0.56, colors.red);
-    return;
-  }
-  refs.state = result.state;
-  refs.lastSummonedIndex = getCellIndexFromHero(refs.state, result.craftedHero);
-  render(refs);
-  floatText(refs, "신화 조합 완성!", refs.app.renderer.width / 2, refs.app.renderer.height * 0.52, colors.yellow);
 }
 
 function submitFinalResultOnce(refs: GameRefs) {
