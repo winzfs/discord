@@ -13,11 +13,10 @@ for (const text of required) {
   if (!s.includes(text)) throw new Error(`Missing expected text: ${text}`);
 }
 
-s = s.replace('import { colors } from "./gameTheme";', 'import { colors, gradeColor } from "./gameTheme";');
-if (!s.includes('import { getUnitInfoText } from "./pixiUnitInfoText";')) {
+if (!s.includes('import { drawUnitInfoPanelView } from "./pixiUnitInfoPanelView";')) {
   s = s.replace(
     '} from "./pixiBoardView";',
-    '} from "./pixiBoardView";\nimport { getUnitInfoText } from "./pixiUnitInfoText";\nimport { getUnitInfoPanelLayout } from "./pixiUnitInfoPanelLayout";',
+    '} from "./pixiBoardView";\nimport { drawUnitInfoPanelView } from "./pixiUnitInfoPanelView";',
   );
 }
 
@@ -72,33 +71,7 @@ function clearSelectedHeroIfMissing(refs: GameRefs) {
 
 function drawUnitInfoPanel(refs: GameRefs, layout: GameLayout) {
   clearSelectedHeroIfMissing(refs);
-  refs.info.removeChildren();
-
-  const hero = getSelectedHero(refs);
-  if (!hero) return;
-
-  const info = getUnitInfoText(hero);
-  const panelLayout = getUnitInfoPanelLayout(layout);
-  const panel = makePanel(panelLayout.width, panelLayout.height, 0x2d2925, gradeColor(hero.grade), 14);
-  panel.alpha = 0.96;
-  panel.x = panelLayout.x;
-  panel.y = panelLayout.y;
-  refs.info.addChild(panel);
-
-  const name = makeText(info.name, 17, colors.white);
-  name.x = panel.x + 14;
-  name.y = panel.y + 10;
-  refs.info.addChild(name);
-
-  const meta = makeText(info.meta, 12, gradeColor(hero.grade));
-  meta.x = panel.x + 14;
-  meta.y = panel.y + 34;
-  refs.info.addChild(meta);
-
-  const stats = makeText(info.stats, 12, colors.yellow);
-  stats.x = panel.x + 14;
-  stats.y = panel.y + 53;
-  refs.info.addChild(stats);
+  drawUnitInfoPanelView(refs.info, getSelectedHero(refs), layout);
 }
 `,
 );
