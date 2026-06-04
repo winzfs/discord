@@ -4,9 +4,12 @@ import {
   completeCurrentWave,
   createInitialGameState,
   createSeededRandom,
+  gambleSummon,
+  getPowerUpgradeCost,
   getSummonCost,
   startWave,
   summonHero,
+  upgradeAttack,
 } from "@discord-random-defense/game";
 import type { GameState } from "@discord-random-defense/game";
 import { createGameLayout } from "./gameLayout";
@@ -179,10 +182,15 @@ function drawTopHud(refs: GameRefs, layout: GameLayout) {
   units.y = layout.topHudY + 98;
   refs.hud.addChild(units);
 
-  const coin = text(`${refs.state.resources}`, 22, colors.yellow);
+  const coin = text(`코인 ${refs.state.resources}`, 18, colors.yellow);
   coin.x = 24;
-  coin.y = layout.bottomY - 32;
+  coin.y = layout.bottomY - 34;
   refs.hud.addChild(coin);
+
+  const luck = text(`행운석 ${refs.state.luckStones}`, 16, colors.blue);
+  luck.x = 24;
+  luck.y = layout.bottomY - 58;
+  refs.hud.addChild(luck);
 
   const score = text(`${refs.state.score}`, 18, colors.white);
   score.x = layout.width - 132;
@@ -299,24 +307,25 @@ function drawControls(refs: GameRefs, layout: GameLayout) {
   summon.y = layout.height - 108;
   refs.controls.addChild(summon);
 
-  const mythic = button("신화", "조합", 92, 68, colors.orange, () => featureAction(refs, "신화 조합은 다음 단계에서 열려요"), {
+  const mythic = button("신화", "조합", 92, 68, colors.orange, () => featureAction(refs, "오버드라이브 조합은 다음 단계에서 열려요"), {
     disabled: isFinished(refs.state),
   });
   mythic.x = 18;
   mythic.y = layout.height - 104;
   refs.controls.addChild(mythic);
 
-  const gamble = button("도박", "1회", 92, 68, colors.blue, () => featureAction(refs, "도박 소환은 다음 단계에서 열려요"), {
-    disabled: isFinished(refs.state),
+  const gamble = button("도박", "행운석 2", 92, 68, colors.blue, () => gambleAction(refs), {
+    disabled: isFinished(refs.state) || refs.state.board.every(Boolean) || refs.state.luckStones < 2,
   });
   gamble.x = layout.width - 110;
   gamble.y = layout.height - 104;
   refs.controls.addChild(gamble);
 
-  const upgrade = button("강화", "공격력", 148, 42, 0x47584a, () => featureAction(refs, "공격력 강화는 다음 단계에서 열려요"), {
-    disabled: isFinished(refs.state),
+  const upgradeCost = getPowerUpgradeCost(refs.state.powerUpgradeLevel);
+  const upgrade = button("공격력 강화", `Lv.${refs.state.powerUpgradeLevel} / ${upgradeCost}`, 174, 42, 0x47584a, () => attackUpgradeAction(refs), {
+    disabled: isFinished(refs.state) || refs.state.resources < upgradeCost,
   });
-  upgrade.x = (layout.width - 148) / 2;
+  upgrade.x = (layout.width - 174) / 2;
   upgrade.y = layout.height - 154;
   refs.controls.addChild(upgrade);
 
@@ -406,6 +415,36 @@ function summonAction(refs: GameRefs) {
       },
     });
   }
+}
+
+function gambleAction(refs: GameRefs) {
+  const index = refs.state.board.findIndex((slot) => slot === null);
+  const result = gambleSummon(refs.state, "epic-gamble", refs.random);
+
+  if (!result.summonedHero) {
+    const message = result.reason === "not_enough_luck_stones" ? "행운석 부족" : result.reason === "board_full" ? "보드 가득" : "도박 실패";
+    floatText(refs, message, refs.app.renderer.width / 2, refs.app.renderer.height - 140, colors.red);
+    return;
+  }
+
+  refs.state = result.state;
+  refs.lastSummonedIndex = index;
+  render(refs);
+  floatText(refs, result.success ? "도박 성공!" : "보정 소환", refs.app.renderer.width / 2, refs.app.renderer.height - 140, result.success ? colors.yellow : colors.blue);
+  addAnim(refs, {
+    duration: 420,
+    update: (p) => {
+      if (p > 0.8) refs.lastSummonedIndex = null;
+      drawBoard(refs, createGameLayout(refs.app.renderer.width, refs.app.renderer.height));
+    },
+  });
+}
+
+function attackUpgradeAction(refs: GameRefs) {
+  const result = upgradeAttack(refs.state);
+  refs.state = result.state;
+  render(refs);
+  floatText(refs, result.upgraded ? `공격력 강화 +${refs.state.powerUpgradeLevel}` : `코인 부족 ${result.cost}`, refs.app.renderer.width / 2, refs.app.renderer.height * 0.56, result.upgraded ? colors.yellow : colors.red);
 }
 
 function getWaveResultMessage(result: ReturnType<typeof completeCurrentWave>): { label: string; color: number } {
