@@ -27,11 +27,11 @@ const afterFloat = `function floatText(refs: GameRefs, value: string, x: number,
   floatingText.y = y;
   refs.effects.addChild(floatingText);
   addAnimation(refs, {
-    duration: 420,
+    duration: 250,
     update: (progress) => {
-      floatingText.y = y - progress * 28;
+      floatingText.y = y - progress * 14;
       floatingText.alpha = Math.max(0, 1 - progress);
-      floatingText.scale.set(1 + progress * 0.08);
+      floatingText.scale.set(1 + progress * 0.03);
     },
     done: () => {
       refs.effects.removeChild(floatingText);
@@ -45,6 +45,20 @@ if (!s.includes(beforeFloat) && !s.includes(afterFloat)) {
 }
 
 s = s.replace(beforeFloat, afterFloat);
+s = s.replace(
+  `    duration: 420,
+    update: (progress) => {
+      floatingText.y = y - progress * 28;
+      floatingText.alpha = Math.max(0, 1 - progress);
+      floatingText.scale.set(1 + progress * 0.08);
+    },`,
+  `    duration: 250,
+    update: (progress) => {
+      floatingText.y = y - progress * 14;
+      floatingText.alpha = Math.max(0, 1 - progress);
+      floatingText.scale.set(1 + progress * 0.03);
+    },`,
+);
 
 const beforeProjectileDestroy = `        projectile.destroy();`;
 const afterProjectileDestroy = `        refs.effects.removeChild(projectile);
