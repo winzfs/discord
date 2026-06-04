@@ -1,7 +1,8 @@
 import type { HeroGrade, HeroRole } from "../types/hero";
 
 export type MythicRecipeIngredient = {
-  grade: HeroGrade;
+  heroId?: string;
+  grade?: HeroGrade;
   role?: HeroRole;
   count: number;
 };
@@ -22,10 +23,10 @@ export const mythicRecipes: MythicRecipeDefinition[] = [
     role: "damage",
     attackStyle: "physical",
     ingredients: [
-      { grade: "epic", role: "damage", count: 2 },
-      { grade: "rare", role: "support", count: 1 },
+      { heroId: "pulse-ranger", count: 2 },
+      { heroId: "field-medic", count: 1 },
     ],
-    description: "초중반 보스 처리를 담당하는 물리 단일 딜러입니다.",
+    description: "펄스 사수와 야전 의무병을 조합해 만드는 단일 보스 딜러입니다.",
   },
   {
     id: "mythic-storm-caller",
@@ -33,11 +34,11 @@ export const mythicRecipes: MythicRecipeDefinition[] = [
     role: "damage",
     attackStyle: "magic",
     ingredients: [
-      { grade: "epic", role: "damage", count: 1 },
-      { grade: "epic", role: "support", count: 1 },
-      { grade: "rare", role: "damage", count: 1 },
+      { heroId: "plasma-mage", count: 1 },
+      { heroId: "field-medic", count: 1 },
+      { heroId: "spark-runner", count: 1 },
     ],
-    description: "광역 마법 피해로 웨이브 정리를 담당합니다.",
+    description: "플라즈마 마법과 지원 증폭을 합쳐 광역 마법 피해를 냅니다.",
   },
   {
     id: "mythic-shield-anchor",
@@ -45,10 +46,10 @@ export const mythicRecipes: MythicRecipeDefinition[] = [
     role: "tank",
     attackStyle: "control",
     ingredients: [
-      { grade: "epic", role: "tank", count: 2 },
-      { grade: "rare", role: "damage", count: 1 },
+      { heroId: "barrier-guard", count: 2 },
+      { heroId: "pulse-ranger", count: 1 },
     ],
-    description: "라인을 늦추고 코어 피해를 줄이는 제어형 신화 유닛입니다.",
+    description: "방벽 수호자를 중심으로 라인을 늦추는 제어형 신화 유닛입니다.",
   },
   {
     id: "mythic-overclocker",
@@ -56,10 +57,10 @@ export const mythicRecipes: MythicRecipeDefinition[] = [
     role: "support",
     attackStyle: "support",
     ingredients: [
-      { grade: "epic", role: "support", count: 2 },
-      { grade: "rare", role: "tank", count: 1 },
+      { heroId: "overclock-tech", count: 2 },
+      { heroId: "barrier-guard", count: 1 },
     ],
-    description: "아군 공격 속도와 스킬 회전을 보조하는 지원형 신화 유닛입니다.",
+    description: "기술 지원 유닛을 조합해 아군 공격 속도와 스킬 회전을 보조합니다.",
   },
   {
     id: "mythic-treasure-hacker",
@@ -67,10 +68,10 @@ export const mythicRecipes: MythicRecipeDefinition[] = [
     role: "support",
     attackStyle: "economy",
     ingredients: [
-      { grade: "legendary", role: "support", count: 1 },
-      { grade: "epic", role: "damage", count: 1 },
-      { grade: "rare", role: "support", count: 1 },
+      { heroId: "credit-hacker", count: 1 },
+      { heroId: "plasma-mage", count: 1 },
+      { heroId: "field-medic", count: 1 },
     ],
-    description: "코인과 행운석 운영을 돕는 경제형 고점 유닛입니다.",
+    description: "해킹과 지원 기술로 코인과 행운석 운영을 돕는 경제형 고점 유닛입니다.",
   },
 ];
