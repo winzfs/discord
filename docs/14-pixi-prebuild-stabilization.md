@@ -2,7 +2,7 @@
 
 ## 1. 현재 결론
 
-`Apply Pixi Refactor` GitHub Actions 실행 이후, 기존 빌드 전 패치 방식은 대부분 실제 소스 반영 방식으로 전환되었습니다.
+`Apply Pixi Refactor` GitHub Actions 실행 이후, 기존 빌드 전 패치 방식은 실제 소스 반영 방식으로 전환되었습니다.
 
 현재 `package.json`에는 더 이상 `prebuild:web`이 없습니다.
 
@@ -65,6 +65,28 @@ Expected 3 arguments, but got 1.
 ```
 
 현재는 `formatMythicRecipeText`가 실제 소스에서 직접 import되어 사용되는 구조로 리팩터되었습니다.
+
+### 2.3 legacy Pixi patch script 정리
+
+아래 legacy patch script들은 더 이상 빌드 경로에서 사용되지 않았고, 저장소 검색에서도 참조가 발견되지 않았습니다.
+
+```text
+scripts/fix-floating-text-lifetime.mjs
+scripts/add-unit-info-panel.mjs
+scripts/fix-mythic-recipe-display.mjs
+scripts/add-game-run-submission.mjs
+```
+
+위 4개 파일은 삭제되었습니다.
+
+삭제 커밋:
+
+```text
+7d5aa9c37ea37c0fd40242cad67cf3d507754a7c
+10b207f261a3b201ace29abbaac24425f033ad8f
+106c8c4c5fe6d41cd9b43f257e2cdde0190784c7
+e7cbc89da35d21385f17132f509c2c47d1b64d15
+```
 
 ## 3. 현재 `createPixiGame.ts` 반영 상태
 
@@ -196,34 +218,19 @@ function drawBoard(refs: GameRefs, layout: GameLayout) {
 - 합성/판매/이동 후 선택 정보가 올바르게 닫히는지
 - 화면 리사이즈 시 정보 패널이 의도대로 닫히는지
 
-### 6.2 불필요해진 legacy 스크립트 정리
-
-현재 빌드 경로에서는 더 이상 실행되지 않지만, 저장소에 legacy 스크립트가 남아 있을 수 있습니다.
-
-정리 후보:
-
-```text
-scripts/fix-floating-text-lifetime.mjs
-scripts/add-unit-info-panel.mjs
-scripts/fix-mythic-recipe-display.mjs
-scripts/add-game-run-submission.mjs
-```
-
-주의:
-
-- 바로 삭제하기 전에 검색으로 참조 여부를 확인해야 합니다.
-- 다른 workflow나 수동 명령에서 쓰고 있지 않은지 확인해야 합니다.
-
 ## 7. 다음 작업 순서
 
 권장 순서:
 
-1. 저장소 전체에서 legacy Pixi patch script 참조 검색
-2. 참조가 없으면 legacy patch script 삭제
-3. `drawBoard()`에서 선택 정보 패널 유지가 필요한지 실제 플레이 기준 확인
-4. 필요하면 `drawBoard()` 마지막에 `drawSelectedUnitInfo(refs)` 추가
-5. 배포 후 `/play`에서 조작 확인
-6. 문서 재갱신
+1. `drawBoard()`에서 선택 정보 패널 유지가 필요한지 실제 플레이 기준 확인
+2. 필요하면 `drawBoard()` 마지막에 `drawSelectedUnitInfo(refs)` 추가
+3. 배포 후 `/play`에서 조작 확인
+4. 다음 리팩터 대상 선정
+   - `createPixiGame.ts` 추가 분리
+   - wave/combat runtime 분리
+   - mythic menu action 분리
+   - game result UI 분리
+5. 문서 재갱신
 
 ## 8. 배포 후 확인 항목
 
