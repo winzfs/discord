@@ -13,6 +13,7 @@ const sellRewardByGrade: Record<BoardHero["grade"], number> = {
   rare: 18,
   epic: 45,
   legendary: 110,
+  mythic: 260,
 };
 
 export function getSellReward(hero: BoardHero): number {
