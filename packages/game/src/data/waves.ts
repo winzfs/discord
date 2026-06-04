@@ -2,19 +2,28 @@ import { initialBalance } from "./balance";
 import type { WaveDefinition, WaveEnemyGroup } from "../types/wave";
 
 function createNormalWave(waveNumber: number): WaveDefinition {
+  const baseCount = 5 + Math.floor(waveNumber * 1.35);
   const enemyGroups: WaveEnemyGroup[] = [
     {
-      enemyId: waveNumber >= 8 && waveNumber % 3 === 0 ? "ping-runner" : "bug-grunt",
-      count: 10 + waveNumber * 2,
-      spawnIntervalMs: Math.max(300, 900 - waveNumber * 15),
+      enemyId: waveNumber >= 7 && waveNumber % 3 === 0 ? "ping-runner" : "bug-grunt",
+      count: baseCount,
+      spawnIntervalMs: Math.max(420, 980 - waveNumber * 18),
     },
   ];
 
-  if (waveNumber >= 10 && waveNumber % 4 === 0) {
+  if (waveNumber >= 6 && waveNumber % 4 === 0) {
     enemyGroups.push({
       enemyId: "lag-chunk",
-      count: Math.ceil(waveNumber / 4),
-      spawnIntervalMs: 1_100,
+      count: Math.max(1, Math.floor(waveNumber / 5)),
+      spawnIntervalMs: 1_200,
+    });
+  }
+
+  if (waveNumber >= 11 && waveNumber % 5 === 1) {
+    enemyGroups.push({
+      enemyId: "elite-bug",
+      count: Math.max(1, Math.floor(waveNumber / 8)),
+      spawnIntervalMs: 1_450,
     });
   }
 
@@ -23,7 +32,7 @@ function createNormalWave(waveNumber: number): WaveDefinition {
     waveNumber,
     enemyGroups,
     isBossWave: false,
-    rewardOnClear: 10 + waveNumber * 2,
+    rewardOnClear: 8 + waveNumber * 2,
   };
 }
 
@@ -39,12 +48,21 @@ function createBossWave(waveNumber: number): WaveDefinition {
       },
       {
         enemyId: waveNumber >= 15 ? "ping-runner" : "bug-grunt",
-        count: Math.floor(waveNumber / 2),
-        spawnIntervalMs: 700,
+        count: 3 + Math.floor(waveNumber / 3),
+        spawnIntervalMs: 760,
       },
+      ...(waveNumber >= 10
+        ? [
+            {
+              enemyId: "lag-chunk",
+              count: Math.max(1, Math.floor(waveNumber / 10)),
+              spawnIntervalMs: 1_150,
+            },
+          ]
+        : []),
     ],
     isBossWave: true,
-    rewardOnClear: 50 + waveNumber * 5,
+    rewardOnClear: 40 + waveNumber * 4,
   };
 }
 
