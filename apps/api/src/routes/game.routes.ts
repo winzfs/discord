@@ -1,9 +1,16 @@
 import { Hono } from "hono";
-import { getGameRunPlaceholder } from "../services/gameRunService";
 import { authRequired } from "../middleware/authRequired";
+import { getGameRunStatus, saveGameRun } from "../services/gameRunService";
+import type { AppEnv } from "../utils/env";
 import { ok } from "../utils/response";
 
-export const gameRoutes = new Hono();
+export const gameRoutes = new Hono<AppEnv>();
 
-gameRoutes.get("/status", (c) => ok(c, getGameRunPlaceholder()));
-gameRoutes.post("/runs", authRequired, (c) => ok(c, { status: "game_run_submit_placeholder" }, 202));
+gameRoutes.get("/status", (c) => ok(c, getGameRunStatus()));
+
+gameRoutes.post("/runs", authRequired, async (c) => {
+  const session = c.get("user");
+  const input = await c.req.json().catch(() => ({}));
+  const run = await saveGameRun(c.env.DB, session.userId, input);
+  return ok(c, { status: "saved", run }, 201);
+});
