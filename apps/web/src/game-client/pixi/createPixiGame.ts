@@ -9,7 +9,6 @@ import {
   getSummonCost,
   initialBalance,
   isBoardFull,
-  startWave,
 } from "@discord-random-defense/game";
 import type { BoardHero, GameState } from "@discord-random-defense/game";
 import {
@@ -37,12 +36,17 @@ import {
   type PixiControlsView,
 } from "./pixiControlsView";
 import { createActiveEnemy, destroyActiveEnemy } from "./pixiEnemyRuntime";
-import { spawnWaveMonsters } from "./pixiWaveRuntime";
 import {
   showBossWarning,
   showWaveResult,
   type PixiWaveFeedbackRuntimeOptions,
 } from "./pixiWaveFeedbackRuntime";
+import {
+  finishAutoWave,
+  startAutoWave,
+  waveButtonAction,
+  type PixiWaveFlowRuntimeOptions,
+} from "./pixiWaveFlowRuntime";
 import { updateActiveEnemies } from "./pixiEnemyMovementRuntime";
 import { calculatePixiFirepower, spawnAttackEffects } from "./pixiCombatRuntime";
 import {
@@ -82,9 +86,7 @@ import { getPixiPathPoint } from "./pixiPathRuntime";
 import { drawPixiBackgroundView } from "./pixiBackgroundView";
 import {
   applyEconomyRewardBonus,
-  applyLeakReduction,
   createPixiProgressBonuses,
-  getPerfectWaveLuckStoneReward,
   getProgressHeroPower,
   type PixiProgressBonuses,
 } from "./pixiProgressBonuses";
@@ -205,6 +207,19 @@ function drawTopHud(refs: GameRefs, layout: GameLayout) {
   });
 }
 
+function createWaveFlowRuntimeOptions(): PixiWaveFlowRuntimeOptions {
+  return {
+    isFinished,
+    isBossWave,
+    clearMenuAndUnitInfo,
+    render,
+    showWaveResult: (refs) => showWaveResult(refs, refs.lastWaveSummary!, createWaveFeedbackRuntimeOptions()),
+    submitFinalResultOnce,
+    showBossWarning: (refs) => showBossWarning(refs, createWaveFeedbackRuntimeOptions()),
+    invalidateControls,
+  };
+}
+
 function createWaveFeedbackRuntimeOptions(): PixiWaveFeedbackRuntimeOptions {
   return {
     addAnimation,
@@ -272,7 +287,7 @@ function drawControls(refs: GameRefs, layout: GameLayout) {
       onMythic: () => showMythicMenu(refs, createControlActionRuntimeOptions()),
       onGamble: () => gambleAction(refs, createControlActionRuntimeOptions()),
       onUpgrade: () => attackUpgradeAction(refs, createControlActionRuntimeOptions()),
-      onWave: () => waveButtonAction(refs),
+      onWave: () => waveButtonAction(refs, createWaveFlowRuntimeOptions()),
     });
   }
 
@@ -298,12 +313,6 @@ function floatText(refs: GameRefs, value: string, x: number, y: number, color: n
   addAnimation(refs, animation);
 }
 
-function waveButtonAction(refs: GameRefs) {
-  if (refs.wavePhase === "combat") return;
-  refs.nextWaveTimer = 0;
-  startAutoWave(refs);
-}
-
 function submitFinalResultOnce(refs: GameRefs) {
   if (refs.resultSubmitted || (refs.state.status !== "failed" && refs.state.status !== "cleared")) return;
   refs.resultSubmitted = true;
@@ -315,58 +324,6 @@ function submitFinalResultOnce(refs: GameRefs) {
     .catch(() => {
       floatText(refs, "로그인하면 기록 저장", refs.app.renderer.width / 2, refs.app.renderer.height * 0.3, colors.orange);
     });
-}
-
-function startAutoWave(refs: GameRefs) {
-  if (isFinished(refs.state) || refs.wavePhase === "combat") return;
-  clearMenuAndUnitInfo(refs);
-  refs.wavePhase = "combat";
-  refs.combatTimer = WAVE_COMBAT_SECONDS;
-  refs.attackTimer = 0.25;
-  refs.state = startWave(refs.state);
-  render(refs);
-  spawnWaveMonsters(refs, {
-    showBossWarning: (refs) => showBossWarning(refs, createWaveFeedbackRuntimeOptions()),
-    invalidateControls,
-  });
-}
-
-function finishAutoWave(refs: GameRefs, readyImmediately = false) {
-  const alive = refs.activeEnemies.filter((enemy) => enemy.alive);
-  let lostLives = refs.waveLostLives;
-  for (const enemy of alive) {
-    lostLives += enemy.damageToLife;
-    enemy.alive = false;
-    destroyActiveEnemy(enemy);
-  }
-
-  const leaked = alive.length + refs.waveLostLives;
-  const perfect = lostLives <= 0;
-  const baseLuckStoneReward = perfect ? (isBossWave(refs.state) ? 2 : refs.state.currentWave % 3 === 0 ? 1 : 0) : 0;
-  const luckStoneReward = getPerfectWaveLuckStoneReward(refs.progressBonuses, baseLuckStoneReward, refs.random);
-  const reducedLostLives = applyLeakReduction(refs.progressBonuses, lostLives);
-  const nextLives = Math.max(0, refs.state.lives - reducedLostLives);
-  const finalWave = refs.state.currentWave >= initialBalance.maxWave;
-  const nextStatus = nextLives <= 0 ? "failed" : finalWave ? "cleared" : "playing";
-  const nextWave = nextStatus === "playing" ? refs.state.currentWave + 1 : refs.state.currentWave;
-
-  refs.activeEnemies = [];
-  refs.lastWaveSummary = { killed: refs.waveKilled, leaked, lostLives: reducedLostLives, reward: refs.waveReward, luckStoneReward, perfect };
-  refs.state = {
-    ...refs.state,
-    lives: nextLives,
-    luckStones: refs.state.luckStones + luckStoneReward,
-    currentWave: nextWave,
-    clearedWaves: refs.state.clearedWaves + (nextLives > 0 ? 1 : 0),
-    status: nextStatus,
-    score: refs.state.score + refs.waveKilled * 10 + (perfect ? 50 : 0),
-  };
-  refs.wavePhase = "result";
-  refs.resultTimer = readyImmediately ? 0.35 : WAVE_RESULT_SECONDS;
-  refs.nextWaveTimer = readyImmediately ? 0 : WAVE_COUNTDOWN_SECONDS;
-  render(refs);
-  showWaveResult(refs, refs.lastWaveSummary, createWaveFeedbackRuntimeOptions());
-  submitFinalResultOnce(refs);
 }
 
 function render(refs: GameRefs) {
@@ -387,7 +344,7 @@ function tick(refs: GameRefs, deltaMs: number) {
   const layout = createGameLayout(refs.app.renderer.width, refs.app.renderer.height);
   if (refs.wavePhase === "countdown") {
     refs.nextWaveTimer -= deltaSeconds;
-    if (refs.nextWaveTimer <= 0) startAutoWave(refs);
+    if (refs.nextWaveTimer <= 0) startAutoWave(refs, createWaveFlowRuntimeOptions());
     else drawTopHud(refs, layout);
     return;
   }
@@ -402,8 +359,8 @@ function tick(refs: GameRefs, deltaMs: number) {
     }
     drawTopHud(refs, layout);
     drawControls(refs, layout);
-    if (refs.combatTimer <= 0) finishAutoWave(refs, false);
-    else if (refs.activeEnemies.length > 0 && refs.activeEnemies.every((enemy) => !enemy.alive)) finishAutoWave(refs, true);
+    if (refs.combatTimer <= 0) finishAutoWave(refs, false, createWaveFlowRuntimeOptions());
+    else if (refs.activeEnemies.length > 0 && refs.activeEnemies.every((enemy) => !enemy.alive)) finishAutoWave(refs, true, createWaveFlowRuntimeOptions());
     return;
   }
 
