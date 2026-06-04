@@ -2,15 +2,15 @@ import type { GameLayout } from "./gameLayout";
 import { getPixiFieldCoverFrame } from "./pixiFieldFrame";
 
 const FIELD_PATH_POINTS = [
-  { x: 0.115, y: 0.805 },
-  { x: 0.115, y: 0.395 },
-  { x: 0.235, y: 0.27 },
-  { x: 0.765, y: 0.27 },
-  { x: 0.885, y: 0.395 },
-  { x: 0.885, y: 0.805 },
-  { x: 0.765, y: 0.875 },
-  { x: 0.235, y: 0.875 },
-  { x: 0.115, y: 0.805 },
+  { x: 0.153, y: 0.775 },
+  { x: 0.153, y: 0.245 },
+  { x: 0.198, y: 0.218 },
+  { x: 0.802, y: 0.218 },
+  { x: 0.847, y: 0.245 },
+  { x: 0.847, y: 0.775 },
+  { x: 0.802, y: 0.800 },
+  { x: 0.198, y: 0.800 },
+  { x: 0.153, y: 0.775 },
 ];
 
 function toScreenPoint(layout: GameLayout, point: { x: number; y: number }) {
