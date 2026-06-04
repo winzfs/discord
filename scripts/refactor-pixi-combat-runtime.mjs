@@ -94,5 +94,30 @@ s = s.replace("const target = pickAttackTarget(refs, role);", "const target = pi
 s = s.replace("const damage = getHeroDamage(refs, hero);", "const damage = getHeroDamage(refs.state, hero);");
 s = s.replace("projectile.fill({ color: roleAccent(role), alpha: 1 });", "projectile.fill({ color: getRoleAccent(role), alpha: 1 });");
 
+s = s.replace(
+`function ingredientText(grade: string, role: string | undefined, count: number) {
+  const gradeLabel = grade === "legendary" ? "전설" : grade === "epic" ? "영웅" : grade === "rare" ? "희귀" : grade === "common" ? "일반" : "신화";
+  const roleLabel = role === "damage" ? "딜러" : role === "tank" ? "탱커" : role === "support" ? "지원" : "무관";
+  return \`${gradeLabel} ${roleLabel}x${count}\`;
+}
+`,
+`function ingredientText(ingredient: { heroId?: string; grade?: string; role?: string; count: number }) {
+  if (ingredient.heroId) {
+    const hero = getHeroById(ingredient.heroId);
+    return \`${hero?.displayName ?? ingredient.heroId}x${ingredient.count}\`;
+  }
+  const grade = ingredient.grade ?? "any";
+  const gradeLabel = grade === "legendary" ? "전설" : grade === "epic" ? "영웅" : grade === "rare" ? "희귀" : grade === "common" ? "일반" : grade === "mythic" ? "신화" : "등급무관";
+  const roleLabel = ingredient.role === "damage" ? "딜러" : ingredient.role === "tank" ? "탱커" : ingredient.role === "support" ? "지원" : "무관";
+  return \`${gradeLabel} ${roleLabel}x${ingredient.count}\`;
+}
+`,
+);
+
+s = s.replace(
+  'item.recipe.ingredients.map((ingredient) => ingredientText(ingredient.grade, ingredient.role, ingredient.count)).join(" + ")',
+  'item.recipe.ingredients.map((ingredient) => ingredientText(ingredient)).join(" + ")',
+);
+
 writeFileSync(path, s);
 console.log(`Updated ${path}`);
