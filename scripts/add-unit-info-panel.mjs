@@ -16,7 +16,7 @@ for (const text of required) {
 if (!s.includes('import { clearUnitInfoRuntime, drawUnitInfoRuntime, selectUnitInfoHeroInCell } from "./pixiUnitInfoRuntime";')) {
   s = s.replace(
     '} from "./pixiBoardView";',
-    '} from "./pixiBoardView";\nimport { mountPixiGameLayers } from "./pixiGameLayerOrder";\nimport { clearUnitInfoRuntime, drawUnitInfoRuntime, selectUnitInfoHeroInCell } from "./pixiUnitInfoRuntime";',
+    '} from "./pixiBoardView";\nimport { mountPixiGameLayers } from "./pixiGameLayerOrder";\nimport { shouldClearSelectionFromStagePointer } from "./pixiStagePointerHandlers";\nimport { clearUnitInfoRuntime, drawUnitInfoRuntime, selectUnitInfoHeroInCell } from "./pixiUnitInfoRuntime";',
   );
 }
 
@@ -116,7 +116,7 @@ s = s.replace(
 s = s.replace(
   `    stage.on("pointermove", (event: any) => moveDragGhost(refs, event.global.x, event.global.y));`,
   `    stage.on("pointerdown", (event: any) => {
-      if (event.target === stage) clearUnitSelection(refs);
+      if (shouldClearSelectionFromStagePointer(stage, event)) clearUnitSelection(refs);
     });
     stage.on("pointermove", (event: any) => moveDragGhost(refs, event.global.x, event.global.y));`,
 );
