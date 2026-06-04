@@ -87,7 +87,7 @@ export async function setOAuthStateCookie(c: Context<AppEnv>, state: string) {
   const secret = getEnvValue(c.env, "SESSION_SECRET");
   if (!secret) throw new Error("SESSION_SECRET is required");
 
-  const value = await encodeSignedPayload<StatePayload>(
+  const value = await encodeSignedPayload(
     { state, exp: Math.floor(Date.now() / 1000) + STATE_TTL_SECONDS },
     secret,
   );
@@ -106,7 +106,7 @@ export async function setSessionCookie(c: Context<AppEnv>, payload: Omit<Session
   const secret = getEnvValue(c.env, "SESSION_SECRET");
   if (!secret) throw new Error("SESSION_SECRET is required");
 
-  const value = await encodeSignedPayload<SessionPayload>(
+  const value = await encodeSignedPayload(
     { ...payload, exp: Math.floor(Date.now() / 1000) + SESSION_TTL_SECONDS },
     secret,
   );
