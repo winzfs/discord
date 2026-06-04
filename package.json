@@ -10,6 +10,7 @@
     "dev:api": "pnpm --filter @discord-random-defense/api dev",
     "refactor:pixi-client": "node scripts/apply-pixi-client-refactor.mjs",
     "refactor:lobby-shop": "node scripts/apply-lobby-shop-feedback.mjs",
+    "refactor:lobby-upgrade": "node scripts/apply-lobby-upgrade-feedback.mjs",
     "prebuild:web:legacy": "node scripts/refactor-pixi-combat-runtime.mjs && node scripts/fix-floating-text-lifetime.mjs && node scripts/add-unit-info-panel.mjs",
     "build": "pnpm -r build",
     "build:web": "node scripts/fix-mythic-ingredient-type.mjs && pnpm --filter @discord-random-defense/web build",
