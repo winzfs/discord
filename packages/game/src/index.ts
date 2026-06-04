@@ -1,6 +1,12 @@
+export * from "./data/artifacts";
 export * from "./data/balance";
 export * from "./data/enemies";
+export * from "./data/gamble";
+export * from "./data/gameModes";
 export * from "./data/heroes";
+export * from "./data/mythicRecipes";
+export * from "./data/pets";
+export * from "./data/runMissions";
 export * from "./data/skills";
 export * from "./data/waves";
 export * from "./rules/scoring";
@@ -29,10 +35,12 @@ export function createInitialGameState(seed = "mvp-placeholder-seed"): GameState
       columns: initialBalance.boardColumns,
     },
     resources: initialBalance.startingResources,
+    luckStones: initialBalance.startingLuckStones,
     lives: initialBalance.startingLives,
     currentWave: 1,
     score: 0,
     summonCount: 0,
+    powerUpgradeLevel: 0,
     defeatedEnemies: 0,
     defeatedBosses: 0,
     clearedWaves: 0,
