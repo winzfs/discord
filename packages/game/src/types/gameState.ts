@@ -12,10 +12,12 @@ export type GameState = {
     columns: number;
   };
   resources: number;
+  luckStones: number;
   lives: number;
   currentWave: number;
   score: number;
   summonCount: number;
+  powerUpgradeLevel: number;
   defeatedEnemies: number;
   defeatedBosses: number;
   clearedWaves: number;
