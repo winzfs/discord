@@ -13,10 +13,10 @@ for (const text of required) {
   if (!s.includes(text)) throw new Error(`Missing expected text: ${text}`);
 }
 
-if (!s.includes('import { drawUnitInfoPanelView } from "./pixiUnitInfoPanelView";')) {
+if (!s.includes('import { clearUnitInfoRuntime, drawUnitInfoRuntime, selectUnitInfoHeroInCell } from "./pixiUnitInfoRuntime";')) {
   s = s.replace(
     '} from "./pixiBoardView";',
-    '} from "./pixiBoardView";\nimport { drawUnitInfoPanelView } from "./pixiUnitInfoPanelView";\nimport { clearMissingSelectedHero, clearUnitSelection as clearSelectedUnit, getSelectedHero, selectTopHeroInCell as selectTopHeroInBoardCell } from "./pixiUnitSelection";',
+    '} from "./pixiBoardView";\nimport { clearUnitInfoRuntime, drawUnitInfoRuntime, selectUnitInfoHeroInCell } from "./pixiUnitInfoRuntime";',
   );
 }
 
@@ -48,14 +48,12 @@ s = s.replace(
 }
 
 function clearUnitSelection(refs: GameRefs) {
-  clearSelectedUnit(refs);
-  refs.info.removeChildren();
+  clearUnitInfoRuntime(refs);
   clearMenu(refs);
 }
 
 function drawUnitInfoPanel(refs: GameRefs, layout: GameLayout) {
-  clearMissingSelectedHero(refs.state, refs);
-  drawUnitInfoPanelView(refs.info, getSelectedHero(refs.state, refs), layout);
+  drawUnitInfoRuntime(refs, layout);
 }
 `,
 );
@@ -73,7 +71,7 @@ s = s.replace(
   const cell = refs.state.board[cellIndex];
   if (!cell || cell.units.length === 0) return;
 
-  selectTopHeroInBoardCell(refs.state, refs, cellIndex);
+  selectUnitInfoHeroInCell(refs, cellIndex);
   drawUnitInfoPanel(refs, createGameLayout(refs.app.renderer.width, refs.app.renderer.height));
   clearMenu(refs);
 `,
