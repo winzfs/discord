@@ -54,6 +54,7 @@ import {
 import { addPixiAnimation, tickPixiAnimations, type PixiAnimation } from "./animation/animationManager";
 import { createFloatingText } from "./pixiFloatingTextView";
 import { mountPixiGameLayers } from "./pixiGameLayerOrder";
+import { createPixiMythicMenuView } from "./pixiMythicMenuView";
 import { formatMythicRecipeText } from "./pixiMythicRecipeText";
 import { clearPixiContainer, makePixiPanel, makePixiText } from "./pixiSharedView";
 import { getPixiPathPoint } from "./pixiPathRuntime";
@@ -780,49 +781,13 @@ function attackUpgradeAction(refs: GameRefs) {
 
 function showMythicMenu(refs: GameRefs) {
   clearMenu(refs);
-  const list = getMythicCraftAvailability(refs.state);
-  const width = Math.min(360, refs.app.renderer.width - 24);
-  const height = 72 + list.length * 54;
-  const menu = new Container();
-  menu.x = refs.app.renderer.width / 2 - width / 2;
-  menu.y = Math.max(18, refs.app.renderer.height * 0.14);
-  menu.addChild(makePanel(width, height, 0x2d2925, colors.orange, 16));
-
-  const title = makeText("신화 조합", 19, colors.yellow);
-  title.anchor.set(0.5, 0);
-  title.x = width / 2;
-  title.y = 14;
-  menu.addChild(title);
-  menu.addChild(makeMenuButton("닫기", width - 70, 12, true, () => clearMenu(refs)));
-
-  list.forEach((item, index) => {
-    const y = 58 + index * 54;
-    const row = new Container();
-    row.x = 12;
-    row.y = y;
-    row.eventMode = item.canCraft ? "static" : "none";
-    row.cursor = item.canCraft ? "pointer" : "default";
-    row.addChild(makePanel(width - 24, 46, item.canCraft ? colors.orange : 0x655e59, item.canCraft ? 0x51351e : 0x3d332e, 10));
-
-    const name = makeText(item.recipe.displayName, 14, item.canCraft ? colors.white : 0xb7afa8);
-    name.x = 12;
-    name.y = 5;
-    row.addChild(name);
-
-    const recipe = makeText(formatMythicRecipeText(item.recipe.ingredients), 10, item.canCraft ? colors.yellow : 0xb7afa8);
-    recipe.x = 12;
-    recipe.y = 25;
-    row.addChild(recipe);
-
-    if (item.canCraft) {
-      row.on("pointertap", (event: any) => {
-        event.stopPropagation();
-        mythicCraftAction(refs, item.recipe.id);
-      });
-    }
-    menu.addChild(row);
+  const menu = createPixiMythicMenuView({
+    state: refs.state,
+    rendererWidth: refs.app.renderer.width,
+    rendererHeight: refs.app.renderer.height,
+    onClose: () => clearMenu(refs),
+    onCraft: (recipeId) => mythicCraftAction(refs, recipeId),
   });
-
   refs.menuLayer.addChild(menu);
   refs.menu = menu;
 }
