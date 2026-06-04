@@ -17,7 +17,7 @@ s = s.replace('import { colors } from "./gameTheme";', 'import { colors, gradeCo
 if (!s.includes('import { getUnitInfoText } from "./pixiUnitInfoText";')) {
   s = s.replace(
     '} from "./pixiBoardView";',
-    '} from "./pixiBoardView";\nimport { getUnitInfoText } from "./pixiUnitInfoText";',
+    '} from "./pixiBoardView";\nimport { getUnitInfoText } from "./pixiUnitInfoText";\nimport { getUnitInfoPanelLayout } from "./pixiUnitInfoPanelLayout";',
   );
 }
 
@@ -78,12 +78,11 @@ function drawUnitInfoPanel(refs: GameRefs, layout: GameLayout) {
   if (!hero) return;
 
   const info = getUnitInfoText(hero);
-  const panelWidth = Math.min(layout.width - 24, 390);
-  const panelHeight = 76;
-  const panel = makePanel(panelWidth, panelHeight, 0x2d2925, gradeColor(hero.grade), 14);
+  const panelLayout = getUnitInfoPanelLayout(layout);
+  const panel = makePanel(panelLayout.width, panelLayout.height, 0x2d2925, gradeColor(hero.grade), 14);
   panel.alpha = 0.96;
-  panel.x = layout.width / 2 - panelWidth / 2;
-  panel.y = Math.max(layout.topHudY + 124, layout.bottomY - 146);
+  panel.x = panelLayout.x;
+  panel.y = panelLayout.y;
   refs.info.addChild(panel);
 
   const name = makeText(info.name, 17, colors.white);
