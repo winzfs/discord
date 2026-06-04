@@ -20,7 +20,7 @@ replaceOnce(
 
 replaceOnce(
   '} from "./pixiBoardView";\n',
-  '} from "./pixiBoardView";\nimport { addPixiAnimation, tickPixiAnimations, type PixiAnimation } from "./animation/animationManager";\nimport { createFloatingText } from "./pixiFloatingTextView";\nimport { clearPixiContainer, makePixiPanel, makePixiText } from "./pixiSharedView";\nimport { getPixiPathPoint } from "./pixiPathRuntime";\n',
+  '} from "./pixiBoardView";\nimport { addPixiAnimation, tickPixiAnimations, type PixiAnimation } from "./animation/animationManager";\nimport { createFloatingText } from "./pixiFloatingTextView";\nimport { mountPixiGameLayers } from "./pixiGameLayerOrder";\nimport { clearPixiContainer, makePixiPanel, makePixiText } from "./pixiSharedView";\nimport { getPixiPathPoint } from "./pixiPathRuntime";\n',
   "add refactor imports",
 );
 
@@ -135,6 +135,20 @@ replaceOnce(
   });`,
   `  refs.animations = tickPixiAnimations(refs.animations, deltaMs);`,
   "delegate animation tick",
+);
+
+replaceOnce(
+  `    stage.addChild(refs.world, refs.board, refs.hud, refs.controls, refs.effects, refs.menuLayer);`,
+  `    mountPixiGameLayers(stage, {
+      world: refs.world,
+      board: refs.board,
+      hud: refs.hud,
+      controls: refs.controls,
+      info: refs.effects,
+      effects: refs.effects,
+      menuLayer: refs.menuLayer,
+    });`,
+  "delegate layer mounting",
 );
 
 writeFileSync(path, source);
