@@ -8,8 +8,9 @@
     "dev": "pnpm --filter @discord-random-defense/web dev",
     "dev:web": "pnpm --filter @discord-random-defense/web dev",
     "dev:api": "pnpm --filter @discord-random-defense/api dev",
+    "prebuild:web": "node scripts/refactor-pixi-combat-runtime.mjs && node scripts/fix-floating-text-lifetime.mjs",
     "build": "pnpm -r build",
-    "build:web": "pnpm --filter @discord-random-defense/web build",
+    "build:web": "pnpm run prebuild:web && pnpm --filter @discord-random-defense/web build",
     "typecheck": "pnpm -r typecheck"
   },
   "devDependencies": {
