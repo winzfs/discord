@@ -5,13 +5,16 @@ import {
   createInitialGameState,
   createSeededRandom,
   gambleSummon,
+  getBoardCapacity,
+  getBoardUnitCount,
   getPowerUpgradeCost,
   getSummonCost,
+  isBoardFull,
   startWave,
   summonHero,
   upgradeAttack,
 } from "@discord-random-defense/game";
-import type { GameState } from "@discord-random-defense/game";
+import type { BoardHero, GameState } from "@discord-random-defense/game";
 import { createGameLayout } from "./gameLayout";
 import type { GameLayout } from "./gameLayout";
 import { colors, gradeColor } from "./gameTheme";
@@ -47,7 +50,7 @@ type GameRefs = {
   flashBoard: boolean;
 };
 
-function text(value: string, size = 18, fill = colors.white, weight: "normal" | "bold" = "bold") {
+function text(value: string, size = 18, fill: number = colors.white, weight: "normal" | "bold" = "bold") {
   return new Text({
     text: value,
     style: {
@@ -60,7 +63,7 @@ function text(value: string, size = 18, fill = colors.white, weight: "normal" | 
   });
 }
 
-function panel(w: number, h: number, fill: number, stroke = colors.panelDark, radius = 16) {
+function panel(w: number, h: number, fill: number, stroke: number = colors.panelDark, radius = 16) {
   const g = new Graphics();
   g.roundRect(0, 0, w, h, radius);
   g.fill({ color: fill, alpha: 1 });
@@ -72,12 +75,17 @@ function clear(c: Container) {
   c.removeChildren();
 }
 
+function isFinished(state: GameState) {
+  return state.status === "failed" || state.status === "cleared";
+}
+
 function addAnim(refs: GameRefs, anim: Omit<Animation, "age">) {
   refs.animations.push({ ...anim, age: 0 });
 }
 
-function isFinished(state: GameState) {
-  return state.status === "failed" || state.status === "cleared";
+function getCellIndexFromHero(state: GameState, hero: BoardHero | null): number | null {
+  if (!hero) return null;
+  return hero.position.row * state.boardSize.columns + hero.position.column;
 }
 
 function drawBackground(refs: GameRefs, layout: GameLayout) {
@@ -170,15 +178,16 @@ function drawTopHud(refs: GameRefs, layout: GameLayout) {
   refs.hud.addChild(hpText);
 
   const boardPower = calculateBoardPower(refs.state);
-  const unitCount = refs.state.board.filter(Boolean).length;
+  const unitCount = getBoardUnitCount(refs.state.board);
+  const unitCapacity = getBoardCapacity(refs.state.board);
 
   const power = text(`전투력 ${boardPower.totalPower}`, 15, colors.white);
   power.x = 22;
   power.y = layout.topHudY + 98;
   refs.hud.addChild(power);
 
-  const units = text(`${unitCount} / ${refs.state.board.length}`, 15, colors.white);
-  units.x = layout.width - 82;
+  const units = text(`${unitCount} / ${unitCapacity}`, 15, colors.white);
+  units.x = layout.width - 96;
   units.y = layout.topHudY + 98;
   refs.hud.addChild(units);
 
@@ -198,6 +207,43 @@ function drawTopHud(refs: GameRefs, layout: GameLayout) {
   refs.hud.addChild(score);
 }
 
+function getStackOffset(stackCount: number, index: number, cell: number) {
+  if (stackCount <= 1) return { x: 0, y: 0, scale: 1 };
+  if (stackCount === 2) {
+    return index === 0
+      ? { x: -cell * 0.16, y: cell * 0.02, scale: 0.82 }
+      : { x: cell * 0.16, y: cell * 0.02, scale: 0.82 };
+  }
+  if (index === 0) return { x: 0, y: -cell * 0.15, scale: 0.74 };
+  if (index === 1) return { x: -cell * 0.17, y: cell * 0.13, scale: 0.74 };
+  return { x: cell * 0.17, y: cell * 0.13, scale: 0.74 };
+}
+
+function drawUnitMarker(refs: GameRefs, x: number, y: number, cell: number, grade: string, stackCount: number, stackIndex: number) {
+  const offset = getStackOffset(stackCount, stackIndex, cell);
+  const centerX = x + cell / 2 + offset.x;
+  const centerY = y + cell * 0.48 + offset.y;
+  const bodySize = cell * 0.22 * offset.scale;
+  const headSize = cell * 0.15 * offset.scale;
+
+  const shadow = new Graphics();
+  shadow.ellipse(centerX, centerY + cell * 0.24 * offset.scale, cell * 0.2 * offset.scale, cell * 0.06 * offset.scale);
+  shadow.fill({ color: 0x244f1e, alpha: 0.28 });
+  refs.board.addChild(shadow);
+
+  const body = new Graphics();
+  body.circle(centerX, centerY, bodySize);
+  body.fill({ color: gradeColor(grade), alpha: 1 });
+  body.stroke({ color: colors.black, width: Math.max(2, 3 * offset.scale), alpha: 0.56 });
+  refs.board.addChild(body);
+
+  const head = new Graphics();
+  head.circle(centerX, centerY - cell * 0.18 * offset.scale, headSize);
+  head.fill({ color: 0xffd0a6, alpha: 1 });
+  head.stroke({ color: colors.black, width: Math.max(1.5, 2 * offset.scale), alpha: 0.56 });
+  refs.board.addChild(head);
+}
+
 function drawBoard(refs: GameRefs, layout: GameLayout) {
   clear(refs.board);
   const gap = 7;
@@ -207,44 +253,34 @@ function drawBoard(refs: GameRefs, layout: GameLayout) {
   const startX = layout.boardX + (layout.boardWidth - cell * cols - gap * (cols - 1)) / 2;
   const startY = layout.boardY + 16;
 
-  refs.state.board.forEach((slot, index) => {
+  refs.state.board.forEach((boardCell, index) => {
     const row = Math.floor(index / cols);
     const col = index % cols;
     const x = startX + col * (cell + gap);
     const y = startY + row * (cell + gap);
+    const units = boardCell.units;
+    const firstUnit = units[0];
     const isNew = refs.lastSummonedIndex === index;
     const pulse = isNew ? 1.08 : 1;
     const inset = (cell * (pulse - 1)) / 2;
+    const isFullStack = units.length >= 3;
+
     const g = new Graphics();
     g.roundRect(x - inset, y - inset, cell * pulse, cell * pulse, 12);
-    g.fill({ color: slot ? 0x6ac144 : 0x539832, alpha: slot ? 0.96 : 0.45 });
-    g.stroke({ color: slot ? gradeColor(slot.grade) : 0x3e7629, width: slot ? 3 : 2, alpha: refs.flashBoard && slot ? 1 : 0.85 });
+    g.fill({ color: units.length > 0 ? 0x6ac144 : 0x539832, alpha: units.length > 0 ? 0.96 : 0.45 });
+    g.stroke({ color: firstUnit ? gradeColor(firstUnit.grade) : 0x3e7629, width: isFullStack ? 4 : units.length > 0 ? 3 : 2, alpha: refs.flashBoard && units.length > 0 ? 1 : 0.85 });
     refs.board.addChild(g);
 
-    if (!slot) return;
+    if (isFullStack) {
+      const glow = new Graphics();
+      glow.roundRect(x + 3, y + 3, cell - 6, cell - 6, 10);
+      glow.stroke({ color: colors.yellow, width: 2, alpha: 0.38 });
+      refs.board.addChild(glow);
+    }
 
-    const shadow = new Graphics();
-    shadow.ellipse(x + cell / 2, y + cell * 0.74, cell * 0.24, cell * 0.08);
-    shadow.fill({ color: 0x244f1e, alpha: 0.35 });
-    refs.board.addChild(shadow);
-
-    const body = new Graphics();
-    body.circle(x + cell / 2, y + cell * 0.46, cell * 0.22);
-    body.fill({ color: gradeColor(slot.grade), alpha: 1 });
-    body.stroke({ color: colors.black, width: 3, alpha: 0.5 });
-    refs.board.addChild(body);
-
-    const head = new Graphics();
-    head.circle(x + cell / 2, y + cell * 0.28, cell * 0.16);
-    head.fill({ color: 0xffd0a6, alpha: 1 });
-    head.stroke({ color: colors.black, width: 2, alpha: 0.5 });
-    refs.board.addChild(head);
-
-    const label = text(slot.grade[0].toUpperCase(), 13, colors.white);
-    label.anchor.set(0.5);
-    label.x = x + cell / 2;
-    label.y = y + cell * 0.88;
-    refs.board.addChild(label);
+    units.forEach((unit, unitIndex) => {
+      drawUnitMarker(refs, x, y, cell, unit.grade, units.length, unitIndex);
+    });
   });
 }
 
@@ -284,7 +320,7 @@ function button(label: string, sub: string, w: number, h: number, color: number,
 
 function getSummonButtonState(state: GameState) {
   const cost = getSummonCost(state.summonCount);
-  const boardFull = state.board.every(Boolean);
+  const boardFull = isBoardFull(state.board);
   const disabled = isFinished(state) || boardFull || state.resources < cost;
 
   if (state.status === "failed") return { cost, disabled, sub: "게임 오버" };
@@ -315,7 +351,7 @@ function drawControls(refs: GameRefs, layout: GameLayout) {
   refs.controls.addChild(mythic);
 
   const gamble = button("도박", "행운석 2", 92, 68, colors.blue, () => gambleAction(refs), {
-    disabled: isFinished(refs.state) || refs.state.board.every(Boolean) || refs.state.luckStones < 2,
+    disabled: isFinished(refs.state) || isBoardFull(refs.state.board) || refs.state.luckStones < 2,
   });
   gamble.x = layout.width - 110;
   gamble.y = layout.height - 104;
@@ -400,10 +436,9 @@ function summonAction(refs: GameRefs) {
     return;
   }
 
-  const index = refs.state.board.findIndex((slot) => slot === null);
   const result = summonHero(refs.state, refs.random);
   refs.state = result.state;
-  refs.lastSummonedIndex = result.summonedHero ? index : null;
+  refs.lastSummonedIndex = getCellIndexFromHero(refs.state, result.summonedHero);
   render(refs);
   floatText(refs, result.summonedHero ? "소환!" : "실패", refs.app.renderer.width / 2, refs.app.renderer.height - 140, result.summonedHero ? colors.yellow : colors.red);
   if (result.summonedHero) {
@@ -418,7 +453,6 @@ function summonAction(refs: GameRefs) {
 }
 
 function gambleAction(refs: GameRefs) {
-  const index = refs.state.board.findIndex((slot) => slot === null);
   const result = gambleSummon(refs.state, "epic-gamble", refs.random);
 
   if (!result.summonedHero) {
@@ -428,7 +462,7 @@ function gambleAction(refs: GameRefs) {
   }
 
   refs.state = result.state;
-  refs.lastSummonedIndex = index;
+  refs.lastSummonedIndex = getCellIndexFromHero(refs.state, result.summonedHero);
   render(refs);
   floatText(refs, result.success ? "도박 성공!" : "보정 소환", refs.app.renderer.width / 2, refs.app.renderer.height - 140, result.success ? colors.yellow : colors.blue);
   addAnim(refs, {
@@ -448,15 +482,11 @@ function attackUpgradeAction(refs: GameRefs) {
 }
 
 function getWaveResultMessage(result: ReturnType<typeof completeCurrentWave>): { label: string; color: number } {
-  if (result.state.status === "failed") {
-    return { label: `패배... -${result.lostLives} HP`, color: colors.red };
-  }
-
+  if (result.state.status === "failed") return { label: `패배... -${result.lostLives} HP`, color: colors.red };
   if (result.lostLives > 0) {
     const leakedCount = result.leakedEnemies.reduce((sum, group) => sum + group.count, 0);
     return { label: `누수 ${leakedCount}마리  -${result.lostLives} HP`, color: colors.orange };
   }
-
   return { label: "완벽 방어!", color: colors.green };
 }
 
