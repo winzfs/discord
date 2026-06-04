@@ -14,7 +14,7 @@ export type MythicCraftResult = {
   state: GameState;
   craftedHero: BoardHero | null;
   consumedHeroes: BoardHero[];
-  reason?: "missing_recipe" | "not_enough_luck_stones" | "missing_ingredients";
+  reason?: "missing_recipe" | "missing_ingredients";
 };
 
 function matchesIngredient(hero: BoardHero, ingredient: MythicRecipeDefinition["ingredients"][number]): boolean {
@@ -48,7 +48,7 @@ export function getMythicCraftAvailability(state: GameState): MythicCraftAvailab
     const { missing } = pickIngredients(state, recipe);
     return {
       recipe,
-      canCraft: state.luckStones >= recipe.luckStoneCost && missing.length === 0,
+      canCraft: missing.length === 0,
       missing,
     };
   });
@@ -68,7 +68,6 @@ function removeBoardHeroes(state: GameState, targets: BoardHero[]): GameState {
 export function craftMythicHero(state: GameState, recipeId: string): MythicCraftResult {
   const recipe = mythicRecipes.find((candidate) => candidate.id === recipeId);
   if (!recipe) return { state, craftedHero: null, consumedHeroes: [], reason: "missing_recipe" };
-  if (state.luckStones < recipe.luckStoneCost) return { state, craftedHero: null, consumedHeroes: [], reason: "not_enough_luck_stones" };
 
   const { picked, missing } = pickIngredients(state, recipe);
   if (missing.length > 0) return { state, craftedHero: null, consumedHeroes: picked, reason: "missing_ingredients" };
@@ -93,7 +92,6 @@ export function craftMythicHero(state: GameState, recipeId: string): MythicCraft
   return {
     state: {
       ...removedState,
-      luckStones: removedState.luckStones - recipe.luckStoneCost,
       board: removedState.board.map((cell, index) => index === cellIndex ? { ...cell, heroId: craftedHero.heroId, units: [craftedHero] } : cell),
     },
     craftedHero,
