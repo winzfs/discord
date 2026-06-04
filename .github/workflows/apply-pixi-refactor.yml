@@ -1,0 +1,50 @@
+name: Apply Pixi Refactor
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - scripts/apply-pixi-client-refactor.mjs
+      - .github/workflows/apply-pixi-refactor.yml
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Apply refactor
+        run: pnpm run refactor:pixi-client
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Commit changes
+        run: |
+          if git diff --quiet; then
+            echo "No changes"
+            exit 0
+          fi
+          git config user.name "actions"
+          git config user.email "actions@example.com"
+          git add apps/web/src/game-client/pixi/createPixiGame.ts
+          git commit -m "Apply Pixi client refactor"
+          git push
