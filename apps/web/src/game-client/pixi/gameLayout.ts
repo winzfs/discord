@@ -13,9 +13,9 @@ export type GameLayout = {
   bottomY: number;
 };
 
-const BOARD_LEFT = 0.252;
+const BOARD_LEFT = 0.238;
 const BOARD_TOP = 0.333;
-const BOARD_WIDTH = 0.498;
+const BOARD_WIDTH = 0.526;
 const BOARD_HEIGHT = 0.430;
 
 export function createGameLayout(width: number, height: number): GameLayout {
