@@ -6,24 +6,15 @@ import {
 } from "@discord-random-defense/game";
 import type { BoardHero, GameState } from "@discord-random-defense/game";
 import {
-  MAX_ATTACKERS_PER_TICK,
-  WAVE_COMBAT_SECONDS,
   WAVE_COUNTDOWN_SECONDS,
-  WAVE_RESULT_SECONDS,
-  type ActiveEnemy,
   type GameRefs,
-  type WaveSummary,
 } from "./pixiGameTypes";
 import { createGameLayout } from "./gameLayout";
 import type { GameLayout } from "./gameLayout";
 import { colors } from "./gameTheme";
-import {
-  invalidatePixiHudView,
-} from "./pixiHudView";
-import {
-  invalidatePixiControlsView,
-} from "./pixiControlsView";
-import { createActiveEnemy, destroyActiveEnemy } from "./pixiEnemyRuntime";
+import { invalidatePixiHudView } from "./pixiHudView";
+import { invalidatePixiControlsView } from "./pixiControlsView";
+import { destroyActiveEnemy } from "./pixiEnemyRuntime";
 import {
   showBossWarning,
   showWaveResult,
@@ -49,7 +40,6 @@ import {
   getCellIndexAtPoint,
 } from "./pixiBoardRuntime";
 import {
-  beginCellDrag,
   finishCellDrag,
   moveDragGhost,
   type PixiDragRuntimeOptions,
@@ -69,18 +59,13 @@ import { submitGameRun } from "../submitGameRun";
 import { addPixiAnimation, tickPixiAnimations, type PixiAnimation } from "./animation/animationManager";
 import { createFloatingText } from "./pixiFloatingTextView";
 import { mountPixiGameLayers } from "./pixiGameLayerOrder";
-import { formatMythicRecipeText } from "./pixiMythicRecipeText";
 import { clearPixiContainer, makePixiPanel, makePixiText } from "./pixiSharedView";
 import { getPixiPathPoint } from "./pixiPathRuntime";
 import {
-  applyEconomyRewardBonus,
   createPixiProgressBonuses,
-  getProgressHeroPower,
-  type PixiProgressBonuses,
 } from "./pixiProgressBonuses";
 
 export type PixiGameHandle = { cleanup: () => void };
-
 
 function makeText(value: string, size = 18, fill: number = colors.white) {
   return makePixiText(value, size, fill);
@@ -130,10 +115,6 @@ function getCellIndexFromHero(state: GameState, hero: BoardHero | null) {
 }
 
 function getPathPoint(layout: GameLayout, progress: number) {
-  const left = Math.max(24, layout.boardX - 42);
-  const right = Math.min(layout.width - 24, layout.boardX + layout.boardWidth + 42);
-  const top = Math.max(layout.mapTop + 44, layout.boardY - 50);
-  const bottom = Math.min(layout.height - 176, layout.boardY + layout.boardHeight + 48);
   return getPixiPathPoint(layout, progress);
 }
 
@@ -141,12 +122,14 @@ function createWaveFlowRuntimeOptions(): PixiWaveFlowRuntimeOptions {
   return {
     isFinished,
     isBossWave,
+    clearMenu,
     clearMenuAndUnitInfo: (refs) => clearMenuAndUnitInfo(refs, { clearMenu }),
     render,
     showWaveResult: (refs) => showWaveResult(refs, refs.lastWaveSummary!, createWaveFeedbackRuntimeOptions()),
     submitFinalResultOnce,
     showBossWarning: (refs) => showBossWarning(refs, createWaveFeedbackRuntimeOptions()),
     invalidateControls,
+    floatText,
   };
 }
 
@@ -209,20 +192,24 @@ function submitFinalResultOnce(refs: GameRefs) {
     });
 }
 
-function render(refs: GameRefs) {
-  const layout = createGameLayout(refs.app.renderer.width, refs.app.renderer.height);
-  drawBackground(refs, layout);
-  drawTopHud(refs, layout);
-  drawBoard(refs, layout, createDragRuntimeOptions);
-  drawSelectedUnitInfo(refs);
-  drawControls(refs, layout, {
+function controlHandlers(refs: GameRefs) {
+  return {
     isFinished,
     onSummon: () => summonAction(refs, createControlActionRuntimeOptions()),
     onMythic: () => showMythicMenu(refs, createControlActionRuntimeOptions()),
     onGamble: () => gambleAction(refs, createControlActionRuntimeOptions()),
     onUpgrade: () => attackUpgradeAction(refs, createControlActionRuntimeOptions()),
     onWave: () => waveButtonAction(refs, createWaveFlowRuntimeOptions()),
-  });
+  };
+}
+
+function render(refs: GameRefs) {
+  const layout = createGameLayout(refs.app.renderer.width, refs.app.renderer.height);
+  drawBackground(refs, layout);
+  drawTopHud(refs, layout);
+  drawBoard(refs, layout, createDragRuntimeOptions);
+  drawSelectedUnitInfo(refs);
+  drawControls(refs, layout, controlHandlers(refs));
 }
 
 function tick(refs: GameRefs, deltaMs: number) {
@@ -251,25 +238,11 @@ function tick(refs: GameRefs, deltaMs: number) {
         floatText,
         invalidateControls,
         drawTopHud,
-        drawControls: (refs, layout) => drawControls(refs, layout, {
-          isFinished,
-          onSummon: () => summonAction(refs, createControlActionRuntimeOptions()),
-          onMythic: () => showMythicMenu(refs, createControlActionRuntimeOptions()),
-          onGamble: () => gambleAction(refs, createControlActionRuntimeOptions()),
-          onUpgrade: () => attackUpgradeAction(refs, createControlActionRuntimeOptions()),
-          onWave: () => waveButtonAction(refs, createWaveFlowRuntimeOptions()),
-        }),
+        drawControls: (refs, layout) => drawControls(refs, layout, controlHandlers(refs)),
       });
     }
     drawTopHud(refs, layout);
-    drawControls(refs, layout, {
-    isFinished,
-    onSummon: () => summonAction(refs, createControlActionRuntimeOptions()),
-    onMythic: () => showMythicMenu(refs, createControlActionRuntimeOptions()),
-    onGamble: () => gambleAction(refs, createControlActionRuntimeOptions()),
-    onUpgrade: () => attackUpgradeAction(refs, createControlActionRuntimeOptions()),
-    onWave: () => waveButtonAction(refs, createWaveFlowRuntimeOptions()),
-  });
+    drawControls(refs, layout, controlHandlers(refs));
     if (refs.combatTimer <= 0) finishAutoWave(refs, false, createWaveFlowRuntimeOptions());
     else if (refs.activeEnemies.length > 0 && refs.activeEnemies.every((enemy) => !enemy.alive)) finishAutoWave(refs, true, createWaveFlowRuntimeOptions());
     return;
@@ -277,24 +250,10 @@ function tick(refs: GameRefs, deltaMs: number) {
 
   refs.resultTimer -= deltaSeconds;
   drawTopHud(refs, layout);
-  drawControls(refs, layout, {
-    isFinished,
-    onSummon: () => summonAction(refs, createControlActionRuntimeOptions()),
-    onMythic: () => showMythicMenu(refs, createControlActionRuntimeOptions()),
-    onGamble: () => gambleAction(refs, createControlActionRuntimeOptions()),
-    onUpgrade: () => attackUpgradeAction(refs, createControlActionRuntimeOptions()),
-    onWave: () => waveButtonAction(refs, createWaveFlowRuntimeOptions()),
-  });
+  drawControls(refs, layout, controlHandlers(refs));
   if (refs.resultTimer <= 0) {
     refs.wavePhase = "countdown";
-    drawControls(refs, layout, {
-    isFinished,
-    onSummon: () => summonAction(refs, createControlActionRuntimeOptions()),
-    onMythic: () => showMythicMenu(refs, createControlActionRuntimeOptions()),
-    onGamble: () => gambleAction(refs, createControlActionRuntimeOptions()),
-    onUpgrade: () => attackUpgradeAction(refs, createControlActionRuntimeOptions()),
-    onWave: () => waveButtonAction(refs, createWaveFlowRuntimeOptions()),
-  });
+    drawControls(refs, layout, controlHandlers(refs));
     drawTopHud(refs, layout);
   }
 }
