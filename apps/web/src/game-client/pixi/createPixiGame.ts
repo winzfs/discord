@@ -2,8 +2,6 @@ import { Application, Container, Rectangle } from "pixi.js";
 import {
   createInitialGameState,
   createSeededRandom,
-  getBoardCapacity,
-  getBoardUnitCount,
   getMythicCraftAvailability,
   getPowerUpgradeCost,
   getSummonCost,
@@ -24,10 +22,7 @@ import { createGameLayout } from "./gameLayout";
 import type { GameLayout } from "./gameLayout";
 import { colors } from "./gameTheme";
 import {
-  createPixiHudView,
   invalidatePixiHudView,
-  updatePixiHudView,
-  type PixiHudView,
 } from "./pixiHudView";
 import {
   createPixiControlsView,
@@ -47,8 +42,9 @@ import {
   waveButtonAction,
   type PixiWaveFlowRuntimeOptions,
 } from "./pixiWaveFlowRuntime";
+import { drawBackground, drawTopHud } from "./pixiRenderRuntime";
 import { updateActiveEnemies } from "./pixiEnemyMovementRuntime";
-import { calculatePixiFirepower, spawnAttackEffects } from "./pixiCombatRuntime";
+import { spawnAttackEffects } from "./pixiCombatRuntime";
 import {
   drawBoardCells,
 } from "./pixiBoardView";
@@ -83,7 +79,6 @@ import { clearPixiUnitInfoView, drawPixiUnitInfoView } from "./pixiUnitInfoView"
 import { formatMythicRecipeText } from "./pixiMythicRecipeText";
 import { clearPixiContainer, makePixiPanel, makePixiText } from "./pixiSharedView";
 import { getPixiPathPoint } from "./pixiPathRuntime";
-import { drawPixiBackgroundView } from "./pixiBackgroundView";
 import {
   applyEconomyRewardBonus,
   createPixiProgressBonuses,
@@ -179,32 +174,6 @@ function getPathPoint(layout: GameLayout, progress: number) {
   const top = Math.max(layout.mapTop + 44, layout.boardY - 50);
   const bottom = Math.min(layout.height - 176, layout.boardY + layout.boardHeight + 48);
   return getPixiPathPoint(layout, progress);
-}
-
-function drawBackground(refs: GameRefs, layout: GameLayout) {
-  drawPixiBackgroundView(refs.world, layout, getPathPoint);
-}
-
-function getFirepower(refs: GameRefs) {
-  return calculatePixiFirepower(refs);
-}
-
-function drawTopHud(refs: GameRefs, layout: GameLayout) {
-  if (!refs.hudView) refs.hudView = createPixiHudView(refs.hud);
-  updatePixiHudView(refs.hudView, layout, {
-    currentWave: refs.state.currentWave,
-    wavePhase: refs.wavePhase,
-    countdownSeconds: refs.nextWaveTimer,
-    combatSeconds: refs.combatTimer,
-    lives: refs.state.lives,
-    maxLives: initialBalance.startingLives,
-    firepower: getFirepower(refs),
-    unitCount: getBoardUnitCount(refs.state.board),
-    unitCapacity: getBoardCapacity(refs.state.board),
-    resources: refs.state.resources,
-    luckStones: refs.state.luckStones,
-    isBossWave: isBossWave(refs.state),
-  });
 }
 
 function createWaveFlowRuntimeOptions(): PixiWaveFlowRuntimeOptions {
