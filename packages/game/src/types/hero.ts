@@ -18,6 +18,11 @@ export type HeroDefinition = {
   tags: string[];
 };
 
+export type BoardPosition = {
+  row: number;
+  column: number;
+};
+
 export type BoardHero = {
   instanceId: string;
   heroId: string;
@@ -25,7 +30,8 @@ export type BoardHero = {
   position: BoardPosition;
 };
 
-export type BoardPosition = {
-  row: number;
-  column: number;
+export type BoardCell = {
+  position: BoardPosition;
+  heroId: string | null;
+  units: BoardHero[];
 };
