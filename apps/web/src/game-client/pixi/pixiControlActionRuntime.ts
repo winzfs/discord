@@ -1,6 +1,8 @@
 import {
   craftMythicHero,
   gambleSummon,
+  getRunBoostEffect,
+  getSummonCost,
   summonHero,
 } from "@discord-random-defense/game";
 import type { BoardHero, GameState } from "@discord-random-defense/game";
@@ -24,6 +26,13 @@ export type PixiControlActionRuntimeOptions = {
   floatText: (refs: GameRefs, value: string, x: number, y: number, color: number) => void;
 };
 
+function getSummonDiscountCredit(state: GameState) {
+  const baseCost = getSummonCost(state.summonCount);
+  const discount = Math.min(0.45, getRunBoostEffect("summon", state.runBoosts?.summon ?? 0));
+  const discountedCost = Math.max(1, Math.ceil(baseCost * (1 - discount)));
+  return Math.max(0, baseCost - discountedCost);
+}
+
 export function summonAction(refs: GameRefs, options: PixiControlActionRuntimeOptions) {
   options.clearMenuAndUnitInfo(refs);
 
@@ -40,7 +49,14 @@ export function summonAction(refs: GameRefs, options: PixiControlActionRuntimeOp
     return;
   }
 
-  const result = summonHero(refs.state, refs.random);
+  const summonCredit = getSummonDiscountCredit(refs.state);
+  const result = summonHero(
+    {
+      ...refs.state,
+      resources: refs.state.resources + summonCredit,
+    },
+    refs.random,
+  );
   refs.state = result.state;
   refs.lastSummonedIndex = options.getCellIndexFromHero(refs.state, result.summonedHero);
 
