@@ -12,15 +12,42 @@ function replaceOnce(before, after, label) {
   console.log(`[ok] ${label}`);
 }
 
+function addImportBlockOnce(anchor, block, label) {
+  const firstLine = block.trim().split("\n")[0];
+  if (source.includes(firstLine)) {
+    console.log(`[skip] ${label}`);
+    return;
+  }
+  replaceOnce(anchor, `${anchor}${block}`, label);
+}
+
+function dedupeExactImportLines() {
+  const lines = source.split("\n");
+  const seen = new Set();
+  let changed = false;
+  source = lines
+    .filter((line) => {
+      if (!line.startsWith("import ")) return true;
+      if (!seen.has(line)) {
+        seen.add(line);
+        return true;
+      }
+      changed = true;
+      return false;
+    })
+    .join("\n");
+  console.log(changed ? "[ok] remove duplicate import lines" : "[skip] remove duplicate import lines");
+}
+
 replaceOnce(
   'import { Application, Container, Graphics, Rectangle, Text } from "pixi.js";',
   'import { Application, Container, Graphics, Rectangle } from "pixi.js";',
   "remove direct Text import",
 );
 
-replaceOnce(
+addImportBlockOnce(
   '} from "./pixiBoardView";\n',
-  '} from "./pixiBoardView";\nimport { addPixiAnimation, tickPixiAnimations, type PixiAnimation } from "./animation/animationManager";\nimport { createFloatingText } from "./pixiFloatingTextView";\nimport { mountPixiGameLayers } from "./pixiGameLayerOrder";\nimport { formatMythicRecipeText } from "./pixiMythicRecipeText";\nimport { clearPixiContainer, makePixiPanel, makePixiText } from "./pixiSharedView";\nimport { getPixiPathPoint } from "./pixiPathRuntime";\n',
+  'import { addPixiAnimation, tickPixiAnimations, type PixiAnimation } from "./animation/animationManager";\nimport { createFloatingText } from "./pixiFloatingTextView";\nimport { mountPixiGameLayers } from "./pixiGameLayerOrder";\nimport { formatMythicRecipeText } from "./pixiMythicRecipeText";\nimport { clearPixiContainer, makePixiPanel, makePixiText } from "./pixiSharedView";\nimport { getPixiPathPoint } from "./pixiPathRuntime";\n',
   "add refactor imports",
 );
 
@@ -142,11 +169,7 @@ const localMythicIngredientTextHelper = [
   '',
 ].join("\n");
 
-replaceOnce(
-  localMythicIngredientTextHelper,
-  "",
-  "remove local mythic ingredient text helper",
-);
+replaceOnce(localMythicIngredientTextHelper, "", "remove local mythic ingredient text helper");
 
 replaceOnce(
   `item.recipe.ingredients.map((ingredient) => ingredientText(ingredient.grade, ingredient.role, ingredient.count)).join(" + ")`,
@@ -193,6 +216,8 @@ replaceOnce(
     });`,
   "delegate layer mounting",
 );
+
+dedupeExactImportLines();
 
 writeFileSync(path, source);
 console.log(`Updated ${path}`);
