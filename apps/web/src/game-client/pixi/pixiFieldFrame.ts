@@ -1,6 +1,6 @@
-export const FIELD_TEXTURE_PATH = "/assets/backgrounds/field.png";
-export const FIELD_SOURCE_WIDTH = 864;
-export const FIELD_SOURCE_HEIGHT = 1536;
+export const FIELD_TEXTURE_PATH = "/assets/backgrounds/field.png?v=20260605-field2";
+export const FIELD_SOURCE_WIDTH = 609;
+export const FIELD_SOURCE_HEIGHT = 1082;
 
 export type PixiFieldFrame = {
   x: number;
