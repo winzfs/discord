@@ -31,11 +31,6 @@ type Animation = {
   done?: () => void;
 };
 
-type ButtonOptions = {
-  disabled?: boolean;
-  subFill?: number;
-};
-
 type DragState = {
   sourceIndex: number;
   ghost: Container;
@@ -64,6 +59,7 @@ type GameRefs = {
   lastSummonedIndex: number | null;
   flashBoard: boolean;
   dragging: DragState | null;
+  movementLocked: boolean;
 };
 
 function text(value: string, size = 18, fill: number = colors.white, weight: "normal" | "bold" = "bold") {
@@ -119,6 +115,18 @@ function getBoardMetrics(refs: GameRefs, layout: GameLayout): BoardMetrics {
   };
 }
 
+function getCellCenter(refs: GameRefs, cellIndex: number): { x: number; y: number; cell: number } {
+  const layout = createGameLayout(refs.app.renderer.width, refs.app.renderer.height);
+  const metrics = getBoardMetrics(refs, layout);
+  const row = Math.floor(cellIndex / metrics.cols);
+  const col = cellIndex % metrics.cols;
+  return {
+    x: metrics.startX + col * (metrics.cell + metrics.gap) + metrics.cell / 2,
+    y: metrics.startY + row * (metrics.cell + metrics.gap) + metrics.cell * 0.48,
+    cell: metrics.cell,
+  };
+}
+
 function getCellIndexAtPoint(refs: GameRefs, x: number, y: number): number | null {
   const layout = createGameLayout(refs.app.renderer.width, refs.app.renderer.height);
   const metrics = getBoardMetrics(refs, layout);
@@ -136,28 +144,37 @@ function getCellIndexAtPoint(refs: GameRefs, x: number, y: number): number | nul
   return null;
 }
 
-function createDragGhost(grade: string, cell: number): Container {
-  const ghost = new Container();
-  ghost.alpha = 0.82;
-  ghost.scale.set(1.08);
-
+function drawUnitShape(target: Container, grade: string, cell: number, scale = 1) {
   const shadow = new Graphics();
-  shadow.ellipse(0, cell * 0.14, cell * 0.18, cell * 0.055);
-  shadow.fill({ color: 0x000000, alpha: 0.22 });
-  ghost.addChild(shadow);
+  shadow.ellipse(0, cell * 0.24 * scale, cell * 0.2 * scale, cell * 0.06 * scale);
+  shadow.fill({ color: 0x244f1e, alpha: 0.28 });
+  target.addChild(shadow);
 
   const body = new Graphics();
-  body.circle(0, 0, cell * 0.22);
+  body.circle(0, 0, cell * 0.22 * scale);
   body.fill({ color: gradeColor(grade), alpha: 1 });
-  body.stroke({ color: colors.black, width: 3, alpha: 0.58 });
-  ghost.addChild(body);
+  body.stroke({ color: colors.black, width: Math.max(2, 3 * scale), alpha: 0.56 });
+  target.addChild(body);
 
   const head = new Graphics();
-  head.circle(0, -cell * 0.18, cell * 0.15);
+  head.circle(0, -cell * 0.18 * scale, cell * 0.15 * scale);
   head.fill({ color: 0xffd0a6, alpha: 1 });
-  head.stroke({ color: colors.black, width: 2, alpha: 0.58 });
-  ghost.addChild(head);
+  head.stroke({ color: colors.black, width: Math.max(1.5, 2 * scale), alpha: 0.56 });
+  target.addChild(head);
+}
 
+function createDragGhost(grade: string, cell: number): Container {
+  const ghost = new Container();
+  ghost.alpha = 0.84;
+  ghost.scale.set(1.08);
+  drawUnitShape(ghost, grade, cell, 1);
+  return ghost;
+}
+
+function createWalkingGhost(grade: string, cell: number): Container {
+  const ghost = new Container();
+  ghost.alpha = 0.95;
+  drawUnitShape(ghost, grade, cell, 0.92);
   return ghost;
 }
 
@@ -167,7 +184,7 @@ function clearDrag(refs: GameRefs) {
 }
 
 function beginCellDrag(refs: GameRefs, sourceIndex: number, globalX: number, globalY: number, cell: number) {
-  if (isFinished(refs.state)) return;
+  if (isFinished(refs.state) || refs.movementLocked) return;
   const sourceCell = refs.state.board[sourceIndex];
   const movingHero = sourceCell?.units[sourceCell.units.length - 1];
   if (!movingHero) return;
@@ -186,6 +203,72 @@ function moveDragGhost(refs: GameRefs, globalX: number, globalY: number) {
   refs.dragging.ghost.y = globalY;
 }
 
+function animateWalk(refs: GameRefs, hero: BoardHero, fromIndex: number, toIndex: number, done?: () => void) {
+  const from = getCellCenter(refs, fromIndex);
+  const to = getCellCenter(refs, toIndex);
+  const ghost = createWalkingGhost(hero.grade, from.cell);
+  ghost.x = from.x;
+  ghost.y = from.y;
+  refs.effects.addChild(ghost);
+
+  addAnim(refs, {
+    duration: 420,
+    update: (p) => {
+      const eased = 1 - Math.pow(1 - p, 3);
+      const bob = Math.sin(p * Math.PI * 4) * from.cell * 0.04;
+      ghost.x = from.x + (to.x - from.x) * eased;
+      ghost.y = from.y + (to.y - from.y) * eased + bob;
+      ghost.rotation = Math.sin(p * Math.PI * 6) * 0.08;
+    },
+    done: () => {
+      ghost.destroy({ children: true });
+      done?.();
+    },
+  });
+}
+
+function animateMoveResult(refs: GameRefs, sourceIndex: number, targetIndex: number, previousState: GameState, nextState: GameState, action: "move" | "stack" | "swap") {
+  refs.movementLocked = true;
+  const sourceCell = previousState.board[sourceIndex];
+  const targetCell = previousState.board[targetIndex];
+  const movingHero = sourceCell?.units[sourceCell.units.length - 1];
+  if (!movingHero) {
+    refs.state = nextState;
+    refs.movementLocked = false;
+    render(refs);
+    return;
+  }
+
+  const finish = () => {
+    refs.state = nextState;
+    refs.lastSummonedIndex = targetIndex;
+    refs.movementLocked = false;
+    render(refs);
+    const label = action === "swap" ? "자리 교환" : action === "stack" ? "중첩" : "이동";
+    floatText(refs, label, refs.app.renderer.width / 2, refs.app.renderer.height * 0.52, action === "swap" ? colors.orange : colors.green);
+    addAnim(refs, {
+      duration: 320,
+      update: (p) => {
+        if (p > 0.75) refs.lastSummonedIndex = null;
+        drawBoard(refs, createGameLayout(refs.app.renderer.width, refs.app.renderer.height));
+      },
+    });
+  };
+
+  if (action === "swap" && targetCell?.units[0]) {
+    let completed = 0;
+    const done = () => {
+      completed += 1;
+      if (completed >= 2) finish();
+    };
+    animateWalk(refs, movingHero, sourceIndex, targetIndex, done);
+    animateWalk(refs, targetCell.units[0], targetIndex, sourceIndex, done);
+    return;
+  }
+
+  animateWalk(refs, movingHero, sourceIndex, targetIndex, finish);
+}
+
 function finishCellDrag(refs: GameRefs, globalX: number, globalY: number) {
   if (!refs.dragging) return;
 
@@ -198,27 +281,16 @@ function finishCellDrag(refs: GameRefs, globalX: number, globalY: number) {
     return;
   }
 
+  const previousState = refs.state;
   const result = moveOneHeroToCell(refs.state, sourceIndex, targetIndex);
-  if (!result.movedHero) {
+  if (!result.movedHero || !result.action) {
     if (result.reason === "target_full") {
       floatText(refs, "칸이 가득 찼어", refs.app.renderer.width / 2, refs.app.renderer.height * 0.52, colors.red);
     }
     return;
   }
 
-  refs.state = result.state;
-  refs.lastSummonedIndex = targetIndex;
-  render(refs);
-
-  const label = result.action === "swap" ? "자리 교환" : result.action === "stack" ? "중첩" : "이동";
-  floatText(refs, label, refs.app.renderer.width / 2, refs.app.renderer.height * 0.52, result.action === "swap" ? colors.orange : colors.green);
-  addAnim(refs, {
-    duration: 360,
-    update: (p) => {
-      if (p > 0.75) refs.lastSummonedIndex = null;
-      drawBoard(refs, createGameLayout(refs.app.renderer.width, refs.app.renderer.height));
-    },
-  });
+  animateMoveResult(refs, sourceIndex, targetIndex, previousState, result.state, result.action);
 }
 
 function drawBackground(refs: GameRefs, layout: GameLayout) {
@@ -354,27 +426,11 @@ function getStackOffset(stackCount: number, index: number, cell: number) {
 
 function drawUnitMarker(refs: GameRefs, x: number, y: number, cell: number, grade: string, stackCount: number, stackIndex: number) {
   const offset = getStackOffset(stackCount, stackIndex, cell);
-  const centerX = x + cell / 2 + offset.x;
-  const centerY = y + cell * 0.48 + offset.y;
-  const bodySize = cell * 0.22 * offset.scale;
-  const headSize = cell * 0.15 * offset.scale;
-
-  const shadow = new Graphics();
-  shadow.ellipse(centerX, centerY + cell * 0.24 * offset.scale, cell * 0.2 * offset.scale, cell * 0.06 * offset.scale);
-  shadow.fill({ color: 0x244f1e, alpha: 0.28 });
-  refs.board.addChild(shadow);
-
-  const body = new Graphics();
-  body.circle(centerX, centerY, bodySize);
-  body.fill({ color: gradeColor(grade), alpha: 1 });
-  body.stroke({ color: colors.black, width: Math.max(2, 3 * offset.scale), alpha: 0.56 });
-  refs.board.addChild(body);
-
-  const head = new Graphics();
-  head.circle(centerX, centerY - cell * 0.18 * offset.scale, headSize);
-  head.fill({ color: 0xffd0a6, alpha: 1 });
-  head.stroke({ color: colors.black, width: Math.max(1.5, 2 * offset.scale), alpha: 0.56 });
-  refs.board.addChild(head);
+  const marker = new Container();
+  marker.x = x + cell / 2 + offset.x;
+  marker.y = y + cell * 0.48 + offset.y;
+  drawUnitShape(marker, grade, cell, offset.scale);
+  refs.board.addChild(marker);
 }
 
 function drawBoard(refs: GameRefs, layout: GameLayout) {
@@ -413,9 +469,9 @@ function drawBoard(refs: GameRefs, layout: GameLayout) {
     const hit = new Graphics();
     hit.roundRect(x, y, metrics.cell, metrics.cell, 12);
     hit.fill({ color: 0xffffff, alpha: 0.001 });
-    hit.eventMode = units.length > 0 ? "static" : "none";
-    hit.cursor = units.length > 0 ? "grab" : "default";
-    hit.on("pointerdown", (event) => {
+    hit.eventMode = units.length > 0 && !refs.movementLocked ? "static" : "none";
+    hit.cursor = units.length > 0 && !refs.movementLocked ? "grab" : "default";
+    hit.on("pointerdown", (event: any) => {
       event.stopPropagation();
       beginCellDrag(refs, index, event.global.x, event.global.y, metrics.cell);
     });
@@ -423,7 +479,7 @@ function drawBoard(refs: GameRefs, layout: GameLayout) {
   });
 }
 
-function button(label: string, sub: string, w: number, h: number, color: number, onTap: () => void, options: ButtonOptions = {}) {
+function button(label: string, sub: string, w: number, h: number, color: number, onTap: () => void, options: { disabled?: boolean; subFill?: number } = {}) {
   const disabled = Boolean(options.disabled);
   const c = new Container();
   c.eventMode = disabled ? "none" : "static";
@@ -475,7 +531,7 @@ function drawControls(refs: GameRefs, layout: GameLayout) {
   const summonState = getSummonButtonState(refs.state);
   const summonW = layout.width * 0.52;
   const summon = button("소환", summonState.sub, summonW, 82, colors.yellow, () => summonAction(refs), {
-    disabled: summonState.disabled,
+    disabled: summonState.disabled || refs.movementLocked,
     subFill: summonState.disabled ? 0x3b3127 : colors.black,
   });
   summon.x = (layout.width - summonW) / 2;
@@ -483,14 +539,14 @@ function drawControls(refs: GameRefs, layout: GameLayout) {
   refs.controls.addChild(summon);
 
   const mythic = button("신화", "조합", 92, 68, colors.orange, () => featureAction(refs, "오버드라이브 조합은 다음 단계에서 열려요"), {
-    disabled: isFinished(refs.state),
+    disabled: isFinished(refs.state) || refs.movementLocked,
   });
   mythic.x = 18;
   mythic.y = layout.height - 104;
   refs.controls.addChild(mythic);
 
   const gamble = button("도박", "행운석 2", 92, 68, colors.blue, () => gambleAction(refs), {
-    disabled: isFinished(refs.state) || isBoardFull(refs.state.board) || refs.state.luckStones < 2,
+    disabled: isFinished(refs.state) || isBoardFull(refs.state.board) || refs.state.luckStones < 2 || refs.movementLocked,
   });
   gamble.x = layout.width - 110;
   gamble.y = layout.height - 104;
@@ -498,14 +554,14 @@ function drawControls(refs: GameRefs, layout: GameLayout) {
 
   const upgradeCost = getPowerUpgradeCost(refs.state.powerUpgradeLevel);
   const upgrade = button("공격력 강화", `Lv.${refs.state.powerUpgradeLevel} / ${upgradeCost}`, 174, 42, 0x47584a, () => attackUpgradeAction(refs), {
-    disabled: isFinished(refs.state) || refs.state.resources < upgradeCost,
+    disabled: isFinished(refs.state) || refs.state.resources < upgradeCost || refs.movementLocked,
   });
   upgrade.x = (layout.width - 174) / 2;
   upgrade.y = layout.height - 154;
   refs.controls.addChild(upgrade);
 
   const wave = button("웨이브", "START", 104, 48, colors.orange, () => waveAction(refs), {
-    disabled: isFinished(refs.state),
+    disabled: isFinished(refs.state) || refs.movementLocked,
   });
   wave.x = layout.width - 124;
   wave.y = layout.mapTop + 105;
@@ -570,7 +626,7 @@ function spawnMonsters(refs: GameRefs) {
 
 function summonAction(refs: GameRefs) {
   const summonState = getSummonButtonState(refs.state);
-  if (summonState.disabled) {
+  if (summonState.disabled || refs.movementLocked) {
     floatText(refs, summonState.sub, refs.app.renderer.width / 2, refs.app.renderer.height - 140, colors.red);
     return;
   }
@@ -592,6 +648,7 @@ function summonAction(refs: GameRefs) {
 }
 
 function gambleAction(refs: GameRefs) {
+  if (refs.movementLocked) return;
   const result = gambleSummon(refs.state, "epic-gamble", refs.random);
 
   if (!result.summonedHero) {
@@ -614,6 +671,7 @@ function gambleAction(refs: GameRefs) {
 }
 
 function attackUpgradeAction(refs: GameRefs) {
+  if (refs.movementLocked) return;
   const result = upgradeAttack(refs.state);
   refs.state = result.state;
   render(refs);
@@ -630,7 +688,7 @@ function getWaveResultMessage(result: ReturnType<typeof completeCurrentWave>): {
 }
 
 function waveAction(refs: GameRefs) {
-  if (isFinished(refs.state)) {
+  if (isFinished(refs.state) || refs.movementLocked) {
     floatText(refs, refs.state.status === "cleared" ? "이미 클리어!" : "게임 오버", refs.app.renderer.width / 2, refs.app.renderer.height * 0.42, refs.state.status === "cleared" ? colors.green : colors.red);
     return;
   }
@@ -686,6 +744,7 @@ export function createPixiGame(parent: HTMLElement): PixiGameHandle {
     lastSummonedIndex: null,
     flashBoard: false,
     dragging: null,
+    movementLocked: false,
   } satisfies GameRefs;
 
   let destroyed = false;
@@ -708,9 +767,9 @@ export function createPixiGame(parent: HTMLElement): PixiGameHandle {
     app.stage.addChild(stage);
     stage.eventMode = "static";
     stage.hitArea = new Rectangle(0, 0, app.renderer.width, app.renderer.height);
-    stage.on("pointermove", (event) => moveDragGhost(refs, event.global.x, event.global.y));
-    stage.on("pointerup", (event) => finishCellDrag(refs, event.global.x, event.global.y));
-    stage.on("pointerupoutside", (event) => finishCellDrag(refs, event.global.x, event.global.y));
+    stage.on("pointermove", (event: any) => moveDragGhost(refs, event.global.x, event.global.y));
+    stage.on("pointerup", (event: any) => finishCellDrag(refs, event.global.x, event.global.y));
+    stage.on("pointerupoutside", (event: any) => finishCellDrag(refs, event.global.x, event.global.y));
     stage.addChild(refs.world, refs.board, refs.hud, refs.controls, refs.effects);
     render(refs);
     app.renderer.on("resize", () => {
