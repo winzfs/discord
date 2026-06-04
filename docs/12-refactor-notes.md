@@ -15,26 +15,36 @@
 
 로비 패치 스크립트는 더 이상 `build:web`에서 자동 실행하지 않습니다. 필요 시 `refactor:lobby:legacy`로만 수동 실행합니다.
 
-## 2. 남은 빌드 전 패치
+## 2. 빌드 전 패치 상태
 
-현재 `build:web`은 루트 `prebuild:web`을 통해 다음 통합 스크립트를 먼저 실행합니다.
+`build:web`은 더 이상 `prebuild:web` 자동 패치에 의존하지 않습니다.
 
-```text
-scripts/apply-pixi-build-patches.mjs
-```
-
-현재 통합 스크립트에서 실행하는 자동 보정은 다음과 같습니다.
+현재 루트 빌드 스크립트는 다음 구조입니다.
 
 ```text
-scripts/fix-floating-text-lifetime.mjs
-scripts/add-unit-info-panel.mjs
-scripts/fix-mythic-recipe-display.mjs
-scripts/add-game-run-submission.mjs
+build: pnpm -r build
+build:web: pnpm --filter @discord-random-defense/web build
+typecheck: pnpm -r typecheck
 ```
 
-이 패치들은 `apps/web/src/game-client/pixi/createPixiGame.ts`에 남아 있는 일부 임시 보정 내용을 빌드 전에 적용합니다.
+기존 Pixi 빌드 전 패치 내용은 필요한 부분을 실제 소스에 반영했습니다.
 
-최종 목표는 빌드 전 패치에 의존하지 않도록 필요한 내용을 실제 소스 파일에 직접 반영하고, `prebuild:web`에서 자동 보정 스크립트를 단계적으로 제거하는 것입니다.
+반영 완료:
+
+- 플로팅 텍스트 수명/정리 로직
+- 신화 레시피 heroId 기반 표시
+- 게임 결과 저장 제출 로직
+- 레이어 마운트 정리
+- 신화 메뉴 UI 분리
+- 유닛 메뉴 UI 분리
+- 배경/도로/보드 필드 렌더링 분리
+
+검증 완료:
+
+```text
+pnpm typecheck
+pnpm build:web
+```
 
 ## 3. Pixi 클라이언트 문제
 
@@ -56,15 +66,17 @@ apps/web/src/game-client/pixi/pixiGameLayerOrder.ts
 apps/web/src/game-client/pixi/pixiMythicRecipeText.ts
 apps/web/src/game-client/pixi/pixiMythicMenuView.ts
 apps/web/src/game-client/pixi/pixiUnitMenuView.ts
+apps/web/src/game-client/pixi/pixiBackgroundView.ts
 ```
 
 ## 5. Pixi 연결용 1회성 스크립트
 
 ```text
 scripts/apply-pixi-client-refactor.mjs
+scripts/apply-pixi-background-view-refactor.mjs
 ```
 
-이 스크립트는 자동 빌드 과정에 연결하지 않습니다.
+이 스크립트들은 자동 빌드 과정에 연결하지 않습니다.
 
 역할:
 
@@ -75,6 +87,7 @@ scripts/apply-pixi-client-refactor.mjs
 - 신화 레시피 표시 텍스트를 `pixiMythicRecipeText.ts`로 위임
 - 신화 조합 메뉴 UI를 `pixiMythicMenuView.ts`로 위임
 - 유닛 합성/판매 메뉴 UI를 `pixiUnitMenuView.ts`로 위임
+- 배경/도로/보드 필드 렌더링을 `pixiBackgroundView.ts`로 위임
 
 ## 6. 완료된 분리 작업
 
@@ -88,16 +101,17 @@ scripts/apply-pixi-client-refactor.mjs
 - 신화 레시피 표시를 고유 영웅 `heroId` 기반 텍스트로 분리
 - 신화 조합 메뉴 UI를 `pixiMythicMenuView.ts`로 분리
 - 유닛 합성/판매 메뉴 UI를 `pixiUnitMenuView.ts`로 분리
+- 배경/도로/보드 필드 렌더링을 `pixiBackgroundView.ts`로 분리
+- `packages/game/src/systems/overchipCallSystem.ts` 타입 오류 수정
+- `prebuild:web` 패치 의존 제거
 
 ## 7. 다음 작업 순서
 
-1. `pnpm typecheck` 또는 GitHub Actions 로그에서 현재 타입 오류 확인
-2. 기존 `packages/game/src/systems/overchipCallSystem.ts` 타입 오류 정리
-3. `fix-mythic-recipe-display.mjs`가 더 이상 필요한지 확인 후 제거 후보로 검토
-4. `createPixiGame.ts`에서 상태 변경 액션과 UI 렌더링 경계를 추가로 정리
-5. 웨이브 진행과 적 런타임을 `pixiWaveRuntime.ts`로 분리
-6. 각 단계마다 `pnpm typecheck`와 `pnpm build:web`로 확인
-7. 원본 소스 반영이 끝난 패치 스크립트부터 `apply-pixi-build-patches.mjs`에서 제거
+1. `createPixiGame.ts`에서 보드 좌표/드래그 런타임을 더 작은 파일로 분리
+2. `createPixiGame.ts`에서 웨이브 진행과 적 런타임을 `pixiWaveRuntime.ts` 계열로 분리
+3. 상태 변경 액션과 UI 렌더링 경계를 추가 정리
+4. 각 단계마다 `pnpm typecheck`와 `pnpm build:web`로 확인
+5. 더 이상 사용하지 않는 레거시 리팩터 스크립트 정리
 
 ## 8. 주의사항
 
