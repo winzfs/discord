@@ -5,22 +5,25 @@ import { createUnitGhost as createBoardUnitGhost, type BoardMetrics } from "./pi
 import type { GameRefs } from "./pixiGameTypes";
 
 const BOARD_CELL_TOP_PADDING = 11;
+const BOARD_CELL_HEIGHT_SCALE = 1.08;
 
 export function getBoardMetrics(refs: GameRefs, layout: GameLayout): BoardMetrics {
   const gap = 7;
   const cols = refs.state.boardSize.columns;
   const rows = refs.state.boardSize.rows;
-  const cell = Math.min(
-    (layout.boardWidth - 34 - gap * (cols - 1)) / cols,
-    (layout.boardHeight - 32 - gap * (rows - 1)) / rows,
-  );
+  const maxCellWidth = (layout.boardWidth - 34 - gap * (cols - 1)) / cols;
+  const maxCellHeight = (layout.boardHeight - 32 - gap * (rows - 1)) / rows;
+  const cellWidth = Math.min(maxCellWidth, maxCellHeight);
+  const cellHeight = Math.min(cellWidth * BOARD_CELL_HEIGHT_SCALE, maxCellHeight);
 
   return {
     cols,
     rows,
-    cell,
+    cell: cellWidth,
+    cellWidth,
+    cellHeight,
     gap,
-    startX: layout.boardX + (layout.boardWidth - cell * cols - gap * (cols - 1)) / 2,
+    startX: layout.boardX + (layout.boardWidth - cellWidth * cols - gap * (cols - 1)) / 2,
     startY: layout.boardY + BOARD_CELL_TOP_PADDING,
   };
 }
@@ -32,8 +35,8 @@ export function getCellCenter(refs: GameRefs, cellIndex: number) {
   const col = cellIndex % metrics.cols;
 
   return {
-    x: metrics.startX + col * (metrics.cell + metrics.gap) + metrics.cell / 2,
-    y: metrics.startY + row * (metrics.cell + metrics.gap) + metrics.cell * 0.48,
+    x: metrics.startX + col * (metrics.cellWidth + metrics.gap) + metrics.cellWidth / 2,
+    y: metrics.startY + row * (metrics.cellHeight + metrics.gap) + metrics.cellHeight * 0.48,
     cell: metrics.cell,
   };
 }
@@ -44,10 +47,10 @@ export function getCellIndexAtPoint(refs: GameRefs, x: number, y: number) {
 
   for (let row = 0; row < metrics.rows; row += 1) {
     for (let col = 0; col < metrics.cols; col += 1) {
-      const cellX = metrics.startX + col * (metrics.cell + metrics.gap);
-      const cellY = metrics.startY + row * (metrics.cell + metrics.gap);
+      const cellX = metrics.startX + col * (metrics.cellWidth + metrics.gap);
+      const cellY = metrics.startY + row * (metrics.cellHeight + metrics.gap);
 
-      if (x >= cellX && x <= cellX + metrics.cell && y >= cellY && y <= cellY + metrics.cell) {
+      if (x >= cellX && x <= cellX + metrics.cellWidth && y >= cellY && y <= cellY + metrics.cellHeight) {
         return row * metrics.cols + col;
       }
     }
