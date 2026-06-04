@@ -20,7 +20,7 @@ replaceOnce(
 
 replaceOnce(
   '} from "./pixiBoardView";\n',
-  '} from "./pixiBoardView";\nimport { addPixiAnimation, tickPixiAnimations, type PixiAnimation } from "./animation/animationManager";\nimport { clearPixiContainer, makePixiPanel, makePixiText } from "./pixiSharedView";\nimport { getPixiPathPoint } from "./pixiPathRuntime";\n',
+  '} from "./pixiBoardView";\nimport { addPixiAnimation, tickPixiAnimations, type PixiAnimation } from "./animation/animationManager";\nimport { createFloatingText } from "./pixiFloatingTextView";\nimport { clearPixiContainer, makePixiPanel, makePixiText } from "./pixiSharedView";\nimport { getPixiPathPoint } from "./pixiPathRuntime";\n',
   "add refactor imports",
 );
 
@@ -86,6 +86,30 @@ replaceOnce(
   addPixiAnimation(refs.animations, animation);
 }`,
   "delegate animation add",
+);
+
+replaceOnce(
+  `function floatText(refs: GameRefs, value: string, x: number, y: number, color: number) {
+  const floatingText = makeText(value, 22, color);
+  floatingText.anchor.set(0.5);
+  floatingText.x = x;
+  floatingText.y = y;
+  refs.effects.addChild(floatingText);
+  addAnimation(refs, {
+    duration: 700,
+    update: (progress) => {
+      floatingText.y = y - progress * 46;
+      floatingText.alpha = 1 - progress;
+      floatingText.scale.set(1 + progress * 0.2);
+    },
+    done: () => floatingText.destroy(),
+  });
+}`,
+  `function floatText(refs: GameRefs, value: string, x: number, y: number, color: number) {
+  const { animation } = createFloatingText(refs.effects, value, x, y, color);
+  addAnimation(refs, animation);
+}`,
+  "delegate floating text",
 );
 
 replaceOnce(
