@@ -95,13 +95,8 @@ s = s.replace("const damage = getHeroDamage(refs, hero);", "const damage = getHe
 s = s.replace("projectile.fill({ color: roleAccent(role), alpha: 1 });", "projectile.fill({ color: getRoleAccent(role), alpha: 1 });");
 
 s = s.replace(
-`function ingredientText(grade: string, role: string | undefined, count: number) {
-  const gradeLabel = grade === "legendary" ? "전설" : grade === "epic" ? "영웅" : grade === "rare" ? "희귀" : grade === "common" ? "일반" : "신화";
-  const roleLabel = role === "damage" ? "딜러" : role === "tank" ? "탱커" : role === "support" ? "지원" : "무관";
-  return \`${gradeLabel} ${roleLabel}x${count}\`;
-}
-`,
-`function ingredientText(ingredient: { heroId?: string; grade?: string; role?: string; count: number }) {
+  /function ingredientText\([\s\S]*?\n}\n\nfunction showMythicMenu/,
+  `function ingredientText(ingredient: { heroId?: string; grade?: string; role?: string; count: number }) {
   if (ingredient.heroId) {
     const hero = getHeroById(ingredient.heroId);
     return (hero?.displayName ?? ingredient.heroId) + "x" + ingredient.count;
@@ -111,7 +106,8 @@ s = s.replace(
   const roleLabel = ingredient.role === "damage" ? "딜러" : ingredient.role === "tank" ? "탱커" : ingredient.role === "support" ? "지원" : "무관";
   return gradeLabel + " " + roleLabel + "x" + ingredient.count;
 }
-`,
+
+function showMythicMenu`,
 );
 
 s = s.replace(
