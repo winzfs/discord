@@ -3,13 +3,17 @@ import {
   calculateBoardPower,
   canMergeStackCell,
   completeCurrentWave,
+  craftMythicHero,
   createInitialGameState,
   createSeededRandom,
   gambleSummon,
+  getAllBoardHeroes,
   getBoardCapacity,
   getBoardUnitCount,
+  getMythicCraftAvailability,
   getPowerUpgradeCost,
   getSummonCost,
+  getWaveByNumber,
   isBoardFull,
   mergeStackedCell,
   moveOneHeroToCell,
@@ -18,7 +22,7 @@ import {
   summonHero,
   upgradeAttack,
 } from "@discord-random-defense/game";
-import type { BoardHero, GameState } from "@discord-random-defense/game";
+import type { BoardHero, GameState, WaveProgressResult } from "@discord-random-defense/game";
 import { createGameLayout } from "./gameLayout";
 import type { GameLayout } from "./gameLayout";
 import { colors, gradeColor } from "./gameTheme";
@@ -51,6 +55,16 @@ type BoardMetrics = {
   startY: number;
 };
 
+type WavePhase = "countdown" | "combat" | "result";
+
+type ActiveEnemy = {
+  id: number;
+  x: number;
+  y: number;
+  alive: boolean;
+  boss: boolean;
+};
+
 type GameRefs = {
   app: Application;
   stage: Container;
@@ -67,7 +81,18 @@ type GameRefs = {
   dragging: DragState | null;
   movementLocked: boolean;
   menu: Container | null;
+  wavePhase: WavePhase;
+  nextWaveTimer: number;
+  combatTimer: number;
+  resultTimer: number;
+  attackTimer: number;
+  activeEnemies: ActiveEnemy[];
+  nextEnemyId: number;
 };
+
+const WAVE_COUNTDOWN_SECONDS = 8;
+const WAVE_COMBAT_SECONDS = 8;
+const WAVE_RESULT_SECONDS = 1.4;
 
 function text(value: string, size = 18, fill: number = colors.white, weight: "normal" | "bold" = "bold") {
   return new Text({
@@ -96,6 +121,10 @@ function clear(c: Container) {
 
 function isFinished(state: GameState) {
   return state.status === "failed" || state.status === "cleared";
+}
+
+function isBossWave(state: GameState) {
+  return state.currentWave % 5 === 0;
 }
 
 function addAnim(refs: GameRefs, anim: Omit<Animation, "age">) {
@@ -176,6 +205,13 @@ function drawUnitShape(target: Container, grade: string, cell: number, scale = 1
   head.fill({ color: 0xffd0a6, alpha: 1 });
   head.stroke({ color: colors.black, width: Math.max(1.5, 2 * scale), alpha: 0.56 });
   target.addChild(head);
+
+  if (grade === "mythic") {
+    const halo = new Graphics();
+    halo.circle(0, -cell * 0.04 * scale, cell * 0.34 * scale);
+    halo.stroke({ color: colors.yellow, width: Math.max(2, 4 * scale), alpha: 0.8 });
+    target.addChild(halo);
+  }
 }
 
 function createUnitGhost(grade: string, cell: number, alpha = 0.92): Container {
@@ -383,6 +419,17 @@ function sellMenuAction(refs: GameRefs, cellIndex: number) {
   floatText(refs, `판매 +${result.reward}`, refs.app.renderer.width / 2, refs.app.renderer.height * 0.52, colors.green);
 }
 
+function getPathPoint(layout: GameLayout, progress: number) {
+  const left = 26;
+  const right = layout.width - 26;
+  const top = Math.max(layout.mapTop + 78, layout.boardY - 48);
+  const bottom = Math.min(layout.boardY + layout.boardHeight + 48, layout.height - 184);
+  const phase = Math.max(0, Math.min(1, progress)) * 3;
+  if (phase < 1) return { x: right - (right - left) * phase, y: top };
+  if (phase < 2) return { x: left, y: top + (bottom - top) * (phase - 1) };
+  return { x: left + (right - left) * (phase - 2), y: bottom };
+}
+
 function drawBackground(refs: GameRefs, layout: GameLayout) {
   clear(refs.world);
   const bg = new Graphics();
@@ -402,17 +449,12 @@ function drawBackground(refs: GameRefs, layout: GameLayout) {
   }
 
   const road = new Graphics();
-  const left = 18;
-  const right = layout.width - 18;
-  const top = layout.mapTop + 100;
-  const middle = layout.mapTop + layout.mapHeight * 0.47;
-  const bottom = layout.mapTop + layout.mapHeight - 118;
-  road.moveTo(right, top);
-  road.lineTo(left, top);
-  road.lineTo(left, middle);
-  road.lineTo(right, middle);
-  road.lineTo(right, bottom);
-  road.lineTo(left, bottom);
+  const first = getPathPoint(layout, 0);
+  road.moveTo(first.x, first.y);
+  for (let i = 1; i <= 80; i += 1) {
+    const point = getPathPoint(layout, i / 80);
+    road.lineTo(point.x, point.y);
+  }
   road.stroke({ color: colors.dirtDark, width: 42, alpha: 1 });
   road.stroke({ color: colors.dirt, width: 34, alpha: 1 });
   refs.world.addChild(road);
@@ -435,7 +477,8 @@ function drawBackground(refs: GameRefs, layout: GameLayout) {
 
 function drawTopHud(refs: GameRefs, layout: GameLayout) {
   clear(refs.hud);
-  const waveBox = panel(150, 58, colors.panel, 0x3b2d26, 12);
+  const boss = isBossWave(refs.state);
+  const waveBox = panel(150, 58, boss ? 0x5a2327 : colors.panel, boss ? colors.red : 0x3b2d26, 12);
   waveBox.x = layout.width / 2 - 75;
   waveBox.y = layout.topHudY;
   refs.hud.addChild(waveBox);
@@ -444,8 +487,8 @@ function drawTopHud(refs: GameRefs, layout: GameLayout) {
   wave.x = layout.width / 2;
   wave.y = layout.topHudY + 7;
   refs.hud.addChild(wave);
-  const isBossWave = refs.state.currentWave % 5 === 0;
-  const timer = text(isBossWave ? "BOSS" : "00:30", 20, isBossWave ? colors.red : colors.white);
+  const timerLabel = refs.wavePhase === "combat" ? `${Math.ceil(refs.combatTimer)}s` : refs.wavePhase === "result" ? "RESULT" : `${Math.ceil(refs.nextWaveTimer)}s`;
+  const timer = text(boss ? `BOSS ${timerLabel}` : `NEXT ${timerLabel}`, 20, boss ? colors.red : colors.white);
   timer.anchor.set(0.5, 0);
   timer.x = layout.width / 2;
   timer.y = layout.topHudY + 30;
@@ -592,21 +635,27 @@ function drawControls(refs: GameRefs, layout: GameLayout) {
   summon.x = (layout.width - summonW) / 2;
   summon.y = layout.height - 108;
   refs.controls.addChild(summon);
-  const mythic = button("신화", "조합", 92, 68, colors.orange, () => featureAction(refs, "오버드라이브 조합은 다음 단계에서 열려요"), { disabled: isFinished(refs.state) || refs.movementLocked });
+
+  const mythicReady = getMythicCraftAvailability(refs.state).some((item) => item.canCraft);
+  const mythic = button("신화", mythicReady ? "가능" : "조합", 92, 68, colors.orange, () => showMythicMenu(refs), { disabled: isFinished(refs.state) || refs.movementLocked });
   mythic.x = 18;
   mythic.y = layout.height - 104;
   refs.controls.addChild(mythic);
+
   const gamble = button("도박", "행운석 2", 92, 68, colors.blue, () => gambleAction(refs), { disabled: isFinished(refs.state) || isBoardFull(refs.state.board) || refs.state.luckStones < 2 || refs.movementLocked });
   gamble.x = layout.width - 110;
   gamble.y = layout.height - 104;
   refs.controls.addChild(gamble);
+
   const upgradeCost = getPowerUpgradeCost(refs.state.powerUpgradeLevel);
   const upgrade = button("공격력 강화", `Lv.${refs.state.powerUpgradeLevel} / ${upgradeCost}`, 174, 42, 0x47584a, () => attackUpgradeAction(refs), { disabled: isFinished(refs.state) || refs.state.resources < upgradeCost || refs.movementLocked });
   upgrade.x = (layout.width - 174) / 2;
   upgrade.y = layout.height - 154;
   refs.controls.addChild(upgrade);
-  const wave = button("웨이브", "START", 104, 48, colors.orange, () => waveAction(refs), { disabled: isFinished(refs.state) || refs.movementLocked });
-  wave.x = layout.width - 124;
+
+  const phaseLabel = refs.wavePhase === "combat" ? "전투 중" : refs.wavePhase === "result" ? "정산" : "자동 진행";
+  const wave = button("웨이브", phaseLabel, 112, 48, refs.wavePhase === "combat" ? colors.red : colors.orange, () => featureAction(refs, "웨이브는 자동으로 진행돼요"), { disabled: isFinished(refs.state) || refs.movementLocked });
+  wave.x = layout.width - 132;
   wave.y = layout.mapTop + 105;
   refs.controls.addChild(wave);
 }
@@ -624,31 +673,109 @@ function featureAction(refs: GameRefs, message: string) {
   floatText(refs, message, refs.app.renderer.width / 2, refs.app.renderer.height * 0.56, colors.white);
 }
 
+function drawMonsterShape(target: Container, boss: boolean, size: number) {
+  const body = new Graphics();
+  body.roundRect(-size * (boss ? 1.25 : 1), -size * 0.85, size * (boss ? 2.5 : 2), size * (boss ? 2.1 : 1.7), size * 0.4);
+  body.fill({ color: boss ? 0x8b3d34 : 0x54b336, alpha: 1 });
+  body.stroke({ color: 0x2b331d, width: boss ? 4 : 2 });
+  target.addChild(body);
+
+  const eyes = new Graphics();
+  eyes.circle(-size * 0.35, -size * 0.15, Math.max(2, size * 0.12));
+  eyes.circle(size * 0.35, -size * 0.15, Math.max(2, size * 0.12));
+  eyes.fill({ color: boss ? colors.yellow : colors.white, alpha: 1 });
+  target.addChild(eyes);
+}
+
+function showBossWarning(refs: GameRefs) {
+  const warning = text("⚠ BOSS WAVE ⚠", 32, colors.red);
+  warning.anchor.set(0.5);
+  warning.x = refs.app.renderer.width / 2;
+  warning.y = refs.app.renderer.height * 0.26;
+  refs.effects.addChild(warning);
+  addAnim(refs, {
+    duration: 1350,
+    update: (p) => {
+      warning.alpha = Math.sin(p * Math.PI * 6) > 0 ? 1 : 0.35;
+      warning.scale.set(1 + Math.sin(p * Math.PI) * 0.28);
+    },
+    done: () => warning.destroy(),
+  });
+}
+
 function spawnMonsters(refs: GameRefs) {
   const layout = createGameLayout(refs.app.renderer.width, refs.app.renderer.height);
-  const count = refs.state.currentWave % 5 === 0 ? 1 : 7;
+  const wave = getWaveByNumber(refs.state.currentWave);
+  const boss = Boolean(wave?.isBossWave) || isBossWave(refs.state);
+  const count = boss ? 1 : Math.min(12, wave?.enemyGroups.reduce((sum, group) => sum + group.count, 0) ?? 7);
+  refs.activeEnemies = [];
+  if (boss) showBossWarning(refs);
+
   for (let i = 0; i < count; i += 1) {
-    const monster = new Graphics();
-    const boss = refs.state.currentWave % 5 === 0;
-    const size = boss ? 22 : 12;
-    monster.roundRect(-size, -size, size * 2, size * 1.8, size * 0.4);
-    monster.fill({ color: boss ? 0x8b5e34 : 0x54b336, alpha: 1 });
-    monster.stroke({ color: 0x2b331d, width: 2 });
-    monster.x = layout.width - 36 - i * 18;
-    monster.y = layout.mapTop + 110;
+    const monster = new Container();
+    drawMonsterShape(monster, boss, boss ? 24 : 12);
     refs.effects.addChild(monster);
+    const enemy: ActiveEnemy = { id: refs.nextEnemyId++, x: 0, y: 0, alive: true, boss };
+    refs.activeEnemies.push(enemy);
+
     addAnim(refs, {
-      duration: 900 + i * 90,
+      duration: WAVE_COMBAT_SECONDS * 1000 + i * 110,
       update: (p) => {
-        const phase = p * 3;
-        if (phase < 1) { monster.x = layout.width - 36 - (layout.width - 72) * phase; monster.y = layout.mapTop + 110; }
-        else if (phase < 2) { monster.x = 36; monster.y = layout.mapTop + 110 + layout.mapHeight * 0.44 * (phase - 1); }
-        else { monster.x = 36 + (layout.width - 72) * (phase - 2); monster.y = layout.mapTop + 110 + layout.mapHeight * 0.44; }
-        monster.rotation = Math.sin(p * 24) * 0.08;
+        const spawnDelay = i * 0.018;
+        const point = getPathPoint(layout, Math.max(0, Math.min(1, p - spawnDelay)));
+        monster.x = point.x;
+        monster.y = point.y;
+        monster.rotation = Math.sin(p * 24) * (boss ? 0.04 : 0.08);
+        enemy.x = point.x;
+        enemy.y = point.y;
       },
-      done: () => monster.destroy(),
+      done: () => {
+        enemy.alive = false;
+        monster.destroy({ children: true });
+      },
     });
   }
+}
+
+function pickAttackTarget(refs: GameRefs): ActiveEnemy {
+  const liveEnemies = refs.activeEnemies.filter((enemy) => enemy.alive);
+  if (liveEnemies.length > 0) return liveEnemies[Math.floor(refs.random() * liveEnemies.length)] ?? liveEnemies[0]!;
+  const layout = createGameLayout(refs.app.renderer.width, refs.app.renderer.height);
+  const point = getPathPoint(layout, 0.5);
+  return { id: -1, x: point.x, y: point.y, alive: true, boss: false };
+}
+
+function spawnAttackEffects(refs: GameRefs) {
+  const heroes = getAllBoardHeroes(refs.state.board);
+  if (heroes.length === 0) return;
+  const target = pickAttackTarget(refs);
+  heroes.slice(0, Math.min(heroes.length, 7)).forEach((hero, index) => {
+    const fromIndex = hero.position.row * refs.state.boardSize.columns + hero.position.column;
+    const from = getCellCenter(refs, fromIndex);
+    const projectile = new Graphics();
+    projectile.circle(0, 0, hero.grade === "mythic" ? 5 : 3.5);
+    projectile.fill({ color: gradeColor(hero.grade), alpha: 1 });
+    projectile.x = from.x;
+    projectile.y = from.y;
+    refs.effects.addChild(projectile);
+
+    addAnim(refs, {
+      duration: 360 + index * 22,
+      update: (p) => {
+        const eased = 1 - Math.pow(1 - p, 2);
+        projectile.x = from.x + (target.x - from.x) * eased;
+        projectile.y = from.y + (target.y - from.y) * eased;
+        projectile.alpha = 1 - p * 0.2;
+      },
+      done: () => {
+        projectile.destroy();
+        if (index === 0) {
+          const damage = Math.max(1, Math.floor(calculateBoardPower(refs.state).totalPower / 9));
+          floatText(refs, `${damage}`, target.x, target.y - 18, colors.yellow);
+        }
+      },
+    });
+  });
 }
 
 function summonAction(refs: GameRefs) {
@@ -684,25 +811,91 @@ function attackUpgradeAction(refs: GameRefs) {
   floatText(refs, result.upgraded ? `공격력 강화 +${refs.state.powerUpgradeLevel}` : `코인 부족 ${result.cost}`, refs.app.renderer.width / 2, refs.app.renderer.height * 0.56, result.upgraded ? colors.yellow : colors.red);
 }
 
-function getWaveResultMessage(result: ReturnType<typeof completeCurrentWave>): { label: string; color: number } {
+function showMythicMenu(refs: GameRefs) {
+  clearMenu(refs);
+  const list = getMythicCraftAvailability(refs.state);
+  const w = Math.min(344, refs.app.renderer.width - 24);
+  const h = 64 + list.length * 48;
+  const menu = new Container();
+  menu.x = refs.app.renderer.width / 2 - w / 2;
+  menu.y = Math.max(18, refs.app.renderer.height * 0.17);
+  menu.addChild(panel(w, h, 0x2d2925, colors.orange, 16));
+
+  const title = text("신화 / 오버드라이브 조합", 19, colors.yellow);
+  title.anchor.set(0.5, 0);
+  title.x = w / 2;
+  title.y = 14;
+  menu.addChild(title);
+
+  list.forEach((item, index) => {
+    const y = 52 + index * 48;
+    const row = new Container();
+    row.x = 12;
+    row.y = y;
+    row.eventMode = item.canCraft ? "static" : "none";
+    row.cursor = item.canCraft ? "pointer" : "default";
+    const bg = panel(w - 24, 40, item.canCraft ? colors.orange : 0x655e59, item.canCraft ? 0x51351e : 0x3d332e, 10);
+    row.addChild(bg);
+    const name = text(item.recipe.displayName, 14, item.canCraft ? colors.white : 0xb7afa8);
+    name.x = 12;
+    name.y = 5;
+    row.addChild(name);
+    const cost = text(`행운석 ${item.recipe.luckStoneCost}${item.canCraft ? "" : " / 재료 부족"}`, 11, item.canCraft ? colors.yellow : 0xb7afa8);
+    cost.x = 12;
+    cost.y = 22;
+    row.addChild(cost);
+    if (item.canCraft) row.on("pointertap", () => mythicCraftAction(refs, item.recipe.id));
+    menu.addChild(row);
+  });
+
+  refs.menuLayer.addChild(menu);
+  refs.menu = menu;
+}
+
+function mythicCraftAction(refs: GameRefs, recipeId: string) {
+  clearMenu(refs);
+  const result = craftMythicHero(refs.state, recipeId);
+  if (!result.craftedHero) {
+    floatText(refs, result.reason === "not_enough_luck_stones" ? "행운석 부족" : "조합 재료 부족", refs.app.renderer.width / 2, refs.app.renderer.height * 0.56, colors.red);
+    return;
+  }
+  refs.state = result.state;
+  refs.lastSummonedIndex = getCellIndexFromHero(refs.state, result.craftedHero);
+  render(refs);
+  floatText(refs, "오버드라이브 완성!", refs.app.renderer.width / 2, refs.app.renderer.height * 0.52, colors.yellow);
+}
+
+function getWaveResultMessage(result: WaveProgressResult): { label: string; color: number } {
   if (result.state.status === "failed") return { label: `패배... -${result.lostLives} HP`, color: colors.red };
   if (result.lostLives > 0) { const leakedCount = result.leakedEnemies.reduce((sum, group) => sum + group.count, 0); return { label: `누수 ${leakedCount}마리  -${result.lostLives} HP`, color: colors.orange }; }
   return { label: "완벽 방어!", color: colors.green };
 }
 
-function waveAction(refs: GameRefs) {
-  clearMenu(refs);
-  if (isFinished(refs.state) || refs.movementLocked) { floatText(refs, refs.state.status === "cleared" ? "이미 클리어!" : "게임 오버", refs.app.renderer.width / 2, refs.app.renderer.height * 0.42, refs.state.status === "cleared" ? colors.green : colors.red); return; }
+function showWaveResult(refs: GameRefs, result: WaveProgressResult) {
+  const waveMessage = getWaveResultMessage(result);
+  floatText(refs, waveMessage.label, refs.app.renderer.width / 2, refs.app.renderer.height * 0.38, waveMessage.color);
+  floatText(refs, `전투력 ${result.boardPower} / 위협도 ${result.waveThreat}`, refs.app.renderer.width / 2, refs.app.renderer.height * 0.46, colors.white);
+  floatText(refs, `코인 +${result.reward}  행운석 +${result.luckStoneReward}`, refs.app.renderer.width / 2, refs.app.renderer.height - 132, colors.green);
+}
+
+function startAutoWave(refs: GameRefs) {
+  if (isFinished(refs.state) || refs.wavePhase === "combat") return;
+  refs.wavePhase = "combat";
+  refs.combatTimer = WAVE_COMBAT_SECONDS;
+  refs.attackTimer = 0.25;
+  refs.state = startWave(refs.state);
+  render(refs);
   spawnMonsters(refs);
-  const result = completeCurrentWave(startWave(refs.state));
-  window.setTimeout(() => {
-    refs.state = result.state;
-    render(refs);
-    const waveMessage = getWaveResultMessage(result);
-    floatText(refs, waveMessage.label, refs.app.renderer.width / 2, refs.app.renderer.height * 0.38, waveMessage.color);
-    floatText(refs, `전투력 ${result.boardPower} / 위협도 ${result.waveThreat}`, refs.app.renderer.width / 2, refs.app.renderer.height * 0.46, colors.white);
-    floatText(refs, `+${result.reward}`, refs.app.renderer.width / 2, refs.app.renderer.height - 132, colors.green);
-  }, 620);
+}
+
+function finishAutoWave(refs: GameRefs) {
+  refs.activeEnemies = [];
+  const result = completeCurrentWave(refs.state);
+  refs.state = result.state;
+  refs.wavePhase = "result";
+  refs.resultTimer = WAVE_RESULT_SECONDS;
+  render(refs);
+  showWaveResult(refs, result);
 }
 
 function render(refs: GameRefs) {
@@ -714,6 +907,7 @@ function render(refs: GameRefs) {
 }
 
 function tick(refs: GameRefs, deltaMs: number) {
+  const deltaSeconds = deltaMs / 1000;
   refs.animations = refs.animations.filter((a) => {
     a.age += deltaMs;
     const p = Math.min(1, a.age / a.duration);
@@ -721,6 +915,34 @@ function tick(refs: GameRefs, deltaMs: number) {
     if (p >= 1) { a.done?.(); return false; }
     return true;
   });
+
+  if (isFinished(refs.state)) return;
+
+  if (refs.wavePhase === "countdown") {
+    refs.nextWaveTimer -= deltaSeconds;
+    if (refs.nextWaveTimer <= 0) startAutoWave(refs);
+    else drawTopHud(refs, createGameLayout(refs.app.renderer.width, refs.app.renderer.height));
+    return;
+  }
+
+  if (refs.wavePhase === "combat") {
+    refs.combatTimer -= deltaSeconds;
+    refs.attackTimer -= deltaSeconds;
+    if (refs.attackTimer <= 0) {
+      refs.attackTimer = isBossWave(refs.state) ? 0.34 : 0.48;
+      spawnAttackEffects(refs);
+    }
+    drawTopHud(refs, createGameLayout(refs.app.renderer.width, refs.app.renderer.height));
+    if (refs.combatTimer <= 0) finishAutoWave(refs);
+    return;
+  }
+
+  refs.resultTimer -= deltaSeconds;
+  if (refs.resultTimer <= 0) {
+    refs.wavePhase = "countdown";
+    refs.nextWaveTimer = WAVE_COUNTDOWN_SECONDS;
+    render(refs);
+  }
 }
 
 export function createPixiGame(parent: HTMLElement): PixiGameHandle {
@@ -743,6 +965,13 @@ export function createPixiGame(parent: HTMLElement): PixiGameHandle {
     dragging: null,
     movementLocked: false,
     menu: null,
+    wavePhase: "countdown",
+    nextWaveTimer: WAVE_COUNTDOWN_SECONDS,
+    combatTimer: 0,
+    resultTimer: 0,
+    attackTimer: 0,
+    activeEnemies: [],
+    nextEnemyId: 1,
   } satisfies GameRefs;
 
   let destroyed = false;
