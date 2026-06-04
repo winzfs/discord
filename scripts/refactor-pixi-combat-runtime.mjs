@@ -104,12 +104,12 @@ s = s.replace(
 `function ingredientText(ingredient: { heroId?: string; grade?: string; role?: string; count: number }) {
   if (ingredient.heroId) {
     const hero = getHeroById(ingredient.heroId);
-    return \`${hero?.displayName ?? ingredient.heroId}x${ingredient.count}\`;
+    return (hero?.displayName ?? ingredient.heroId) + "x" + ingredient.count;
   }
   const grade = ingredient.grade ?? "any";
   const gradeLabel = grade === "legendary" ? "전설" : grade === "epic" ? "영웅" : grade === "rare" ? "희귀" : grade === "common" ? "일반" : grade === "mythic" ? "신화" : "등급무관";
   const roleLabel = ingredient.role === "damage" ? "딜러" : ingredient.role === "tank" ? "탱커" : ingredient.role === "support" ? "지원" : "무관";
-  return \`${gradeLabel} ${roleLabel}x${ingredient.count}\`;
+  return gradeLabel + " " + roleLabel + "x" + ingredient.count;
 }
 `,
 );
