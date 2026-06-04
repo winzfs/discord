@@ -8,16 +8,19 @@ import {
 import { applyLeakReduction, getPerfectWaveLuckStoneReward } from "./pixiProgressBonuses";
 import { destroyActiveEnemy } from "./pixiEnemyRuntime";
 import { spawnWaveMonsters } from "./pixiWaveRuntime";
+import { showWaveRewardMenu } from "./pixiWaveRewardRuntime";
 
 export type PixiWaveFlowRuntimeOptions = {
   isFinished: (state: GameRefs["state"]) => boolean;
   isBossWave: (state: GameRefs["state"]) => boolean;
+  clearMenu: (refs: GameRefs) => void;
   clearMenuAndUnitInfo: (refs: GameRefs) => void;
   render: (refs: GameRefs) => void;
   showWaveResult: (refs: GameRefs) => void;
   submitFinalResultOnce: (refs: GameRefs) => void;
   showBossWarning: (refs: GameRefs) => void;
   invalidateControls: (refs: GameRefs) => void;
+  floatText: (refs: GameRefs, value: string, x: number, y: number, color: number) => void;
 };
 
 export function waveButtonAction(refs: GameRefs, options: PixiWaveFlowRuntimeOptions) {
@@ -101,5 +104,10 @@ export function finishAutoWave(
 
   options.render(refs);
   options.showWaveResult(refs);
+  showWaveRewardMenu(refs, {
+    clearMenu: options.clearMenu,
+    render: options.render,
+    floatText: options.floatText,
+  });
   options.submitFinalResultOnce(refs);
 }
