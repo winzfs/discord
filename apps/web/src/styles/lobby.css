@@ -116,6 +116,10 @@
   gap: 12px;
 }
 
+.collection-grid {
+  align-items: stretch;
+}
+
 .shop-card,
 .hero-card,
 .artifact-card {
@@ -186,6 +190,38 @@ button.artifact-card {
   box-shadow: inset 0 -14px 0 rgba(0, 0, 0, 0.18), 0 5px 0 rgba(0, 0, 0, 0.18);
 }
 
+.collection-card {
+  display: grid;
+  gap: 5px;
+  align-content: start;
+  min-height: 188px;
+}
+
+.collection-card em {
+  position: absolute;
+  top: 7px;
+  right: 8px;
+  padding: 4px 7px;
+  border-radius: 999px;
+  background: rgba(32, 22, 18, 0.72);
+  color: #fff8e6;
+  font-size: 0.7rem;
+  font-style: normal;
+  font-weight: 900;
+}
+
+.collection-card small {
+  display: block;
+  min-height: 30px;
+  color: rgba(255, 248, 230, 0.9);
+  font-weight: 800;
+  line-height: 1.25;
+}
+
+.artifact-card small {
+  color: #4c372e;
+}
+
 .hero-card span,
 .artifact-card span {
   display: block;
@@ -196,6 +232,30 @@ button.artifact-card {
   color: white;
   font-weight: 800;
 }
+
+.hero-card.locked,
+.artifact-card.locked {
+  border-color: #29211f;
+  background: linear-gradient(180deg, #837b73, #514b46);
+  color: rgba(255, 255, 255, 0.68);
+  filter: grayscale(0.7);
+  opacity: 0.72;
+  cursor: not-allowed;
+  box-shadow: inset 0 -14px 0 rgba(0, 0, 0, 0.28), 0 5px 0 rgba(0, 0, 0, 0.12);
+}
+
+.hero-card.locked .hero-portrait,
+.artifact-card.locked .artifact-icon {
+  background: #3b3734;
+  border-color: #27211f;
+  color: #bfb7ad;
+}
+
+.grade-common { background: linear-gradient(180deg, #8ca06e, #526d40); }
+.grade-rare { background: linear-gradient(180deg, #449ed4, #23648f); }
+.grade-epic { background: linear-gradient(180deg, #a96dea, #6f36a8); }
+.grade-legendary { background: linear-gradient(180deg, #ffb13d, #b66a15); }
+.grade-mythic { background: linear-gradient(180deg, #ff6868, #85253d); }
 
 .battle-road {
   display: grid;
@@ -278,12 +338,16 @@ button.artifact-card {
   font-weight: 900;
 }
 
-.detail-drawer strong {
+.detail-drawer strong,
+.detail-drawer b {
   padding: 8px;
   border-radius: 10px;
   background: #3f302a;
   color: white;
 }
+
+.detail-drawer .owned-badge { background: #257044; }
+.detail-drawer .locked-badge { background: #6d5550; }
 
 .lobby-upgrade {
   margin-top: 8px;
@@ -293,6 +357,11 @@ button.artifact-card {
   background: #ffd02f;
   color: #3a2418;
   font-weight: 900;
+}
+
+.lobby-upgrade:disabled {
+  background: #9b8b79;
+  color: #4c4138;
 }
 
 .lobby-bottom-nav {
