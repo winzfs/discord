@@ -71,7 +71,7 @@ async function exchangeCodeForToken(env: AppEnv["Bindings"], code: string) {
   });
 
   if (!response.ok) throw new Error(`Discord token exchange failed: ${response.status}`);
-  return response.json<DiscordTokenResponse>();
+  return (await response.json()) as DiscordTokenResponse;
 }
 
 async function fetchDiscordJson<T>(path: string, accessToken: string) {
@@ -80,7 +80,7 @@ async function fetchDiscordJson<T>(path: string, accessToken: string) {
   });
 
   if (!response.ok) throw new Error(`Discord API request failed: ${path} ${response.status}`);
-  return response.json<T>();
+  return (await response.json()) as T;
 }
 
 function createAvatarUrl(user: DiscordUser) {
