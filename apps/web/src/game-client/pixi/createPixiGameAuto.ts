@@ -6,6 +6,7 @@ import {
   craftMythicHero,
   createInitialGameState,
   createSeededRandom,
+  gambleSummon,
   getAllBoardHeroes,
   getBoardCapacity,
   getBoardUnitCount,
@@ -29,6 +30,7 @@ export type PixiGameHandle = { cleanup: () => void };
 
 type Animation = { age: number; duration: number; update: (progress: number) => void; done?: () => void };
 type Phase = "countdown" | "combat" | "result";
+type ActiveEnemy = { id: number; x: number; y: number; alive: boolean; boss: boolean };
 type Refs = {
   app: Application;
   stage: Container;
@@ -48,10 +50,12 @@ type Refs = {
   resultTimer: number;
   lastSummonedIndex: number | null;
   menu: Container | null;
+  activeEnemies: ActiveEnemy[];
+  nextEnemyId: number;
 };
 
-const WAVE_COUNTDOWN = 6;
-const COMBAT_TIME = 5;
+const WAVE_COUNTDOWN = 8;
+const COMBAT_TIME = 8;
 const RESULT_TIME = 1.4;
 
 function text(value: string, size = 18, fill: number = colors.white) {
@@ -144,17 +148,14 @@ function drawHero(target: Container, hero: BoardHero, cell: number, scale = 1) {
 }
 
 function pathPoint(layout: GameLayout, progress: number) {
-  const left = 36;
-  const right = layout.width - 36;
-  const y1 = layout.mapTop + 110;
-  const y2 = layout.mapTop + 110 + layout.mapHeight * 0.44;
-  const y3 = layout.mapTop + layout.mapHeight - 118;
-  const phase = Math.max(0, Math.min(1, progress)) * 5;
-  if (phase < 1) return { x: right - (right - left) * phase, y: y1 };
-  if (phase < 2) return { x: left, y: y1 + (y2 - y1) * (phase - 1) };
-  if (phase < 3) return { x: left + (right - left) * (phase - 2), y: y2 };
-  if (phase < 4) return { x: right, y: y2 + (y3 - y2) * (phase - 3) };
-  return { x: right - (right - left) * (phase - 4), y: y3 };
+  const left = 28;
+  const right = layout.width - 28;
+  const top = Math.max(layout.mapTop + 78, layout.boardY - 48);
+  const bottom = Math.min(layout.boardY + layout.boardHeight + 48, layout.height - 184);
+  const phase = Math.max(0, Math.min(1, progress)) * 3;
+  if (phase < 1) return { x: right - (right - left) * phase, y: top };
+  if (phase < 2) return { x: left, y: top + (bottom - top) * (phase - 1) };
+  return { x: left + (right - left) * (phase - 2), y: bottom };
 }
 
 function drawBackground(refs: Refs, layout: GameLayout) {
@@ -206,7 +207,7 @@ function drawHud(refs: Refs, layout: GameLayout) {
   wave.y = layout.topHudY + 7;
   refs.hud.addChild(wave);
   const timerLabel = refs.phase === "combat" ? `${Math.ceil(refs.combatTimer)}s` : refs.phase === "result" ? "RESULT" : `${Math.ceil(refs.nextWaveTimer)}s`;
-  const timer = text(bossWave(refs.state) ? `BOSS ${timerLabel}` : `AUTO ${timerLabel}`, 19, bossWave(refs.state) ? colors.red : colors.white);
+  const timer = text(bossWave(refs.state) ? `BOSS ${timerLabel}` : `NEXT ${timerLabel}`, 19, bossWave(refs.state) ? colors.red : colors.white);
   timer.anchor.set(0.5, 0);
   timer.x = layout.width / 2;
   timer.y = layout.topHudY + 32;
@@ -320,6 +321,11 @@ function drawControls(refs: Refs, layout: GameLayout) {
   mythic.y = layout.height - 104;
   refs.controls.addChild(mythic);
 
+  const gamble = makeButton("도박", "행운석 2", 92, 68, colors.blue, () => gambleAction(refs), done(refs.state) || isBoardFull(refs.state.board) || refs.state.luckStones < 2);
+  gamble.x = layout.width - 110;
+  gamble.y = layout.height - 104;
+  refs.controls.addChild(gamble);
+
   const upgradeCost = getPowerUpgradeCost(refs.state.powerUpgradeLevel);
   const upgrade = makeButton("공격력 강화", `Lv.${refs.state.powerUpgradeLevel} / ${upgradeCost}`, 174, 42, 0x47584a, () => upgradeAction(refs), done(refs.state) || refs.state.resources < upgradeCost);
   upgrade.x = (layout.width - 174) / 2;
@@ -398,21 +404,46 @@ function spawnMonsters(refs: Refs) {
   const wave = getWaveByNumber(refs.state.currentWave);
   const boss = Boolean(wave?.isBossWave);
   const count = boss ? 1 : Math.min(12, wave?.enemyGroups.reduce((sum, group) => sum + group.count, 0) ?? 7);
+  refs.activeEnemies = [];
   if (boss) bossWarning(refs);
   for (let i = 0; i < count; i += 1) {
     const monster = new Container();
     drawMonster(monster, boss, boss ? 24 : 12);
     refs.effects.addChild(monster);
-    addAnim(refs, { duration: COMBAT_TIME * 1000 + i * 90, update: (p) => { const point = pathPoint(layout, Math.max(0, Math.min(1, p - i * 0.012))); monster.x = point.x; monster.y = point.y; monster.rotation = Math.sin(p * 26) * (boss ? 0.04 : 0.1); }, done: () => monster.destroy({ children: true }) });
+    const enemy: ActiveEnemy = { id: refs.nextEnemyId++, x: 0, y: 0, alive: true, boss };
+    refs.activeEnemies.push(enemy);
+    addAnim(refs, {
+      duration: COMBAT_TIME * 1000 + i * 90,
+      update: (p) => {
+        const spawnDelay = i * 0.018;
+        const point = pathPoint(layout, Math.max(0, Math.min(1, p - spawnDelay)));
+        monster.x = point.x;
+        monster.y = point.y;
+        monster.rotation = Math.sin(p * 26) * (boss ? 0.04 : 0.1);
+        enemy.x = point.x;
+        enemy.y = point.y;
+      },
+      done: () => {
+        enemy.alive = false;
+        monster.destroy({ children: true });
+      },
+    });
   }
+}
+
+function pickAttackTarget(refs: Refs) {
+  const liveEnemies = refs.activeEnemies.filter((enemy) => enemy.alive);
+  if (liveEnemies.length > 0) return liveEnemies[Math.floor(refs.random() * liveEnemies.length)] ?? liveEnemies[0];
+  const layout = createGameLayout(refs.app.renderer.width, refs.app.renderer.height);
+  const fallback = pathPoint(layout, 0.5);
+  return { id: -1, x: fallback.x, y: fallback.y, alive: true, boss: false };
 }
 
 function spawnShots(refs: Refs) {
   const heroes = getAllBoardHeroes(refs.state.board);
   if (heroes.length === 0) return;
-  const layout = createGameLayout(refs.app.renderer.width, refs.app.renderer.height);
-  const target = pathPoint(layout, 0.38 + refs.random() * 0.28);
-  heroes.slice(0, Math.min(heroes.length, 6)).forEach((hero, i) => {
+  const target = pickAttackTarget(refs);
+  heroes.slice(0, Math.min(heroes.length, 7)).forEach((hero, i) => {
     const from = cellCenter(refs, hero.position.row * refs.state.boardSize.columns + hero.position.column);
     const shot = new Graphics();
     shot.circle(0, 0, hero.grade === "mythic" ? 5 : 3.5);
@@ -420,7 +451,19 @@ function spawnShots(refs: Refs) {
     shot.x = from.x;
     shot.y = from.y;
     refs.effects.addChild(shot);
-    addAnim(refs, { duration: 360 + i * 25, update: (p) => { const eased = 1 - Math.pow(1 - p, 2); shot.x = from.x + (target.x - from.x) * eased; shot.y = from.y + (target.y - from.y) * eased; shot.alpha = 1 - p * 0.25; }, done: () => { shot.destroy(); if (i === 0) floatText(refs, `${Math.floor(calculateBoardPower(refs.state).totalPower / 9)}`, target.x, target.y - 20, colors.yellow); } });
+    addAnim(refs, {
+      duration: 360 + i * 25,
+      update: (p) => {
+        const eased = 1 - Math.pow(1 - p, 2);
+        shot.x = from.x + (target.x - from.x) * eased;
+        shot.y = from.y + (target.y - from.y) * eased;
+        shot.alpha = 1 - p * 0.25;
+      },
+      done: () => {
+        shot.destroy();
+        if (i === 0) floatText(refs, `${Math.floor(calculateBoardPower(refs.state).totalPower / 9)}`, target.x, target.y - 20, colors.yellow);
+      },
+    });
   });
 }
 
@@ -435,6 +478,7 @@ function startWaveAuto(refs: Refs) {
 }
 
 function finishWaveAuto(refs: Refs) {
+  refs.activeEnemies = [];
   const result = completeCurrentWave(refs.state);
   refs.state = result.state;
   refs.phase = "result";
@@ -525,6 +569,20 @@ function summonAction(refs: Refs) {
   floatText(refs, "소환!", refs.app.renderer.width / 2, refs.app.renderer.height - 140, colors.yellow);
 }
 
+function gambleAction(refs: Refs) {
+  clearMenu(refs);
+  const result = gambleSummon(refs.state, "epic-gamble", refs.random);
+  if (!result.summonedHero) {
+    const message = result.reason === "not_enough_luck_stones" ? "행운석 부족" : result.reason === "board_full" ? "보드 가득" : "도박 실패";
+    floatText(refs, message, refs.app.renderer.width / 2, refs.app.renderer.height - 140, colors.red);
+    return;
+  }
+  refs.state = result.state;
+  refs.lastSummonedIndex = indexFromHero(refs.state, result.summonedHero);
+  render(refs);
+  floatText(refs, result.success ? "도박 성공!" : "보정 소환", refs.app.renderer.width / 2, refs.app.renderer.height - 140, result.success ? colors.yellow : colors.blue);
+}
+
 function upgradeAction(refs: Refs) {
   clearMenu(refs);
   const result = upgradeAttack(refs.state);
@@ -565,7 +623,7 @@ export function createPixiGame(parent: HTMLElement): PixiGameHandle {
   const app = new Application();
   const stage = new Container();
   const seed = `pixi-${Date.now()}`;
-  const refs = { app, stage, world: new Container(), board: new Container(), hud: new Container(), controls: new Container(), effects: new Container(), menuLayer: new Container(), state: createInitialGameState(seed), random: createSeededRandom(seed), animations: [], phase: "countdown", nextWaveTimer: WAVE_COUNTDOWN, combatTimer: 0, fireTimer: 0, resultTimer: 0, lastSummonedIndex: null, menu: null } satisfies Refs;
+  const refs = { app, stage, world: new Container(), board: new Container(), hud: new Container(), controls: new Container(), effects: new Container(), menuLayer: new Container(), state: createInitialGameState(seed), random: createSeededRandom(seed), animations: [], phase: "countdown", nextWaveTimer: WAVE_COUNTDOWN, combatTimer: 0, fireTimer: 0, resultTimer: 0, lastSummonedIndex: null, menu: null, activeEnemies: [], nextEnemyId: 1 } satisfies Refs;
   let destroyed = false;
   async function init() {
     await app.init({ background: colors.sky, resizeTo: parent, antialias: true, resolution: Math.min(window.devicePixelRatio || 1, 2), autoDensity: true });
