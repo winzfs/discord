@@ -3,6 +3,7 @@ import {
   getBoardUnitCount,
   getMythicCraftAvailability,
   getPowerUpgradeCost,
+  getRunBoostEffect,
   getSummonCost,
   initialBalance,
   isBoardFull,
@@ -42,7 +43,6 @@ export function drawTopHud(refs: GameRefs, layout: GameLayout) {
   });
 }
 
-
 import {
   createPixiControlsView,
   updatePixiControlsView,
@@ -58,7 +58,9 @@ export type PixiControlsRenderOptions = {
 };
 
 export function getSummonButtonState(state: GameState, isFinished: (state: GameState) => boolean) {
-  const cost = getSummonCost(state.summonCount);
+  const baseCost = getSummonCost(state.summonCount);
+  const summonBoost = Math.min(0.45, getRunBoostEffect("summon", state.runBoosts?.summon ?? 0));
+  const cost = Math.max(1, Math.ceil(baseCost * (1 - summonBoost)));
   const boardFull = isBoardFull(state.board);
   const disabled = isFinished(state) || boardFull || state.resources < cost;
 
