@@ -17,8 +17,17 @@ export type MythicCraftResult = {
   reason?: "missing_recipe" | "missing_ingredients";
 };
 
+function ingredientLabel(ingredient: MythicRecipeDefinition["ingredients"][number]) {
+  if (ingredient.heroId) {
+    const hero = getHeroById(ingredient.heroId);
+    return `${hero?.displayName ?? ingredient.heroId}x${ingredient.count}`;
+  }
+  return `${ingredient.grade ?? "any"}:${ingredient.role ?? "any"}:${ingredient.count}`;
+}
+
 function matchesIngredient(hero: BoardHero, ingredient: MythicRecipeDefinition["ingredients"][number]): boolean {
-  if (hero.grade !== ingredient.grade) return false;
+  if (ingredient.heroId && hero.heroId !== ingredient.heroId) return false;
+  if (ingredient.grade && hero.grade !== ingredient.grade) return false;
   if (!ingredient.role) return true;
   return getHeroById(hero.heroId)?.role === ingredient.role;
 }
@@ -37,7 +46,7 @@ function pickIngredients(state: GameState, recipe: MythicRecipeDefinition) {
       remaining.splice(i, 1);
       pickedCount += 1;
     }
-    if (pickedCount < ingredient.count) missing.push(`${ingredient.grade}:${ingredient.role ?? "any"}:${ingredient.count - pickedCount}`);
+    if (pickedCount < ingredient.count) missing.push(`${ingredientLabel({ ...ingredient, count: ingredient.count - pickedCount })}`);
   }
 
   return { picked, missing };
