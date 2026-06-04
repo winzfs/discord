@@ -1,3 +1,11 @@
+export type AppSession = {
+  userId: string;
+  discordId: string;
+  isGuildMember: boolean;
+  isAdmin: boolean;
+  exp: number;
+};
+
 export type AppEnv = {
   Bindings: {
     DB?: D1Database;
@@ -10,6 +18,9 @@ export type AppEnv = {
     ADMIN_DISCORD_IDS?: string;
     PUBLIC_APP_URL?: string;
     ALLOW_MOCK_AUTH?: string;
+  };
+  Variables: {
+    user: AppSession;
   };
 };
 
