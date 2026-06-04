@@ -138,6 +138,7 @@ GitHub Actions로 Workers 자동 배포가 구성되어 있습니다.
 - 신화 조합 메뉴 및 조합 시도 연결
 - 신화 조합창에 재료 보유 수 / 필요 수 표시
 - 신화 조합창에 신화 유닛 설명 표시
+- 신화 조합창 빌드 전 패치에서 구버전/신버전 레시피 표현식을 모두 처리하도록 보강
 
 ### 3.3 PixiJS 파일 분리 현황
 
@@ -249,6 +250,12 @@ animation/animationManager.ts
 신화 방벽대장 = 방벽 수호자 2 + 펄스 사수 1
 신화 오버클러커 = 오버클럭 기술자 2 + 방벽 수호자 1
 신화 보물해커 = 크레딧 해커 1 + 플라즈마 마도사 1 + 야전 의무병 1
+```
+
+신화 조합창은 각 재료를 다음 형태로 보여주는 것을 목표로 합니다.
+
+```text
+펄스 사수 1/2  야전 의무병 1/1
 ```
 
 ### 4.3 등급 표기
@@ -404,6 +411,31 @@ c9607d3c46a34e30aa43ff705077522927a6c7ec  Match mythic ingredients by hero id
 c500772fd1835f2f91e9907766b33407b572b5b2  Add hero-specific combat helpers
 ea618b2298140ef53e4a0b8b68b4f601bef9f8e5  Connect hero-specific combat and mythic progress UI
 04bfcbd8767681192d347447b8596c97ebf57fa9  Increase wave pressure variety
+4016be198a3681b1936eb21a5740c7803542811b  Handle remaining combat refactor patterns
+fd533a7ea1a8cccc376256ea598f205501b3e17d  Declare mythic progress for legacy recipe rows
+```
+
+### 6.1 최근 빌드 오류 대응 메모
+
+최근 Cloudflare Pages 빌드에서 확인된 흐름:
+
+```text
+1차 오류:
+- pickAttackTarget 미정의
+- getHeroDamage(refs, hero) 타입 불일치
+- ingredientText(...) 인자 개수 불일치
+
+대응:
+- 4016be198a3681b1936eb21a5740c7803542811b
+- 남아 있던 구버전 전투/신화 메뉴 패턴까지 변환하도록 보강
+
+2차 오류:
+- 신화 조합창 recipe 줄에서 progress 변수가 선언되지 않음
+- progress.map의 part가 암시적 any로 잡힘
+
+대응:
+- fd533a7ea1a8cccc376256ea598f205501b3e17d
+- 구버전 recipe 생성 줄도 const progress 선언과 recipe 생성이 함께 들어가도록 수정
 ```
 
 중요한 개발 원칙:
@@ -457,6 +489,7 @@ pnpm dev:web
 - 방벽/탱커 계열 감속 체감 확인
 - 보상형 유닛 처치 보너스 확인
 - 강화된 웨이브 구성이 과하게 어렵지 않은지 확인
+- 최신 `fd533a7...` 이후 `pnpm build:web` 재실행 필요
 
 ## 8. 다음 작업 우선순위
 
@@ -488,19 +521,22 @@ pnpm dev:web
 22. 빈 화면 터치 시 메뉴/정보 닫기 UX 추가
 23. 유닛별 고유 전투 효과 1차 적용
 24. 웨이브 압박 차별화 1차 적용
+25. 신화 조합창 구버전/신버전 recipe 변환 패턴 보강
+26. 신화 조합창 progress 선언 누락 빌드 오류 대응
 
 ### 8.2 최우선
 
-1. `pnpm build:web` 기준 빌드 오류 정리
-2. `/play` 실제 실행 확인
-3. 최근 패치 후 유닛 렌더링/드래그/합성/판매/정보 패널 회귀 테스트
-4. 신화 조합창 UI 실제 사용성 확인 및 텍스트 잘림 수정
-5. 유닛별 고유 효과 시각 이펙트 추가
-6. 전투/타겟팅/투사체 연결부를 실제 소스 모듈로 정리
-7. 웨이브 시작/종료/보상 로직을 `pixiWaveRuntime.ts`로 분리
-8. 신화 조합창을 `pixiMythicMenuView.ts`로 분리
-9. 플로팅 텍스트를 `pixiFloatingTextView.ts`로 분리
-10. 배경/길 렌더링을 별도 뷰로 분리
+1. 최신 커밋 기준 `pnpm build:web` 재실행
+2. 남은 타입/문법 오류가 있으면 즉시 수정
+3. `/play` 실제 실행 확인
+4. 최근 패치 후 유닛 렌더링/드래그/합성/판매/정보 패널 회귀 테스트
+5. 신화 조합창 UI 실제 사용성 확인 및 텍스트 잘림 수정
+6. 유닛별 고유 효과 시각 이펙트 추가
+7. 전투/타겟팅/투사체 연결부를 실제 소스 모듈로 정리
+8. 웨이브 시작/종료/보상 로직을 `pixiWaveRuntime.ts`로 분리
+9. 신화 조합창을 `pixiMythicMenuView.ts`로 분리
+10. 플로팅 텍스트를 `pixiFloatingTextView.ts`로 분리
+11. 배경/길 렌더링을 별도 뷰로 분리
 
 ### 8.3 이후
 
