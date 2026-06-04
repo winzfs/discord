@@ -38,6 +38,11 @@ import {
 } from "./pixiControlsView";
 import { createActiveEnemy, destroyActiveEnemy } from "./pixiEnemyRuntime";
 import { spawnWaveMonsters } from "./pixiWaveRuntime";
+import {
+  showBossWarning,
+  showWaveResult,
+  type PixiWaveFeedbackRuntimeOptions,
+} from "./pixiWaveFeedbackRuntime";
 import { updateActiveEnemies } from "./pixiEnemyMovementRuntime";
 import { calculatePixiFirepower, spawnAttackEffects } from "./pixiCombatRuntime";
 import {
@@ -200,6 +205,13 @@ function drawTopHud(refs: GameRefs, layout: GameLayout) {
   });
 }
 
+function createWaveFeedbackRuntimeOptions(): PixiWaveFeedbackRuntimeOptions {
+  return {
+    addAnimation,
+    floatText,
+  };
+}
+
 function createControlActionRuntimeOptions(): PixiControlActionRuntimeOptions {
   return {
     clearMenu,
@@ -292,22 +304,6 @@ function waveButtonAction(refs: GameRefs) {
   startAutoWave(refs);
 }
 
-function showBossWarning(refs: GameRefs) {
-  const warning = makeText("⚠ BOSS WAVE ⚠", 32, colors.red);
-  warning.anchor.set(0.5);
-  warning.x = refs.app.renderer.width / 2;
-  warning.y = refs.app.renderer.height * 0.26;
-  refs.effects.addChild(warning);
-  addAnimation(refs, {
-    duration: 1350,
-    update: (progress) => {
-      warning.alpha = Math.sin(progress * Math.PI * 6) > 0 ? 1 : 0.35;
-      warning.scale.set(1 + Math.sin(progress * Math.PI) * 0.28);
-    },
-    done: () => warning.destroy(),
-  });
-}
-
 function submitFinalResultOnce(refs: GameRefs) {
   if (refs.resultSubmitted || (refs.state.status !== "failed" && refs.state.status !== "cleared")) return;
   refs.resultSubmitted = true;
@@ -321,14 +317,6 @@ function submitFinalResultOnce(refs: GameRefs) {
     });
 }
 
-function showWaveResult(refs: GameRefs, summary: WaveSummary) {
-  const label = refs.state.status === "failed" ? `패배... -${summary.lostLives} HP` : summary.leaked > 0 ? `누수 ${summary.leaked}마리  -${summary.lostLives} HP` : "완벽 방어!";
-  const color = refs.state.status === "failed" ? colors.red : summary.leaked > 0 ? colors.orange : colors.green;
-  floatText(refs, label, refs.app.renderer.width / 2, refs.app.renderer.height * 0.38, color);
-  floatText(refs, `처치 ${summary.killed} / 누수 ${summary.leaked}`, refs.app.renderer.width / 2, refs.app.renderer.height * 0.46, colors.white);
-  floatText(refs, `처치 보상 +${summary.reward}${summary.luckStoneReward > 0 ? `  행운석 +${summary.luckStoneReward}` : ""}`, refs.app.renderer.width / 2, refs.app.renderer.height - 132, colors.green);
-}
-
 function startAutoWave(refs: GameRefs) {
   if (isFinished(refs.state) || refs.wavePhase === "combat") return;
   clearMenuAndUnitInfo(refs);
@@ -337,7 +325,10 @@ function startAutoWave(refs: GameRefs) {
   refs.attackTimer = 0.25;
   refs.state = startWave(refs.state);
   render(refs);
-  spawnWaveMonsters(refs, { showBossWarning, invalidateControls });
+  spawnWaveMonsters(refs, {
+    showBossWarning: (refs) => showBossWarning(refs, createWaveFeedbackRuntimeOptions()),
+    invalidateControls,
+  });
 }
 
 function finishAutoWave(refs: GameRefs, readyImmediately = false) {
@@ -374,7 +365,7 @@ function finishAutoWave(refs: GameRefs, readyImmediately = false) {
   refs.resultTimer = readyImmediately ? 0.35 : WAVE_RESULT_SECONDS;
   refs.nextWaveTimer = readyImmediately ? 0 : WAVE_COUNTDOWN_SECONDS;
   render(refs);
-  showWaveResult(refs, refs.lastWaveSummary);
+  showWaveResult(refs, refs.lastWaveSummary, createWaveFeedbackRuntimeOptions());
   submitFinalResultOnce(refs);
 }
 
