@@ -1,21 +1,17 @@
-name: Apply Unit Info Fix Once
+name: Verify Once
 
 on:
   workflow_dispatch:
 
-permissions:
-  contents: write
-
 jobs:
-  apply:
+  verify:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: node scripts/apply-pixi-unit-info-and-dismiss.mjs
-      - run: git diff -- apps/web/src/game-client/pixi/createPixiGame.ts
-      - run: |
-          git config user.name actions
-          git config user.email actions@example.com
-          git add apps/web/src/game-client/pixi/createPixiGame.ts
-          git diff --cached --quiet || git commit -m unit-info-fix
-          git push
+      - run: corepack enable
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: pnpm install --no-frozen-lockfile
+      - run: pnpm typecheck
+      - run: pnpm build:web
