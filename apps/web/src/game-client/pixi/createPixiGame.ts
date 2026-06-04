@@ -4,13 +4,11 @@ import {
   completeCurrentWave,
   createInitialGameState,
   createSeededRandom,
-  getMergeAvailability,
   getSummonCost,
-  mergeHeroes,
   startWave,
   summonHero,
 } from "@discord-random-defense/game";
-import type { GameState, HeroGrade } from "@discord-random-defense/game";
+import type { GameState } from "@discord-random-defense/game";
 import { createGameLayout } from "./gameLayout";
 import type { GameLayout } from "./gameLayout";
 import { colors, gradeColor } from "./gameTheme";
@@ -156,13 +154,13 @@ function drawTopHud(refs: GameRefs, layout: GameLayout) {
   hpBg.y = layout.topHudY + 66;
   refs.hud.addChild(hpBg);
 
-  const hpRatio = Math.max(0, Math.min(1, refs.state.lives / 20));
+  const hpRatio = Math.max(0, Math.min(1, refs.state.lives / 100));
   const hp = new Graphics();
   hp.roundRect(50, layout.topHudY + 70, (layout.width - 100) * hpRatio, 16, 8);
   hp.fill({ color: colors.red, alpha: 1 });
   refs.hud.addChild(hp);
 
-  const hpText = text(`${refs.state.lives} / 20`, 16, colors.white);
+  const hpText = text(`${refs.state.lives} / 100`, 16, colors.white);
   hpText.anchor.set(0.5, 0);
   hpText.x = layout.width / 2;
   hpText.y = layout.topHudY + 67;
@@ -194,12 +192,12 @@ function drawTopHud(refs: GameRefs, layout: GameLayout) {
 
 function drawBoard(refs: GameRefs, layout: GameLayout) {
   clear(refs.board);
-  const gap = 8;
+  const gap = 7;
   const cols = refs.state.boardSize.columns;
   const rows = refs.state.boardSize.rows;
   const cell = Math.min((layout.boardWidth - 34 - gap * (cols - 1)) / cols, (layout.boardHeight - 32 - gap * (rows - 1)) / rows);
   const startX = layout.boardX + (layout.boardWidth - cell * cols - gap * (cols - 1)) / 2;
-  const startY = layout.boardY + 18;
+  const startY = layout.boardY + 16;
 
   refs.state.board.forEach((slot, index) => {
     const row = Math.floor(index / cols);
@@ -292,7 +290,7 @@ function drawControls(refs: GameRefs, layout: GameLayout) {
   clear(refs.controls);
 
   const summonState = getSummonButtonState(refs.state);
-  const summonW = layout.width * 0.54;
+  const summonW = layout.width * 0.52;
   const summon = button("소환", summonState.sub, summonW, 82, colors.yellow, () => summonAction(refs), {
     disabled: summonState.disabled,
     subFill: summonState.disabled ? 0x3b3127 : colors.black,
@@ -301,33 +299,26 @@ function drawControls(refs: GameRefs, layout: GameLayout) {
   summon.y = layout.height - 108;
   refs.controls.addChild(summon);
 
-  const commonAvailability = getMergeAvailability(refs.state, "common");
-  const commonMerge = button(
-    "일반",
-    commonAvailability.canMerge ? "합성 가능" : `${commonAvailability.count}/${commonAvailability.requiredCount}`,
-    104,
-    64,
-    commonAvailability.canMerge ? colors.green : 0x516478,
-    () => mergeByGrade(refs, "common"),
-    { disabled: !commonAvailability.canMerge || isFinished(refs.state) },
-  );
-  commonMerge.x = 16;
-  commonMerge.y = layout.height - 100;
-  refs.controls.addChild(commonMerge);
+  const mythic = button("신화", "조합", 92, 68, colors.orange, () => featureAction(refs, "신화 조합은 다음 단계에서 열려요"), {
+    disabled: isFinished(refs.state),
+  });
+  mythic.x = 18;
+  mythic.y = layout.height - 104;
+  refs.controls.addChild(mythic);
 
-  const rareAvailability = getMergeAvailability(refs.state, "rare");
-  const rareMerge = button(
-    "희귀",
-    rareAvailability.canMerge ? "합성 가능" : `${rareAvailability.count}/${rareAvailability.requiredCount}`,
-    104,
-    64,
-    rareAvailability.canMerge ? colors.green : 0x516478,
-    () => mergeByGrade(refs, "rare"),
-    { disabled: !rareAvailability.canMerge || isFinished(refs.state) },
-  );
-  rareMerge.x = layout.width - 120;
-  rareMerge.y = layout.height - 100;
-  refs.controls.addChild(rareMerge);
+  const gamble = button("도박", "1회", 92, 68, colors.blue, () => featureAction(refs, "도박 소환은 다음 단계에서 열려요"), {
+    disabled: isFinished(refs.state),
+  });
+  gamble.x = layout.width - 110;
+  gamble.y = layout.height - 104;
+  refs.controls.addChild(gamble);
+
+  const upgrade = button("강화", "공격력", 148, 42, 0x47584a, () => featureAction(refs, "공격력 강화는 다음 단계에서 열려요"), {
+    disabled: isFinished(refs.state),
+  });
+  upgrade.x = (layout.width - 148) / 2;
+  upgrade.y = layout.height - 154;
+  refs.controls.addChild(upgrade);
 
   const wave = button("웨이브", "START", 104, 48, colors.orange, () => waveAction(refs), {
     disabled: isFinished(refs.state),
@@ -352,6 +343,10 @@ function floatText(refs: GameRefs, value: string, x: number, y: number, color: n
     },
     done: () => t.destroy(),
   });
+}
+
+function featureAction(refs: GameRefs, message: string) {
+  floatText(refs, message, refs.app.renderer.width / 2, refs.app.renderer.height * 0.56, colors.white);
 }
 
 function spawnMonsters(refs: GameRefs) {
@@ -407,29 +402,6 @@ function summonAction(refs: GameRefs) {
       duration: 420,
       update: (p) => {
         if (p > 0.8) refs.lastSummonedIndex = null;
-        drawBoard(refs, createGameLayout(refs.app.renderer.width, refs.app.renderer.height));
-      },
-    });
-  }
-}
-
-function mergeByGrade(refs: GameRefs, grade: HeroGrade) {
-  const availability = getMergeAvailability(refs.state, grade);
-  if (!availability.canMerge || isFinished(refs.state)) {
-    floatText(refs, `${availability.count}/${availability.requiredCount}`, refs.app.renderer.width / 2, refs.app.renderer.height * 0.55, colors.red);
-    return;
-  }
-
-  const result = mergeHeroes(refs.state, grade, refs.random);
-  refs.state = result.state;
-  refs.flashBoard = Boolean(result.mergedHero);
-  render(refs);
-  floatText(refs, result.mergedHero ? "합성!" : "3명 필요", refs.app.renderer.width / 2, refs.app.renderer.height * 0.55, result.mergedHero ? colors.yellow : colors.red);
-  if (result.mergedHero) {
-    addAnim(refs, {
-      duration: 520,
-      update: (p) => {
-        if (p > 0.65) refs.flashBoard = false;
         drawBoard(refs, createGameLayout(refs.app.renderer.width, refs.app.renderer.height));
       },
     });
