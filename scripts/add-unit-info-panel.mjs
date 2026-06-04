@@ -13,6 +13,8 @@ for (const text of required) {
   if (!s.includes(text)) throw new Error(`Missing expected text: ${text}`);
 }
 
+s = s.replace('import { colors } from "./gameTheme";', 'import { colors, gradeColor } from "./gameTheme";');
+
 s = s.replace(
   `  menuLayer: Container;
   hudView: PixiHudView | null;`,
