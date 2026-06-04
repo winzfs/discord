@@ -3,6 +3,22 @@ import { readFileSync, writeFileSync } from "node:fs";
 const path = "apps/web/src/game-client/pixi/createPixiGame.ts";
 let s = readFileSync(path, "utf8");
 
+const alreadyPatched =
+  s.includes('import { mountPixiGameLayers } from "./pixiGameLayerOrder";') &&
+  s.includes('import { shouldClearSelectionFromStagePointer } from "./pixiStagePointerHandlers";') &&
+  s.includes('import { clearUnitInfoRuntime, drawUnitInfoRuntime, selectUnitInfoHeroInCell } from "./pixiUnitInfoRuntime";') &&
+  s.includes("info: Container;") &&
+  s.includes("selectedHeroInstanceId: string | null;") &&
+  s.includes("mountPixiGameLayers(stage, refs);") &&
+  s.includes("drawUnitInfoRuntime(refs, layout);") &&
+  s.includes("selectUnitInfoHeroInCell(refs, cellIndex);") &&
+  s.includes("shouldClearSelectionFromStagePointer(stage, event)");
+
+if (alreadyPatched) {
+  console.log(`Unit info panel patch already applied to ${path}`);
+  process.exit(0);
+}
+
 const required = [
   "type GameRefs = {",
   "function showUnitMenu(refs: GameRefs, cellIndex: number)",
