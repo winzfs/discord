@@ -4,6 +4,7 @@ import {
   completeCurrentWave,
   createInitialGameState,
   createSeededRandom,
+  getMergeAvailability,
   getSummonCost,
   mergeHeroes,
   startWave,
@@ -23,6 +24,11 @@ type Animation = {
   duration: number;
   update: (progress: number) => void;
   done?: () => void;
+};
+
+type ButtonOptions = {
+  disabled?: boolean;
+  subFill?: number;
 };
 
 type GameRefs = {
@@ -67,6 +73,10 @@ function clear(c: Container) {
 
 function addAnim(refs: GameRefs, anim: Omit<Animation, "age">) {
   refs.animations.push({ ...anim, age: 0 });
+}
+
+function isFinished(state: GameState) {
+  return state.status === "failed" || state.status === "cleared";
 }
 
 function drawBackground(refs: GameRefs, layout: GameLayout) {
@@ -232,49 +242,96 @@ function drawBoard(refs: GameRefs, layout: GameLayout) {
   });
 }
 
-function button(label: string, sub: string, w: number, h: number, color: number, onTap: () => void) {
+function button(label: string, sub: string, w: number, h: number, color: number, onTap: () => void, options: ButtonOptions = {}) {
+  const disabled = Boolean(options.disabled);
   const c = new Container();
-  c.eventMode = "static";
-  c.cursor = "pointer";
-  const bg = panel(w, h, color, 0x51351e, 14);
+  c.eventMode = disabled ? "none" : "static";
+  c.cursor = disabled ? "default" : "pointer";
+
+  const bg = panel(w, h, disabled ? 0x6f6259 : color, disabled ? 0x3d332e : 0x51351e, 14);
+  bg.alpha = disabled ? 0.72 : 1;
   c.addChild(bg);
-  const s = text(sub, 12, colors.black);
+
+  const s = text(sub, 12, options.subFill ?? (disabled ? 0x2d2825 : colors.black));
   s.x = 16;
   s.y = 9;
+  s.alpha = disabled ? 0.75 : 1;
   c.addChild(s);
-  const t = text(label, 22, colors.white);
+
+  const t = text(label, 22, disabled ? 0xd0c6bc : colors.white);
   t.anchor.set(0.5, 0);
   t.x = w / 2;
   t.y = 31;
+  t.alpha = disabled ? 0.78 : 1;
   c.addChild(t);
-  c.on("pointertap", () => {
-    c.scale.set(0.96);
-    window.setTimeout(() => c.scale.set(1), 80);
-    onTap();
-  });
+
+  if (!disabled) {
+    c.on("pointertap", () => {
+      c.scale.set(0.96);
+      window.setTimeout(() => c.scale.set(1), 80);
+      onTap();
+    });
+  }
+
   return c;
+}
+
+function getSummonButtonState(state: GameState) {
+  const cost = getSummonCost(state.summonCount);
+  const boardFull = state.board.every(Boolean);
+  const disabled = isFinished(state) || boardFull || state.resources < cost;
+
+  if (state.status === "failed") return { cost, disabled, sub: "게임 오버" };
+  if (state.status === "cleared") return { cost, disabled, sub: "클리어" };
+  if (boardFull) return { cost, disabled, sub: "보드 가득" };
+  if (state.resources < cost) return { cost, disabled, sub: `부족 ${cost}` };
+  return { cost, disabled, sub: `${cost}` };
 }
 
 function drawControls(refs: GameRefs, layout: GameLayout) {
   clear(refs.controls);
 
+  const summonState = getSummonButtonState(refs.state);
   const summonW = layout.width * 0.54;
-  const summon = button("소환", `${getSummonCost(refs.state.summonCount)}`, summonW, 82, colors.yellow, () => summonAction(refs));
+  const summon = button("소환", summonState.sub, summonW, 82, colors.yellow, () => summonAction(refs), {
+    disabled: summonState.disabled,
+    subFill: summonState.disabled ? 0x3b3127 : colors.black,
+  });
   summon.x = (layout.width - summonW) / 2;
   summon.y = layout.height - 108;
   refs.controls.addChild(summon);
 
-  const commonMerge = button("일반", "합성", 96, 64, 0x516478, () => mergeByGrade(refs, "common"));
-  commonMerge.x = 20;
+  const commonAvailability = getMergeAvailability(refs.state, "common");
+  const commonMerge = button(
+    "일반",
+    commonAvailability.canMerge ? "합성 가능" : `${commonAvailability.count}/${commonAvailability.requiredCount}`,
+    104,
+    64,
+    commonAvailability.canMerge ? colors.green : 0x516478,
+    () => mergeByGrade(refs, "common"),
+    { disabled: !commonAvailability.canMerge || isFinished(refs.state) },
+  );
+  commonMerge.x = 16;
   commonMerge.y = layout.height - 100;
   refs.controls.addChild(commonMerge);
 
-  const rareMerge = button("희귀", "합성", 96, 64, 0x516478, () => mergeByGrade(refs, "rare"));
-  rareMerge.x = layout.width - 116;
+  const rareAvailability = getMergeAvailability(refs.state, "rare");
+  const rareMerge = button(
+    "희귀",
+    rareAvailability.canMerge ? "합성 가능" : `${rareAvailability.count}/${rareAvailability.requiredCount}`,
+    104,
+    64,
+    rareAvailability.canMerge ? colors.green : 0x516478,
+    () => mergeByGrade(refs, "rare"),
+    { disabled: !rareAvailability.canMerge || isFinished(refs.state) },
+  );
+  rareMerge.x = layout.width - 120;
   rareMerge.y = layout.height - 100;
   refs.controls.addChild(rareMerge);
 
-  const wave = button("웨이브", "START", 104, 48, colors.orange, () => waveAction(refs));
+  const wave = button("웨이브", "START", 104, 48, colors.orange, () => waveAction(refs), {
+    disabled: isFinished(refs.state),
+  });
   wave.x = layout.width - 124;
   wave.y = layout.mapTop + 105;
   refs.controls.addChild(wave);
@@ -333,6 +390,12 @@ function spawnMonsters(refs: GameRefs) {
 }
 
 function summonAction(refs: GameRefs) {
+  const summonState = getSummonButtonState(refs.state);
+  if (summonState.disabled) {
+    floatText(refs, summonState.sub, refs.app.renderer.width / 2, refs.app.renderer.height - 140, colors.red);
+    return;
+  }
+
   const index = refs.state.board.findIndex((slot) => slot === null);
   const result = summonHero(refs.state, refs.random);
   refs.state = result.state;
@@ -351,6 +414,12 @@ function summonAction(refs: GameRefs) {
 }
 
 function mergeByGrade(refs: GameRefs, grade: HeroGrade) {
+  const availability = getMergeAvailability(refs.state, grade);
+  if (!availability.canMerge || isFinished(refs.state)) {
+    floatText(refs, `${availability.count}/${availability.requiredCount}`, refs.app.renderer.width / 2, refs.app.renderer.height * 0.55, colors.red);
+    return;
+  }
+
   const result = mergeHeroes(refs.state, grade, refs.random);
   refs.state = result.state;
   refs.flashBoard = Boolean(result.mergedHero);
@@ -381,7 +450,7 @@ function getWaveResultMessage(result: ReturnType<typeof completeCurrentWave>): {
 }
 
 function waveAction(refs: GameRefs) {
-  if (refs.state.status === "failed" || refs.state.status === "cleared") {
+  if (isFinished(refs.state)) {
     floatText(refs, refs.state.status === "cleared" ? "이미 클리어!" : "게임 오버", refs.app.renderer.width / 2, refs.app.renderer.height * 0.42, refs.state.status === "cleared" ? colors.green : colors.red);
     return;
   }
