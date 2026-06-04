@@ -20,7 +20,7 @@ replaceOnce(
 
 replaceOnce(
   '} from "./pixiBoardView";\n',
-  '} from "./pixiBoardView";\nimport { addPixiAnimation, tickPixiAnimations, type PixiAnimation } from "./animation/animationManager";\nimport { createFloatingText } from "./pixiFloatingTextView";\nimport { mountPixiGameLayers } from "./pixiGameLayerOrder";\nimport { clearPixiContainer, makePixiPanel, makePixiText } from "./pixiSharedView";\nimport { getPixiPathPoint } from "./pixiPathRuntime";\n',
+  '} from "./pixiBoardView";\nimport { addPixiAnimation, tickPixiAnimations, type PixiAnimation } from "./animation/animationManager";\nimport { createFloatingText } from "./pixiFloatingTextView";\nimport { mountPixiGameLayers } from "./pixiGameLayerOrder";\nimport { formatMythicRecipeText } from "./pixiMythicRecipeText";\nimport { clearPixiContainer, makePixiPanel, makePixiText } from "./pixiSharedView";\nimport { getPixiPathPoint } from "./pixiPathRuntime";\n',
   "add refactor imports",
 );
 
@@ -131,6 +131,24 @@ replaceOnce(
   return { x: right - (right - left) * (phase - 3), y: bottom };`,
   `  return getPixiPathPoint(layout, progress);`,
   "delegate path point",
+);
+
+replaceOnce(
+  `function ingredientText(grade: string, role: string | undefined, count: number) {
+  const gradeLabel = grade === "legendary" ? "전설" : grade === "epic" ? "영웅" : grade === "rare" ? "희귀" : grade === "common" ? "일반" : "신화";
+  const roleLabel = role === "damage" ? "딜러" : role === "tank" ? "탱커" : role === "support" ? "지원" : "무관";
+  return `${gradeLabel} ${roleLabel}x${count}`;
+}
+
+`,
+  ``,
+  "remove local mythic ingredient text helper",
+);
+
+replaceOnce(
+  `item.recipe.ingredients.map((ingredient) => ingredientText(ingredient.grade, ingredient.role, ingredient.count)).join(" + ")`,
+  `formatMythicRecipeText(item.recipe.ingredients)`,
+  "delegate mythic recipe text",
 );
 
 replaceOnce(
