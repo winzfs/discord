@@ -7,7 +7,9 @@ export const MAX_STACK_PER_CELL = 3;
 export type MoveBoardHeroResult = {
   state: GameState;
   movedHero: BoardHero | null;
-  reason?: "empty_source" | "same_cell" | "target_full" | "different_hero" | "invalid_cell";
+  swappedHeroes?: BoardHero[];
+  action?: "move" | "stack" | "swap";
+  reason?: "empty_source" | "same_cell" | "target_full" | "invalid_cell";
 };
 
 export function createInitialBoard(rows: number, columns: number): BoardCell[] {
@@ -57,6 +59,21 @@ export function findAvailableCellIndex(board: BoardCell[], heroId: string): numb
   return findEmptyCellIndex(board);
 }
 
+function updateUnitsPosition(units: BoardHero[], position: BoardPosition): BoardHero[] {
+  return units.map((unit) => ({
+    ...unit,
+    position,
+  }));
+}
+
+function createCellWithUnits(cell: BoardCell, units: BoardHero[]): BoardCell {
+  return {
+    ...cell,
+    heroId: units[0]?.heroId ?? null,
+    units: updateUnitsPosition(units, cell.position),
+  };
+}
+
 export function placeHeroOnBoard(state: GameState, hero: Omit<BoardHero, "position">): { state: GameState; placedHero: BoardHero | null; reason?: "board_full" } {
   const cellIndex = findAvailableCellIndex(state.board, hero.heroId);
   if (cellIndex < 0) {
@@ -88,60 +105,77 @@ export function placeHeroOnBoard(state: GameState, hero: Omit<BoardHero, "positi
 
 export function moveOneHeroToCell(state: GameState, sourceCellIndex: number, targetCellIndex: number): MoveBoardHeroResult {
   if (sourceCellIndex === targetCellIndex) {
-    return { state, movedHero: null, reason: "same_cell" };
+    return { state, movedHero: null, action: "move", reason: "same_cell" };
   }
 
   const sourceCell = state.board[sourceCellIndex];
   const targetCell = state.board[targetCellIndex];
   if (!sourceCell || !targetCell) {
-    return { state, movedHero: null, reason: "invalid_cell" };
+    return { state, movedHero: null, action: "move", reason: "invalid_cell" };
   }
 
   const movingHero = sourceCell.units[sourceCell.units.length - 1];
   if (!movingHero) {
-    return { state, movedHero: null, reason: "empty_source" };
+    return { state, movedHero: null, action: "move", reason: "empty_source" };
   }
 
-  if (targetCell.units.length >= MAX_STACK_PER_CELL) {
-    return { state, movedHero: null, reason: "target_full" };
+  if (targetCell.heroId === null) {
+    const movedHero: BoardHero = { ...movingHero, position: targetCell.position };
+    const nextBoard = state.board.map((cell, index) => {
+      if (index === sourceCellIndex) {
+        const nextUnits = cell.units.slice(0, -1);
+        return createCellWithUnits(cell, nextUnits);
+      }
+      if (index === targetCellIndex) {
+        return createCellWithUnits(cell, [movedHero]);
+      }
+      return cell;
+    });
+
+    return {
+      state: { ...state, board: nextBoard },
+      movedHero,
+      action: "move",
+    };
   }
 
-  if (targetCell.heroId !== null && targetCell.heroId !== movingHero.heroId) {
-    return { state, movedHero: null, reason: "different_hero" };
+  if (targetCell.heroId === movingHero.heroId) {
+    if (targetCell.units.length >= MAX_STACK_PER_CELL) {
+      return { state, movedHero: null, action: "stack", reason: "target_full" };
+    }
+
+    const movedHero: BoardHero = { ...movingHero, position: targetCell.position };
+    const nextBoard = state.board.map((cell, index) => {
+      if (index === sourceCellIndex) {
+        const nextUnits = cell.units.slice(0, -1);
+        return createCellWithUnits(cell, nextUnits);
+      }
+      if (index === targetCellIndex) {
+        return createCellWithUnits(cell, [...cell.units, movedHero]);
+      }
+      return cell;
+    });
+
+    return {
+      state: { ...state, board: nextBoard },
+      movedHero,
+      action: "stack",
+    };
   }
 
-  const movedHero: BoardHero = {
-    ...movingHero,
-    position: targetCell.position,
-  };
-
+  const sourceUnits = updateUnitsPosition(sourceCell.units, targetCell.position);
+  const targetUnits = updateUnitsPosition(targetCell.units, sourceCell.position);
   const nextBoard = state.board.map((cell, index) => {
-    if (index === sourceCellIndex) {
-      const nextUnits = cell.units.slice(0, -1);
-      return {
-        ...cell,
-        heroId: nextUnits.length > 0 ? cell.heroId : null,
-        units: nextUnits,
-      };
-    }
-
-    if (index === targetCellIndex) {
-      return {
-        ...cell,
-        heroId: movedHero.heroId,
-        units: [...cell.units, movedHero],
-      };
-    }
-
+    if (index === sourceCellIndex) return createCellWithUnits(cell, targetUnits);
+    if (index === targetCellIndex) return createCellWithUnits(cell, sourceUnits);
     return cell;
   });
 
   return {
-    state: {
-      ...state,
-      board: nextBoard,
-    },
-    movedHero,
+    state: { ...state, board: nextBoard },
+    movedHero: { ...movingHero, position: targetCell.position },
+    swappedHeroes: [...sourceUnits, ...targetUnits],
+    action: "swap",
   };
 }
 
