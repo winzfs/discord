@@ -1,11 +1,12 @@
 import { Hono } from "hono";
 import { createDiscordAuthorizeUrl, fetchDiscordProfileFromCode } from "../services/discordOAuthService";
 import { upsertUserFromDiscord } from "../services/userRepository";
+import type { AppEnv } from "../utils/env";
 import { getEnvValue } from "../utils/env";
 import { fail, ok } from "../utils/response";
 import { setOAuthStateCookie, setSessionCookie, verifyOAuthStateCookie } from "../utils/session";
 
-export const authRoutes = new Hono();
+export const authRoutes = new Hono<AppEnv>();
 
 function createState() {
   const bytes = new Uint8Array(24);
@@ -13,7 +14,7 @@ function createState() {
   return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 
-function getPostLoginRedirect(env: Record<string, unknown>) {
+function getPostLoginRedirect(env: AppEnv["Bindings"]) {
   const publicAppUrl = getEnvValue(env, "PUBLIC_APP_URL");
   return publicAppUrl ? `${publicAppUrl.replace(/\/$/, "")}/dashboard` : "/dashboard";
 }
