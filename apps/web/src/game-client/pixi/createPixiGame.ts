@@ -48,10 +48,10 @@ import {
 } from "./pixiControlsView";
 import {
   updateEnemyViewHp,
-  updateEnemyViewPosition,
 } from "./pixiEnemyView";
 import { createActiveEnemy, destroyActiveEnemy } from "./pixiEnemyRuntime";
 import { spawnWaveMonsters } from "./pixiWaveRuntime";
+import { updateActiveEnemies } from "./pixiEnemyMovementRuntime";
 import {
   createUnitGhost as createBoardUnitGhost,
   drawBoardCells,
@@ -495,26 +495,6 @@ function showBossWarning(refs: GameRefs) {
   });
 }
 
-function updateEnemies(refs: GameRefs, deltaSeconds: number) {
-  const layout = createGameLayout(refs.app.renderer.width, refs.app.renderer.height);
-  for (const enemy of refs.activeEnemies) {
-    if (!enemy.alive) continue;
-    enemy.progress += (deltaSeconds * enemy.speed) / WAVE_COMBAT_SECONDS;
-    if (enemy.progress >= 1) {
-      enemy.alive = false;
-      refs.waveLostLives += enemy.damageToLife;
-      destroyActiveEnemy(enemy);
-      invalidateControls(refs);
-      floatText(refs, `누수 -${enemy.damageToLife}`, refs.app.renderer.width / 2, refs.app.renderer.height * 0.35, colors.red);
-      continue;
-    }
-    const point = getPathPoint(layout, Math.max(0, enemy.progress));
-    enemy.x = point.x;
-    enemy.y = point.y;
-    updateEnemyViewPosition(enemy.view, point.x, point.y, enemy.progress);
-  }
-}
-
 function pickAttackTarget(refs: GameRefs, role: HeroRole | undefined): ActiveEnemy | null {
   const liveEnemies = refs.activeEnemies.filter((enemy) => enemy.alive && enemy.progress >= 0);
   if (liveEnemies.length === 0) return null;
@@ -776,7 +756,7 @@ function tick(refs: GameRefs, deltaMs: number) {
   if (refs.wavePhase === "combat") {
     refs.combatTimer -= deltaSeconds;
     refs.attackTimer -= deltaSeconds;
-    updateEnemies(refs, deltaSeconds);
+    updateActiveEnemies(refs, deltaSeconds, { getPathPoint, invalidateControls, floatText });
     if (refs.attackTimer <= 0) {
       refs.attackTimer = isBossWave(refs.state) ? 0.34 : 0.48;
       spawnAttackEffects(refs);
