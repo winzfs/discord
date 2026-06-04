@@ -36,6 +36,17 @@ replaceOnce(
 );
 
 replaceOnce(
+  `  controls: Container;
+  effects: Container;
+  menuLayer: Container;`,
+  `  controls: Container;
+  info: Container;
+  effects: Container;
+  menuLayer: Container;`,
+  "add info layer ref",
+);
+
+replaceOnce(
   `function makeText(value: string, size = 18, fill: number = colors.white) {
   return new Text({
     text: value,
@@ -138,13 +149,24 @@ replaceOnce(
 );
 
 replaceOnce(
+  `    controls: new Container(),
+    effects: new Container(),
+    menuLayer: new Container(),`,
+  `    controls: new Container(),
+    info: new Container(),
+    effects: new Container(),
+    menuLayer: new Container(),`,
+  "create info layer",
+);
+
+replaceOnce(
   `    stage.addChild(refs.world, refs.board, refs.hud, refs.controls, refs.effects, refs.menuLayer);`,
   `    mountPixiGameLayers(stage, {
       world: refs.world,
       board: refs.board,
       hud: refs.hud,
       controls: refs.controls,
-      info: refs.effects,
+      info: refs.info,
       effects: refs.effects,
       menuLayer: refs.menuLayer,
     });`,
