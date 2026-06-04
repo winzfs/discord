@@ -13,7 +13,6 @@ import {
   initialBalance,
   isBoardFull,
   mergeStackedCell,
-  moveOneHeroToCell,
   sellTopUnitInCell,
   startWave,
   summonHero,
@@ -52,11 +51,16 @@ import {
   drawBoardCells,
 } from "./pixiBoardView";
 import {
-  createUnitGhost,
   getBoardMetrics,
   getCellCenter,
   getCellIndexAtPoint,
 } from "./pixiBoardRuntime";
+import {
+  beginCellDrag,
+  finishCellDrag,
+  moveDragGhost,
+  type PixiDragRuntimeOptions,
+} from "./pixiDragRuntime";
 import { submitGameRun } from "../submitGameRun";
 import { addPixiAnimation, tickPixiAnimations, type PixiAnimation } from "./animation/animationManager";
 import { createFloatingText } from "./pixiFloatingTextView";
@@ -159,127 +163,6 @@ function getCellIndexFromHero(state: GameState, hero: BoardHero | null) {
   return hero.position.row * state.boardSize.columns + hero.position.column;
 }
 
-function beginCellDrag(refs: GameRefs, sourceIndex: number, globalX: number, globalY: number, cell: number) {
-  if (isFinished(refs.state) || refs.movementLocked) return;
-  const sourceCell = refs.state.board[sourceIndex];
-  const movingHero = sourceCell?.units[sourceCell.units.length - 1];
-  if (!movingHero) return;
-
-  clearMenu(refs);
-  clearUnitSelection(refs);
-  clearDrag(refs);
-
-  const ghost = createUnitGhost(movingHero, cell, 0);
-  ghost.x = globalX;
-  ghost.y = globalY;
-  refs.effects.addChild(ghost);
-  refs.dragging = { sourceIndex, startX: globalX, startY: globalY, ghost, isMoving: false };
-}
-
-function moveDragGhost(refs: GameRefs, globalX: number, globalY: number) {
-  if (!refs.dragging) return;
-  const dx = globalX - refs.dragging.startX;
-  const dy = globalY - refs.dragging.startY;
-
-  if (!refs.dragging.isMoving && Math.hypot(dx, dy) > 8) {
-    refs.dragging.isMoving = true;
-    refs.dragging.ghost.alpha = 0.84;
-    refs.dragging.ghost.scale.set(1.08);
-  }
-
-  if (refs.dragging.isMoving) {
-    refs.dragging.ghost.x = globalX;
-    refs.dragging.ghost.y = globalY;
-  }
-}
-
-function animateWalk(refs: GameRefs, hero: BoardHero, fromIndex: number, toIndex: number, done?: () => void) {
-  const from = getCellCenter(refs, fromIndex);
-  const to = getCellCenter(refs, toIndex);
-  const ghost = createUnitGhost(hero, from.cell, 0.95);
-  ghost.x = from.x;
-  ghost.y = from.y;
-  refs.effects.addChild(ghost);
-
-  addAnimation(refs, {
-    duration: 420,
-    update: (progress) => {
-      const eased = 1 - Math.pow(1 - progress, 3);
-      const bob = Math.sin(progress * Math.PI * 4) * from.cell * 0.04;
-      ghost.x = from.x + (to.x - from.x) * eased;
-      ghost.y = from.y + (to.y - from.y) * eased + bob;
-      ghost.rotation = Math.sin(progress * Math.PI * 6) * 0.08;
-    },
-    done: () => {
-      ghost.destroy({ children: true });
-      done?.();
-    },
-  });
-}
-
-function animateMoveResult(refs: GameRefs, sourceIndex: number, targetIndex: number, previousState: GameState, nextState: GameState, action: "move" | "stack" | "swap") {
-  refs.movementLocked = true;
-  const sourceCell = previousState.board[sourceIndex];
-  const targetCell = previousState.board[targetIndex];
-  const movingHero = sourceCell?.units[sourceCell.units.length - 1];
-
-  if (!movingHero) {
-    refs.state = nextState;
-    refs.movementLocked = false;
-    render(refs);
-    return;
-  }
-
-  const finish = () => {
-    refs.state = nextState;
-    refs.lastSummonedIndex = targetIndex;
-    refs.movementLocked = false;
-    render(refs);
-    floatText(refs, action === "swap" ? "자리 교환" : action === "stack" ? "중첩" : "이동", refs.app.renderer.width / 2, refs.app.renderer.height * 0.52, action === "swap" ? colors.orange : colors.green);
-  };
-
-  if (action === "swap" && targetCell?.units[0]) {
-    let completed = 0;
-    const onDone = () => {
-      completed += 1;
-      if (completed >= 2) finish();
-    };
-    animateWalk(refs, movingHero, sourceIndex, targetIndex, onDone);
-    animateWalk(refs, targetCell.units[0], targetIndex, sourceIndex, onDone);
-    return;
-  }
-
-  animateWalk(refs, movingHero, sourceIndex, targetIndex, finish);
-}
-
-function finishCellDrag(refs: GameRefs, globalX: number, globalY: number) {
-  if (!refs.dragging) return;
-
-  const sourceIndex = refs.dragging.sourceIndex;
-  const wasMoving = refs.dragging.isMoving;
-  const targetIndex = getCellIndexAtPoint(refs, globalX, globalY);
-  clearDrag(refs);
-
-  if (!wasMoving || targetIndex === sourceIndex) {
-    showUnitMenu(refs, sourceIndex);
-    return;
-  }
-
-  if (targetIndex === null) {
-    floatText(refs, "이동 취소", refs.app.renderer.width / 2, refs.app.renderer.height * 0.52, colors.white);
-    return;
-  }
-
-  const previousState = refs.state;
-  const result = moveOneHeroToCell(refs.state, sourceIndex, targetIndex);
-  if (!result.movedHero || !result.action) {
-    if (result.reason === "target_full") floatText(refs, "칸이 가득 찼어", refs.app.renderer.width / 2, refs.app.renderer.height * 0.52, colors.red);
-    return;
-  }
-
-  animateMoveResult(refs, sourceIndex, targetIndex, previousState, result.state, result.action);
-}
-
 function showUnitMenu(refs: GameRefs, cellIndex: number) {
   if (refs.movementLocked) return;
   const cell = refs.state.board[cellIndex];
@@ -362,11 +245,24 @@ function drawTopHud(refs: GameRefs, layout: GameLayout) {
   });
 }
 
+function createDragRuntimeOptions(): PixiDragRuntimeOptions {
+  return {
+    isFinished,
+    clearMenu,
+    clearUnitSelection,
+    clearDrag,
+    addAnimation,
+    render,
+    floatText,
+    showUnitMenu,
+  };
+}
+
 function drawBoard(refs: GameRefs, layout: GameLayout) {
   const metrics = getBoardMetrics(refs, layout);
   drawBoardCells(refs.board, refs.state.board, metrics, (cellIndex) => canMergeStackCell(refs.state, cellIndex), {
     canDrag: !refs.movementLocked,
-    onCellPointerDown: (cellIndex, globalX, globalY, cellSize) => beginCellDrag(refs, cellIndex, globalX, globalY, cellSize),
+    onCellPointerDown: (cellIndex, globalX, globalY, cellSize) => beginCellDrag(refs, cellIndex, globalX, globalY, cellSize, createDragRuntimeOptions()),
   });
 }
 
@@ -683,8 +579,8 @@ export function createPixiGame(parent: HTMLElement): PixiGameHandle {
       if (!cell || cell.units.length === 0) clearMenuAndUnitInfo(refs);
     });
     stage.on("pointermove", (event: any) => moveDragGhost(refs, event.global.x, event.global.y));
-    stage.on("pointerup", (event: any) => finishCellDrag(refs, event.global.x, event.global.y));
-    stage.on("pointerupoutside", (event: any) => finishCellDrag(refs, event.global.x, event.global.y));
+    stage.on("pointerup", (event: any) => finishCellDrag(refs, event.global.x, event.global.y, createDragRuntimeOptions()));
+    stage.on("pointerupoutside", (event: any) => finishCellDrag(refs, event.global.x, event.global.y, createDragRuntimeOptions()));
     mountPixiGameLayers(stage, {
       world: refs.world,
       board: refs.board,
