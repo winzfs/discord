@@ -3,34 +3,9 @@ name: Apply Pixi Board Geometry Once
 on:
   workflow_dispatch:
 
-permissions:
-  contents: write
-
 jobs:
-  apply:
+  disabled:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Apply board geometry import
-        run: node scripts/apply-pixi-board-geometry-import.mjs
-
-      - name: Apply board geometry functions
-        run: node scripts/apply-pixi-board-geometry-functions.mjs
-
-      - name: Fix board geometry braces
-        run: node scripts/fix-pixi-board-geometry-braces.mjs
-
-      - name: Commit changes
-        run: |
-          if git diff --quiet; then
-            echo "No changes"
-            exit 0
-          fi
-          git config user.name "actions"
-          git config user.email "actions@example.com"
-          git add apps/web/src/game-client/pixi/createPixiGame.ts
-          git commit -m "Apply Pixi board geometry refactor"
-          git pull --rebase origin main
-          git push
+      - name: Disabled
+        run: echo "This workflow is disabled. The board geometry refactor was reverted after verification."
