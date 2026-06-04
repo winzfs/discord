@@ -42,6 +42,12 @@ s = s.replace(
   refs.dragging = null;
 }
 
+function clearUnitSelection(refs: GameRefs) {
+  refs.selectedHeroInstanceId = null;
+  refs.info.removeChildren();
+  clearMenu(refs);
+}
+
 function gradeLabel(grade: string) {
   if (grade === "common") return "일반";
   if (grade === "rare") return "희귀";
@@ -175,8 +181,21 @@ s = s.replace(
 );
 
 s = s.replace(
+  `    stage.on("pointermove", (event: any) => moveDragGhost(refs, event.global.x, event.global.y));`,
+  `    stage.on("pointerdown", () => clearUnitSelection(refs));
+    stage.on("pointermove", (event: any) => moveDragGhost(refs, event.global.x, event.global.y));`,
+);
+
+s = s.replace(
   `    stage.addChild(refs.world, refs.board, refs.hud, refs.controls, refs.effects, refs.menuLayer);`,
   `    stage.addChild(refs.world, refs.board, refs.hud, refs.controls, refs.info, refs.effects, refs.menuLayer);`,
+);
+
+s = s.replace(
+  `      clearMenu(refs);
+      invalidateHud(refs);`,
+  `      clearUnitSelection(refs);
+      invalidateHud(refs);`,
 );
 
 writeFileSync(path, s);
