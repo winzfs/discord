@@ -1,5 +1,6 @@
 import { getSummonCost, summonGradeRates } from "../data/balance";
 import { heroes } from "../data/heroes";
+import { placeHeroOnBoard } from "./boardSystem";
 import type { GameState } from "../types/gameState";
 import type { BoardHero, HeroDefinition, HeroGrade } from "../types/hero";
 import type { SeededRandom } from "../utils/random";
@@ -29,11 +30,6 @@ export function pickHeroByGrade(grade: HeroGrade, random: SeededRandom): HeroDef
 }
 
 export function summonHero(state: GameState, random: SeededRandom): SummonResult {
-  const emptyIndex = state.board.findIndex((slot) => slot === null);
-  if (emptyIndex < 0) {
-    return { state, summonedHero: null, reason: "board_full" };
-  }
-
   const summonCost = getSummonCost(state.summonCount);
   if (state.resources < summonCost) {
     return { state, summonedHero: null, reason: "not_enough_resources" };
@@ -45,26 +41,23 @@ export function summonHero(state: GameState, random: SeededRandom): SummonResult
     return { state, summonedHero: null, reason: "no_hero_for_grade" };
   }
 
-  const boardHero: BoardHero = {
+  const boardHero = {
     instanceId: `hero-${state.summonCount + 1}`,
     heroId: hero.id,
     grade: hero.grade,
-    position: {
-      row: Math.floor(emptyIndex / state.boardSize.columns),
-      column: emptyIndex % state.boardSize.columns,
-    },
-  };
+  } satisfies Omit<BoardHero, "position">;
 
-  const nextBoard = [...state.board];
-  nextBoard[emptyIndex] = boardHero;
+  const placement = placeHeroOnBoard(state, boardHero);
+  if (!placement.placedHero) {
+    return { state, summonedHero: null, reason: "board_full" };
+  }
 
   return {
     state: {
-      ...state,
-      board: nextBoard,
+      ...placement.state,
       resources: state.resources - summonCost,
       summonCount: state.summonCount + 1,
     },
-    summonedHero: boardHero,
+    summonedHero: placement.placedHero,
   };
 }
