@@ -11,12 +11,33 @@ export type MergeResult = {
   reason?: "not_enough_same_grade" | "max_grade" | "no_hero_for_next_grade";
 };
 
+export type MergeAvailability = {
+  grade: HeroGrade;
+  count: number;
+  requiredCount: number;
+  canMerge: boolean;
+  nextGrade: HeroGrade | null;
+};
+
 const gradeOrder: HeroGrade[] = ["common", "rare", "epic", "legendary"];
 
 export function getNextGrade(grade: HeroGrade): HeroGrade | null {
   const gradeIndex = gradeOrder.indexOf(grade);
   if (gradeIndex < 0 || gradeIndex >= gradeOrder.length - 1) return null;
   return gradeOrder[gradeIndex + 1] ?? null;
+}
+
+export function getMergeAvailability(state: GameState, grade: HeroGrade): MergeAvailability {
+  const count = state.board.filter((slot) => slot?.grade === grade).length;
+  const nextGrade = getNextGrade(grade);
+
+  return {
+    grade,
+    count,
+    requiredCount: initialBalance.mergeRequiredCount,
+    canMerge: Boolean(nextGrade) && count >= initialBalance.mergeRequiredCount,
+    nextGrade,
+  };
 }
 
 function pickHeroByGrade(grade: HeroGrade, random: SeededRandom): HeroDefinition | null {
