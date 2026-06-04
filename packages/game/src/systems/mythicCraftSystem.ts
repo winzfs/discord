@@ -10,6 +10,14 @@ export type MythicCraftAvailability = {
   missing: string[];
 };
 
+export type MythicIngredientProgress = {
+  label: string;
+  owned: number;
+  required: number;
+  fulfilled: boolean;
+  heroId?: string;
+};
+
 export type MythicCraftResult = {
   state: GameState;
   craftedHero: BoardHero | null;
@@ -20,9 +28,9 @@ export type MythicCraftResult = {
 function ingredientLabel(ingredient: MythicRecipeDefinition["ingredients"][number]) {
   if (ingredient.heroId) {
     const hero = getHeroById(ingredient.heroId);
-    return `${hero?.displayName ?? ingredient.heroId}x${ingredient.count}`;
+    return hero?.displayName ?? ingredient.heroId;
   }
-  return `${ingredient.grade ?? "any"}:${ingredient.role ?? "any"}:${ingredient.count}`;
+  return `${ingredient.grade ?? "any"}:${ingredient.role ?? "any"}`;
 }
 
 function matchesIngredient(hero: BoardHero, ingredient: MythicRecipeDefinition["ingredients"][number]): boolean {
@@ -46,10 +54,24 @@ function pickIngredients(state: GameState, recipe: MythicRecipeDefinition) {
       remaining.splice(i, 1);
       pickedCount += 1;
     }
-    if (pickedCount < ingredient.count) missing.push(`${ingredientLabel({ ...ingredient, count: ingredient.count - pickedCount })}`);
+    if (pickedCount < ingredient.count) missing.push(`${ingredientLabel(ingredient)}x${ingredient.count - pickedCount}`);
   }
 
   return { picked, missing };
+}
+
+export function getMythicIngredientProgress(state: GameState, recipe: MythicRecipeDefinition): MythicIngredientProgress[] {
+  const heroes = getAllBoardHeroes(state.board);
+  return recipe.ingredients.map((ingredient) => {
+    const owned = heroes.filter((hero) => matchesIngredient(hero, ingredient)).length;
+    return {
+      label: ingredientLabel(ingredient),
+      owned,
+      required: ingredient.count,
+      fulfilled: owned >= ingredient.count,
+      heroId: ingredient.heroId,
+    };
+  });
 }
 
 export function getMythicCraftAvailability(state: GameState): MythicCraftAvailability[] {
