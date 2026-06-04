@@ -1,10 +1,58 @@
+import { artifacts, heroes, type ArtifactDefinition, type HeroDefinition } from "@discord-random-defense/game";
+
 export type LobbyTabId = "shop" | "heroes" | "battle" | "artifacts";
+export type CollectionKind = "hero" | "artifact";
 
 export type Detail = {
+  kind: CollectionKind;
+  id: string;
   title: string;
   subtitle: string;
   stats: string[];
+  owned: boolean;
+  level: number;
+  progressText: string;
+  upgradeCost: number;
+  canUpgrade: boolean;
+  lockedText?: string;
 };
+
+export type HeroProgress = {
+  id: string;
+  level: number;
+  shards: number;
+  owned: boolean;
+};
+
+export type ArtifactProgress = {
+  id: string;
+  level: number;
+  pieces: number;
+  owned: boolean;
+};
+
+export type LobbyHero = HeroDefinition & HeroProgress;
+export type LobbyArtifact = ArtifactDefinition & ArtifactProgress;
+
+const ownedHeroIds = new Set([
+  "spark-runner",
+  "rookie-guard",
+  "mini-mender",
+  "pulse-ranger",
+  "barrier-guard",
+  "field-medic",
+  "plasma-mage",
+  "core-knight",
+  "overclock-tech",
+]);
+
+const ownedArtifactIds = new Set([
+  "power-tonic",
+  "arcane-manual",
+  "vault-chip",
+  "coin-cannon",
+  "lucky-core",
+]);
 
 export const shopItems = [
   { name: "무료 보석", amount: "30", price: "무료", tag: "AD" },
@@ -13,23 +61,54 @@ export const shopItems = [
   { name: "폭풍거인", amount: "10", price: "3600", tag: "10% 할인" },
 ];
 
-export const initialHeroes = [
-  { name: "오크주술사", level: 1, shard: "207/5", role: "원거리", attack: "9.3K", speed: "2" },
-  { name: "필스생성기", level: 1, shard: "207/5", role: "지원", attack: "7.8K", speed: "1.6" },
-  { name: "발바", level: 1, shard: "207/5", role: "근거리", attack: "8.8K", speed: "1.4" },
-  { name: "울티", level: 1, shard: "207/5", role: "원거리", attack: "9.3K", speed: "2" },
-  { name: "닌자", level: 2, shard: "207/10", role: "암살", attack: "5.1K", speed: "2.6" },
-  { name: "드래곤", level: 6, shard: "207/70", role: "광역", attack: "8.9K", speed: "1.1" },
-];
+export function getHeroUpgradeRequirement(level: number) {
+  return Math.min(120, 5 + level * 5);
+}
 
-export const initialArtifacts = [
-  { name: "강화 장갑", level: 1, progress: "0/2", effect: "치명타 피해 증가" },
-  { name: "비전서", level: 1, progress: "1/2", effect: "스킬 피해 증가" },
-  { name: "빙결봉", level: 1, progress: "1/2", effect: "빙결 확률 증가" },
-  { name: "왕의 깃발", level: 1, progress: "0/2", effect: "소환 비용 감소" },
-  { name: "나팔", level: 1, progress: "0/2", effect: "웨이브 보상 증가" },
-  { name: "황금 곡괭이", level: 2, progress: "0/4", effect: "골드 획득 증가" },
-];
+export function getArtifactUpgradeRequirement(level: number) {
+  return Math.min(80, 2 + level * 2);
+}
+
+export function getCollectionUpgradeCost(kind: CollectionKind, level: number) {
+  const base = kind === "hero" ? 650 : 520;
+  return base + level * (kind === "hero" ? 350 : 280);
+}
+
+export function getHeroPowerAtLevel(hero: HeroDefinition, level: number) {
+  return Math.round(hero.power * (1 + Math.max(0, level - 1) * 0.12));
+}
+
+export function getArtifactEffectAtLevel(artifact: ArtifactDefinition, level: number) {
+  return artifact.baseEffect + Math.max(0, level - 1) * artifact.effectPerLevel;
+}
+
+export function formatPercent(value: number) {
+  return `${Math.round(value * 1000) / 10}%`;
+}
+
+export const initialHeroes: LobbyHero[] = heroes.map((hero, index) => {
+  const owned = ownedHeroIds.has(hero.id);
+  const level = owned ? Math.max(1, Math.min(6, index + 1)) : 0;
+  const required = getHeroUpgradeRequirement(Math.max(1, level));
+  return {
+    ...hero,
+    level,
+    owned,
+    shards: owned ? required + 3 + index * 2 : 0,
+  };
+});
+
+export const initialArtifacts: LobbyArtifact[] = artifacts.map((artifact, index) => {
+  const owned = ownedArtifactIds.has(artifact.id);
+  const level = owned ? Math.max(1, Math.min(5, index + 1)) : 0;
+  const required = getArtifactUpgradeRequirement(Math.max(1, level));
+  return {
+    ...artifact,
+    level,
+    owned,
+    pieces: owned ? required + 1 + index : 0,
+  };
+});
 
 export const quests = [
   { title: "영웅 30회 모집", progress: 78 },
