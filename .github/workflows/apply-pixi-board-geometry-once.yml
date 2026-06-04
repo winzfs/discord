@@ -19,6 +19,9 @@ jobs:
       - name: Apply board geometry functions
         run: node scripts/apply-pixi-board-geometry-functions.mjs
 
+      - name: Fix board geometry braces
+        run: node scripts/fix-pixi-board-geometry-braces.mjs
+
       - name: Commit changes
         run: |
           if git diff --quiet; then
