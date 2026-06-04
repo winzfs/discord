@@ -18,6 +18,8 @@ export type PixiWaveRewardMenuOptions = {
   onSelect: (choiceId: WaveRewardChoiceId) => void;
 };
 
+const mutedText = 0xb8aaa0;
+
 export function createPixiWaveRewardMenuView(options: PixiWaveRewardMenuOptions) {
   const root = new Container();
   root.zIndex = 55;
@@ -36,7 +38,7 @@ export function createPixiWaveRewardMenuView(options: PixiWaveRewardMenuOptions)
   const panel = new Graphics();
   panel.roundRect(x, y, width, 300, 20);
   panel.fill({ color: colors.panel, alpha: 0.97 });
-  panel.stroke({ color: colors.gold, width: 3 });
+  panel.stroke({ color: colors.yellow, width: 3 });
   root.addChild(panel);
 
   const title = makePixiText("웨이브 보상 선택", 22, colors.white);
@@ -45,7 +47,7 @@ export function createPixiWaveRewardMenuView(options: PixiWaveRewardMenuOptions)
   title.y = y + 32;
   root.addChild(title);
 
-  const subtitle = makePixiText("다음 웨이브를 위한 보상 하나를 고르세요", 13, colors.muted);
+  const subtitle = makePixiText("다음 웨이브를 위한 보상 하나를 고르세요", 13, mutedText);
   subtitle.anchor.set(0.5);
   subtitle.x = options.rendererWidth / 2;
   subtitle.y = y + 58;
@@ -68,12 +70,12 @@ export function createPixiWaveRewardMenuView(options: PixiWaveRewardMenuOptions)
     name.y = rowY + 8;
     root.addChild(name);
 
-    const desc = makePixiText(choice.description, 12, colors.muted);
+    const desc = makePixiText(choice.description, 12, mutedText);
     desc.x = x + 34;
     desc.y = rowY + 30;
     root.addChild(desc);
 
-    const value = makePixiText(`+${choice.value}`, 16, colors.gold);
+    const value = makePixiText(`+${choice.value}`, 16, colors.yellow);
     value.anchor.set(1, 0.5);
     value.x = x + width - 34;
     value.y = rowY + 26;
