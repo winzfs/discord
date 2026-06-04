@@ -1,9 +1,13 @@
-import type { BoardHero } from "@discord-random-defense/game";
+import type { BoardHero, GameState } from "@discord-random-defense/game";
+import { getRunBoostEffect } from "@discord-random-defense/game";
 import { getArtifactEffectAtLevel, getHeroPowerAtLevel } from "../../game-lobby/lobbyData";
 import { loadLobbyProgress, type LobbyProgressSnapshot } from "../../game-lobby/lobbyProgressStorage";
 
 export type PixiProgressBonuses = {
   progress: LobbyProgressSnapshot;
+  baseAttackMultiplier: number;
+  baseEconomyMultiplier: number;
+  baseLuckStoneBonusChance: number;
   attackMultiplier: number;
   economyMultiplier: number;
   luckStoneBonusChance: number;
@@ -17,20 +21,34 @@ function sumOwnedArtifactEffect(progress: LobbyProgressSnapshot, categories: str
   }, 0);
 }
 
+export function syncPixiProgressBonusesFromState(bonuses: PixiProgressBonuses, state: GameState) {
+  const attackBoost = getRunBoostEffect("attack", state.runBoosts?.attack ?? 0);
+  const economyBoost = getRunBoostEffect("economy", state.runBoosts?.economy ?? 0);
+  const luckBoost = getRunBoostEffect("luck", state.runBoosts?.luck ?? 0);
+
+  bonuses.attackMultiplier = bonuses.baseAttackMultiplier * (1 + attackBoost);
+  bonuses.economyMultiplier = bonuses.baseEconomyMultiplier * (1 + economyBoost);
+  bonuses.luckStoneBonusChance = Math.min(0.75, bonuses.baseLuckStoneBonusChance + luckBoost);
+}
+
 export function createPixiProgressBonuses(): PixiProgressBonuses {
   const progress = loadLobbyProgress();
   const attackBonus = sumOwnedArtifactEffect(progress, ["attack"]);
   const economyBonus = sumOwnedArtifactEffect(progress, ["economy"]);
   const luckBonus = sumOwnedArtifactEffect(progress, ["luck"]);
   const defenseBonus = sumOwnedArtifactEffect(progress, ["defense"]);
-
-  return {
+  const bonuses: PixiProgressBonuses = {
     progress,
+    baseAttackMultiplier: 1 + attackBonus,
+    baseEconomyMultiplier: 1 + economyBonus,
+    baseLuckStoneBonusChance: Math.min(0.65, luckBonus),
     attackMultiplier: 1 + attackBonus,
     economyMultiplier: 1 + economyBonus,
     luckStoneBonusChance: Math.min(0.65, luckBonus),
     leakReduction: Math.min(0.5, defenseBonus),
   };
+
+  return bonuses;
 }
 
 export function getProgressHeroLevel(bonuses: PixiProgressBonuses, heroId: string) {
