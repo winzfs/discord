@@ -1,3 +1,4 @@
+import { getPowerUpgradeMultiplier } from "../data/balance";
 import { getEnemyById } from "../data/enemies";
 import { getHeroById } from "../data/heroes";
 import { getWaveByNumber } from "../data/waves";
@@ -10,6 +11,7 @@ export type BoardPowerBreakdown = {
   attackSpeedBonus: number;
   rangeBonus: number;
   roleBonus: number;
+  upgradeBonus: number;
   totalPower: number;
   heroCount: number;
 };
@@ -80,13 +82,15 @@ export function calculateBoardPower(state: GameState): BoardPowerBreakdown {
   const attackSpeedBonus = 0.94 + Math.min(averageAttackSpeed, 1.5) * 0.06;
   const rangeBonus = 0.96 + Math.min(averageRange, 5) * 0.02;
   const roleBonus = getRoleBonus(boardHeroes);
+  const upgradeBonus = getPowerUpgradeMultiplier(state.powerUpgradeLevel);
 
   return {
     rawPower: Math.round(rawPower),
     attackSpeedBonus,
     rangeBonus,
     roleBonus,
-    totalPower: Math.round(rawPower * attackSpeedBonus * rangeBonus * roleBonus),
+    upgradeBonus,
+    totalPower: Math.round(rawPower * attackSpeedBonus * rangeBonus * roleBonus * upgradeBonus),
     heroCount: boardHeroes.length,
   };
 }
