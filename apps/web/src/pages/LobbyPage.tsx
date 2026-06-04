@@ -66,7 +66,7 @@ function LobbyStage() {
 
 function ShopView() {
   return (
-    <section className="lobby-panel">
+    <section className="lobby-panel" id="shop">
       <h2>상점</h2>
       <div className="shop-grid">
         {shopItems.map((item) => (
@@ -84,7 +84,7 @@ function ShopView() {
 
 function HeroesView() {
   return (
-    <section className="lobby-panel">
+    <section className="lobby-panel" id="heroes">
       <div className="panel-tabs"><b>영웅</b><span>신화</span></div>
       <div className="hero-grid">
         {heroes.map((hero) => (
@@ -102,7 +102,7 @@ function HeroesView() {
 
 function BattleView() {
   return (
-    <section className="lobby-panel battle-panel">
+    <section className="lobby-panel battle-panel" id="battle">
       <h2>전투</h2>
       <div className="battle-road">
         <span>20</span>
@@ -128,7 +128,7 @@ function BattleView() {
 
 function ArtifactsView() {
   return (
-    <section className="lobby-panel">
+    <section className="lobby-panel" id="artifacts">
       <h2>유물</h2>
       <div className="artifact-grid">
         {artifacts.map((item) => (
