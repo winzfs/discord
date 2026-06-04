@@ -12,7 +12,6 @@ export type MythicRecipeDefinition = {
   role: HeroRole;
   attackStyle: "physical" | "magic" | "control" | "support" | "economy";
   ingredients: MythicRecipeIngredient[];
-  luckStoneCost: number;
   description: string;
 };
 
@@ -26,7 +25,6 @@ export const mythicRecipes: MythicRecipeDefinition[] = [
       { grade: "epic", role: "damage", count: 2 },
       { grade: "rare", role: "support", count: 1 },
     ],
-    luckStoneCost: 2,
     description: "초중반 보스 처리를 담당하는 물리 단일 딜러입니다.",
   },
   {
@@ -39,7 +37,6 @@ export const mythicRecipes: MythicRecipeDefinition[] = [
       { grade: "epic", role: "support", count: 1 },
       { grade: "rare", role: "damage", count: 1 },
     ],
-    luckStoneCost: 3,
     description: "광역 마법 피해로 웨이브 정리를 담당합니다.",
   },
   {
@@ -51,7 +48,6 @@ export const mythicRecipes: MythicRecipeDefinition[] = [
       { grade: "epic", role: "tank", count: 2 },
       { grade: "rare", role: "damage", count: 1 },
     ],
-    luckStoneCost: 2,
     description: "라인을 늦추고 코어 피해를 줄이는 제어형 신화 유닛입니다.",
   },
   {
@@ -63,7 +59,6 @@ export const mythicRecipes: MythicRecipeDefinition[] = [
       { grade: "epic", role: "support", count: 2 },
       { grade: "rare", role: "tank", count: 1 },
     ],
-    luckStoneCost: 2,
     description: "아군 공격 속도와 스킬 회전을 보조하는 지원형 신화 유닛입니다.",
   },
   {
@@ -76,7 +71,6 @@ export const mythicRecipes: MythicRecipeDefinition[] = [
       { grade: "epic", role: "damage", count: 1 },
       { grade: "rare", role: "support", count: 1 },
     ],
-    luckStoneCost: 5,
     description: "코인과 행운석 운영을 돕는 경제형 고점 유닛입니다.",
   },
 ];
