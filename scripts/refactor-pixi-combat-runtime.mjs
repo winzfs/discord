@@ -11,8 +11,6 @@ must('function spawnAttackEffects(refs: GameRefs)');
 must('function getFirepower(refs: GameRefs)');
 must('function applySupportSplash(refs: GameRefs, target: ActiveEnemy, damage: number)');
 
-s = s.replace(/\n  getAllBoardHeroes,/, "");
-s = s.replace(/\n  getHeroById,/, "");
 s = s.replace(
   'import type { BoardHero, GameState, HeroRole } from "@discord-random-defense/game";',
   'import type { BoardHero, GameState } from "@discord-random-defense/game";',
