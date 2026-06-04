@@ -14,9 +14,9 @@ export type GameLayout = {
 };
 
 const BOARD_LEFT = 0.252;
-const BOARD_TOP = 0.318;
+const BOARD_TOP = 0.333;
 const BOARD_WIDTH = 0.498;
-const BOARD_HEIGHT = 0.375;
+const BOARD_HEIGHT = 0.395;
 
 export function createGameLayout(width: number, height: number): GameLayout {
   const safeTop = 10;
