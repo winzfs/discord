@@ -1,0 +1,31 @@
+name: Pixi Game Client Repair Once
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download known good createPixiGame
+        run: |
+          curl -L "https://raw.githubusercontent.com/winzfs/discord/6566f19a7a96224088054f584bd333e9de61a485/apps/web/src/game-client/pixi/createPixiGame.ts" -o apps/web/src/game-client/pixi/createPixiGame.ts
+
+      - name: Commit repair
+        run: |
+          if git diff --quiet; then
+            echo "No changes"
+            exit 0
+          fi
+          git config user.name "actions"
+          git config user.email "actions@example.com"
+          git add apps/web/src/game-client/pixi/createPixiGame.ts
+          git commit -m "Repair Pixi game client after geometry refactor"
+          git pull --rebase origin main
+          git push
