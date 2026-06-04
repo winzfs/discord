@@ -1,7 +1,5 @@
 import type { GameLayout } from "./gameLayout";
-
-const FIELD_SOURCE_WIDTH = 864;
-const FIELD_SOURCE_HEIGHT = 1536;
+import { getPixiFieldCoverFrame } from "./pixiFieldFrame";
 
 const FIELD_PATH_POINTS = [
   { x: 0.115, y: 0.805 },
@@ -15,21 +13,8 @@ const FIELD_PATH_POINTS = [
   { x: 0.115, y: 0.805 },
 ];
 
-function getFieldFrame(layout: GameLayout) {
-  const scale = Math.max(layout.width / FIELD_SOURCE_WIDTH, layout.height / FIELD_SOURCE_HEIGHT);
-  const width = FIELD_SOURCE_WIDTH * scale;
-  const height = FIELD_SOURCE_HEIGHT * scale;
-
-  return {
-    x: (layout.width - width) / 2,
-    y: (layout.height - height) / 2,
-    width,
-    height,
-  };
-}
-
 function toScreenPoint(layout: GameLayout, point: { x: number; y: number }) {
-  const frame = getFieldFrame(layout);
+  const frame = getPixiFieldCoverFrame(layout.width, layout.height);
   return {
     x: frame.x + frame.width * point.x,
     y: frame.y + frame.height * point.y,
