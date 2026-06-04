@@ -62,6 +62,14 @@ import { formatMythicRecipeText } from "./pixiMythicRecipeText";
 import { clearPixiContainer, makePixiPanel, makePixiText } from "./pixiSharedView";
 import { getPixiPathPoint } from "./pixiPathRuntime";
 import { drawPixiBackgroundView } from "./pixiBackgroundView";
+import {
+  applyEconomyRewardBonus,
+  applyLeakReduction,
+  createPixiProgressBonuses,
+  getPerfectWaveLuckStoneReward,
+  getProgressHeroPower,
+  type PixiProgressBonuses,
+} from "./pixiProgressBonuses";
 
 export type PixiGameHandle = { cleanup: () => void };
 
@@ -115,6 +123,7 @@ type GameRefs = {
   hudView: PixiHudView | null;
   controlsView: PixiControlsView | null;
   state: GameState;
+  progressBonuses: PixiProgressBonuses;
   random: ReturnType<typeof createSeededRandom>;
   animations: Animation[];
   lastSummonedIndex: number | null;
@@ -647,7 +656,9 @@ function getHeroDamage(refs: GameRefs, hero: BoardHero) {
   const role = definition?.role ?? "damage";
   const gradeBase = hero.grade === "mythic" ? 150 : hero.grade === "legendary" ? 95 : hero.grade === "epic" ? 52 : hero.grade === "rare" ? 28 : 16;
   const roleMultiplier = role === "damage" ? 1.18 : role === "tank" ? 0.82 : 0.72;
-  return Math.round(gradeBase * roleMultiplier * (1 + refs.state.powerUpgradeLevel * 0.16));
+  const fallbackPower = Math.round(gradeBase * roleMultiplier);
+  const progressPower = getProgressHeroPower(refs.progressBonuses, hero, fallbackPower);
+  return Math.round(progressPower * refs.progressBonuses.attackMultiplier * (1 + refs.state.powerUpgradeLevel * 0.16));
 }
 
 function damageEnemy(refs: GameRefs, enemy: ActiveEnemy, damage: number) {
@@ -658,15 +669,16 @@ function damageEnemy(refs: GameRefs, enemy: ActiveEnemy, damage: number) {
 
   enemy.alive = false;
   refs.waveKilled += 1;
-  refs.waveReward += enemy.reward;
+  const reward = applyEconomyRewardBonus(refs.progressBonuses, enemy.reward);
+  refs.waveReward += reward;
   refs.state = {
     ...refs.state,
-    resources: refs.state.resources + enemy.reward,
+    resources: refs.state.resources + reward,
     defeatedEnemies: refs.state.defeatedEnemies + (enemy.boss ? 0 : 1),
     defeatedBosses: refs.state.defeatedBosses + (enemy.boss ? 1 : 0),
-    score: refs.state.score + enemy.reward * 3 + (enemy.boss ? 250 : 20),
+    score: refs.state.score + reward * 3 + (enemy.boss ? 250 : 20),
   };
-  floatText(refs, `+${enemy.reward}`, enemy.x, enemy.y - 26, colors.green);
+  floatText(refs, `+${reward}`, enemy.x, enemy.y - 26, colors.green);
   destroyActiveEnemy(enemy);
   invalidateControls(refs);
   const layout = createGameLayout(refs.app.renderer.width, refs.app.renderer.height);
@@ -836,14 +848,16 @@ function finishAutoWave(refs: GameRefs, readyImmediately = false) {
 
   const leaked = alive.length + refs.waveLostLives;
   const perfect = lostLives <= 0;
-  const luckStoneReward = perfect ? (isBossWave(refs.state) ? 2 : refs.state.currentWave % 3 === 0 ? 1 : 0) : 0;
-  const nextLives = Math.max(0, refs.state.lives - lostLives);
+  const baseLuckStoneReward = perfect ? (isBossWave(refs.state) ? 2 : refs.state.currentWave % 3 === 0 ? 1 : 0) : 0;
+  const luckStoneReward = getPerfectWaveLuckStoneReward(refs.progressBonuses, baseLuckStoneReward, refs.random);
+  const reducedLostLives = applyLeakReduction(refs.progressBonuses, lostLives);
+  const nextLives = Math.max(0, refs.state.lives - reducedLostLives);
   const finalWave = refs.state.currentWave >= initialBalance.maxWave;
   const nextStatus = nextLives <= 0 ? "failed" : finalWave ? "cleared" : "playing";
   const nextWave = nextStatus === "playing" ? refs.state.currentWave + 1 : refs.state.currentWave;
 
   refs.activeEnemies = [];
-  refs.lastWaveSummary = { killed: refs.waveKilled, leaked, lostLives, reward: refs.waveReward, luckStoneReward, perfect };
+  refs.lastWaveSummary = { killed: refs.waveKilled, leaked, lostLives: reducedLostLives, reward: refs.waveReward, luckStoneReward, perfect };
   refs.state = {
     ...refs.state,
     lives: nextLives,
@@ -926,6 +940,7 @@ export function createPixiGame(parent: HTMLElement): PixiGameHandle {
     hudView: null,
     controlsView: null,
     state: createInitialGameState(seed),
+    progressBonuses: createPixiProgressBonuses(),
     random: createSeededRandom(seed),
     animations: [],
     lastSummonedIndex: null,
@@ -958,7 +973,7 @@ export function createPixiGame(parent: HTMLElement): PixiGameHandle {
     });
 
     if (destroyed) {
-      app.destroy(true);
+      app.destroy({ removeView: true }, { children: true });
       return;
     }
 
@@ -1002,7 +1017,7 @@ export function createPixiGame(parent: HTMLElement): PixiGameHandle {
       clearMenuAndUnitInfo(refs);
       clearDrag(refs);
       refs.activeEnemies.forEach(destroyActiveEnemy);
-      app.destroy(true, { children: true });
+      app.destroy({ removeView: true }, { children: true });
     },
   };
 }
