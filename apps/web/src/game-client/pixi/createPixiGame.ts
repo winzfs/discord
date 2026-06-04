@@ -36,13 +36,10 @@ import {
   type PixiWaveFlowRuntimeOptions,
 } from "./pixiWaveFlowRuntime";
 import { drawBackground, drawControls, drawTopHud, getSummonButtonState } from "./pixiRenderRuntime";
+import { drawBoard } from "./pixiBoardRenderRuntime";
 import { updateActiveEnemies } from "./pixiEnemyMovementRuntime";
 import { spawnAttackEffects } from "./pixiCombatRuntime";
 import {
-  drawBoardCells,
-} from "./pixiBoardView";
-import {
-  getBoardMetrics,
   getCellCenter,
   getCellIndexAtPoint,
 } from "./pixiBoardRuntime";
@@ -53,7 +50,6 @@ import {
   type PixiDragRuntimeOptions,
 } from "./pixiDragRuntime";
 import {
-  canShowMergeIndicator,
   showUnitMenu,
   type PixiUnitActionRuntimeOptions,
 } from "./pixiUnitActionRuntime";
@@ -223,14 +219,6 @@ function createDragRuntimeOptions(): PixiDragRuntimeOptions {
   };
 }
 
-function drawBoard(refs: GameRefs, layout: GameLayout) {
-  const metrics = getBoardMetrics(refs, layout);
-  drawBoardCells(refs.board, refs.state.board, metrics, (cellIndex) => canShowMergeIndicator(refs, cellIndex), {
-    canDrag: !refs.movementLocked,
-    onCellPointerDown: (cellIndex, globalX, globalY, cellSize) => beginCellDrag(refs, cellIndex, globalX, globalY, cellSize, createDragRuntimeOptions()),
-  });
-}
-
 function floatText(refs: GameRefs, value: string, x: number, y: number, color: number) {
   const { animation } = createFloatingText(refs.effects, value, x, y, color);
   addAnimation(refs, animation);
@@ -253,7 +241,7 @@ function render(refs: GameRefs) {
   const layout = createGameLayout(refs.app.renderer.width, refs.app.renderer.height);
   drawBackground(refs, layout);
   drawTopHud(refs, layout);
-  drawBoard(refs, layout);
+  drawBoard(refs, layout, createDragRuntimeOptions);
   drawSelectedUnitInfo(refs);
   drawControls(refs, layout, {
     isFinished,
