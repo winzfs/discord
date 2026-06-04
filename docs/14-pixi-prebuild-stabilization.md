@@ -2,7 +2,7 @@
 
 ## 1. 현재 결론
 
-`Apply Pixi Refactor` GitHub Actions 실행 이후, 기존 빌드 전 패치 방식은 실제 소스 반영 방식으로 전환되었습니다.
+`Apply Pixi Refactor` GitHub Actions 실행 이후, 기존 빌드 전 Pixi 패치 방식은 실제 소스 반영 방식으로 전환되었습니다.
 
 현재 `package.json`에는 더 이상 `prebuild:web`이 없습니다.
 
@@ -14,15 +14,13 @@
 }
 ```
 
-또한 기존에 사용하던 `scripts/apply-pixi-build-patches.mjs`는 최신 저장소에서 존재하지 않습니다.
+현재 웹 빌드는 빌드 전 Pixi 패치 스크립트를 실행하지 않고, 실제 소스 기준으로 바로 빌드됩니다.
 
-즉 현재 웹 빌드는 빌드 전 Pixi 패치 스크립트를 실행하지 않고, 실제 소스 기준으로 바로 빌드됩니다.
+## 2. 완료된 정리
 
-## 2. 해결된 문제
+### 2.1 GitHub Actions lockfile 문제 해결
 
-### 2.1 GitHub Actions lockfile 문제
-
-`Apply Pixi Refactor` 워크플로우에서 다음 문제로 실패했습니다.
+`Apply Pixi Refactor` 워크플로우는 처음에 다음 문제로 실패했습니다.
 
 ```text
 actions/setup-node@v4
@@ -54,7 +52,7 @@ Dependencies lock file is not found
 f5592276f7285f7b8f7f7c65e596538a6a5c9dae
 ```
 
-### 2.2 신화 레시피 표시 충돌
+### 2.2 신화 레시피 표시 충돌 해결
 
 이전에는 `fix-mythic-ingredient-type.mjs`와 `fix-mythic-recipe-display.mjs`가 서로 다른 `ingredientText` 함수 형태를 가정해서 TypeScript 에러가 발생했습니다.
 
@@ -66,7 +64,7 @@ Expected 3 arguments, but got 1.
 
 현재는 `formatMythicRecipeText`가 실제 소스에서 직접 import되어 사용되는 구조로 리팩터되었습니다.
 
-### 2.3 legacy Pixi patch script 정리
+### 2.3 legacy Pixi patch script 삭제 완료
 
 아래 legacy patch script들은 더 이상 빌드 경로에서 사용되지 않았고, 저장소 검색에서도 참조가 발견되지 않았습니다.
 
@@ -187,10 +185,10 @@ function clearMenuAndUnitInfo(refs: GameRefs) {
 
 - `prebuild:web`
 - `scripts/apply-pixi-build-patches.mjs`
-- `fix-floating-text-lifetime.mjs` 실행
-- `add-unit-info-panel.mjs` 실행
-- `fix-mythic-recipe-display.mjs` 실행
-- `add-game-run-submission.mjs` 실행
+- `fix-floating-text-lifetime.mjs`
+- `add-unit-info-panel.mjs`
+- `fix-mythic-recipe-display.mjs`
+- `add-game-run-submission.mjs`
 
 ## 6. 현재 남은 확인 포인트
 
@@ -218,12 +216,27 @@ function drawBoard(refs: GameRefs, layout: GameLayout) {
 - 합성/판매/이동 후 선택 정보가 올바르게 닫히는지
 - 화면 리사이즈 시 정보 패널이 의도대로 닫히는지
 
+필요 시 수정 후보:
+
+```ts
+function drawBoard(refs: GameRefs, layout: GameLayout) {
+  const metrics = getBoardMetrics(refs, layout);
+  drawBoardCells(refs.board, refs.state.board, metrics, (cellIndex) => canMergeStackCell(refs.state, cellIndex), {
+    canDrag: !refs.movementLocked,
+    onCellPointerDown: (cellIndex, globalX, globalY, cellSize) => beginCellDrag(refs, cellIndex, globalX, globalY, cellSize),
+  });
+  drawSelectedUnitInfo(refs);
+}
+```
+
+단, 이 변경은 정보 패널이 리렌더 중 계속 유지되어야 하는지 실제 플레이 기준으로 확인한 뒤 적용하는 것이 좋습니다.
+
 ## 7. 다음 작업 순서
 
 권장 순서:
 
-1. `drawBoard()`에서 선택 정보 패널 유지가 필요한지 실제 플레이 기준 확인
-2. 필요하면 `drawBoard()` 마지막에 `drawSelectedUnitInfo(refs)` 추가
+1. `/play`에서 영웅 터치 후 정보 패널 유지 여부 확인
+2. 리렌더 시 정보 패널이 사라지는 문제가 있으면 `drawBoard()` 마지막에 `drawSelectedUnitInfo(refs)` 추가
 3. 배포 후 `/play`에서 조작 확인
 4. 다음 리팩터 대상 선정
    - `createPixiGame.ts` 추가 분리
