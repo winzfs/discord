@@ -1,63 +1,206 @@
 # 14. Pixi prebuild 안정화 기록
 
-## 1. 배경
+## 1. 현재 결론
 
-`/play`의 PixiJS 게임 런타임은 아직 큰 파일인 `createPixiGame.ts`에 많은 로직이 모여 있습니다.
+`Apply Pixi Refactor` GitHub Actions 실행 이후, 기존 빌드 전 패치 방식은 대부분 실제 소스 반영 방식으로 전환되었습니다.
 
-최근 수정 중 일부는 실제 소스 파일로 분리했고, 일부는 아직 빌드 전 패치 스크립트로 `createPixiGame.ts`에 적용하고 있습니다.
+현재 `package.json`에는 더 이상 `prebuild:web`이 없습니다.
 
-현재 빌드 전 패치가 담당하는 핵심 기능:
+```json
+{
+  "build": "pnpm -r build",
+  "build:web": "pnpm --filter @discord-random-defense/web build",
+  "typecheck": "pnpm -r typecheck"
+}
+```
 
-- 플로팅 텍스트 자동 제거/cleanup
-- 영웅 터치 정보 패널 연결
-- 메뉴 내부 터치 시 바로 닫히지 않도록 처리
-- 신화 레시피 고유 영웅명 표시
-- 게임 종료 시 결과 저장 요청
+또한 기존에 사용하던 `scripts/apply-pixi-build-patches.mjs`는 최신 저장소에서 존재하지 않습니다.
 
-## 2. 최근 빌드 실패 원인과 해결
+즉 현재 웹 빌드는 빌드 전 Pixi 패치 스크립트를 실행하지 않고, 실제 소스 기준으로 바로 빌드됩니다.
 
-### 2.1 신화 레시피 표시 충돌
+## 2. 해결된 문제
 
-이전에는 `fix-mythic-ingredient-type.mjs`가 먼저 `ingredientText` 함수 시그니처를 변경한 뒤, `fix-mythic-recipe-display.mjs`가 다른 함수 형태를 찾으면서 호출부만 바뀌는 문제가 있었습니다.
+### 2.1 GitHub Actions lockfile 문제
 
-결과적으로 TypeScript에서 다음 에러가 발생했습니다.
+`Apply Pixi Refactor` 워크플로우에서 다음 문제로 실패했습니다.
+
+```text
+actions/setup-node@v4
+cache: pnpm
+Dependencies lock file is not found
+```
+
+원인:
+
+- 저장소에 `pnpm-lock.yaml`이 없었습니다.
+- 그런데 `.github/workflows/apply-pixi-refactor.yml`의 `setup-node` 단계에서 `cache: pnpm`을 사용했습니다.
+- `pnpm install --frozen-lockfile`도 lockfile이 없으면 실패할 수 있는 설정이었습니다.
+
+수정:
+
+```yaml
+- name: Setup Node
+  uses: actions/setup-node@v4
+  with:
+    node-version: 22
+
+- name: Install
+  run: pnpm install --no-frozen-lockfile
+```
+
+수정 커밋:
+
+```text
+f5592276f7285f7b8f7f7c65e596538a6a5c9dae
+```
+
+### 2.2 신화 레시피 표시 충돌
+
+이전에는 `fix-mythic-ingredient-type.mjs`와 `fix-mythic-recipe-display.mjs`가 서로 다른 `ingredientText` 함수 형태를 가정해서 TypeScript 에러가 발생했습니다.
+
+대표 에러:
 
 ```text
 Expected 3 arguments, but got 1.
 ```
 
-해결:
+현재는 `formatMythicRecipeText`가 실제 소스에서 직접 import되어 사용되는 구조로 리팩터되었습니다.
 
-- `package.json`의 `prebuild:web`에서 `fix-mythic-ingredient-type.mjs`를 제거했습니다.
-- 신화 레시피 표시는 `fix-mythic-recipe-display.mjs`가 직접 처리하도록 유지했습니다.
+## 3. 현재 `createPixiGame.ts` 반영 상태
 
-### 2.2 영웅 정보 패널 패치 중복 실행 문제
+현재 `apps/web/src/game-client/pixi/createPixiGame.ts`에는 다음 모듈들이 직접 import되어 있습니다.
 
-`add-unit-info-panel.mjs`는 원본 `createPixiGame.ts` 문자열을 기준으로 패치합니다.
-
-같은 checkout에서 빌드를 두 번 실행하면 이미 패치된 파일을 다시 패치하려다가 실패할 수 있었습니다.
-
-해결:
-
-- `add-unit-info-panel.mjs`에 `alreadyPatched` 검사를 추가했습니다.
-- 이미 다음 요소가 들어간 경우 패치를 다시 적용하지 않고 종료합니다.
-  - `mountPixiGameLayers`
-  - `shouldClearSelectionFromStagePointer`
-  - `clearUnitInfoRuntime`
-  - `drawUnitInfoRuntime`
-  - `selectUnitInfoHeroInCell`
-  - `info: Container`
-  - `selectedHeroInstanceId`
-
-## 3. 현재 prebuild 실행 상태
-
-현재 `package.json`의 `prebuild:web`은 단일 러너를 실행합니다.
-
-```text
-node scripts/apply-pixi-build-patches.mjs
+```ts
+import { submitGameRun } from "../submitGameRun";
+import { addPixiAnimation, tickPixiAnimations, type PixiAnimation } from "./animation/animationManager";
+import { createFloatingText } from "./pixiFloatingTextView";
+import { mountPixiGameLayers } from "./pixiGameLayerOrder";
+import { createPixiMythicMenuView } from "./pixiMythicMenuView";
+import { createPixiUnitMenuView } from "./pixiUnitMenuView";
+import { clearPixiUnitInfoView, drawPixiUnitInfoView } from "./pixiUnitInfoView";
+import { formatMythicRecipeText } from "./pixiMythicRecipeText";
+import { clearPixiContainer, makePixiPanel, makePixiText } from "./pixiSharedView";
+import { getPixiPathPoint } from "./pixiPathRuntime";
+import { drawPixiBackgroundView } from "./pixiBackgroundView";
 ```
 
-현재 `scripts/apply-pixi-build-patches.mjs` 내부 실행 순서:
+즉 다음 기능은 빌드 전 패치가 아니라 실제 소스에 직접 연결된 상태입니다.
+
+- floating text 생성
+- Pixi animation manager
+- Pixi 레이어 mount
+- 신화 메뉴 뷰
+- 유닛 메뉴 뷰
+- 유닛 정보 뷰
+- 신화 레시피 텍스트 표시
+- 경로 계산
+- 배경 그리기
+- 게임 결과 저장 helper import
+
+## 4. 영웅 정보 패널 현재 구조
+
+현재 `createPixiGame.ts`는 `selectedCellIndex` 기반으로 영웅 선택 상태를 관리합니다.
+
+핵심 흐름:
+
+```ts
+function clearUnitSelection(refs: GameRefs) {
+  refs.selectedCellIndex = null;
+  clearPixiUnitInfoView(refs.info);
+}
+
+function drawSelectedUnitInfo(refs: GameRefs) {
+  if (refs.selectedCellIndex === null) {
+    clearPixiUnitInfoView(refs.info);
+    return;
+  }
+
+  const cell = refs.state.board[refs.selectedCellIndex];
+  const hero = cell?.units[cell.units.length - 1];
+  if (!cell || !hero) {
+    clearUnitSelection(refs);
+    return;
+  }
+
+  drawPixiUnitInfoView(refs.info, {
+    hero,
+    stackCount: cell.units.length,
+    cellIndex: refs.selectedCellIndex,
+    rendererWidth: refs.app.renderer.width,
+    rendererHeight: refs.app.renderer.height,
+  });
+}
+```
+
+영웅 터치 시 `showUnitMenu()`에서 다음을 수행합니다.
+
+```ts
+clearMenu(refs);
+refs.selectedCellIndex = cellIndex;
+drawSelectedUnitInfo(refs);
+```
+
+합성/판매 실행 전에는 다음 helper로 메뉴와 정보 패널을 같이 닫습니다.
+
+```ts
+function clearMenuAndUnitInfo(refs: GameRefs) {
+  clearMenu(refs);
+  clearUnitSelection(refs);
+}
+```
+
+## 5. 현재 빌드 구조
+
+현재 `package.json` 기준:
+
+```json
+{
+  "build": "pnpm -r build",
+  "build:web": "pnpm --filter @discord-random-defense/web build",
+  "typecheck": "pnpm -r typecheck"
+}
+```
+
+이전과 달리 다음 항목은 현재 빌드 경로에 없습니다.
+
+- `prebuild:web`
+- `scripts/apply-pixi-build-patches.mjs`
+- `fix-floating-text-lifetime.mjs` 실행
+- `add-unit-info-panel.mjs` 실행
+- `fix-mythic-recipe-display.mjs` 실행
+- `add-game-run-submission.mjs` 실행
+
+## 6. 현재 남은 확인 포인트
+
+### 6.1 `drawBoard()`에서 정보 패널 유지 여부
+
+현재 `showUnitMenu()`에서 영웅 선택 시 정보 패널은 즉시 그려집니다.
+
+다만 `drawBoard()` 자체에서는 아직 `drawSelectedUnitInfo(refs)`를 매번 호출하지 않습니다.
+
+현재 코드:
+
+```ts
+function drawBoard(refs: GameRefs, layout: GameLayout) {
+  const metrics = getBoardMetrics(refs, layout);
+  drawBoardCells(refs.board, refs.state.board, metrics, (cellIndex) => canMergeStackCell(refs.state, cellIndex), {
+    canDrag: !refs.movementLocked,
+    onCellPointerDown: (cellIndex, globalX, globalY, cellSize) => beginCellDrag(refs, cellIndex, globalX, globalY, cellSize),
+  });
+}
+```
+
+확인 필요:
+
+- 영웅 선택 후 리렌더가 발생해도 정보 패널이 유지되는지
+- 합성/판매/이동 후 선택 정보가 올바르게 닫히는지
+- 화면 리사이즈 시 정보 패널이 의도대로 닫히는지
+
+### 6.2 불필요해진 legacy 스크립트 정리
+
+현재 빌드 경로에서는 더 이상 실행되지 않지만, 저장소에 legacy 스크립트가 남아 있을 수 있습니다.
+
+정리 후보:
 
 ```text
 scripts/fix-floating-text-lifetime.mjs
@@ -68,155 +211,19 @@ scripts/add-game-run-submission.mjs
 
 주의:
 
-- `apply-pixi-build-patches.mjs`를 패치별 메타데이터가 있는 구조로 바꾸려는 시도는 있었지만, 현재 저장소에는 아직 반영되지 않았습니다.
-- 현재 파일은 단순 문자열 배열을 순서대로 실행하는 상태입니다.
-
-## 4. 실제 소스 모듈로 분리된 것
-
-### 4.1 플로팅 텍스트
-
-```text
-apps/web/src/game-client/pixi/pixiFloatingTextView.ts
-```
-
-역할:
-
-- `createFloatingText`
-- `removeEffectChild`
-- `cleanupEffectLayer`
-- 짧은 수명 floating text 처리
-- destroy된 effect child 방어
-
-현재 상태:
-
-- 실제 모듈은 준비되어 있습니다.
-- `fix-floating-text-lifetime.mjs`가 이 모듈을 사용하도록 변경되어 있습니다.
-- 하지만 `createPixiGame.ts`가 직접 이 모듈을 import하는 상태는 아닙니다.
-
-### 4.2 영웅 정보 패널 관련 모듈
-
-분리된 파일:
-
-```text
-apps/web/src/game-client/pixi/pixiUnitSelection.ts
-apps/web/src/game-client/pixi/pixiUnitInfoLabels.ts
-apps/web/src/game-client/pixi/pixiUnitInfoText.ts
-apps/web/src/game-client/pixi/pixiUnitInfoPanelLayout.ts
-apps/web/src/game-client/pixi/pixiUnitInfoPanelView.ts
-apps/web/src/game-client/pixi/pixiUnitInfoRuntime.ts
-apps/web/src/game-client/pixi/pixiGameLayerOrder.ts
-apps/web/src/game-client/pixi/pixiStagePointerHandlers.ts
-```
-
-역할:
-
-- 선택된 영웅 상태 관리
-- 영웅 이름/등급/역할/공격 타입/스탯 텍스트 생성
-- 정보 패널 위치 계산
-- 정보 패널 그리기
-- 정보 패널 런타임 연결
-- Pixi 레이어 순서 관리
-- stage 빈 곳 터치 판정
-
-현재 상태:
-
-- 실제 로직 대부분은 모듈로 분리되었습니다.
-- `add-unit-info-panel.mjs`는 위 모듈들을 import하도록 축소되었습니다.
-- 아직 `createPixiGame.ts`에 직접 연결부가 반영된 상태는 아닙니다.
-
-### 4.3 게임 결과 저장
-
-```text
-apps/web/src/game-client/submitGameRun.ts
-```
-
-역할:
-
-- 게임 종료 상태가 `failed` 또는 `cleared`일 때 `/api/game/runs`로 결과 저장 요청
-
-현재 상태:
-
-- 실제 파일은 분리되어 있습니다.
-- `add-game-run-submission.mjs`가 `createPixiGame.ts`에 연결부를 주입합니다.
-- 아직 `createPixiGame.ts`가 직접 호출하는 상태는 아닙니다.
-
-## 5. 아직 빌드 전 패치에 남아있는 것
-
-### 5.1 `fix-floating-text-lifetime.mjs`
-
-남은 역할:
-
-- `createPixiGame.ts`에 `pixiFloatingTextView.ts` import 주입
-- `floatText` wrapper 주입
-- `cleanupEffects` wrapper 주입
-- projectile destroy 방식을 effect cleanup 방식으로 교체
-- `tick()`에 cleanup 호출 삽입
-
-### 5.2 `add-unit-info-panel.mjs`
-
-남은 역할:
-
-- `GameRefs`에 `info: Container` 추가
-- `GameRefs`에 `selectedHeroInstanceId` 추가
-- `clearUnitSelection` wrapper 주입
-- `drawUnitInfoPanel` wrapper 주입
-- `showUnitMenu`에 선택/패널 호출 연결
-- `drawBoard`에 패널 redraw 연결
-- stage pointerdown에서 빈 곳 터치 시 패널 닫기 연결
-- `mountPixiGameLayers(stage, refs)`로 레이어 mount 교체
-
-### 5.3 `fix-mythic-recipe-display.mjs`
-
-남은 역할:
-
-- `ingredientText`를 heroId 우선 표시 형태로 교체
-- 레시피 표시 호출부를 `ingredientText(ingredient)` 형태로 교체
-
-### 5.4 `add-game-run-submission.mjs`
-
-남은 역할:
-
-- `submitGameRun` import 주입
-- `GameRefs.resultSubmitted` 추가
-- 게임 종료 시 한 번만 결과 저장 요청
-- 저장 성공/실패 floating text 표시
-
-## 6. 현재 보류된 작업
-
-### 6.1 `createPixiGame.ts` 직접 반영
-
-목표:
-
-- `add-unit-info-panel.mjs` 제거
-- 이후 `fix-floating-text-lifetime.mjs`, `fix-mythic-recipe-display.mjs`, `add-game-run-submission.mjs`도 순차 제거
-
-보류 이유:
-
-- `createPixiGame.ts`가 큰 파일이라 전체 파일을 잘못 덮으면 위험합니다.
-- 현재 GitHub 커넥터에서 raw 전체 파일 fetch가 막혀, 큰 파일을 안전하게 전체 수정하기 어렵습니다.
-- 따라서 현재는 실제 모듈을 먼저 충분히 분리하고, 패치 스크립트의 역할을 점진적으로 줄이는 방식으로 진행 중입니다.
-
-### 6.2 `apply-pixi-build-patches.mjs` 구조화
-
-목표:
-
-- 단순 문자열 배열이 아니라 패치별 id, script, 제거 조건을 가진 구조로 변경
-
-현재 상태:
-
-- 구조화 시도는 있었지만 저장소에는 아직 반영되지 않았습니다.
-- 현재 파일은 기존 단순 배열 상태입니다.
+- 바로 삭제하기 전에 검색으로 참조 여부를 확인해야 합니다.
+- 다른 workflow나 수동 명령에서 쓰고 있지 않은지 확인해야 합니다.
 
 ## 7. 다음 작업 순서
 
 권장 순서:
 
-1. `apply-pixi-build-patches.mjs`를 패치별 메타데이터 구조로 변경
-2. 배포 확인
-3. `createPixiGame.ts`에 영웅 정보 패널 연결부를 직접 반영할 수 있는 안전한 방법 재확인
-4. 직접 반영이 가능하면 `add-unit-info-panel.mjs`를 패치 목록에서 제거
-5. 배포 확인
-6. 같은 방식으로 floating text, mythic recipe display, game run submission 순서로 패치 제거
+1. 저장소 전체에서 legacy Pixi patch script 참조 검색
+2. 참조가 없으면 legacy patch script 삭제
+3. `drawBoard()`에서 선택 정보 패널 유지가 필요한지 실제 플레이 기준 확인
+4. 필요하면 `drawBoard()` 마지막에 `drawSelectedUnitInfo(refs)` 추가
+5. 배포 후 `/play`에서 조작 확인
+6. 문서 재갱신
 
 ## 8. 배포 후 확인 항목
 
