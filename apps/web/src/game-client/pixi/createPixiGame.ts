@@ -51,6 +51,7 @@ import {
   drawBoardCells,
   type BoardMetrics,
 } from "./pixiBoardView";
+import { submitGameRun } from "../submitGameRun";
 import { addPixiAnimation, tickPixiAnimations, type PixiAnimation } from "./animation/animationManager";
 import { createFloatingText } from "./pixiFloatingTextView";
 import { mountPixiGameLayers } from "./pixiGameLayerOrder";
@@ -129,6 +130,7 @@ type GameRefs = {
   waveReward: number;
   waveLostLives: number;
   lastWaveSummary: WaveSummary | null;
+  resultSubmitted: boolean;
 };
 
 const WAVE_COUNTDOWN_SECONDS = 8;
@@ -778,6 +780,19 @@ function mythicCraftAction(refs: GameRefs, recipeId: string) {
   floatText(refs, "신화 조합 완성!", refs.app.renderer.width / 2, refs.app.renderer.height * 0.52, colors.yellow);
 }
 
+function submitFinalResultOnce(refs: GameRefs) {
+  if (refs.resultSubmitted || (refs.state.status !== "failed" && refs.state.status !== "cleared")) return;
+  refs.resultSubmitted = true;
+
+  void submitGameRun(refs.state)
+    .then(() => {
+      floatText(refs, "기록 저장 완료", refs.app.renderer.width / 2, refs.app.renderer.height * 0.3, colors.green);
+    })
+    .catch(() => {
+      floatText(refs, "로그인하면 기록 저장", refs.app.renderer.width / 2, refs.app.renderer.height * 0.3, colors.orange);
+    });
+}
+
 function showWaveResult(refs: GameRefs, summary: WaveSummary) {
   const label = refs.state.status === "failed" ? `패배... -${summary.lostLives} HP` : summary.leaked > 0 ? `누수 ${summary.leaked}마리  -${summary.lostLives} HP` : "완벽 방어!";
   const color = refs.state.status === "failed" ? colors.red : summary.leaked > 0 ? colors.orange : colors.green;
@@ -830,6 +845,7 @@ function finishAutoWave(refs: GameRefs, readyImmediately = false) {
   refs.nextWaveTimer = readyImmediately ? 0 : WAVE_COUNTDOWN_SECONDS;
   render(refs);
   showWaveResult(refs, refs.lastWaveSummary);
+  submitFinalResultOnce(refs);
 }
 
 function render(refs: GameRefs) {
@@ -913,6 +929,7 @@ export function createPixiGame(parent: HTMLElement): PixiGameHandle {
     waveReward: 0,
     waveLostLives: 0,
     lastWaveSummary: null,
+    resultSubmitted: false,
   };
   let destroyed = false;
 
