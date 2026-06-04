@@ -1,36 +1,39 @@
-import { Container, Graphics } from "pixi.js";
+import { Container, Graphics, Sprite, Texture } from "pixi.js";
 import type { GameLayout } from "./gameLayout";
 import { colors } from "./gameTheme";
-import { makePixiPanel } from "./pixiSharedView";
 
 export type PixiPathPointResolver = (layout: GameLayout, progress: number) => { x: number; y: number };
 
-export function drawPixiBackgroundView(world: Container, layout: GameLayout, getPathPoint: PixiPathPointResolver) {
+const FIELD_TEXTURE_PATH = "/assets/field.png";
+const FIELD_SOURCE_WIDTH = 864;
+const FIELD_SOURCE_HEIGHT = 1536;
+
+function getFieldFrame(layout: GameLayout) {
+  const scale = Math.max(layout.width / FIELD_SOURCE_WIDTH, layout.height / FIELD_SOURCE_HEIGHT);
+  const width = FIELD_SOURCE_WIDTH * scale;
+  const height = FIELD_SOURCE_HEIGHT * scale;
+
+  return {
+    x: (layout.width - width) / 2,
+    y: (layout.height - height) / 2,
+    width,
+    height,
+  };
+}
+
+export function drawPixiBackgroundView(world: Container, layout: GameLayout, _getPathPoint: PixiPathPointResolver) {
   world.removeChildren();
 
-  const background = new Graphics();
-  background.rect(0, 0, layout.width, layout.height);
-  background.fill(colors.sky);
-  world.addChild(background);
+  const fallback = new Graphics();
+  fallback.rect(0, 0, layout.width, layout.height);
+  fallback.fill(colors.sky);
+  world.addChild(fallback);
 
-  const road = new Graphics();
-  const first = getPathPoint(layout, 0);
-  road.moveTo(first.x, first.y);
-  for (let index = 1; index <= 96; index += 1) {
-    const point = getPathPoint(layout, index / 96);
-    road.lineTo(point.x, point.y);
-  }
-  road.stroke({ color: colors.dirtDark, width: 42, alpha: 1 });
-  road.stroke({ color: colors.dirt, width: 34, alpha: 1 });
-  world.addChild(road);
-
-  const boardShadow = makePixiPanel(layout.boardWidth + 14, layout.boardHeight + 14, colors.wood, 0x4f3424, 18);
-  boardShadow.x = layout.boardX - 7;
-  boardShadow.y = layout.boardY - 7;
-  world.addChild(boardShadow);
-
-  const field = makePixiPanel(layout.boardWidth, layout.boardHeight, colors.field, 0x4f7d2a, 16);
-  field.x = layout.boardX;
-  field.y = layout.boardY;
+  const frame = getFieldFrame(layout);
+  const field = new Sprite(Texture.from(FIELD_TEXTURE_PATH));
+  field.x = frame.x;
+  field.y = frame.y;
+  field.width = frame.width;
+  field.height = frame.height;
   world.addChild(field);
 }
