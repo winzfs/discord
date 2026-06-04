@@ -155,14 +155,14 @@ s = s.replace(
 s = s.replaceAll('58 + index * 54', '64 + index * 76');
 s = s.replaceAll('makePanel(width - 24, 46, item.canCraft ? colors.orange : 0x655e59, item.canCraft ? 0x51351e : 0x3d332e, 10)', 'makePanel(width - 24, 68, item.canCraft ? colors.orange : 0x655e59, item.canCraft ? 0x51351e : 0x3d332e, 10)');
 
+const progressRecipeLine = 'const progress = getMythicIngredientProgress(refs.state, item.recipe);\n    const recipe = makeText(progress.map((part) => part.label + " " + part.owned + "/" + part.required).join("  "), 10, item.canCraft ? colors.yellow : 0xb7afa8);';
 s = s.replace(
   'const recipe = makeText(item.recipe.ingredients.map((ingredient) => ingredientText(ingredient)).join(" + "), 10, item.canCraft ? colors.yellow : 0xb7afa8);',
-  'const progress = getMythicIngredientProgress(refs.state, item.recipe);\n    const recipe = makeText(progress.map((part) => part.label + " " + part.owned + "/" + part.required).join("  "), 10, item.canCraft ? colors.yellow : 0xb7afa8);',
+  progressRecipeLine,
 );
-
 s = s.replace(
-  'item.recipe.ingredients.map((ingredient) => ingredientText(ingredient.grade, ingredient.role, ingredient.count)).join(" + ")',
-  'progress.map((part) => part.label + " " + part.owned + "/" + part.required).join("  ")',
+  'const recipe = makeText(item.recipe.ingredients.map((ingredient) => ingredientText(ingredient.grade, ingredient.role, ingredient.count)).join(" + "), 10, item.canCraft ? colors.yellow : 0xb7afa8);',
+  progressRecipeLine,
 );
 
 s = s.replace(
