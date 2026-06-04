@@ -155,7 +155,7 @@ export function LobbyPage() {
       {activeTab === "artifacts" && <ArtifactsView onDetail={setDetail} />}
       {detail && <DetailPanel detail={detail} onClose={() => setDetail(null)} />}
       <nav className="lobby-bottom-nav">
-        {tabs.map((tab) => <button className={activeTab === tab.id ? "active" : ""} key={tab.id} type="button" onClick={() => setActiveTab(tab.id)}>{tab.label}</button>)}
+        {tabs.map((tab) => <button className={activeTab === tab.id ? "active" : ""} key={tab.id} type="button" onClick={() => { setActiveTab(tab.id); setDetail(null); }}>{tab.label}</button>)}
       </nav>
     </main>
   );
