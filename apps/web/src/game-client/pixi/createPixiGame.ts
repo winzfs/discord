@@ -757,7 +757,6 @@ export function createPixiGame(parent: HTMLElement): PixiGameHandle {
     stage.on("pointermove", (event: any) => moveDragGhost(refs, event.global.x, event.global.y));
     stage.on("pointerup", (event: any) => finishCellDrag(refs, event.global.x, event.global.y));
     stage.on("pointerupoutside", (event: any) => finishCellDrag(refs, event.global.x, event.global.y));
-    stage.on("pointertap", () => clearMenu(refs));
     stage.addChild(refs.world, refs.board, refs.hud, refs.controls, refs.effects, refs.menuLayer);
     render(refs);
     app.renderer.on("resize", () => { stage.hitArea = new Rectangle(0, 0, app.renderer.width, app.renderer.height); clearMenu(refs); render(refs); });
