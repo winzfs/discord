@@ -26,18 +26,51 @@ import {
 import type { BoardHero, GameState, HeroRole } from "@discord-random-defense/game";
 import { createGameLayout } from "./gameLayout";
 import type { GameLayout } from "./gameLayout";
-import { colors, gradeColor } from "./gameTheme";
-import { createPixiHudView, updatePixiHudView, type PixiHudView } from "./pixiHudView";
-import { createPixiControlsView, updatePixiControlsView, invalidatePixiControlsView, type PixiControlsView } from "./pixiControlsView";
-import { createEnemyView, destroyEnemyView, updateEnemyViewHp, updateEnemyViewPosition, type EnemyView } from "./pixiEnemyView";
-import { createUnitGhost as createBoardUnitGhost, drawBoardCells } from "./pixiBoardView";
+import { colors } from "./gameTheme";
+import {
+  createPixiHudView,
+  invalidatePixiHudView,
+  updatePixiHudView,
+  type PixiHudView,
+} from "./pixiHudView";
+import {
+  createPixiControlsView,
+  invalidatePixiControlsView,
+  updatePixiControlsView,
+  type PixiControlsView,
+} from "./pixiControlsView";
+import {
+  createEnemyView,
+  destroyEnemyView,
+  updateEnemyViewHp,
+  updateEnemyViewPosition,
+  type EnemyView,
+} from "./pixiEnemyView";
+import {
+  createUnitGhost as createBoardUnitGhost,
+  drawBoardCells,
+  type BoardMetrics,
+} from "./pixiBoardView";
 
 export type PixiGameHandle = { cleanup: () => void };
 
-type Animation = { age: number; duration: number; update: (progress: number) => void; done?: () => void };
-type DragState = { sourceIndex: number; startX: number; startY: number; ghost: Container; isMoving: boolean };
-type BoardMetrics = { cols: number; rows: number; cell: number; gap: number; startX: number; startY: number };
+type Animation = {
+  age: number;
+  duration: number;
+  update: (progress: number) => void;
+  done?: () => void;
+};
+
+type DragState = {
+  sourceIndex: number;
+  startX: number;
+  startY: number;
+  ghost: Container;
+  isMoving: boolean;
+};
+
 type WavePhase = "countdown" | "combat" | "result";
+
 type ActiveEnemy = {
   id: number;
   enemyId: string;
@@ -53,7 +86,16 @@ type ActiveEnemy = {
   boss: boolean;
   view: EnemyView;
 };
-type WaveSummary = { killed: number; leaked: number; lostLives: number; reward: number; luckStoneReward: number; perfect: boolean };
+
+type WaveSummary = {
+  killed: number;
+  leaked: number;
+  lostLives: number;
+  reward: number;
+  luckStoneReward: number;
+  perfect: boolean;
+};
+
 type GameRefs = {
   app: Application;
   stage: Container;
@@ -138,7 +180,7 @@ function clearDrag(refs: GameRefs) {
 }
 
 function invalidateHud(refs: GameRefs) {
-  refs.hudView = null;
+  invalidatePixiHudView(refs.hudView);
 }
 
 function invalidateControls(refs: GameRefs) {
@@ -158,6 +200,7 @@ function getBoardMetrics(refs: GameRefs, layout: GameLayout): BoardMetrics {
     (layout.boardWidth - 34 - gap * (cols - 1)) / cols,
     (layout.boardHeight - 32 - gap * (rows - 1)) / rows,
   );
+
   return {
     cols,
     rows,
@@ -173,6 +216,7 @@ function getCellCenter(refs: GameRefs, cellIndex: number) {
   const metrics = getBoardMetrics(refs, layout);
   const row = Math.floor(cellIndex / metrics.cols);
   const col = cellIndex % metrics.cols;
+
   return {
     x: metrics.startX + col * (metrics.cell + metrics.gap) + metrics.cell / 2,
     y: metrics.startY + row * (metrics.cell + metrics.gap) + metrics.cell * 0.48,
@@ -183,13 +227,17 @@ function getCellCenter(refs: GameRefs, cellIndex: number) {
 function getCellIndexAtPoint(refs: GameRefs, x: number, y: number) {
   const layout = createGameLayout(refs.app.renderer.width, refs.app.renderer.height);
   const metrics = getBoardMetrics(refs, layout);
+
   for (let row = 0; row < metrics.rows; row += 1) {
     for (let col = 0; col < metrics.cols; col += 1) {
       const cellX = metrics.startX + col * (metrics.cell + metrics.gap);
       const cellY = metrics.startY + row * (metrics.cell + metrics.gap);
-      if (x >= cellX && x <= cellX + metrics.cell && y >= cellY && y <= cellY + metrics.cell) return row * metrics.cols + col;
+      if (x >= cellX && x <= cellX + metrics.cell && y >= cellY && y <= cellY + metrics.cell) {
+        return row * metrics.cols + col;
+      }
     }
   }
+
   return null;
 }
 
@@ -197,31 +245,6 @@ function roleAccent(role: HeroRole | undefined) {
   if (role === "tank") return 0x87b7ff;
   if (role === "support") return 0x7dffb2;
   return 0xffd166;
-}
-
-function drawUnitShape(target: Container, hero: Pick<BoardHero, "grade" | "heroId">, cell: number, scale = 1) {
-  const definition = getHeroById(hero.heroId);
-  const role = definition?.role ?? "damage";
-  const accent = roleAccent(role);
-
-  const shadow = new Graphics();
-  shadow.ellipse(0, cell * 0.24 * scale, cell * 0.2 * scale, cell * 0.06 * scale);
-  shadow.fill({ color: 0x244f1e, alpha: 0.28 });
-  target.addChild(shadow);
-
-  if (role === "support") {
-    const aura = new Graphics();
-    aura.circle(0, 0, cell * 0.31 * scale);
-    aura.stroke({ color: accent, width: Math.max(2, 3 * scale), alpha: 0.58 });
-    target.addChild(aura);
-  }
-
-  const body = new Graphics();
-  if (role === "tank") body.roundRect(-cell * 0.24 * scale, -cell * 0.1 * scale, cell * 0.48 * scale, cell * 0.42 * scale, cell * 0.12 * scale);
-  else if (role === "support") body.circle(0, cell * 0.02 * scale, cell * 0.2 * scale);
-  else body.moveTo(0, -cell * 0.24 * scale).lineTo(cell * 0.24 * scale, cell * 0.2 * scale).lineTo(-cell * 0.24 * scale, cell * 0.2 * scale).lineTo(0, -cell * 0.24 * scale);
-  body.fill({ color: colors.white, alpha: 1 });
-  target.addChild(body);
 }
 
 function createUnitGhost(hero: Pick<BoardHero, "grade" | "heroId">, cell: number, alpha = 0.92) {
@@ -233,8 +256,10 @@ function beginCellDrag(refs: GameRefs, sourceIndex: number, globalX: number, glo
   const sourceCell = refs.state.board[sourceIndex];
   const movingHero = sourceCell?.units[sourceCell.units.length - 1];
   if (!movingHero) return;
+
   clearMenu(refs);
   clearDrag(refs);
+
   const ghost = createUnitGhost(movingHero, cell, 0);
   ghost.x = globalX;
   ghost.y = globalY;
@@ -246,11 +271,13 @@ function moveDragGhost(refs: GameRefs, globalX: number, globalY: number) {
   if (!refs.dragging) return;
   const dx = globalX - refs.dragging.startX;
   const dy = globalY - refs.dragging.startY;
+
   if (!refs.dragging.isMoving && Math.hypot(dx, dy) > 8) {
     refs.dragging.isMoving = true;
     refs.dragging.ghost.alpha = 0.84;
     refs.dragging.ghost.scale.set(1.08);
   }
+
   if (refs.dragging.isMoving) {
     refs.dragging.ghost.x = globalX;
     refs.dragging.ghost.y = globalY;
@@ -264,6 +291,7 @@ function animateWalk(refs: GameRefs, hero: BoardHero, fromIndex: number, toIndex
   ghost.x = from.x;
   ghost.y = from.y;
   refs.effects.addChild(ghost);
+
   addAnimation(refs, {
     duration: 420,
     update: (progress) => {
@@ -285,12 +313,14 @@ function animateMoveResult(refs: GameRefs, sourceIndex: number, targetIndex: num
   const sourceCell = previousState.board[sourceIndex];
   const targetCell = previousState.board[targetIndex];
   const movingHero = sourceCell?.units[sourceCell.units.length - 1];
+
   if (!movingHero) {
     refs.state = nextState;
     refs.movementLocked = false;
     render(refs);
     return;
   }
+
   const finish = () => {
     refs.state = nextState;
     refs.lastSummonedIndex = targetIndex;
@@ -298,6 +328,7 @@ function animateMoveResult(refs: GameRefs, sourceIndex: number, targetIndex: num
     render(refs);
     floatText(refs, action === "swap" ? "자리 교환" : action === "stack" ? "중첩" : "이동", refs.app.renderer.width / 2, refs.app.renderer.height * 0.52, action === "swap" ? colors.orange : colors.green);
   };
+
   if (action === "swap" && targetCell?.units[0]) {
     let completed = 0;
     const onDone = () => {
@@ -308,29 +339,35 @@ function animateMoveResult(refs: GameRefs, sourceIndex: number, targetIndex: num
     animateWalk(refs, targetCell.units[0], targetIndex, sourceIndex, onDone);
     return;
   }
+
   animateWalk(refs, movingHero, sourceIndex, targetIndex, finish);
 }
 
 function finishCellDrag(refs: GameRefs, globalX: number, globalY: number) {
   if (!refs.dragging) return;
+
   const sourceIndex = refs.dragging.sourceIndex;
   const wasMoving = refs.dragging.isMoving;
   const targetIndex = getCellIndexAtPoint(refs, globalX, globalY);
   clearDrag(refs);
+
   if (!wasMoving || targetIndex === sourceIndex) {
     showUnitMenu(refs, sourceIndex);
     return;
   }
+
   if (targetIndex === null) {
     floatText(refs, "이동 취소", refs.app.renderer.width / 2, refs.app.renderer.height * 0.52, colors.white);
     return;
   }
+
   const previousState = refs.state;
   const result = moveOneHeroToCell(refs.state, sourceIndex, targetIndex);
   if (!result.movedHero || !result.action) {
     if (result.reason === "target_full") floatText(refs, "칸이 가득 찼어", refs.app.renderer.width / 2, refs.app.renderer.height * 0.52, colors.red);
     return;
   }
+
   animateMoveResult(refs, sourceIndex, targetIndex, previousState, result.state, result.action);
 }
 
@@ -341,17 +378,20 @@ function makeMenuButton(label: string, x: number, y: number, enabled: boolean, o
   container.eventMode = enabled ? "static" : "none";
   container.cursor = enabled ? "pointer" : "default";
   container.addChild(makePanel(58, 34, enabled ? colors.panel : 0x655e59, enabled ? 0x2e241f : 0x3d3732, 10));
+
   const labelText = makeText(label, 14, enabled ? colors.white : 0xb7afa8);
   labelText.anchor.set(0.5);
   labelText.x = 29;
   labelText.y = 17;
   container.addChild(labelText);
+
   if (enabled) {
     container.on("pointertap", (event: any) => {
       event.stopPropagation();
       onTap();
     });
   }
+
   return container;
 }
 
@@ -359,7 +399,9 @@ function showUnitMenu(refs: GameRefs, cellIndex: number) {
   if (refs.movementLocked) return;
   const cell = refs.state.board[cellIndex];
   if (!cell || cell.units.length === 0) return;
+
   clearMenu(refs);
+
   const center = getCellCenter(refs, cellIndex);
   const canMerge = canMergeStackCell(refs.state, cellIndex);
   const menu = new Container();
@@ -370,6 +412,7 @@ function showUnitMenu(refs: GameRefs, cellIndex: number) {
   menu.addChild(background);
   menu.addChild(makeMenuButton("합성", 4, 4, canMerge, () => mergeMenuAction(refs, cellIndex)));
   menu.addChild(makeMenuButton("판매", 62, 4, true, () => sellMenuAction(refs, cellIndex)));
+
   refs.menuLayer.addChild(menu);
   refs.menu = menu;
 }
@@ -382,6 +425,7 @@ function mergeMenuAction(refs: GameRefs, cellIndex: number) {
     floatText(refs, message, refs.app.renderer.width / 2, refs.app.renderer.height * 0.52, colors.red);
     return;
   }
+
   refs.state = result.state;
   refs.lastSummonedIndex = cellIndex;
   render(refs);
@@ -395,6 +439,7 @@ function sellMenuAction(refs: GameRefs, cellIndex: number) {
     floatText(refs, "판매 불가", refs.app.renderer.width / 2, refs.app.renderer.height * 0.52, colors.red);
     return;
   }
+
   refs.state = result.state;
   render(refs);
   floatText(refs, `판매 +${result.reward}`, refs.app.renderer.width / 2, refs.app.renderer.height * 0.52, colors.green);
@@ -418,6 +463,7 @@ function drawBackground(refs: GameRefs, layout: GameLayout) {
   background.rect(0, 0, layout.width, layout.height);
   background.fill(colors.sky);
   refs.world.addChild(background);
+
   const road = new Graphics();
   const first = getPathPoint(layout, 0);
   road.moveTo(first.x, first.y);
@@ -428,10 +474,12 @@ function drawBackground(refs: GameRefs, layout: GameLayout) {
   road.stroke({ color: colors.dirtDark, width: 42, alpha: 1 });
   road.stroke({ color: colors.dirt, width: 34, alpha: 1 });
   refs.world.addChild(road);
+
   const boardShadow = makePanel(layout.boardWidth + 14, layout.boardHeight + 14, colors.wood, 0x4f3424, 18);
   boardShadow.x = layout.boardX - 7;
   boardShadow.y = layout.boardY - 7;
   refs.world.addChild(boardShadow);
+
   const field = makePanel(layout.boardWidth, layout.boardHeight, colors.field, 0x4f7d2a, 16);
   field.x = layout.boardX;
   field.y = layout.boardY;
@@ -489,6 +537,7 @@ function drawControls(refs: GameRefs, layout: GameLayout) {
       onWave: () => waveButtonAction(refs),
     });
   }
+
   const summonState = getSummonButtonState(refs.state);
   const upgradeCost = getPowerUpgradeCost(refs.state.powerUpgradeLevel);
   updatePixiControlsView(refs.controlsView, layout, {
@@ -584,9 +633,11 @@ function spawnMonsters(refs: GameRefs) {
   refs.waveKilled = 0;
   refs.waveReward = 0;
   refs.waveLostLives = 0;
+
   const wave = getWaveByNumber(refs.state.currentWave);
   if (!wave) return;
   if (wave.isBossWave) showBossWarning(refs);
+
   for (const group of wave.enemyGroups) {
     for (let index = 0; index < group.count; index += 1) {
       const enemy = createEnemy(refs, group.enemyId, wave.isBossWave && group.enemyId === "server-crasher");
@@ -642,6 +693,7 @@ function damageEnemy(refs: GameRefs, enemy: ActiveEnemy, damage: number) {
   enemy.hp = Math.max(0, enemy.hp - damage);
   updateEnemyViewHp(enemy.view, enemy.hp, enemy.maxHp);
   if (enemy.hp > 0) return;
+
   enemy.alive = false;
   refs.waveKilled += 1;
   refs.waveReward += enemy.reward;
@@ -667,18 +719,22 @@ function applyTankSlow(enemy: ActiveEnemy) {
 function applySupportSplash(refs: GameRefs, target: ActiveEnemy, damage: number) {
   for (const enemy of refs.activeEnemies) {
     if (!enemy.alive || enemy.id === target.id) continue;
-    if (Math.hypot(enemy.x - target.x, enemy.y - target.y) <= 72) damageEnemy(refs, enemy, Math.max(1, Math.floor(damage * 0.35)));
+    if (Math.hypot(enemy.x - target.x, enemy.y - target.y) <= 72) {
+      damageEnemy(refs, enemy, Math.max(1, Math.floor(damage * 0.35)));
+    }
   }
 }
 
 function spawnAttackEffects(refs: GameRefs) {
   const heroes = getAllBoardHeroes(refs.state.board);
   if (heroes.length === 0) return;
+
   heroes.slice(0, Math.min(heroes.length, MAX_ATTACKERS_PER_TICK)).forEach((hero, index) => {
     const definition = getHeroById(hero.heroId);
     const role = definition?.role ?? "damage";
     const target = pickAttackTarget(refs, role);
     if (!target) return;
+
     const fromIndex = hero.position.row * refs.state.boardSize.columns + hero.position.column;
     const from = getCellCenter(refs, fromIndex);
     const damage = getHeroDamage(refs, hero);
@@ -689,6 +745,7 @@ function spawnAttackEffects(refs: GameRefs) {
     projectile.y = from.y;
     refs.effects.addChild(projectile);
     const targetAtFire = { x: target.x, y: target.y };
+
     addAnimation(refs, {
       duration: 280 + index * 18,
       update: (progress) => {
@@ -745,7 +802,8 @@ function attackUpgradeAction(refs: GameRefs) {
   refs.state = result.state;
   render(refs);
   floatText(refs, result.upgraded ? `공격력 강화 +${refs.state.powerUpgradeLevel}` : `코인 부족 ${result.cost}`, refs.app.renderer.width / 2, refs.app.renderer.height * 0.56, result.upgraded ? colors.yellow : colors.red);
-}\n
+}
+
 function ingredientText(grade: string, role: string | undefined, count: number) {
   const gradeLabel = grade === "legendary" ? "전설" : grade === "epic" ? "영웅" : grade === "rare" ? "희귀" : grade === "common" ? "일반" : "신화";
   const roleLabel = role === "damage" ? "딜러" : role === "tank" ? "탱커" : role === "support" ? "지원" : "무관";
@@ -761,12 +819,14 @@ function showMythicMenu(refs: GameRefs) {
   menu.x = refs.app.renderer.width / 2 - width / 2;
   menu.y = Math.max(18, refs.app.renderer.height * 0.14);
   menu.addChild(makePanel(width, height, 0x2d2925, colors.orange, 16));
+
   const title = makeText("신화 조합", 19, colors.yellow);
   title.anchor.set(0.5, 0);
   title.x = width / 2;
   title.y = 14;
   menu.addChild(title);
   menu.addChild(makeMenuButton("닫기", width - 70, 12, true, () => clearMenu(refs)));
+
   list.forEach((item, index) => {
     const y = 58 + index * 54;
     const row = new Container();
@@ -775,14 +835,17 @@ function showMythicMenu(refs: GameRefs) {
     row.eventMode = item.canCraft ? "static" : "none";
     row.cursor = item.canCraft ? "pointer" : "default";
     row.addChild(makePanel(width - 24, 46, item.canCraft ? colors.orange : 0x655e59, item.canCraft ? 0x51351e : 0x3d332e, 10));
+
     const name = makeText(item.recipe.displayName, 14, item.canCraft ? colors.white : 0xb7afa8);
     name.x = 12;
     name.y = 5;
     row.addChild(name);
+
     const recipe = makeText(item.recipe.ingredients.map((ingredient) => ingredientText(ingredient.grade, ingredient.role, ingredient.count)).join(" + "), 10, item.canCraft ? colors.yellow : 0xb7afa8);
     recipe.x = 12;
     recipe.y = 25;
     row.addChild(recipe);
+
     if (item.canCraft) {
       row.on("pointertap", (event: any) => {
         event.stopPropagation();
@@ -791,6 +854,7 @@ function showMythicMenu(refs: GameRefs) {
     }
     menu.addChild(row);
   });
+
   refs.menuLayer.addChild(menu);
   refs.menu = menu;
 }
@@ -835,6 +899,7 @@ function finishAutoWave(refs: GameRefs, readyImmediately = false) {
     enemy.alive = false;
     destroyActiveEnemy(enemy);
   }
+
   const leaked = alive.length + refs.waveLostLives;
   const perfect = lostLives <= 0;
   const luckStoneReward = perfect ? (isBossWave(refs.state) ? 2 : refs.state.currentWave % 3 === 0 ? 1 : 0) : 0;
@@ -842,6 +907,7 @@ function finishAutoWave(refs: GameRefs, readyImmediately = false) {
   const finalWave = refs.state.currentWave >= initialBalance.maxWave;
   const nextStatus = nextLives <= 0 ? "failed" : finalWave ? "cleared" : "playing";
   const nextWave = nextStatus === "playing" ? refs.state.currentWave + 1 : refs.state.currentWave;
+
   refs.activeEnemies = [];
   refs.lastWaveSummary = { killed: refs.waveKilled, leaked, lostLives, reward: refs.waveReward, luckStoneReward, perfect };
   refs.state = {
@@ -880,7 +946,9 @@ function tick(refs: GameRefs, deltaMs: number) {
     }
     return true;
   });
+
   if (isFinished(refs.state)) return;
+
   const layout = createGameLayout(refs.app.renderer.width, refs.app.renderer.height);
   if (refs.wavePhase === "countdown") {
     refs.nextWaveTimer -= deltaSeconds;
@@ -888,6 +956,7 @@ function tick(refs: GameRefs, deltaMs: number) {
     else drawTopHud(refs, layout);
     return;
   }
+
   if (refs.wavePhase === "combat") {
     refs.combatTimer -= deltaSeconds;
     refs.attackTimer -= deltaSeconds;
@@ -902,6 +971,7 @@ function tick(refs: GameRefs, deltaMs: number) {
     else if (refs.activeEnemies.length > 0 && refs.activeEnemies.every((enemy) => !enemy.alive)) finishAutoWave(refs, true);
     return;
   }
+
   refs.resultTimer -= deltaSeconds;
   drawTopHud(refs, layout);
   drawControls(refs, layout);
@@ -956,10 +1026,12 @@ export function createPixiGame(parent: HTMLElement): PixiGameHandle {
       resolution: Math.min(window.devicePixelRatio || 1, 2),
       autoDensity: true,
     });
+
     if (destroyed) {
       app.destroy(true);
       return;
     }
+
     parent.appendChild(app.canvas);
     app.stage.addChild(stage);
     stage.eventMode = "static";
@@ -980,6 +1052,7 @@ export function createPixiGame(parent: HTMLElement): PixiGameHandle {
   }
 
   void init();
+
   return {
     cleanup: () => {
       destroyed = true;
