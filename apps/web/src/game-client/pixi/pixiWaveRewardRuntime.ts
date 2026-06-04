@@ -51,6 +51,7 @@ export function showWaveRewardMenu(refs: GameRefs, options: PixiWaveRewardRuntim
   if (!shouldOfferWaveReward(refs)) return;
 
   options.clearMenu(refs);
+  refs.resultTimer = Math.max(refs.resultTimer, 99);
 
   const menu = createPixiWaveRewardMenuView({
     choices: createWaveRewardChoices(refs),
@@ -93,6 +94,7 @@ export function applyWaveReward(
     };
   }
 
+  refs.resultTimer = 0.35;
   options.clearMenu(refs);
   options.render(refs);
   options.floatText(
