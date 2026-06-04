@@ -38,7 +38,7 @@ scripts/add-game-run-submission.mjs
 
 ## 3. Pixi 클라이언트 문제
 
-`apps/web/src/game-client/pixi/createPixiGame.ts`는 아직 게임 초기화, 보드 입력, 배경 렌더링, 전투, 웨이브, 신화 조합 메뉴, 플로팅 텍스트, 애니메이션 루프를 한 파일에서 많이 담당합니다.
+`apps/web/src/game-client/pixi/createPixiGame.ts`는 아직 게임 초기화, 보드 입력, 전투, 웨이브, 상태 변경 액션, 애니메이션 루프를 한 파일에서 많이 담당합니다.
 
 문서 기준상 500줄 이상 파일은 특별한 이유가 없으면 분리해야 하므로, `createPixiGame.ts`는 계속 분리 대상입니다.
 
@@ -53,6 +53,9 @@ apps/web/src/game-client/pixi/pixiPathRuntime.ts
 apps/web/src/game-client/pixi/pixiFloatingTextView.ts
 apps/web/src/game-client/pixi/pixiHeroLabels.ts
 apps/web/src/game-client/pixi/pixiGameLayerOrder.ts
+apps/web/src/game-client/pixi/pixiMythicRecipeText.ts
+apps/web/src/game-client/pixi/pixiMythicMenuView.ts
+apps/web/src/game-client/pixi/pixiUnitMenuView.ts
 ```
 
 ## 5. Pixi 연결용 1회성 스크립트
@@ -69,21 +72,38 @@ scripts/apply-pixi-client-refactor.mjs
 - 애니메이션 타입/추가/갱신 일부를 `animationManager.ts`로 위임
 - 몬스터 경로 좌표 계산을 `pixiPathRuntime.ts`로 위임
 - 플로팅 텍스트 생성을 `pixiFloatingTextView.ts`로 위임
+- 신화 레시피 표시 텍스트를 `pixiMythicRecipeText.ts`로 위임
+- 신화 조합 메뉴 UI를 `pixiMythicMenuView.ts`로 위임
+- 유닛 합성/판매 메뉴 UI를 `pixiUnitMenuView.ts`로 위임
 
-## 6. 다음 작업 순서
+## 6. 완료된 분리 작업
 
-1. `fix-mythic-recipe-display.mjs` 내용을 `createPixiGame.ts`에 직접 반영
-2. `pixiGameLayerOrder.ts`를 `createPixiGame.ts`의 레이어 마운트 코드에 연결
-3. 신화 조합 메뉴를 `pixiMythicMenuView.ts`로 분리
-4. 유닛 합성/판매 메뉴를 `pixiUnitMenuView.ts`로 분리
+- `createPixiGame.ts`의 `Text` 직접 생성 일부를 `makePixiText`로 위임
+- 공통 패널 생성을 `makePixiPanel`로 위임
+- 컨테이너 clear 처리를 `clearPixiContainer`로 위임
+- 애니메이션 추가/틱 처리를 `animationManager.ts`로 위임
+- 플로팅 텍스트 생성을 `pixiFloatingTextView.ts`로 위임
+- 경로 좌표 계산을 `pixiPathRuntime.ts`로 위임
+- 레이어 마운트를 `pixiGameLayerOrder.ts`로 위임
+- 신화 레시피 표시를 고유 영웅 `heroId` 기반 텍스트로 분리
+- 신화 조합 메뉴 UI를 `pixiMythicMenuView.ts`로 분리
+- 유닛 합성/판매 메뉴 UI를 `pixiUnitMenuView.ts`로 분리
+
+## 7. 다음 작업 순서
+
+1. `pnpm typecheck` 또는 GitHub Actions 로그에서 현재 타입 오류 확인
+2. 기존 `packages/game/src/systems/overchipCallSystem.ts` 타입 오류 정리
+3. `fix-mythic-recipe-display.mjs`가 더 이상 필요한지 확인 후 제거 후보로 검토
+4. `createPixiGame.ts`에서 상태 변경 액션과 UI 렌더링 경계를 추가로 정리
 5. 웨이브 진행과 적 런타임을 `pixiWaveRuntime.ts`로 분리
 6. 각 단계마다 `pnpm typecheck`와 `pnpm build:web`로 확인
 7. 원본 소스 반영이 끝난 패치 스크립트부터 `apply-pixi-build-patches.mjs`에서 제거
 
-## 7. 주의사항
+## 8. 주의사항
 
 - 기존 동작하는 PixiJS 클라이언트를 새로 만들지 않습니다.
 - 기능별로 작게 연결하고 매 단계마다 typecheck/build를 확인합니다.
 - `createPixiGame.ts` 전체 교체는 피하고, 검증 가능한 작은 diff로 진행합니다.
 - GitHub 도구 응답이 큰 파일을 중간에서 자를 수 있으므로, 대형 파일은 통째로 덮어쓰지 않습니다.
 - 신화 조합 재료는 등급/역할 기반 표시가 아니라 고유 영웅 `heroId` 기반 표시를 우선합니다.
+- 전투/웨이브 런타임은 상태 변경 의존성이 커서 메뉴 UI보다 더 작은 단위로 나눠야 합니다.
