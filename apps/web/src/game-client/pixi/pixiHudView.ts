@@ -88,6 +88,13 @@ export function createPixiHudView(parent: Container): PixiHudView {
   return view;
 }
 
+export function invalidatePixiHudView(view: PixiHudView | null) {
+  if (!view) return;
+  view.waveBox.clear();
+  view.hpBackground.clear();
+  view.hpFill.clear();
+}
+
 export function updatePixiHudView(view: PixiHudView, layout: GameLayout, snapshot: HudSnapshot) {
   const boss = snapshot.isBossWave;
   redrawRoundRect(view.waveBox, layout.width / 2 - 75, layout.topHudY, 150, 58, 12, boss ? 0x5a2327 : colors.panel, boss ? colors.red : 0x3b2d26);
