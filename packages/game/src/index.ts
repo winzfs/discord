@@ -15,6 +15,7 @@ export * from "./systems/boardSystem";
 export * from "./systems/combatSystem";
 export * from "./systems/gambleSystem";
 export * from "./systems/mergeSystem";
+export * from "./systems/mythicCraftSystem";
 export * from "./systems/sellSystem";
 export * from "./systems/stackMergeSystem";
 export * from "./systems/summonSystem";
