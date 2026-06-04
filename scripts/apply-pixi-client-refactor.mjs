@@ -21,23 +21,57 @@ function addImportBlockOnce(anchor, block, label) {
   replaceOnce(anchor, `${anchor}${block}`, label);
 }
 
-function dedupeExactImportLines() {
+function repairKnownMultilineImports() {
+  const repairs = [
+    {
+      label: "repair hud import",
+      before: 'import { colors } from "./gameTheme";\n  createPixiHudView,',
+      after: 'import { colors } from "./gameTheme";\nimport {\n  createPixiHudView,',
+    },
+    {
+      label: "repair controls import",
+      before: '} from "./pixiHudView";\n  createPixiControlsView,',
+      after: '} from "./pixiHudView";\nimport {\n  createPixiControlsView,',
+    },
+    {
+      label: "repair enemy import",
+      before: '} from "./pixiControlsView";\n  createEnemyView,',
+      after: '} from "./pixiControlsView";\nimport {\n  createEnemyView,',
+    },
+    {
+      label: "repair board import",
+      before: '} from "./pixiEnemyView";\n  createUnitGhost as createBoardUnitGhost,',
+      after: '} from "./pixiEnemyView";\nimport {\n  createUnitGhost as createBoardUnitGhost,',
+    },
+  ];
+
+  for (const repair of repairs) {
+    replaceOnce(repair.before, repair.after, repair.label);
+  }
+}
+
+function dedupeSingleLineImports() {
   const lines = source.split("\n");
   const seen = new Set();
   let changed = false;
   source = lines
     .filter((line) => {
-      if (!line.startsWith("import ")) return true;
-      if (!seen.has(line)) {
-        seen.add(line);
+      const trimmed = line.trim();
+      if (!trimmed.startsWith("import ") || trimmed === "import {" || !trimmed.endsWith(";")) {
+        return true;
+      }
+      if (!seen.has(trimmed)) {
+        seen.add(trimmed);
         return true;
       }
       changed = true;
       return false;
     })
     .join("\n");
-  console.log(changed ? "[ok] remove duplicate import lines" : "[skip] remove duplicate import lines");
+  console.log(changed ? "[ok] remove duplicate single-line imports" : "[skip] remove duplicate single-line imports");
 }
+
+repairKnownMultilineImports();
 
 replaceOnce(
   'import { Application, Container, Graphics, Rectangle, Text } from "pixi.js";',
@@ -217,7 +251,7 @@ replaceOnce(
   "delegate layer mounting",
 );
 
-dedupeExactImportLines();
+dedupeSingleLineImports();
 
 writeFileSync(path, source);
 console.log(`Updated ${path}`);
