@@ -55,6 +55,7 @@ import { addPixiAnimation, tickPixiAnimations, type PixiAnimation } from "./anim
 import { createFloatingText } from "./pixiFloatingTextView";
 import { mountPixiGameLayers } from "./pixiGameLayerOrder";
 import { createPixiMythicMenuView } from "./pixiMythicMenuView";
+import { createPixiUnitMenuView } from "./pixiUnitMenuView";
 import { formatMythicRecipeText } from "./pixiMythicRecipeText";
 import { clearPixiContainer, makePixiPanel, makePixiText } from "./pixiSharedView";
 import { getPixiPathPoint } from "./pixiPathRuntime";
@@ -361,30 +362,6 @@ function finishCellDrag(refs: GameRefs, globalX: number, globalY: number) {
   animateMoveResult(refs, sourceIndex, targetIndex, previousState, result.state, result.action);
 }
 
-function makeMenuButton(label: string, x: number, y: number, enabled: boolean, onTap: () => void) {
-  const container = new Container();
-  container.x = x;
-  container.y = y;
-  container.eventMode = enabled ? "static" : "none";
-  container.cursor = enabled ? "pointer" : "default";
-  container.addChild(makePanel(58, 34, enabled ? colors.panel : 0x655e59, enabled ? 0x2e241f : 0x3d3732, 10));
-
-  const labelText = makeText(label, 14, enabled ? colors.white : 0xb7afa8);
-  labelText.anchor.set(0.5);
-  labelText.x = 29;
-  labelText.y = 17;
-  container.addChild(labelText);
-
-  if (enabled) {
-    container.on("pointertap", (event: any) => {
-      event.stopPropagation();
-      onTap();
-    });
-  }
-
-  return container;
-}
-
 function showUnitMenu(refs: GameRefs, cellIndex: number) {
   if (refs.movementLocked) return;
   const cell = refs.state.board[cellIndex];
@@ -392,17 +369,13 @@ function showUnitMenu(refs: GameRefs, cellIndex: number) {
 
   clearMenu(refs);
 
-  const center = getCellCenter(refs, cellIndex);
-  const canMerge = canMergeStackCell(refs.state, cellIndex);
-  const menu = new Container();
-  menu.x = Math.max(8, Math.min(refs.app.renderer.width - 132, center.x - 62));
-  menu.y = Math.max(8, center.y - center.cell * 0.95 - 38);
-  const background = makePanel(124, 42, 0x2d2925, 0x1d1714, 12);
-  background.alpha = 0.92;
-  menu.addChild(background);
-  menu.addChild(makeMenuButton("합성", 4, 4, canMerge, () => mergeMenuAction(refs, cellIndex)));
-  menu.addChild(makeMenuButton("판매", 62, 4, true, () => sellMenuAction(refs, cellIndex)));
-
+  const menu = createPixiUnitMenuView({
+    center: getCellCenter(refs, cellIndex),
+    rendererWidth: refs.app.renderer.width,
+    canMerge: canMergeStackCell(refs.state, cellIndex),
+    onMerge: () => mergeMenuAction(refs, cellIndex),
+    onSell: () => sellMenuAction(refs, cellIndex),
+  });
   refs.menuLayer.addChild(menu);
   refs.menu = menu;
 }
