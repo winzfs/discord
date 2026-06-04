@@ -57,6 +57,12 @@ import { mountPixiGameLayers } from "./pixiGameLayerOrder";
 import { formatMythicRecipeText } from "./pixiMythicRecipeText";
 import { clearPixiContainer, makePixiPanel, makePixiText } from "./pixiSharedView";
 import { getPixiPathPoint } from "./pixiPathRuntime";
+import { addPixiAnimation, tickPixiAnimations, type PixiAnimation } from "./animation/animationManager";
+import { createFloatingText } from "./pixiFloatingTextView";
+import { mountPixiGameLayers } from "./pixiGameLayerOrder";
+import { formatMythicRecipeText } from "./pixiMythicRecipeText";
+import { clearPixiContainer, makePixiPanel, makePixiText } from "./pixiSharedView";
+import { getPixiPathPoint } from "./pixiPathRuntime";
 
 export type PixiGameHandle = { cleanup: () => void };
 
