@@ -60,6 +60,7 @@ import { createPixiUnitMenuView } from "./pixiUnitMenuView";
 import { formatMythicRecipeText } from "./pixiMythicRecipeText";
 import { clearPixiContainer, makePixiPanel, makePixiText } from "./pixiSharedView";
 import { getPixiPathPoint } from "./pixiPathRuntime";
+import { drawPixiBackgroundView } from "./pixiBackgroundView";
 
 export type PixiGameHandle = { cleanup: () => void };
 
@@ -419,32 +420,7 @@ function getPathPoint(layout: GameLayout, progress: number) {
 }
 
 function drawBackground(refs: GameRefs, layout: GameLayout) {
-  clear(refs.world);
-  const background = new Graphics();
-  background.rect(0, 0, layout.width, layout.height);
-  background.fill(colors.sky);
-  refs.world.addChild(background);
-
-  const road = new Graphics();
-  const first = getPathPoint(layout, 0);
-  road.moveTo(first.x, first.y);
-  for (let index = 1; index <= 96; index += 1) {
-    const point = getPathPoint(layout, index / 96);
-    road.lineTo(point.x, point.y);
-  }
-  road.stroke({ color: colors.dirtDark, width: 42, alpha: 1 });
-  road.stroke({ color: colors.dirt, width: 34, alpha: 1 });
-  refs.world.addChild(road);
-
-  const boardShadow = makePanel(layout.boardWidth + 14, layout.boardHeight + 14, colors.wood, 0x4f3424, 18);
-  boardShadow.x = layout.boardX - 7;
-  boardShadow.y = layout.boardY - 7;
-  refs.world.addChild(boardShadow);
-
-  const field = makePanel(layout.boardWidth, layout.boardHeight, colors.field, 0x4f7d2a, 16);
-  field.x = layout.boardX;
-  field.y = layout.boardY;
-  refs.world.addChild(field);
+  drawPixiBackgroundView(refs.world, layout, getPathPoint);
 }
 
 function getFirepower(refs: GameRefs) {
