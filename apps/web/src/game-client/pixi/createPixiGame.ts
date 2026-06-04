@@ -37,6 +37,11 @@ import {
 } from "./pixiWaveFlowRuntime";
 import { drawBackground, drawControls, drawTopHud, getSummonButtonState } from "./pixiRenderRuntime";
 import { drawBoard } from "./pixiBoardRenderRuntime";
+import {
+  clearMenuAndUnitInfo,
+  clearUnitSelection,
+  drawSelectedUnitInfo,
+} from "./pixiSelectionRuntime";
 import { updateActiveEnemies } from "./pixiEnemyMovementRuntime";
 import { spawnAttackEffects } from "./pixiCombatRuntime";
 import {
@@ -64,7 +69,6 @@ import { submitGameRun } from "../submitGameRun";
 import { addPixiAnimation, tickPixiAnimations, type PixiAnimation } from "./animation/animationManager";
 import { createFloatingText } from "./pixiFloatingTextView";
 import { mountPixiGameLayers } from "./pixiGameLayerOrder";
-import { clearPixiUnitInfoView, drawPixiUnitInfoView } from "./pixiUnitInfoView";
 import { formatMythicRecipeText } from "./pixiMythicRecipeText";
 import { clearPixiContainer, makePixiPanel, makePixiText } from "./pixiSharedView";
 import { getPixiPathPoint } from "./pixiPathRuntime";
@@ -107,38 +111,6 @@ function clearMenu(refs: GameRefs) {
   refs.menu = null;
 }
 
-function clearUnitSelection(refs: GameRefs) {
-  refs.selectedCellIndex = null;
-  clearPixiUnitInfoView(refs.info);
-}
-
-function drawSelectedUnitInfo(refs: GameRefs) {
-  if (refs.selectedCellIndex === null) {
-    clearPixiUnitInfoView(refs.info);
-    return;
-  }
-
-  const cell = refs.state.board[refs.selectedCellIndex];
-  const hero = cell?.units[cell.units.length - 1];
-  if (!cell || !hero) {
-    clearUnitSelection(refs);
-    return;
-  }
-
-  drawPixiUnitInfoView(refs.info, {
-    hero,
-    stackCount: cell.units.length,
-    cellIndex: refs.selectedCellIndex,
-    rendererWidth: refs.app.renderer.width,
-    rendererHeight: refs.app.renderer.height,
-  });
-}
-
-function clearMenuAndUnitInfo(refs: GameRefs) {
-  clearMenu(refs);
-  clearUnitSelection(refs);
-}
-
 function clearDrag(refs: GameRefs) {
   refs.dragging?.ghost.destroy({ children: true });
   refs.dragging = null;
@@ -169,7 +141,7 @@ function createWaveFlowRuntimeOptions(): PixiWaveFlowRuntimeOptions {
   return {
     isFinished,
     isBossWave,
-    clearMenuAndUnitInfo,
+    clearMenuAndUnitInfo: (refs) => clearMenuAndUnitInfo(refs, { clearMenu }),
     render,
     showWaveResult: (refs) => showWaveResult(refs, refs.lastWaveSummary!, createWaveFeedbackRuntimeOptions()),
     submitFinalResultOnce,
@@ -188,7 +160,7 @@ function createWaveFeedbackRuntimeOptions(): PixiWaveFeedbackRuntimeOptions {
 function createControlActionRuntimeOptions(): PixiControlActionRuntimeOptions {
   return {
     clearMenu,
-    clearMenuAndUnitInfo,
+    clearMenuAndUnitInfo: (refs) => clearMenuAndUnitInfo(refs, { clearMenu }),
     getSummonButtonState: (state) => getSummonButtonState(state, isFinished),
     getCellIndexFromHero,
     render,
@@ -199,7 +171,7 @@ function createControlActionRuntimeOptions(): PixiControlActionRuntimeOptions {
 function createUnitActionRuntimeOptions(): PixiUnitActionRuntimeOptions {
   return {
     clearMenu,
-    clearMenuAndUnitInfo,
+    clearMenuAndUnitInfo: (refs) => clearMenuAndUnitInfo(refs, { clearMenu }),
     drawSelectedUnitInfo,
     render,
     floatText,
@@ -388,7 +360,7 @@ export function createPixiGame(parent: HTMLElement): PixiGameHandle {
     stage.on("pointerdown", (event: any) => {
       const cellIndex = getCellIndexAtPoint(refs, event.global.x, event.global.y);
       const cell = cellIndex === null ? null : refs.state.board[cellIndex];
-      if (!cell || cell.units.length === 0) clearMenuAndUnitInfo(refs);
+      if (!cell || cell.units.length === 0) clearMenuAndUnitInfo(refs, { clearMenu });
     });
     stage.on("pointermove", (event: any) => moveDragGhost(refs, event.global.x, event.global.y));
     stage.on("pointerup", (event: any) => finishCellDrag(refs, event.global.x, event.global.y, createDragRuntimeOptions()));
@@ -405,7 +377,7 @@ export function createPixiGame(parent: HTMLElement): PixiGameHandle {
     render(refs);
     app.renderer.on("resize", () => {
       stage.hitArea = new Rectangle(0, 0, app.renderer.width, app.renderer.height);
-      clearMenuAndUnitInfo(refs);
+      clearMenuAndUnitInfo(refs, { clearMenu });
       invalidateHud(refs);
       invalidateControls(refs);
       render(refs);
@@ -418,7 +390,7 @@ export function createPixiGame(parent: HTMLElement): PixiGameHandle {
   return {
     cleanup: () => {
       destroyed = true;
-      clearMenuAndUnitInfo(refs);
+      clearMenuAndUnitInfo(refs, { clearMenu });
       clearDrag(refs);
       refs.activeEnemies.forEach(destroyActiveEnemy);
       app.destroy({ removeView: true }, { children: true });
