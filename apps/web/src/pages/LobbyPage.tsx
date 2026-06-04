@@ -7,8 +7,6 @@ import {
   getCollectionUpgradeCost,
   getHeroPowerAtLevel,
   getHeroUpgradeRequirement,
-  initialArtifacts,
-  initialHeroes,
   quests,
   shopItems,
   tabs,
@@ -17,6 +15,7 @@ import {
   type LobbyHero,
   type LobbyTabId,
 } from "../game-lobby/lobbyData";
+import { loadLobbyProgress, saveLobbyProgress } from "../game-lobby/lobbyProgressStorage";
 import "../styles/lobby.css";
 
 function roleLabel(role: string) {
@@ -224,12 +223,13 @@ function DetailPanel({ detail, gold, onClose, onUpgrade }: { detail: Detail; gol
 }
 
 export function LobbyPage() {
+  const savedProgress = loadLobbyProgress();
   const [activeTab, setActiveTab] = useState<LobbyTabId>("battle");
   const [difficulty, setDifficulty] = useState(3);
   const [gold, setGold] = useState(13580);
   const [crystals, setCrystals] = useState(4550);
-  const [heroes, setHeroes] = useState(initialHeroes);
-  const [artifacts, setArtifacts] = useState(initialArtifacts);
+  const [heroes, setHeroes] = useState(savedProgress.heroes);
+  const [artifacts, setArtifacts] = useState(savedProgress.artifacts);
   const [detail, setDetail] = useState<Detail | null>(null);
   const [notice, setNotice] = useState("상점, 영웅, 전투, 유물을 확인해보세요.");
 
@@ -258,6 +258,10 @@ export function LobbyPage() {
     if (nextArtifact) setDetail(createArtifactDetail(nextArtifact));
   };
 
+  const persistProgress = (nextHeroes: LobbyHero[], nextArtifacts: LobbyArtifact[]) => {
+    saveLobbyProgress({ heroes: nextHeroes, artifacts: nextArtifacts });
+  };
+
   const upgradeSelected = () => {
     if (!detail) return;
     if (!detail.owned) {
@@ -281,6 +285,7 @@ export function LobbyPage() {
         return { ...hero, level: hero.level + 1, shards: Math.max(0, hero.shards - required) };
       });
       setHeroes(nextHeroes);
+      persistProgress(nextHeroes, artifacts);
       refreshDetail(detail.kind, detail.id, nextHeroes, artifacts);
     } else {
       const nextArtifacts = artifacts.map((artifact) => {
@@ -289,6 +294,7 @@ export function LobbyPage() {
         return { ...artifact, level: Math.min(artifact.maxLevel, artifact.level + 1), pieces: Math.max(0, artifact.pieces - required) };
       });
       setArtifacts(nextArtifacts);
+      persistProgress(heroes, nextArtifacts);
       refreshDetail(detail.kind, detail.id, heroes, nextArtifacts);
     }
     setNotice(detail.title + " 업그레이드 완료");
