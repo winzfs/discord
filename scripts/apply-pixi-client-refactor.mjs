@@ -23,31 +23,13 @@ function addImportBlockOnce(anchor, block, label) {
 
 function repairKnownMultilineImports() {
   const repairs = [
-    {
-      label: "repair hud import",
-      before: 'import { colors } from "./gameTheme";\n  createPixiHudView,',
-      after: 'import { colors } from "./gameTheme";\nimport {\n  createPixiHudView,',
-    },
-    {
-      label: "repair controls import",
-      before: '} from "./pixiHudView";\n  createPixiControlsView,',
-      after: '} from "./pixiHudView";\nimport {\n  createPixiControlsView,',
-    },
-    {
-      label: "repair enemy import",
-      before: '} from "./pixiControlsView";\n  createEnemyView,',
-      after: '} from "./pixiControlsView";\nimport {\n  createEnemyView,',
-    },
-    {
-      label: "repair board import",
-      before: '} from "./pixiEnemyView";\n  createUnitGhost as createBoardUnitGhost,',
-      after: '} from "./pixiEnemyView";\nimport {\n  createUnitGhost as createBoardUnitGhost,',
-    },
+    { label: "repair hud import", before: 'import { colors } from "./gameTheme";\n  createPixiHudView,', after: 'import { colors } from "./gameTheme";\nimport {\n  createPixiHudView,' },
+    { label: "repair controls import", before: '} from "./pixiHudView";\n  createPixiControlsView,', after: '} from "./pixiHudView";\nimport {\n  createPixiControlsView,' },
+    { label: "repair enemy import", before: '} from "./pixiControlsView";\n  createEnemyView,', after: '} from "./pixiControlsView";\nimport {\n  createEnemyView,' },
+    { label: "repair board import", before: '} from "./pixiEnemyView";\n  createUnitGhost as createBoardUnitGhost,', after: '} from "./pixiEnemyView";\nimport {\n  createUnitGhost as createBoardUnitGhost,' },
   ];
 
-  for (const repair of repairs) {
-    replaceOnce(repair.before, repair.after, repair.label);
-  }
+  for (const repair of repairs) replaceOnce(repair.before, repair.after, repair.label);
 }
 
 function dedupeSingleLineImports() {
@@ -57,9 +39,7 @@ function dedupeSingleLineImports() {
   source = lines
     .filter((line) => {
       const trimmed = line.trim();
-      if (!trimmed.startsWith("import ") || trimmed === "import {" || !trimmed.endsWith(";")) {
-        return true;
-      }
+      if (!trimmed.startsWith("import ") || trimmed === "import {" || !trimmed.endsWith(";")) return true;
       if (!seen.has(trimmed)) {
         seen.add(trimmed);
         return true;
@@ -81,15 +61,12 @@ replaceOnce(
 
 addImportBlockOnce(
   '} from "./pixiBoardView";\n',
-  'import { addPixiAnimation, tickPixiAnimations, type PixiAnimation } from "./animation/animationManager";\nimport { createFloatingText } from "./pixiFloatingTextView";\nimport { mountPixiGameLayers } from "./pixiGameLayerOrder";\nimport { createPixiMythicMenuView } from "./pixiMythicMenuView";\nimport { formatMythicRecipeText } from "./pixiMythicRecipeText";\nimport { clearPixiContainer, makePixiPanel, makePixiText } from "./pixiSharedView";\nimport { getPixiPathPoint } from "./pixiPathRuntime";\n',
+  'import { addPixiAnimation, tickPixiAnimations, type PixiAnimation } from "./animation/animationManager";\nimport { createFloatingText } from "./pixiFloatingTextView";\nimport { mountPixiGameLayers } from "./pixiGameLayerOrder";\nimport { createPixiMythicMenuView } from "./pixiMythicMenuView";\nimport { createPixiUnitMenuView } from "./pixiUnitMenuView";\nimport { formatMythicRecipeText } from "./pixiMythicRecipeText";\nimport { clearPixiContainer, makePixiPanel, makePixiText } from "./pixiSharedView";\nimport { getPixiPathPoint } from "./pixiPathRuntime";\n',
   "add refactor imports",
 );
 
-addImportBlockOnce(
-  'import { mountPixiGameLayers } from "./pixiGameLayerOrder";\n',
-  'import { createPixiMythicMenuView } from "./pixiMythicMenuView";\n',
-  "add mythic menu import",
-);
+addImportBlockOnce('import { mountPixiGameLayers } from "./pixiGameLayerOrder";\n', 'import { createPixiMythicMenuView } from "./pixiMythicMenuView";\n', "add mythic menu import");
+addImportBlockOnce('import { createPixiMythicMenuView } from "./pixiMythicMenuView";\n', 'import { createPixiUnitMenuView } from "./pixiUnitMenuView";\n', "add unit menu import");
 
 replaceOnce(
   `type Animation = {
@@ -146,25 +123,16 @@ replaceOnce(
   "delegate panel helper",
 );
 
-replaceOnce(
-  `function clear(container: Container) {
+replaceOnce(`function clear(container: Container) {
   container.removeChildren();
-}`,
-  `function clear(container: Container) {
+}`, `function clear(container: Container) {
   clearPixiContainer(container);
-}`,
-  "delegate clear helper",
-);
-
-replaceOnce(
-  `function addAnimation(refs: GameRefs, animation: Omit<Animation, "age">) {
+}`, "delegate clear helper");
+replaceOnce(`function addAnimation(refs: GameRefs, animation: Omit<Animation, "age">) {
   refs.animations.push({ ...animation, age: 0 });
-}`,
-  `function addAnimation(refs: GameRefs, animation: Omit<Animation, "age">) {
+}`, `function addAnimation(refs: GameRefs, animation: Omit<Animation, "age">) {
   addPixiAnimation(refs.animations, animation);
-}`,
-  "delegate animation add",
-);
+}`, "delegate animation add");
 
 replaceOnce(
   `function floatText(refs: GameRefs, value: string, x: number, y: number, color: number) {
@@ -190,15 +158,11 @@ replaceOnce(
   "delegate floating text",
 );
 
-replaceOnce(
-  `  const phase = Math.max(0, Math.min(1, progress)) * 4;
+replaceOnce(`  const phase = Math.max(0, Math.min(1, progress)) * 4;
   if (phase < 1) return { x: left, y: bottom - (bottom - top) * phase };
   if (phase < 2) return { x: left + (right - left) * (phase - 1), y: top };
   if (phase < 3) return { x: right, y: top + (bottom - top) * (phase - 2) };
-  return { x: right - (right - left) * (phase - 3), y: bottom };`,
-  `  return getPixiPathPoint(layout, progress);`,
-  "delegate path point",
-);
+  return { x: right - (right - left) * (phase - 3), y: bottom };`, `  return getPixiPathPoint(layout, progress);`, "delegate path point");
 
 const localMythicIngredientTextHelper = [
   'function ingredientText(grade: string, role: string | undefined, count: number) {',
@@ -208,13 +172,79 @@ const localMythicIngredientTextHelper = [
   '}',
   '',
 ].join("\n");
-
 replaceOnce(localMythicIngredientTextHelper, "", "remove local mythic ingredient text helper");
+replaceOnce(`item.recipe.ingredients.map((ingredient) => ingredientText(ingredient.grade, ingredient.role, ingredient.count)).join(" + ")`, `formatMythicRecipeText(item.recipe.ingredients)`, "delegate mythic recipe text");
 
 replaceOnce(
-  `item.recipe.ingredients.map((ingredient) => ingredientText(ingredient.grade, ingredient.role, ingredient.count)).join(" + ")`,
-  `formatMythicRecipeText(item.recipe.ingredients)`,
-  "delegate mythic recipe text",
+  `function makeMenuButton(label: string, x: number, y: number, enabled: boolean, onTap: () => void) {
+  const container = new Container();
+  container.x = x;
+  container.y = y;
+  container.eventMode = enabled ? "static" : "none";
+  container.cursor = enabled ? "pointer" : "default";
+  container.addChild(makePanel(58, 34, enabled ? colors.panel : 0x655e59, enabled ? 0x2e241f : 0x3d3732, 10));
+
+  const labelText = makeText(label, 14, enabled ? colors.white : 0xb7afa8);
+  labelText.anchor.set(0.5);
+  labelText.x = 29;
+  labelText.y = 17;
+  container.addChild(labelText);
+
+  if (enabled) {
+    container.on("pointertap", (event: any) => {
+      event.stopPropagation();
+      onTap();
+    });
+  }
+
+  return container;
+}
+
+`,
+  ``,
+  "remove local unit menu button helper",
+);
+
+replaceOnce(
+  `function showUnitMenu(refs: GameRefs, cellIndex: number) {
+  if (refs.movementLocked) return;
+  const cell = refs.state.board[cellIndex];
+  if (!cell || cell.units.length === 0) return;
+
+  clearMenu(refs);
+
+  const center = getCellCenter(refs, cellIndex);
+  const canMerge = canMergeStackCell(refs.state, cellIndex);
+  const menu = new Container();
+  menu.x = Math.max(8, Math.min(refs.app.renderer.width - 132, center.x - 62));
+  menu.y = Math.max(8, center.y - center.cell * 0.95 - 38);
+  const background = makePanel(124, 42, 0x2d2925, 0x1d1714, 12);
+  background.alpha = 0.92;
+  menu.addChild(background);
+  menu.addChild(makeMenuButton("합성", 4, 4, canMerge, () => mergeMenuAction(refs, cellIndex)));
+  menu.addChild(makeMenuButton("판매", 62, 4, true, () => sellMenuAction(refs, cellIndex)));
+
+  refs.menuLayer.addChild(menu);
+  refs.menu = menu;
+}`,
+  `function showUnitMenu(refs: GameRefs, cellIndex: number) {
+  if (refs.movementLocked) return;
+  const cell = refs.state.board[cellIndex];
+  if (!cell || cell.units.length === 0) return;
+
+  clearMenu(refs);
+
+  const menu = createPixiUnitMenuView({
+    center: getCellCenter(refs, cellIndex),
+    rendererWidth: refs.app.renderer.width,
+    canMerge: canMergeStackCell(refs.state, cellIndex),
+    onMerge: () => mergeMenuAction(refs, cellIndex),
+    onSell: () => sellMenuAction(refs, cellIndex),
+  });
+  refs.menuLayer.addChild(menu);
+  refs.menu = menu;
+}`,
+  "delegate unit menu view",
 );
 
 replaceOnce(
@@ -281,8 +311,7 @@ replaceOnce(
   "delegate mythic menu view",
 );
 
-replaceOnce(
-  `  refs.animations = refs.animations.filter((animation) => {
+replaceOnce(`  refs.animations = refs.animations.filter((animation) => {
     animation.age += deltaMs;
     const progress = Math.min(1, animation.age / animation.duration);
     animation.update(progress);
@@ -291,25 +320,14 @@ replaceOnce(
       return false;
     }
     return true;
-  });`,
-  `  refs.animations = tickPixiAnimations(refs.animations, deltaMs);`,
-  "delegate animation tick",
-);
-
-replaceOnce(
-  `    controls: new Container(),
+  });`, `  refs.animations = tickPixiAnimations(refs.animations, deltaMs);`, "delegate animation tick");
+replaceOnce(`    controls: new Container(),
     effects: new Container(),
-    menuLayer: new Container(),`,
-  `    controls: new Container(),
+    menuLayer: new Container(),`, `    controls: new Container(),
     info: new Container(),
     effects: new Container(),
-    menuLayer: new Container(),`,
-  "create info layer",
-);
-
-replaceOnce(
-  `    stage.addChild(refs.world, refs.board, refs.hud, refs.controls, refs.effects, refs.menuLayer);`,
-  `    mountPixiGameLayers(stage, {
+    menuLayer: new Container(),`, "create info layer");
+replaceOnce(`    stage.addChild(refs.world, refs.board, refs.hud, refs.controls, refs.effects, refs.menuLayer);`, `    mountPixiGameLayers(stage, {
       world: refs.world,
       board: refs.board,
       hud: refs.hud,
@@ -317,9 +335,7 @@ replaceOnce(
       info: refs.info,
       effects: refs.effects,
       menuLayer: refs.menuLayer,
-    });`,
-  "delegate layer mounting",
-);
+    });`, "delegate layer mounting");
 
 dedupeSingleLineImports();
 
