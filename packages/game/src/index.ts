@@ -11,6 +11,7 @@ export * from "./data/skills";
 export * from "./data/waves";
 export * from "./rules/scoring";
 export * from "./systems/attackUpgradeSystem";
+export * from "./systems/boardSystem";
 export * from "./systems/combatSystem";
 export * from "./systems/gambleSystem";
 export * from "./systems/mergeSystem";
@@ -25,13 +26,14 @@ export * from "./types/wave";
 export * from "./utils/random";
 
 import { initialBalance } from "./data/balance";
+import { createInitialBoard } from "./systems/boardSystem";
 import type { GameState } from "./types/gameState";
 
 export function createInitialGameState(seed = "mvp-placeholder-seed"): GameState {
   return {
     mode: "single_random_wave_defense",
     seed,
-    board: Array.from({ length: initialBalance.boardRows * initialBalance.boardColumns }, () => null),
+    board: createInitialBoard(initialBalance.boardRows, initialBalance.boardColumns),
     boardSize: {
       rows: initialBalance.boardRows,
       columns: initialBalance.boardColumns,
