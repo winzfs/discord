@@ -45,8 +45,13 @@ if (!s.includes(beforeFloat) && !s.includes(afterFloat)) {
 }
 
 s = s.replace(beforeFloat, afterFloat);
-s = s.replaceAll("projectile.destroy();", "refs.effects.removeChild(projectile);\n        projectile.destroy();");
-s = s.replaceAll("warning.destroy()", "refs.effects.removeChild(warning);\n      warning.destroy()");
+
+const beforeProjectileDestroy = `        projectile.destroy();`;
+const afterProjectileDestroy = `        refs.effects.removeChild(projectile);
+        projectile.destroy();`;
+if (s.includes(beforeProjectileDestroy) && !s.includes(afterProjectileDestroy)) {
+  s = s.replaceAll(beforeProjectileDestroy, afterProjectileDestroy);
+}
 
 writeFileSync(path, s);
 console.log(`Updated ${path} floating text lifetime`);
