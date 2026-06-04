@@ -1,4 +1,4 @@
-import { Application, Container, Graphics, Text } from "pixi.js";
+import { Application, Container, Graphics, Rectangle, Text } from "pixi.js";
 import {
   calculateBoardPower,
   completeCurrentWave,
@@ -10,6 +10,7 @@ import {
   getPowerUpgradeCost,
   getSummonCost,
   isBoardFull,
+  moveOneHeroToCell,
   startWave,
   summonHero,
   upgradeAttack,
@@ -35,6 +36,20 @@ type ButtonOptions = {
   subFill?: number;
 };
 
+type DragState = {
+  sourceIndex: number;
+  ghost: Container;
+};
+
+type BoardMetrics = {
+  cols: number;
+  rows: number;
+  cell: number;
+  gap: number;
+  startX: number;
+  startY: number;
+};
+
 type GameRefs = {
   app: Application;
   stage: Container;
@@ -48,6 +63,7 @@ type GameRefs = {
   animations: Animation[];
   lastSummonedIndex: number | null;
   flashBoard: boolean;
+  dragging: DragState | null;
 };
 
 function text(value: string, size = 18, fill: number = colors.white, weight: "normal" | "bold" = "bold") {
@@ -86,6 +102,123 @@ function addAnim(refs: GameRefs, anim: Omit<Animation, "age">) {
 function getCellIndexFromHero(state: GameState, hero: BoardHero | null): number | null {
   if (!hero) return null;
   return hero.position.row * state.boardSize.columns + hero.position.column;
+}
+
+function getBoardMetrics(refs: GameRefs, layout: GameLayout): BoardMetrics {
+  const gap = 7;
+  const cols = refs.state.boardSize.columns;
+  const rows = refs.state.boardSize.rows;
+  const cell = Math.min((layout.boardWidth - 34 - gap * (cols - 1)) / cols, (layout.boardHeight - 32 - gap * (rows - 1)) / rows);
+  return {
+    cols,
+    rows,
+    cell,
+    gap,
+    startX: layout.boardX + (layout.boardWidth - cell * cols - gap * (cols - 1)) / 2,
+    startY: layout.boardY + 16,
+  };
+}
+
+function getCellIndexAtPoint(refs: GameRefs, x: number, y: number): number | null {
+  const layout = createGameLayout(refs.app.renderer.width, refs.app.renderer.height);
+  const metrics = getBoardMetrics(refs, layout);
+
+  for (let row = 0; row < metrics.rows; row += 1) {
+    for (let col = 0; col < metrics.cols; col += 1) {
+      const cellX = metrics.startX + col * (metrics.cell + metrics.gap);
+      const cellY = metrics.startY + row * (metrics.cell + metrics.gap);
+      if (x >= cellX && x <= cellX + metrics.cell && y >= cellY && y <= cellY + metrics.cell) {
+        return row * metrics.cols + col;
+      }
+    }
+  }
+
+  return null;
+}
+
+function createDragGhost(grade: string, cell: number): Container {
+  const ghost = new Container();
+  ghost.alpha = 0.82;
+  ghost.scale.set(1.08);
+
+  const shadow = new Graphics();
+  shadow.ellipse(0, cell * 0.14, cell * 0.18, cell * 0.055);
+  shadow.fill({ color: 0x000000, alpha: 0.22 });
+  ghost.addChild(shadow);
+
+  const body = new Graphics();
+  body.circle(0, 0, cell * 0.22);
+  body.fill({ color: gradeColor(grade), alpha: 1 });
+  body.stroke({ color: colors.black, width: 3, alpha: 0.58 });
+  ghost.addChild(body);
+
+  const head = new Graphics();
+  head.circle(0, -cell * 0.18, cell * 0.15);
+  head.fill({ color: 0xffd0a6, alpha: 1 });
+  head.stroke({ color: colors.black, width: 2, alpha: 0.58 });
+  ghost.addChild(head);
+
+  return ghost;
+}
+
+function clearDrag(refs: GameRefs) {
+  if (refs.dragging?.ghost) refs.dragging.ghost.destroy({ children: true });
+  refs.dragging = null;
+}
+
+function beginCellDrag(refs: GameRefs, sourceIndex: number, globalX: number, globalY: number, cell: number) {
+  if (isFinished(refs.state)) return;
+  const sourceCell = refs.state.board[sourceIndex];
+  const movingHero = sourceCell?.units[sourceCell.units.length - 1];
+  if (!movingHero) return;
+
+  clearDrag(refs);
+  const ghost = createDragGhost(movingHero.grade, cell);
+  ghost.x = globalX;
+  ghost.y = globalY;
+  refs.effects.addChild(ghost);
+  refs.dragging = { sourceIndex, ghost };
+}
+
+function moveDragGhost(refs: GameRefs, globalX: number, globalY: number) {
+  if (!refs.dragging) return;
+  refs.dragging.ghost.x = globalX;
+  refs.dragging.ghost.y = globalY;
+}
+
+function finishCellDrag(refs: GameRefs, globalX: number, globalY: number) {
+  if (!refs.dragging) return;
+
+  const sourceIndex = refs.dragging.sourceIndex;
+  const targetIndex = getCellIndexAtPoint(refs, globalX, globalY);
+  clearDrag(refs);
+
+  if (targetIndex === null) {
+    floatText(refs, "이동 취소", refs.app.renderer.width / 2, refs.app.renderer.height * 0.52, colors.white);
+    return;
+  }
+
+  const result = moveOneHeroToCell(refs.state, sourceIndex, targetIndex);
+  if (!result.movedHero) {
+    if (result.reason === "target_full") {
+      floatText(refs, "칸이 가득 찼어", refs.app.renderer.width / 2, refs.app.renderer.height * 0.52, colors.red);
+    }
+    return;
+  }
+
+  refs.state = result.state;
+  refs.lastSummonedIndex = targetIndex;
+  render(refs);
+
+  const label = result.action === "swap" ? "자리 교환" : result.action === "stack" ? "중첩" : "이동";
+  floatText(refs, label, refs.app.renderer.width / 2, refs.app.renderer.height * 0.52, result.action === "swap" ? colors.orange : colors.green);
+  addAnim(refs, {
+    duration: 360,
+    update: (p) => {
+      if (p > 0.75) refs.lastSummonedIndex = null;
+      drawBoard(refs, createGameLayout(refs.app.renderer.width, refs.app.renderer.height));
+    },
+  });
 }
 
 function drawBackground(refs: GameRefs, layout: GameLayout) {
@@ -246,41 +379,47 @@ function drawUnitMarker(refs: GameRefs, x: number, y: number, cell: number, grad
 
 function drawBoard(refs: GameRefs, layout: GameLayout) {
   clear(refs.board);
-  const gap = 7;
-  const cols = refs.state.boardSize.columns;
-  const rows = refs.state.boardSize.rows;
-  const cell = Math.min((layout.boardWidth - 34 - gap * (cols - 1)) / cols, (layout.boardHeight - 32 - gap * (rows - 1)) / rows);
-  const startX = layout.boardX + (layout.boardWidth - cell * cols - gap * (cols - 1)) / 2;
-  const startY = layout.boardY + 16;
+  const metrics = getBoardMetrics(refs, layout);
 
   refs.state.board.forEach((boardCell, index) => {
-    const row = Math.floor(index / cols);
-    const col = index % cols;
-    const x = startX + col * (cell + gap);
-    const y = startY + row * (cell + gap);
+    const row = Math.floor(index / metrics.cols);
+    const col = index % metrics.cols;
+    const x = metrics.startX + col * (metrics.cell + metrics.gap);
+    const y = metrics.startY + row * (metrics.cell + metrics.gap);
     const units = boardCell.units;
     const firstUnit = units[0];
     const isNew = refs.lastSummonedIndex === index;
     const pulse = isNew ? 1.08 : 1;
-    const inset = (cell * (pulse - 1)) / 2;
+    const inset = (metrics.cell * (pulse - 1)) / 2;
     const isFullStack = units.length >= 3;
 
     const g = new Graphics();
-    g.roundRect(x - inset, y - inset, cell * pulse, cell * pulse, 12);
+    g.roundRect(x - inset, y - inset, metrics.cell * pulse, metrics.cell * pulse, 12);
     g.fill({ color: units.length > 0 ? 0x6ac144 : 0x539832, alpha: units.length > 0 ? 0.96 : 0.45 });
     g.stroke({ color: firstUnit ? gradeColor(firstUnit.grade) : 0x3e7629, width: isFullStack ? 4 : units.length > 0 ? 3 : 2, alpha: refs.flashBoard && units.length > 0 ? 1 : 0.85 });
     refs.board.addChild(g);
 
     if (isFullStack) {
       const glow = new Graphics();
-      glow.roundRect(x + 3, y + 3, cell - 6, cell - 6, 10);
+      glow.roundRect(x + 3, y + 3, metrics.cell - 6, metrics.cell - 6, 10);
       glow.stroke({ color: colors.yellow, width: 2, alpha: 0.38 });
       refs.board.addChild(glow);
     }
 
     units.forEach((unit, unitIndex) => {
-      drawUnitMarker(refs, x, y, cell, unit.grade, units.length, unitIndex);
+      drawUnitMarker(refs, x, y, metrics.cell, unit.grade, units.length, unitIndex);
     });
+
+    const hit = new Graphics();
+    hit.roundRect(x, y, metrics.cell, metrics.cell, 12);
+    hit.fill({ color: 0xffffff, alpha: 0.001 });
+    hit.eventMode = units.length > 0 ? "static" : "none";
+    hit.cursor = units.length > 0 ? "grab" : "default";
+    hit.on("pointerdown", (event) => {
+      event.stopPropagation();
+      beginCellDrag(refs, index, event.global.x, event.global.y, metrics.cell);
+    });
+    refs.board.addChild(hit);
   });
 }
 
@@ -546,6 +685,7 @@ export function createPixiGame(parent: HTMLElement): PixiGameHandle {
     animations: [],
     lastSummonedIndex: null,
     flashBoard: false,
+    dragging: null,
   } satisfies GameRefs;
 
   let destroyed = false;
@@ -566,9 +706,17 @@ export function createPixiGame(parent: HTMLElement): PixiGameHandle {
 
     parent.appendChild(app.canvas);
     app.stage.addChild(stage);
+    stage.eventMode = "static";
+    stage.hitArea = new Rectangle(0, 0, app.renderer.width, app.renderer.height);
+    stage.on("pointermove", (event) => moveDragGhost(refs, event.global.x, event.global.y));
+    stage.on("pointerup", (event) => finishCellDrag(refs, event.global.x, event.global.y));
+    stage.on("pointerupoutside", (event) => finishCellDrag(refs, event.global.x, event.global.y));
     stage.addChild(refs.world, refs.board, refs.hud, refs.controls, refs.effects);
     render(refs);
-    app.renderer.on("resize", () => render(refs));
+    app.renderer.on("resize", () => {
+      stage.hitArea = new Rectangle(0, 0, app.renderer.width, app.renderer.height);
+      render(refs);
+    });
     app.ticker.add((ticker) => tick(refs, ticker.deltaMS));
   }
 
@@ -577,6 +725,7 @@ export function createPixiGame(parent: HTMLElement): PixiGameHandle {
   return {
     cleanup: () => {
       destroyed = true;
+      clearDrag(refs);
       app.destroy(true, { children: true });
     },
   };
