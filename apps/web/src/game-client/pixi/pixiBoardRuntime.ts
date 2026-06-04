@@ -4,6 +4,8 @@ import type { GameLayout } from "./gameLayout";
 import { createUnitGhost as createBoardUnitGhost, type BoardMetrics } from "./pixiBoardView";
 import type { GameRefs } from "./pixiGameTypes";
 
+const BOARD_CELL_TOP_PADDING = 4;
+
 export function getBoardMetrics(refs: GameRefs, layout: GameLayout): BoardMetrics {
   const gap = 7;
   const cols = refs.state.boardSize.columns;
@@ -19,7 +21,7 @@ export function getBoardMetrics(refs: GameRefs, layout: GameLayout): BoardMetric
     cell,
     gap,
     startX: layout.boardX + (layout.boardWidth - cell * cols - gap * (cols - 1)) / 2,
-    startY: layout.boardY + 16,
+    startY: layout.boardY + BOARD_CELL_TOP_PADDING,
   };
 }
 
