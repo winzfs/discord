@@ -133,15 +133,18 @@ replaceOnce(
   "delegate path point",
 );
 
-replaceOnce(
-  `function ingredientText(grade: string, role: string | undefined, count: number) {
-  const gradeLabel = grade === "legendary" ? "전설" : grade === "epic" ? "영웅" : grade === "rare" ? "희귀" : grade === "common" ? "일반" : "신화";
-  const roleLabel = role === "damage" ? "딜러" : role === "tank" ? "탱커" : role === "support" ? "지원" : "무관";
-  return `${gradeLabel} ${roleLabel}x${count}`;
-}
+const localMythicIngredientTextHelper = [
+  'function ingredientText(grade: string, role: string | undefined, count: number) {',
+  '  const gradeLabel = grade === "legendary" ? "전설" : grade === "epic" ? "영웅" : grade === "rare" ? "희귀" : grade === "common" ? "일반" : "신화";',
+  '  const roleLabel = role === "damage" ? "딜러" : role === "tank" ? "탱커" : role === "support" ? "지원" : "무관";',
+  '  return `${gradeLabel} ${roleLabel}x${count}`;',
+  '}',
+  '',
+].join("\n");
 
-`,
-  ``,
+replaceOnce(
+  localMythicIngredientTextHelper,
+  "",
   "remove local mythic ingredient text helper",
 );
 
