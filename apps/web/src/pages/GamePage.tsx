@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { createPixiGame } from "../game-client/pixi/createPixiGame";
+import { createPixiGame } from "../game-client/pixi/createPixiGameAuto";
 
 export function GamePage() {
   const hostRef = useRef<HTMLDivElement | null>(null);
