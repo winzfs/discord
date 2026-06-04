@@ -1,6 +1,5 @@
 import { Application, Container, Rectangle } from "pixi.js";
 import {
-  canMergeStackCell,
   craftMythicHero,
   createInitialGameState,
   createSeededRandom,
@@ -12,8 +11,6 @@ import {
   getSummonCost,
   initialBalance,
   isBoardFull,
-  mergeStackedCell,
-  sellTopUnitInCell,
   startWave,
   summonHero,
   upgradeAttack,
@@ -61,12 +58,16 @@ import {
   moveDragGhost,
   type PixiDragRuntimeOptions,
 } from "./pixiDragRuntime";
+import {
+  canShowMergeIndicator,
+  showUnitMenu,
+  type PixiUnitActionRuntimeOptions,
+} from "./pixiUnitActionRuntime";
 import { submitGameRun } from "../submitGameRun";
 import { addPixiAnimation, tickPixiAnimations, type PixiAnimation } from "./animation/animationManager";
 import { createFloatingText } from "./pixiFloatingTextView";
 import { mountPixiGameLayers } from "./pixiGameLayerOrder";
 import { createPixiMythicMenuView } from "./pixiMythicMenuView";
-import { createPixiUnitMenuView } from "./pixiUnitMenuView";
 import { clearPixiUnitInfoView, drawPixiUnitInfoView } from "./pixiUnitInfoView";
 import { formatMythicRecipeText } from "./pixiMythicRecipeText";
 import { clearPixiContainer, makePixiPanel, makePixiText } from "./pixiSharedView";
@@ -163,54 +164,6 @@ function getCellIndexFromHero(state: GameState, hero: BoardHero | null) {
   return hero.position.row * state.boardSize.columns + hero.position.column;
 }
 
-function showUnitMenu(refs: GameRefs, cellIndex: number) {
-  if (refs.movementLocked) return;
-  const cell = refs.state.board[cellIndex];
-  if (!cell || cell.units.length === 0) return;
-
-  clearMenu(refs);
-  refs.selectedCellIndex = cellIndex;
-  drawSelectedUnitInfo(refs);
-
-  const menu = createPixiUnitMenuView({
-    center: getCellCenter(refs, cellIndex),
-    rendererWidth: refs.app.renderer.width,
-    canMerge: canMergeStackCell(refs.state, cellIndex),
-    onMerge: () => mergeMenuAction(refs, cellIndex),
-    onSell: () => sellMenuAction(refs, cellIndex),
-  });
-  refs.menuLayer.addChild(menu);
-  refs.menu = menu;
-}
-
-function mergeMenuAction(refs: GameRefs, cellIndex: number) {
-  clearMenuAndUnitInfo(refs);
-  const result = mergeStackedCell(refs.state, cellIndex, refs.random);
-  if (!result.mergedHero) {
-    const message = result.reason === "not_full_stack" ? "3마리 필요" : result.reason === "max_grade" ? "최고 등급" : "합성 불가";
-    floatText(refs, message, refs.app.renderer.width / 2, refs.app.renderer.height * 0.52, colors.red);
-    return;
-  }
-
-  refs.state = result.state;
-  refs.lastSummonedIndex = cellIndex;
-  render(refs);
-  floatText(refs, "합성!", refs.app.renderer.width / 2, refs.app.renderer.height * 0.52, colors.yellow);
-}
-
-function sellMenuAction(refs: GameRefs, cellIndex: number) {
-  clearMenuAndUnitInfo(refs);
-  const result = sellTopUnitInCell(refs.state, cellIndex);
-  if (!result.soldHero) {
-    floatText(refs, "판매 불가", refs.app.renderer.width / 2, refs.app.renderer.height * 0.52, colors.red);
-    return;
-  }
-
-  refs.state = result.state;
-  render(refs);
-  floatText(refs, `판매 +${result.reward}`, refs.app.renderer.width / 2, refs.app.renderer.height * 0.52, colors.green);
-}
-
 function getPathPoint(layout: GameLayout, progress: number) {
   const left = Math.max(24, layout.boardX - 42);
   const right = Math.min(layout.width - 24, layout.boardX + layout.boardWidth + 42);
@@ -245,6 +198,16 @@ function drawTopHud(refs: GameRefs, layout: GameLayout) {
   });
 }
 
+function createUnitActionRuntimeOptions(): PixiUnitActionRuntimeOptions {
+  return {
+    clearMenu,
+    clearMenuAndUnitInfo,
+    drawSelectedUnitInfo,
+    render,
+    floatText,
+  };
+}
+
 function createDragRuntimeOptions(): PixiDragRuntimeOptions {
   return {
     isFinished,
@@ -254,13 +217,13 @@ function createDragRuntimeOptions(): PixiDragRuntimeOptions {
     addAnimation,
     render,
     floatText,
-    showUnitMenu,
+    showUnitMenu: (refs, cellIndex) => showUnitMenu(refs, cellIndex, createUnitActionRuntimeOptions()),
   };
 }
 
 function drawBoard(refs: GameRefs, layout: GameLayout) {
   const metrics = getBoardMetrics(refs, layout);
-  drawBoardCells(refs.board, refs.state.board, metrics, (cellIndex) => canMergeStackCell(refs.state, cellIndex), {
+  drawBoardCells(refs.board, refs.state.board, metrics, (cellIndex) => canShowMergeIndicator(refs, cellIndex), {
     canDrag: !refs.movementLocked,
     onCellPointerDown: (cellIndex, globalX, globalY, cellSize) => beginCellDrag(refs, cellIndex, globalX, globalY, cellSize, createDragRuntimeOptions()),
   });
