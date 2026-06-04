@@ -32,7 +32,7 @@ replaceOnce(
 
 replaceOnce(
   `      {activeTab === "shop" && <ShopView />}`,
-  `      <p className="lobby-notice">{notice}</p>\n      {activeTab === "shop" && <ShopView onPick={(name) => setNotice(`${name} 선택됨`)} />}`,
+  `      <p className="lobby-notice">{notice}</p>\n      {activeTab === "shop" && <ShopView onPick={(name) => setNotice(name + " 선택됨")} />}`,
   "show lobby notice",
 );
 
