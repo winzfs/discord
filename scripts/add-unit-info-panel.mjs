@@ -16,7 +16,7 @@ for (const text of required) {
 if (!s.includes('import { clearUnitInfoRuntime, drawUnitInfoRuntime, selectUnitInfoHeroInCell } from "./pixiUnitInfoRuntime";')) {
   s = s.replace(
     '} from "./pixiBoardView";',
-    '} from "./pixiBoardView";\nimport { clearUnitInfoRuntime, drawUnitInfoRuntime, selectUnitInfoHeroInCell } from "./pixiUnitInfoRuntime";',
+    '} from "./pixiBoardView";\nimport { mountPixiGameLayers } from "./pixiGameLayerOrder";\nimport { clearUnitInfoRuntime, drawUnitInfoRuntime, selectUnitInfoHeroInCell } from "./pixiUnitInfoRuntime";',
   );
 }
 
@@ -123,7 +123,7 @@ s = s.replace(
 
 s = s.replace(
   `    stage.addChild(refs.world, refs.board, refs.hud, refs.controls, refs.effects, refs.menuLayer);`,
-  `    stage.addChild(refs.world, refs.board, refs.hud, refs.controls, refs.info, refs.effects, refs.menuLayer);`,
+  `    mountPixiGameLayers(stage, refs);`,
 );
 
 s = s.replace(
