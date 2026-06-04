@@ -1,23 +1,25 @@
 import type { HeroGrade } from "../types/hero";
 
 export const initialBalance = {
-  boardRows: 4,
+  boardRows: 5,
   boardColumns: 4,
-  startingResources: 100,
-  startingLives: 20,
+  startingResources: 60,
+  startingLives: 100,
   baseSummonCost: 10,
   summonCostIncrease: 2,
-  maxSummonCost: 100,
+  maxSummonCost: 80,
   mergeRequiredCount: 3,
   maxWave: 30,
   bossWaveInterval: 5,
+  powerUpgradeBaseCost: 100,
+  powerUpgradeCostIncrease: 60,
 } as const;
 
 export const summonGradeRates: Array<{ grade: HeroGrade; weight: number }> = [
-  { grade: "common", weight: 65 },
-  { grade: "rare", weight: 25 },
-  { grade: "epic", weight: 8 },
-  { grade: "legendary", weight: 2 },
+  { grade: "common", weight: 72 },
+  { grade: "rare", weight: 22 },
+  { grade: "epic", weight: 5 },
+  { grade: "legendary", weight: 1 },
 ];
 
 export function getSummonCost(summonCount: number): number {
@@ -25,4 +27,8 @@ export function getSummonCost(summonCount: number): number {
     initialBalance.maxSummonCost,
     initialBalance.baseSummonCost + summonCount * initialBalance.summonCostIncrease,
   );
+}
+
+export function getPowerUpgradeCost(upgradeLevel: number): number {
+  return initialBalance.powerUpgradeBaseCost + upgradeLevel * initialBalance.powerUpgradeCostIncrease;
 }
