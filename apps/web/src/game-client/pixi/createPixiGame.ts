@@ -12,7 +12,6 @@ import {
   getMythicCraftAvailability,
   getPowerUpgradeCost,
   getSummonCost,
-  getWaveByNumber,
   initialBalance,
   isBoardFull,
   mergeStackedCell,
@@ -52,6 +51,7 @@ import {
   updateEnemyViewPosition,
 } from "./pixiEnemyView";
 import { createActiveEnemy, destroyActiveEnemy } from "./pixiEnemyRuntime";
+import { spawnWaveMonsters } from "./pixiWaveRuntime";
 import {
   createUnitGhost as createBoardUnitGhost,
   drawBoardCells,
@@ -495,28 +495,6 @@ function showBossWarning(refs: GameRefs) {
   });
 }
 
-function spawnMonsters(refs: GameRefs) {
-  refs.activeEnemies.forEach(destroyActiveEnemy);
-  refs.activeEnemies = [];
-  refs.waveKilled = 0;
-  refs.waveReward = 0;
-  refs.waveLostLives = 0;
-
-  const wave = getWaveByNumber(refs.state.currentWave);
-  if (!wave) return;
-  if (wave.isBossWave) showBossWarning(refs);
-
-  for (const group of wave.enemyGroups) {
-    for (let index = 0; index < group.count; index += 1) {
-      const enemy = createActiveEnemy(refs, group.enemyId, wave.isBossWave && group.enemyId === "server-crasher");
-      if (!enemy) continue;
-      enemy.progress = -((group.spawnIntervalMs / 1000) * index * 0.075);
-      refs.activeEnemies.push(enemy);
-    }
-  }
-  invalidateControls(refs);
-}
-
 function updateEnemies(refs: GameRefs, deltaSeconds: number) {
   const layout = createGameLayout(refs.app.renderer.width, refs.app.renderer.height);
   for (const enemy of refs.activeEnemies) {
@@ -731,7 +709,7 @@ function startAutoWave(refs: GameRefs) {
   refs.attackTimer = 0.25;
   refs.state = startWave(refs.state);
   render(refs);
-  spawnMonsters(refs);
+  spawnWaveMonsters(refs, { showBossWarning, invalidateControls });
 }
 
 function finishAutoWave(refs: GameRefs, readyImmediately = false) {
