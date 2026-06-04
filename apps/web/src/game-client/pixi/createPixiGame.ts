@@ -27,6 +27,9 @@ import type { BoardHero, GameState, HeroRole } from "@discord-random-defense/gam
 import { createGameLayout } from "./gameLayout";
 import type { GameLayout } from "./gameLayout";
 import { colors, gradeColor } from "./gameTheme";
+import { createPixiHudView, updatePixiHudView, type PixiHudView } from "./pixiHudView";
+import { createPixiControlsView, updatePixiControlsView, invalidatePixiControlsView, type PixiControlsView } from "./pixiControlsView";
+import { createEnemyView, destroyEnemyView, updateEnemyViewHp, updateEnemyViewPosition, type EnemyView } from "./pixiEnemyView";
 
 export type PixiGameHandle = { cleanup: () => void };
 
@@ -47,7 +50,7 @@ type ActiveEnemy = {
   speed: number;
   alive: boolean;
   boss: boolean;
-  sprite: Container;
+  view: EnemyView;
 };
 type WaveSummary = { killed: number; leaked: number; lostLives: number; reward: number; luckStoneReward: number; perfect: boolean };
 type GameRefs = {
@@ -59,6 +62,8 @@ type GameRefs = {
   controls: Container;
   effects: Container;
   menuLayer: Container;
+  hudView: PixiHudView | null;
+  controlsView: PixiControlsView | null;
   state: GameState;
   random: ReturnType<typeof createSeededRandom>;
   animations: Animation[];
@@ -77,7 +82,6 @@ type GameRefs = {
   waveReward: number;
   waveLostLives: number;
   lastWaveSummary: WaveSummary | null;
-  lastHudKey: string;
 };
 
 const WAVE_COUNTDOWN_SECONDS = 8;
@@ -133,7 +137,11 @@ function clearDrag(refs: GameRefs) {
 }
 
 function invalidateHud(refs: GameRefs) {
-  refs.lastHudKey = "";
+  refs.hudView = null;
+}
+
+function invalidateControls(refs: GameRefs) {
+  invalidatePixiControlsView(refs.controlsView);
 }
 
 function getCellIndexFromHero(state: GameState, hero: BoardHero | null) {
@@ -211,7 +219,6 @@ function drawUnitShape(target: Container, hero: Pick<BoardHero, "grade" | "heroI
   if (role === "tank") body.roundRect(-cell * 0.24 * scale, -cell * 0.1 * scale, cell * 0.48 * scale, cell * 0.42 * scale, cell * 0.12 * scale);
   else if (role === "support") body.circle(0, cell * 0.02 * scale, cell * 0.2 * scale);
   else body.moveTo(0, -cell * 0.24 * scale).lineTo(cell * 0.24 * scale, cell * 0.2 * scale).lineTo(-cell * 0.24 * scale, cell * 0.2 * scale).lineTo(0, -cell * 0.24 * scale);
-
   body.fill({ color: gradeColor(hero.grade), alpha: 1 });
   body.stroke({ color: colors.black, width: Math.max(2, 3 * scale), alpha: 0.58 });
   target.addChild(body);
@@ -307,7 +314,6 @@ function animateMoveResult(refs: GameRefs, sourceIndex: number, targetIndex: num
     render(refs);
     return;
   }
-
   const finish = () => {
     refs.state = nextState;
     refs.lastSummonedIndex = targetIndex;
@@ -315,7 +321,6 @@ function animateMoveResult(refs: GameRefs, sourceIndex: number, targetIndex: num
     render(refs);
     floatText(refs, action === "swap" ? "자리 교환" : action === "stack" ? "중첩" : "이동", refs.app.renderer.width / 2, refs.app.renderer.height * 0.52, action === "swap" ? colors.orange : colors.green);
   };
-
   if (action === "swap" && targetCell?.units[0]) {
     let completed = 0;
     const onDone = () => {
@@ -456,65 +461,26 @@ function drawBackground(refs: GameRefs, layout: GameLayout) {
   refs.world.addChild(field);
 }
 
-function getHudKey(refs: GameRefs) {
-  const timer = refs.wavePhase === "combat" ? Math.ceil(refs.combatTimer) : refs.wavePhase === "result" ? -1 : Math.ceil(refs.nextWaveTimer);
-  const alive = refs.activeEnemies.filter((enemy) => enemy.alive).length;
-  const firepower = getAllBoardHeroes(refs.state.board).reduce((sum, hero) => sum + getHeroDamage(refs, hero), 0);
-  return [refs.state.currentWave, refs.state.lives, refs.state.resources, refs.state.luckStones, getBoardUnitCount(refs.state.board), refs.wavePhase, timer, alive, firepower].join("|");
+function getFirepower(refs: GameRefs) {
+  return getAllBoardHeroes(refs.state.board).reduce((sum, hero) => sum + getHeroDamage(refs, hero), 0);
 }
 
-function drawTopHud(refs: GameRefs, layout: GameLayout, force = false) {
-  const key = getHudKey(refs);
-  if (!force && refs.lastHudKey === key) return;
-  refs.lastHudKey = key;
-  clear(refs.hud);
-  const boss = isBossWave(refs.state);
-  const waveBox = makePanel(150, 58, boss ? 0x5a2327 : colors.panel, boss ? colors.red : 0x3b2d26, 12);
-  waveBox.x = layout.width / 2 - 75;
-  waveBox.y = layout.topHudY;
-  refs.hud.addChild(waveBox);
-  const wave = makeText(`WAVE ${refs.state.currentWave}`, 18);
-  wave.anchor.set(0.5, 0);
-  wave.x = layout.width / 2;
-  wave.y = layout.topHudY + 7;
-  refs.hud.addChild(wave);
-  const timerLabel = refs.wavePhase === "combat" ? `${Math.ceil(refs.combatTimer)}s` : refs.wavePhase === "result" ? "READY" : `${Math.ceil(refs.nextWaveTimer)}s`;
-  const timer = makeText(boss ? `BOSS ${timerLabel}` : refs.wavePhase === "countdown" ? `NEXT ${timerLabel}` : timerLabel, 20, boss ? colors.red : colors.white);
-  timer.anchor.set(0.5, 0);
-  timer.x = layout.width / 2;
-  timer.y = layout.topHudY + 30;
-  refs.hud.addChild(timer);
-  const hpBackground = makePanel(layout.width - 92, 24, 0x4d2228, 0x2f1519, 12);
-  hpBackground.x = 46;
-  hpBackground.y = layout.topHudY + 66;
-  refs.hud.addChild(hpBackground);
-  const hpRatio = Math.max(0, Math.min(1, refs.state.lives / initialBalance.startingLives));
-  const hp = new Graphics();
-  hp.roundRect(50, layout.topHudY + 70, (layout.width - 100) * hpRatio, 16, 8);
-  hp.fill({ color: colors.red, alpha: 1 });
-  refs.hud.addChild(hp);
-  const hpText = makeText(`${refs.state.lives} / ${initialBalance.startingLives}`, 16);
-  hpText.anchor.set(0.5, 0);
-  hpText.x = layout.width / 2;
-  hpText.y = layout.topHudY + 67;
-  refs.hud.addChild(hpText);
-  const firepower = getAllBoardHeroes(refs.state.board).reduce((sum, hero) => sum + getHeroDamage(refs, hero), 0);
-  const power = makeText(`화력 ${firepower}`, 15);
-  power.x = 22;
-  power.y = layout.topHudY + 98;
-  refs.hud.addChild(power);
-  const units = makeText(`${getBoardUnitCount(refs.state.board)} / ${getBoardCapacity(refs.state.board)}`, 15);
-  units.x = layout.width - 96;
-  units.y = layout.topHudY + 98;
-  refs.hud.addChild(units);
-  const coin = makeText(`코인 ${refs.state.resources}`, 18, colors.yellow);
-  coin.x = 24;
-  coin.y = layout.bottomY - 34;
-  refs.hud.addChild(coin);
-  const luck = makeText(`행운석 ${refs.state.luckStones}`, 16, colors.blue);
-  luck.x = 24;
-  luck.y = layout.bottomY - 58;
-  refs.hud.addChild(luck);
+function drawTopHud(refs: GameRefs, layout: GameLayout) {
+  if (!refs.hudView) refs.hudView = createPixiHudView(refs.hud);
+  updatePixiHudView(refs.hudView, layout, {
+    currentWave: refs.state.currentWave,
+    wavePhase: refs.wavePhase,
+    countdownSeconds: refs.nextWaveTimer,
+    combatSeconds: refs.combatTimer,
+    lives: refs.state.lives,
+    maxLives: initialBalance.startingLives,
+    firepower: getFirepower(refs),
+    unitCount: getBoardUnitCount(refs.state.board),
+    unitCapacity: getBoardCapacity(refs.state.board),
+    resources: refs.state.resources,
+    luckStones: refs.state.luckStones,
+    isBossWave: isBossWave(refs.state),
+  });
 }
 
 function getStackOffset(stackCount: number, index: number, cell: number) {
@@ -564,31 +530,6 @@ function drawBoard(refs: GameRefs, layout: GameLayout) {
   });
 }
 
-function makeButton(label: string, sub: string, width: number, height: number, color: number, onTap: () => void, disabled = false) {
-  const container = new Container();
-  container.eventMode = disabled ? "none" : "static";
-  container.cursor = disabled ? "default" : "pointer";
-  container.addChild(makePanel(width, height, disabled ? 0x6f6259 : color, disabled ? 0x3d332e : 0x51351e, 14));
-  const compact = height <= 56;
-  const subText = makeText(sub, compact ? 10 : 12, disabled ? 0x2d2825 : colors.black);
-  subText.x = compact ? 12 : 16;
-  subText.y = compact ? 5 : 9;
-  container.addChild(subText);
-  const mainText = makeText(label, compact ? 17 : 22, disabled ? 0xd0c6bc : colors.white);
-  mainText.anchor.set(0.5, 0);
-  mainText.x = width / 2;
-  mainText.y = compact ? 20 : 31;
-  container.addChild(mainText);
-  if (!disabled) {
-    container.on("pointertap", () => {
-      container.scale.set(0.96);
-      window.setTimeout(() => container.scale.set(1), 80);
-      onTap();
-    });
-  }
-  return container;
-}
-
 function getSummonButtonState(state: GameState) {
   const cost = getSummonCost(state.summonCount);
   const boardFull = isBoardFull(state.board);
@@ -601,32 +542,30 @@ function getSummonButtonState(state: GameState) {
 }
 
 function drawControls(refs: GameRefs, layout: GameLayout) {
-  clear(refs.controls);
+  if (!refs.controlsView) {
+    refs.controlsView = createPixiControlsView(refs.controls, {
+      onSummon: () => summonAction(refs),
+      onMythic: () => showMythicMenu(refs),
+      onGamble: () => gambleAction(refs),
+      onUpgrade: () => attackUpgradeAction(refs),
+      onWave: () => waveButtonAction(refs),
+    });
+  }
   const summonState = getSummonButtonState(refs.state);
-  const summonWidth = layout.width * 0.52;
-  const summon = makeButton("소환", summonState.sub, summonWidth, 78, colors.yellow, () => summonAction(refs), summonState.disabled || refs.movementLocked);
-  summon.x = (layout.width - summonWidth) / 2;
-  summon.y = layout.height - 104;
-  refs.controls.addChild(summon);
-  const mythicReady = getMythicCraftAvailability(refs.state).some((item) => item.canCraft);
-  const mythic = makeButton("신화", mythicReady ? "가능" : "조합", 92, 62, colors.orange, () => showMythicMenu(refs), isFinished(refs.state) || refs.movementLocked);
-  mythic.x = 18;
-  mythic.y = layout.height - 96;
-  refs.controls.addChild(mythic);
-  const gamble = makeButton("도박", "행운석 2", 92, 62, colors.blue, () => gambleAction(refs), isFinished(refs.state) || isBoardFull(refs.state.board) || refs.state.luckStones < 2 || refs.movementLocked);
-  gamble.x = layout.width - 110;
-  gamble.y = layout.height - 96;
-  refs.controls.addChild(gamble);
   const upgradeCost = getPowerUpgradeCost(refs.state.powerUpgradeLevel);
-  const upgrade = makeButton("공격력 강화", `비용 ${upgradeCost}`, 184, 50, 0x47584a, () => attackUpgradeAction(refs), isFinished(refs.state) || refs.state.resources < upgradeCost || refs.movementLocked);
-  upgrade.x = (layout.width - 184) / 2;
-  upgrade.y = layout.height - 166;
-  refs.controls.addChild(upgrade);
-  const phaseLabel = refs.wavePhase === "combat" ? `${refs.activeEnemies.filter((enemy) => enemy.alive).length}마리` : refs.wavePhase === "result" ? "바로 시작" : "시작";
-  const wave = makeButton("웨이브", phaseLabel, 112, 48, refs.wavePhase === "combat" ? colors.red : colors.orange, () => waveButtonAction(refs), isFinished(refs.state) || refs.movementLocked || refs.wavePhase === "combat");
-  wave.x = layout.width - 132;
-  wave.y = layout.mapTop + 105;
-  refs.controls.addChild(wave);
+  updatePixiControlsView(refs.controlsView, layout, {
+    summonLabel: summonState.sub,
+    summonDisabled: summonState.disabled || refs.movementLocked,
+    mythicReady: getMythicCraftAvailability(refs.state).some((item) => item.canCraft),
+    mythicDisabled: isFinished(refs.state) || refs.movementLocked,
+    gambleDisabled: isFinished(refs.state) || isBoardFull(refs.state.board) || refs.state.luckStones < 2 || refs.movementLocked,
+    upgradeCost,
+    upgradeLevel: refs.state.powerUpgradeLevel,
+    upgradeDisabled: isFinished(refs.state) || refs.state.resources < upgradeCost || refs.movementLocked,
+    wavePhase: refs.wavePhase,
+    aliveEnemyCount: refs.activeEnemies.filter((enemy) => enemy.alive).length,
+    waveDisabled: isFinished(refs.state) || refs.movementLocked || refs.wavePhase === "combat",
+  });
 }
 
 function floatText(refs: GameRefs, value: string, x: number, y: number, color: number) {
@@ -652,37 +591,6 @@ function waveButtonAction(refs: GameRefs) {
   startAutoWave(refs);
 }
 
-function drawMonsterShape(target: Container, boss: boolean, size: number, enemyId: string) {
-  const fill = enemyId === "ping-runner" ? 0x56c8ff : enemyId === "lag-chunk" ? 0x8b7d69 : enemyId === "elite-bug" ? 0xa45bd8 : boss ? 0x8b3d34 : 0x54b336;
-  const body = new Graphics();
-  body.roundRect(-size * (boss ? 1.25 : 1), -size * 0.85, size * (boss ? 2.5 : 2), size * (boss ? 2.1 : 1.7), size * 0.4);
-  body.fill({ color: fill, alpha: 1 });
-  body.stroke({ color: 0x2b331d, width: boss ? 4 : 2 });
-  target.addChild(body);
-  const eyes = new Graphics();
-  eyes.circle(-size * 0.35, -size * 0.15, Math.max(2, size * 0.12));
-  eyes.circle(size * 0.35, -size * 0.15, Math.max(2, size * 0.12));
-  eyes.fill({ color: boss ? colors.yellow : colors.white, alpha: 1 });
-  target.addChild(eyes);
-}
-
-function drawEnemyHpBar(enemy: ActiveEnemy) {
-  enemy.sprite.getChildByName("hpbar")?.destroy();
-  const container = new Container();
-  container.name = "hpbar";
-  container.y = enemy.boss ? -38 : -24;
-  const width = enemy.boss ? 56 : 32;
-  const background = new Graphics();
-  background.roundRect(-width / 2, 0, width, 5, 3);
-  background.fill({ color: 0x2a1515, alpha: 0.9 });
-  container.addChild(background);
-  const fill = new Graphics();
-  fill.roundRect(-width / 2, 0, width * Math.max(0, enemy.hp / enemy.maxHp), 5, 3);
-  fill.fill({ color: enemy.boss ? colors.red : colors.green, alpha: 1 });
-  container.addChild(fill);
-  enemy.sprite.addChild(container);
-}
-
 function showBossWarning(refs: GameRefs) {
   const warning = makeText("⚠ BOSS WAVE ⚠", 32, colors.red);
   warning.anchor.set(0.5);
@@ -706,9 +614,8 @@ function createEnemy(refs: GameRefs, enemyId: string, bossOverride = false): Act
   const wave = refs.state.currentWave;
   const hpScale = 0.68 + wave * 0.11 + (boss ? wave * 0.16 : 0);
   const maxHp = Math.round(definition.health * hpScale);
-  const sprite = new Container();
-  drawMonsterShape(sprite, boss, boss ? 24 : definition.type === "tank" || definition.type === "elite" ? 16 : 12, enemyId);
-  refs.effects.addChild(sprite);
+  const view = createEnemyView(enemyId, definition.type, boss);
+  refs.effects.addChild(view.root);
   const enemy: ActiveEnemy = {
     id: refs.nextEnemyId,
     enemyId,
@@ -722,15 +629,19 @@ function createEnemy(refs: GameRefs, enemyId: string, bossOverride = false): Act
     speed: definition.speed * (boss ? 0.72 : 1),
     alive: true,
     boss,
-    sprite,
+    view,
   };
   refs.nextEnemyId += 1;
-  drawEnemyHpBar(enemy);
+  updateEnemyViewHp(view, enemy.hp, enemy.maxHp);
   return enemy;
 }
 
+function destroyActiveEnemy(enemy: ActiveEnemy) {
+  destroyEnemyView(enemy.view);
+}
+
 function spawnMonsters(refs: GameRefs) {
-  refs.activeEnemies.forEach((enemy) => enemy.sprite.destroy({ children: true }));
+  refs.activeEnemies.forEach(destroyActiveEnemy);
   refs.activeEnemies = [];
   refs.waveKilled = 0;
   refs.waveReward = 0;
@@ -746,6 +657,7 @@ function spawnMonsters(refs: GameRefs) {
       refs.activeEnemies.push(enemy);
     }
   }
+  invalidateControls(refs);
 }
 
 function updateEnemies(refs: GameRefs, deltaSeconds: number) {
@@ -756,17 +668,15 @@ function updateEnemies(refs: GameRefs, deltaSeconds: number) {
     if (enemy.progress >= 1) {
       enemy.alive = false;
       refs.waveLostLives += enemy.damageToLife;
-      enemy.sprite.destroy({ children: true });
-      invalidateHud(refs);
+      destroyActiveEnemy(enemy);
+      invalidateControls(refs);
       floatText(refs, `누수 -${enemy.damageToLife}`, refs.app.renderer.width / 2, refs.app.renderer.height * 0.35, colors.red);
       continue;
     }
     const point = getPathPoint(layout, Math.max(0, enemy.progress));
     enemy.x = point.x;
     enemy.y = point.y;
-    enemy.sprite.x = point.x;
-    enemy.sprite.y = point.y;
-    enemy.sprite.rotation = Math.sin(enemy.progress * 24) * (enemy.boss ? 0.04 : 0.08);
+    updateEnemyViewPosition(enemy.view, point.x, point.y, enemy.progress);
   }
 }
 
@@ -792,7 +702,7 @@ function getHeroDamage(refs: GameRefs, hero: BoardHero) {
 function damageEnemy(refs: GameRefs, enemy: ActiveEnemy, damage: number) {
   if (!enemy.alive) return;
   enemy.hp = Math.max(0, enemy.hp - damage);
-  drawEnemyHpBar(enemy);
+  updateEnemyViewHp(enemy.view, enemy.hp, enemy.maxHp);
   if (enemy.hp > 0) return;
   enemy.alive = false;
   refs.waveKilled += 1;
@@ -804,11 +714,12 @@ function damageEnemy(refs: GameRefs, enemy: ActiveEnemy, damage: number) {
     defeatedBosses: refs.state.defeatedBosses + (enemy.boss ? 1 : 0),
     score: refs.state.score + enemy.reward * 3 + (enemy.boss ? 250 : 20),
   };
-  invalidateHud(refs);
   floatText(refs, `+${enemy.reward}`, enemy.x, enemy.y - 26, colors.green);
-  enemy.sprite.destroy({ children: true });
-  drawTopHud(refs, createGameLayout(refs.app.renderer.width, refs.app.renderer.height), true);
-  drawControls(refs, createGameLayout(refs.app.renderer.width, refs.app.renderer.height));
+  destroyActiveEnemy(enemy);
+  invalidateControls(refs);
+  const layout = createGameLayout(refs.app.renderer.width, refs.app.renderer.height);
+  drawTopHud(refs, layout);
+  drawControls(refs, layout);
 }
 
 function applyTankSlow(enemy: ActiveEnemy) {
@@ -918,8 +829,7 @@ function showMythicMenu(refs: GameRefs) {
   title.x = width / 2;
   title.y = 14;
   menu.addChild(title);
-  const close = makeMenuButton("닫기", width - 70, 12, true, () => clearMenu(refs));
-  menu.addChild(close);
+  menu.addChild(makeMenuButton("닫기", width - 70, 12, true, () => clearMenu(refs)));
   list.forEach((item, index) => {
     const y = 58 + index * 54;
     const row = new Container();
@@ -932,8 +842,7 @@ function showMythicMenu(refs: GameRefs) {
     name.x = 12;
     name.y = 5;
     row.addChild(name);
-    const parts = item.recipe.ingredients.map((ingredient) => ingredientText(ingredient.grade, ingredient.role, ingredient.count)).join(" + ");
-    const recipe = makeText(parts, 10, item.canCraft ? colors.yellow : 0xb7afa8);
+    const recipe = makeText(item.recipe.ingredients.map((ingredient) => ingredientText(ingredient.grade, ingredient.role, ingredient.count)).join(" + "), 10, item.canCraft ? colors.yellow : 0xb7afa8);
     recipe.x = 12;
     recipe.y = 25;
     row.addChild(recipe);
@@ -987,7 +896,7 @@ function finishAutoWave(refs: GameRefs, readyImmediately = false) {
   for (const enemy of alive) {
     lostLives += enemy.damageToLife;
     enemy.alive = false;
-    enemy.sprite.destroy({ children: true });
+    destroyActiveEnemy(enemy);
   }
   const leaked = alive.length + refs.waveLostLives;
   const perfect = lostLives <= 0;
@@ -1016,9 +925,8 @@ function finishAutoWave(refs: GameRefs, readyImmediately = false) {
 
 function render(refs: GameRefs) {
   const layout = createGameLayout(refs.app.renderer.width, refs.app.renderer.height);
-  invalidateHud(refs);
   drawBackground(refs, layout);
-  drawTopHud(refs, layout, true);
+  drawTopHud(refs, layout);
   drawBoard(refs, layout);
   drawControls(refs, layout);
 }
@@ -1052,16 +960,18 @@ function tick(refs: GameRefs, deltaMs: number) {
       spawnAttackEffects(refs);
     }
     drawTopHud(refs, layout);
+    drawControls(refs, layout);
     if (refs.combatTimer <= 0) finishAutoWave(refs, false);
     else if (refs.activeEnemies.length > 0 && refs.activeEnemies.every((enemy) => !enemy.alive)) finishAutoWave(refs, true);
     return;
   }
   refs.resultTimer -= deltaSeconds;
   drawTopHud(refs, layout);
+  drawControls(refs, layout);
   if (refs.resultTimer <= 0) {
     refs.wavePhase = "countdown";
     drawControls(refs, layout);
-    drawTopHud(refs, layout, true);
+    drawTopHud(refs, layout);
   }
 }
 
@@ -1078,6 +988,8 @@ export function createPixiGame(parent: HTMLElement): PixiGameHandle {
     controls: new Container(),
     effects: new Container(),
     menuLayer: new Container(),
+    hudView: null,
+    controlsView: null,
     state: createInitialGameState(seed),
     random: createSeededRandom(seed),
     animations: [],
@@ -1096,7 +1008,6 @@ export function createPixiGame(parent: HTMLElement): PixiGameHandle {
     waveReward: 0,
     waveLostLives: 0,
     lastWaveSummary: null,
-    lastHudKey: "",
   };
   let destroyed = false;
 
@@ -1124,6 +1035,8 @@ export function createPixiGame(parent: HTMLElement): PixiGameHandle {
     app.renderer.on("resize", () => {
       stage.hitArea = new Rectangle(0, 0, app.renderer.width, app.renderer.height);
       clearMenu(refs);
+      invalidateHud(refs);
+      invalidateControls(refs);
       render(refs);
     });
     app.ticker.add((ticker) => tick(refs, ticker.deltaMS));
@@ -1135,7 +1048,7 @@ export function createPixiGame(parent: HTMLElement): PixiGameHandle {
       destroyed = true;
       clearMenu(refs);
       clearDrag(refs);
-      refs.activeEnemies.forEach((enemy) => enemy.sprite.destroy({ children: true }));
+      refs.activeEnemies.forEach(destroyActiveEnemy);
       app.destroy(true, { children: true });
     },
   };
