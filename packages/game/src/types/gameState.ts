@@ -1,4 +1,5 @@
 import type { BoardCell } from "./hero";
+import type { RunBoostState } from "./runBoost";
 
 export type GameMode = "single_random_wave_defense";
 export type GameStatus = "ready" | "playing" | "cleared" | "failed";
@@ -18,6 +19,7 @@ export type GameState = {
   score: number;
   summonCount: number;
   powerUpgradeLevel: number;
+  runBoosts: RunBoostState;
   defeatedEnemies: number;
   defeatedBosses: number;
   clearedWaves: number;
