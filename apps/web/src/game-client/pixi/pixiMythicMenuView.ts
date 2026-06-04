@@ -3,6 +3,7 @@ import { getMythicCraftAvailability, type GameState } from "@discord-random-defe
 import { colors } from "./gameTheme";
 import { formatMythicRecipeText } from "./pixiMythicRecipeText";
 import { makePixiPanel, makePixiText } from "./pixiSharedView";
+import { makePixiTouchBoundary, stopPixiPropagation } from "./pixiPointerGuards";
 
 export type PixiMythicMenuViewOptions = {
   state: GameState;
@@ -26,6 +27,8 @@ function createMythicMenuButton(label: string, x: number, y: number, onClick: ()
   text.y = 14;
   button.addChild(text);
 
+  button.on("pointerdown", stopPixiPropagation);
+  button.on("pointerup", stopPixiPropagation);
   button.on("pointertap", (event: any) => {
     event.stopPropagation();
     onClick();
@@ -41,6 +44,7 @@ export function createPixiMythicMenuView(options: PixiMythicMenuViewOptions) {
   const menu = new Container();
   menu.x = options.rendererWidth / 2 - width / 2;
   menu.y = Math.max(18, options.rendererHeight * 0.14);
+  makePixiTouchBoundary(menu, width, height);
   menu.addChild(makePixiPanel(width, height, 0x2d2925, colors.orange, 16));
 
   const title = makePixiText("신화 조합", 19, colors.yellow);
@@ -70,6 +74,8 @@ export function createPixiMythicMenuView(options: PixiMythicMenuViewOptions) {
     row.addChild(recipe);
 
     if (item.canCraft) {
+      row.on("pointerdown", stopPixiPropagation);
+      row.on("pointerup", stopPixiPropagation);
       row.on("pointertap", (event: any) => {
         event.stopPropagation();
         options.onCraft(item.recipe.id);
