@@ -44,6 +44,7 @@ export const colors: Record<GameColorName, number> = {
 };
 
 export function gradeColor(grade?: string): number {
+  if (grade === "mythic") return colors.orange;
   if (grade === "legendary") return colors.yellow;
   if (grade === "epic") return colors.purple;
   if (grade === "rare") return colors.blue;
