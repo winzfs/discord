@@ -1,5 +1,6 @@
 import { Application, Container, Graphics, Text } from "pixi.js";
 import {
+  calculateBoardPower,
   completeCurrentWave,
   createInitialGameState,
   createSeededRandom,
@@ -156,6 +157,19 @@ function drawTopHud(refs: GameRefs, layout: GameLayout) {
   hpText.x = layout.width / 2;
   hpText.y = layout.topHudY + 67;
   refs.hud.addChild(hpText);
+
+  const boardPower = calculateBoardPower(refs.state);
+  const unitCount = refs.state.board.filter(Boolean).length;
+
+  const power = text(`전투력 ${boardPower.totalPower}`, 15, colors.white);
+  power.x = 22;
+  power.y = layout.topHudY + 98;
+  refs.hud.addChild(power);
+
+  const units = text(`${unitCount} / ${refs.state.board.length}`, 15, colors.white);
+  units.x = layout.width - 82;
+  units.y = layout.topHudY + 98;
+  refs.hud.addChild(units);
 
   const coin = text(`${refs.state.resources}`, 22, colors.yellow);
   coin.x = 24;
@@ -353,12 +367,33 @@ function mergeByGrade(refs: GameRefs, grade: HeroGrade) {
   }
 }
 
+function getWaveResultMessage(result: ReturnType<typeof completeCurrentWave>): { label: string; color: number } {
+  if (result.state.status === "failed") {
+    return { label: `패배... -${result.lostLives} HP`, color: colors.red };
+  }
+
+  if (result.lostLives > 0) {
+    const leakedCount = result.leakedEnemies.reduce((sum, group) => sum + group.count, 0);
+    return { label: `누수 ${leakedCount}마리  -${result.lostLives} HP`, color: colors.orange };
+  }
+
+  return { label: "완벽 방어!", color: colors.green };
+}
+
 function waveAction(refs: GameRefs) {
+  if (refs.state.status === "failed" || refs.state.status === "cleared") {
+    floatText(refs, refs.state.status === "cleared" ? "이미 클리어!" : "게임 오버", refs.app.renderer.width / 2, refs.app.renderer.height * 0.42, refs.state.status === "cleared" ? colors.green : colors.red);
+    return;
+  }
+
   spawnMonsters(refs);
   const result = completeCurrentWave(startWave(refs.state));
   window.setTimeout(() => {
     refs.state = result.state;
     render(refs);
+    const waveMessage = getWaveResultMessage(result);
+    floatText(refs, waveMessage.label, refs.app.renderer.width / 2, refs.app.renderer.height * 0.38, waveMessage.color);
+    floatText(refs, `전투력 ${result.boardPower} / 위협도 ${result.waveThreat}`, refs.app.renderer.width / 2, refs.app.renderer.height * 0.46, colors.white);
     floatText(refs, `+${result.reward}`, refs.app.renderer.width / 2, refs.app.renderer.height - 132, colors.green);
   }, 620);
 }
