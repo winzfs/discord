@@ -24,6 +24,15 @@ import {
   upgradeAttack,
 } from "@discord-random-defense/game";
 import type { BoardHero, GameState, HeroRole } from "@discord-random-defense/game";
+import {
+  MAX_ATTACKERS_PER_TICK,
+  WAVE_COMBAT_SECONDS,
+  WAVE_COUNTDOWN_SECONDS,
+  WAVE_RESULT_SECONDS,
+  type ActiveEnemy,
+  type GameRefs,
+  type WaveSummary,
+} from "./pixiGameTypes";
 import { createGameLayout } from "./gameLayout";
 import type { GameLayout } from "./gameLayout";
 import { colors } from "./gameTheme";
@@ -73,82 +82,6 @@ import {
 
 export type PixiGameHandle = { cleanup: () => void };
 
-type Animation = PixiAnimation;
-
-type DragState = {
-  sourceIndex: number;
-  startX: number;
-  startY: number;
-  ghost: Container;
-  isMoving: boolean;
-};
-
-type WavePhase = "countdown" | "combat" | "result";
-
-type ActiveEnemy = {
-  id: number;
-  enemyId: string;
-  x: number;
-  y: number;
-  hp: number;
-  maxHp: number;
-  reward: number;
-  damageToLife: number;
-  progress: number;
-  speed: number;
-  alive: boolean;
-  boss: boolean;
-  view: EnemyView;
-};
-
-type WaveSummary = {
-  killed: number;
-  leaked: number;
-  lostLives: number;
-  reward: number;
-  luckStoneReward: number;
-  perfect: boolean;
-};
-
-type GameRefs = {
-  app: Application;
-  stage: Container;
-  world: Container;
-  board: Container;
-  hud: Container;
-  controls: Container;
-  info: Container;
-  effects: Container;
-  menuLayer: Container;
-  hudView: PixiHudView | null;
-  controlsView: PixiControlsView | null;
-  state: GameState;
-  progressBonuses: PixiProgressBonuses;
-  random: ReturnType<typeof createSeededRandom>;
-  animations: Animation[];
-  lastSummonedIndex: number | null;
-  dragging: DragState | null;
-  movementLocked: boolean;
-  selectedCellIndex: number | null;
-  menu: Container | null;
-  wavePhase: WavePhase;
-  nextWaveTimer: number;
-  combatTimer: number;
-  resultTimer: number;
-  attackTimer: number;
-  activeEnemies: ActiveEnemy[];
-  nextEnemyId: number;
-  waveKilled: number;
-  waveReward: number;
-  waveLostLives: number;
-  lastWaveSummary: WaveSummary | null;
-  resultSubmitted: boolean;
-};
-
-const WAVE_COUNTDOWN_SECONDS = 8;
-const WAVE_COMBAT_SECONDS = 14;
-const WAVE_RESULT_SECONDS = 1.4;
-const MAX_ATTACKERS_PER_TICK = 10;
 
 function makeText(value: string, size = 18, fill: number = colors.white) {
   return makePixiText(value, size, fill);
@@ -170,7 +103,7 @@ function isBossWave(state: GameState) {
   return state.currentWave % initialBalance.bossWaveInterval === 0;
 }
 
-function addAnimation(refs: GameRefs, animation: Omit<Animation, "age">) {
+function addAnimation(refs: GameRefs, animation: Omit<PixiAnimation, "age">) {
   addPixiAnimation(refs.animations, animation);
 }
 
