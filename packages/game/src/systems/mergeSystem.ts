@@ -1,5 +1,6 @@
 import { heroes } from "../data/heroes";
 import { initialBalance } from "../data/balance";
+import { getAllBoardHeroes, getCellIndex, placeHeroOnBoard } from "./boardSystem";
 import type { GameState } from "../types/gameState";
 import type { BoardHero, HeroDefinition, HeroGrade } from "../types/hero";
 import type { SeededRandom } from "../utils/random";
@@ -28,7 +29,7 @@ export function getNextGrade(grade: HeroGrade): HeroGrade | null {
 }
 
 export function getMergeAvailability(state: GameState, grade: HeroGrade): MergeAvailability {
-  const count = state.board.filter((slot) => slot?.grade === grade).length;
+  const count = getAllBoardHeroes(state.board).filter((hero) => hero.grade === grade).length;
   const nextGrade = getNextGrade(grade);
 
   return {
@@ -46,18 +47,31 @@ function pickHeroByGrade(grade: HeroGrade, random: SeededRandom): HeroDefinition
   return candidates[Math.floor(random() * candidates.length)] ?? candidates[0] ?? null;
 }
 
-function getBoardIndex(hero: BoardHero, columns: number): number {
-  return hero.position.row * columns + hero.position.column;
-}
-
 function createMergedHeroId(targets: BoardHero[], nextHeroId: string): string {
   const consumedIds = targets.map((target) => target.instanceId).join("+");
   return `merged:${nextHeroId}:${consumedIds}`;
 }
 
+function removeBoardHeroes(state: GameState, targets: BoardHero[]): GameState {
+  const targetIds = new Set(targets.map((target) => target.instanceId));
+  const nextBoard = state.board.map((cell) => {
+    const nextUnits = cell.units.filter((unit) => !targetIds.has(unit.instanceId));
+    return {
+      ...cell,
+      heroId: nextUnits.length > 0 ? cell.heroId : null,
+      units: nextUnits,
+    };
+  });
+
+  return {
+    ...state,
+    board: nextBoard,
+  };
+}
+
 export function mergeHeroes(state: GameState, grade: HeroGrade, random: SeededRandom): MergeResult {
-  const mergeTargets = state.board
-    .filter((slot): slot is BoardHero => slot !== null && slot.grade === grade)
+  const mergeTargets = getAllBoardHeroes(state.board)
+    .filter((hero) => hero.grade === grade)
     .slice(0, initialBalance.mergeRequiredCount);
 
   if (mergeTargets.length < initialBalance.mergeRequiredCount) {
@@ -89,29 +103,26 @@ export function mergeHeroes(state: GameState, grade: HeroGrade, random: SeededRa
     };
   }
 
-  const nextBoard = [...state.board];
   const primaryTarget = mergeTargets[0];
-  const primaryIndex = getBoardIndex(primaryTarget, state.boardSize.columns);
+  const removedState = removeBoardHeroes(state, mergeTargets);
+  const primaryIndex = getCellIndex(primaryTarget.position, state.boardSize.columns);
+  const primaryCell = removedState.board[primaryIndex];
+  const preferredState = primaryCell && primaryCell.units.length === 0
+    ? {
+        ...removedState,
+        board: removedState.board.map((cell, index) => index === primaryIndex ? { ...cell, heroId: null, units: [] } : cell),
+      }
+    : removedState;
 
-  for (const target of mergeTargets) {
-    nextBoard[getBoardIndex(target, state.boardSize.columns)] = null;
-  }
-
-  const mergedHero: BoardHero = {
+  const placement = placeHeroOnBoard(preferredState, {
     instanceId: createMergedHeroId(mergeTargets, nextHeroDefinition.id),
     heroId: nextHeroDefinition.id,
     grade: nextHeroDefinition.grade,
-    position: primaryTarget.position,
-  };
-
-  nextBoard[primaryIndex] = mergedHero;
+  });
 
   return {
-    state: {
-      ...state,
-      board: nextBoard,
-    },
-    mergedHero,
+    state: placement.state,
+    mergedHero: placement.placedHero,
     consumedHeroes: mergeTargets,
   };
 }
