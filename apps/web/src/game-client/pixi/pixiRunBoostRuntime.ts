@@ -2,6 +2,7 @@ import { applyRunChoice } from "@discord-random-defense/game";
 import type { RunBoostId } from "@discord-random-defense/game";
 import { colors } from "./gameTheme";
 import type { GameRefs } from "./pixiGameTypes";
+import { syncPixiProgressBonusesFromState } from "./pixiProgressBonuses";
 import { createPixiRunBoostMenuView } from "./pixiRunBoostMenuView";
 
 export type PixiRunBoostRuntimeOptions = {
@@ -31,13 +32,14 @@ export function runBoostAction(refs: GameRefs, boostId: RunBoostId, options: Pix
   const result = applyRunChoice(refs.state, boostId);
 
   if (!result.applied) {
-    const message = result.reason === "max_level" ? "최대 레벨" : result.reason === "not_enough_resources" ? `코인 부족 ${result.cost}` : "강화 불가";
+    const message = result.reason === "max_level" ? "MAX" : result.reason === "not_enough_resources" ? `Need ${result.cost}` : "Unavailable";
     options.floatText(refs, message, refs.app.renderer.width / 2, refs.app.renderer.height * 0.56, colors.red);
     return;
   }
 
   refs.state = result.state;
+  syncPixiProgressBonusesFromState(refs.progressBonuses, refs.state);
   options.clearMenu(refs);
   options.render(refs);
-  options.floatText(refs, "강화 완료!", refs.app.renderer.width / 2, refs.app.renderer.height * 0.56, colors.yellow);
+  options.floatText(refs, "Boost applied", refs.app.renderer.width / 2, refs.app.renderer.height * 0.56, colors.yellow);
 }
