@@ -2,6 +2,7 @@ import { Container } from "pixi.js";
 import { getHeroById, type BoardHero } from "@discord-random-defense/game";
 import { colors } from "./gameTheme";
 import { clearPixiContainer, makePixiPanel, makePixiText } from "./pixiSharedView";
+import { makePixiTouchBoundary } from "./pixiPointerGuards";
 
 function gradeLabel(grade: string | undefined) {
   if (grade === "mythic") return "신화";
@@ -44,7 +45,8 @@ export function drawPixiUnitInfoView(target: Container, options: PixiUnitInfoVie
   const height = 96;
   const view = new Container();
   view.x = Math.max(12, options.rendererWidth / 2 - width / 2);
-  view.y = Math.max(72, Math.min(options.rendererHeight - height - 118, options.rendererHeight * 0.18));
+  view.y = Math.max(78, options.rendererHeight - height - 144);
+  makePixiTouchBoundary(view, width, height);
   view.addChild(makePixiPanel(width, height, 0x2d2925, 0x1d1714, 14));
 
   const title = makePixiText(definition?.displayName ?? options.hero.heroId, 17, colors.yellow);
