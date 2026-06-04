@@ -48,10 +48,44 @@ function normalizeGameRunInput(input: GameRunInput): Omit<SavedGameRun, "id" | "
   };
 }
 
+async function updateLeaderboard(db: D1Database, userId: string, run: SavedGameRun) {
+  const current = await db
+    .prepare(
+      `SELECT id, best_score
+       FROM leaderboard_entries
+       WHERE user_id = ? AND season_id IS NULL AND mode = ?
+       LIMIT 1`,
+    )
+    .bind(userId, run.mode)
+    .first<{ id: string; best_score: number }>();
+
+  if (current && current.best_score >= run.score) return;
+
+  if (current) {
+    await db
+      .prepare(
+        `UPDATE leaderboard_entries
+         SET best_score = ?, best_wave = ?, best_run_id = ?, updated_at = ?
+         WHERE id = ?`,
+      )
+      .bind(run.score, run.wave, run.id, run.createdAt, current.id)
+      .run();
+    return;
+  }
+
+  await db
+    .prepare(
+      `INSERT INTO leaderboard_entries (
+        id, user_id, season_id, mode, best_score, best_wave, best_run_id, updated_at
+      ) VALUES (?, ?, NULL, ?, ?, ?, ?, ?)`,
+    )
+    .bind(createId("leaderboard"), userId, run.mode, run.score, run.wave, run.id, run.createdAt)
+    .run();
+}
+
 export async function saveGameRun(db: D1Database | undefined, userId: string, input: GameRunInput): Promise<SavedGameRun> {
   const normalized = normalizeGameRunInput(input);
   const id = createId("run");
-  const leaderboardId = createId("leaderboard");
   const createdAt = nowIso();
   const run: SavedGameRun = { id, userId, createdAt, ...normalized };
 
@@ -78,21 +112,7 @@ export async function saveGameRun(db: D1Database | undefined, userId: string, in
     )
     .run();
 
-  await db
-    .prepare(
-      `INSERT INTO leaderboard_entries (
-        id, user_id, season_id, mode, best_score, best_wave, best_run_id, updated_at
-      ) VALUES (?, ?, NULL, ?, ?, ?, ?, ?)
-      ON CONFLICT(user_id, season_id, mode) DO UPDATE SET
-        best_score = excluded.best_score,
-        best_wave = excluded.best_wave,
-        best_run_id = excluded.best_run_id,
-        updated_at = excluded.updated_at
-      WHERE excluded.best_score > leaderboard_entries.best_score`,
-    )
-    .bind(leaderboardId, userId, normalized.mode, normalized.score, normalized.wave, id, createdAt)
-    .run();
-
+  await updateLeaderboard(db, userId, run);
   return run;
 }
 
