@@ -43,6 +43,7 @@ jobs:
           git config user.email "actions@example.com"
           git add apps/web/src/game-client/pixi/createPixiGame.ts pnpm-lock.yaml
           git commit -m "Apply Pixi client refactor"
+          git pull --rebase origin main
           git push
 
       - name: Typecheck after commit
