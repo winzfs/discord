@@ -3,7 +3,8 @@ import { readFileSync, writeFileSync } from "node:fs";
 const path = "apps/web/src/game-client/pixi/createPixiGame.ts";
 let s = readFileSync(path, "utf8");
 
-const beforeFloat = `function floatText(refs: GameRefs, value: string, x: number, y: number, color: number) {
+const floatTextVariants = [
+`function floatText(refs: GameRefs, value: string, x: number, y: number, color: number) {
   const floatingText = makeText(value, 22, color);
   floatingText.anchor.set(0.5);
   floatingText.x = x;
@@ -18,9 +19,27 @@ const beforeFloat = `function floatText(refs: GameRefs, value: string, x: number
     },
     done: () => floatingText.destroy(),
   });
-}`;
-
-const afterFloat = `function floatText(refs: GameRefs, value: string, x: number, y: number, color: number) {
+}`,
+`function floatText(refs: GameRefs, value: string, x: number, y: number, color: number) {
+  const floatingText = makeText(value, 22, color);
+  floatingText.anchor.set(0.5);
+  floatingText.x = x;
+  floatingText.y = y;
+  refs.effects.addChild(floatingText);
+  addAnimation(refs, {
+    duration: 420,
+    update: (progress) => {
+      floatingText.y = y - progress * 28;
+      floatingText.alpha = Math.max(0, 1 - progress);
+      floatingText.scale.set(1 + progress * 0.08);
+    },
+    done: () => {
+      refs.effects.removeChild(floatingText);
+      floatingText.destroy();
+    },
+  });
+}`,
+`function floatText(refs: GameRefs, value: string, x: number, y: number, color: number) {
   const floatingText = makeText(value, 22, color);
   floatingText.anchor.set(0.5);
   floatingText.x = x;
@@ -38,34 +57,80 @@ const afterFloat = `function floatText(refs: GameRefs, value: string, x: number,
       floatingText.destroy();
     },
   });
-}`;
+}`,
+];
 
-if (!s.includes(beforeFloat) && !s.includes(afterFloat)) {
-  throw new Error("floatText block not found");
+const hardenedFloatText = `function removeEffectChild(refs: GameRefs, child: any) {
+  if (!child || child.destroyed) return;
+  refs.effects.removeChild(child);
+  child.destroy({ children: true });
 }
 
-s = s.replace(beforeFloat, afterFloat);
-s = s.replace(
-  `    duration: 420,
+function cleanupEffects(refs: GameRefs) {
+  for (const child of [...refs.effects.children]) {
+    if ((child as any).destroyed) {
+      refs.effects.removeChild(child);
+    }
+  }
+}
+
+function floatText(refs: GameRefs, value: string, x: number, y: number, color: number) {
+  const floatingText = makeText(value, 22, color);
+  floatingText.label = "floating-text";
+  floatingText.anchor.set(0.5);
+  floatingText.x = x;
+  floatingText.y = y;
+  refs.effects.addChild(floatingText);
+
+  let removed = false;
+  const removeFloatingText = () => {
+    if (removed) return;
+    removed = true;
+    removeEffectChild(refs, floatingText);
+  };
+
+  window.setTimeout(removeFloatingText, 250);
+
+  addAnimation(refs, {
+    duration: 250,
     update: (progress) => {
-      floatingText.y = y - progress * 28;
-      floatingText.alpha = Math.max(0, 1 - progress);
-      floatingText.scale.set(1 + progress * 0.08);
-    },`,
-  `    duration: 250,
-    update: (progress) => {
+      if (removed || floatingText.destroyed) return;
       floatingText.y = y - progress * 14;
       floatingText.alpha = Math.max(0, 1 - progress);
       floatingText.scale.set(1 + progress * 0.03);
-    },`,
-);
+    },
+    done: removeFloatingText,
+  });
+}`;
+
+let replacedFloatText = false;
+for (const variant of floatTextVariants) {
+  if (s.includes(variant)) {
+    s = s.replace(variant, hardenedFloatText);
+    replacedFloatText = true;
+    break;
+  }
+}
+
+if (!replacedFloatText && !s.includes("function removeEffectChild(refs: GameRefs, child: any)")) {
+  throw new Error("floatText block not found");
+}
 
 const beforeProjectileDestroy = `        projectile.destroy();`;
-const afterProjectileDestroy = `        refs.effects.removeChild(projectile);
-        projectile.destroy();`;
+const afterProjectileDestroy = `        removeEffectChild(refs, projectile);`;
 if (s.includes(beforeProjectileDestroy) && !s.includes(afterProjectileDestroy)) {
   s = s.replaceAll(beforeProjectileDestroy, afterProjectileDestroy);
 }
 
+if (!s.includes("cleanupEffects(refs);")) {
+  s = s.replace(
+    `function tick(refs: GameRefs, deltaMs: number) {
+  const deltaSeconds = deltaMs / 1000;`,
+    `function tick(refs: GameRefs, deltaMs: number) {
+  cleanupEffects(refs);
+  const deltaSeconds = deltaMs / 1000;`,
+  );
+}
+
 writeFileSync(path, s);
-console.log(`Updated ${path} floating text lifetime`);
+console.log(`Hardened ${path} effect cleanup`);
