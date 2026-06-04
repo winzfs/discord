@@ -1,4 +1,4 @@
-import type { BoardHero } from "./hero";
+import type { BoardCell } from "./hero";
 
 export type GameMode = "single_random_wave_defense";
 export type GameStatus = "ready" | "playing" | "cleared" | "failed";
@@ -6,7 +6,7 @@ export type GameStatus = "ready" | "playing" | "cleared" | "failed";
 export type GameState = {
   mode: GameMode;
   seed: string;
-  board: Array<BoardHero | null>;
+  board: BoardCell[];
   boardSize: {
     rows: number;
     columns: number;
