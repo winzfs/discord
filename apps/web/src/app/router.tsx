@@ -7,12 +7,17 @@ import { GameStartPage } from "../pages/GameStartPage";
 import { HomePage } from "../pages/HomePage";
 import { LeaderboardPage } from "../pages/LeaderboardPage";
 import { LoginPage } from "../pages/LoginPage";
+import { LobbyPage } from "../pages/LobbyPage";
 import { ProfilePage } from "../pages/ProfilePage";
 
 export const router = createBrowserRouter([
   {
     path: "/play",
     element: <GamePage />,
+  },
+  {
+    path: "/lobby",
+    element: <LobbyPage />,
   },
   {
     path: "/",
