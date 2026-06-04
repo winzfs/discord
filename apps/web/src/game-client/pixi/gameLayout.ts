@@ -13,10 +13,10 @@ export type GameLayout = {
   bottomY: number;
 };
 
-const BOARD_LEFT = 0.22;
-const BOARD_TOP = 0.33;
-const BOARD_WIDTH = 0.56;
-const BOARD_HEIGHT = 0.405;
+const BOARD_LEFT = 0.252;
+const BOARD_TOP = 0.318;
+const BOARD_WIDTH = 0.498;
+const BOARD_HEIGHT = 0.375;
 
 export function createGameLayout(width: number, height: number): GameLayout {
   const safeTop = 10;
