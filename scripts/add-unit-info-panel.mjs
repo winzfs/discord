@@ -16,7 +16,7 @@ for (const text of required) {
 if (!s.includes('import { drawUnitInfoPanelView } from "./pixiUnitInfoPanelView";')) {
   s = s.replace(
     '} from "./pixiBoardView";',
-    '} from "./pixiBoardView";\nimport { drawUnitInfoPanelView } from "./pixiUnitInfoPanelView";',
+    '} from "./pixiBoardView";\nimport { drawUnitInfoPanelView } from "./pixiUnitInfoPanelView";\nimport { clearMissingSelectedHero, clearUnitSelection as clearSelectedUnit, getSelectedHero, selectTopHeroInCell as selectTopHeroInBoardCell } from "./pixiUnitSelection";',
   );
 }
 
@@ -48,30 +48,14 @@ s = s.replace(
 }
 
 function clearUnitSelection(refs: GameRefs) {
-  refs.selectedHeroInstanceId = null;
+  clearSelectedUnit(refs);
   refs.info.removeChildren();
   clearMenu(refs);
 }
 
-function getSelectedHero(refs: GameRefs): BoardHero | null {
-  if (!refs.selectedHeroInstanceId) return null;
-  return getAllBoardHeroes(refs.state.board).find((hero) => hero.instanceId === refs.selectedHeroInstanceId) ?? null;
-}
-
-function selectTopHeroInCell(refs: GameRefs, cellIndex: number) {
-  const cell = refs.state.board[cellIndex];
-  const hero = cell?.units[cell.units.length - 1] ?? null;
-  refs.selectedHeroInstanceId = hero?.instanceId ?? null;
-}
-
-function clearSelectedHeroIfMissing(refs: GameRefs) {
-  if (!refs.selectedHeroInstanceId) return;
-  if (!getSelectedHero(refs)) refs.selectedHeroInstanceId = null;
-}
-
 function drawUnitInfoPanel(refs: GameRefs, layout: GameLayout) {
-  clearSelectedHeroIfMissing(refs);
-  drawUnitInfoPanelView(refs.info, getSelectedHero(refs), layout);
+  clearMissingSelectedHero(refs.state, refs);
+  drawUnitInfoPanelView(refs.info, getSelectedHero(refs.state, refs), layout);
 }
 `,
 );
@@ -89,7 +73,7 @@ s = s.replace(
   const cell = refs.state.board[cellIndex];
   if (!cell || cell.units.length === 0) return;
 
-  selectTopHeroInCell(refs, cellIndex);
+  selectTopHeroInBoardCell(refs.state, refs, cellIndex);
   drawUnitInfoPanel(refs, createGameLayout(refs.app.renderer.width, refs.app.renderer.height));
   clearMenu(refs);
 `,
