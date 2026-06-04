@@ -20,6 +20,7 @@ export type WaveProgressResult = {
   defeatedBosses: number;
   lostLives: number;
   reward: number;
+  luckStoneReward: number;
   boardPower: number;
   waveThreat: number;
   powerRatio: number;
@@ -45,6 +46,13 @@ function calculateLostLives(input: WaveClearInput): number {
   }, 0);
 }
 
+function calculateLuckStoneReward(wave: WaveDefinition, lostLives: number, defeatedBosses: number): number {
+  if (lostLives > 0) return 0;
+  if (defeatedBosses > 0) return 2;
+  if (wave.waveNumber % 3 === 0) return 1;
+  return 0;
+}
+
 export function startWave(state: GameState): GameState {
   if (state.status === "cleared" || state.status === "failed") return state;
   return { ...state, status: "playing" };
@@ -59,6 +67,7 @@ export function completeCurrentWave(state: GameState, input?: WaveClearInput): W
       defeatedBosses: 0,
       lostLives: 0,
       reward: 0,
+      luckStoneReward: 0,
       boardPower: 0,
       waveThreat: 0,
       powerRatio: 0,
@@ -76,6 +85,7 @@ export function completeCurrentWave(state: GameState, input?: WaveClearInput): W
       defeatedBosses: 0,
       lostLives: 0,
       reward: 0,
+      luckStoneReward: 0,
       boardPower: 0,
       waveThreat: 0,
       powerRatio: 0,
@@ -109,10 +119,12 @@ export function completeCurrentWave(state: GameState, input?: WaveClearInput): W
   });
 
   const reward = lostLives > 0 ? Math.ceil(wave.rewardOnClear * 0.65) : wave.rewardOnClear;
+  const luckStoneReward = calculateLuckStoneReward(wave, lostLives, defeatedBosses);
 
   const nextState: GameState = {
     ...state,
     resources: state.resources + reward,
+    luckStones: state.luckStones + luckStoneReward,
     lives: nextLives,
     currentWave: nextWave,
     defeatedEnemies: state.defeatedEnemies + defeatedEnemies,
@@ -129,6 +141,7 @@ export function completeCurrentWave(state: GameState, input?: WaveClearInput): W
     defeatedBosses,
     lostLives,
     reward,
+    luckStoneReward,
     boardPower: combat.boardPower.totalPower,
     waveThreat: combat.waveThreat.totalThreat,
     powerRatio: combat.powerRatio,
