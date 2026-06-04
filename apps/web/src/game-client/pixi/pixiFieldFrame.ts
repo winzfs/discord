@@ -1,4 +1,4 @@
-export const FIELD_TEXTURE_PATH = "/assets/field.png";
+export const FIELD_TEXTURE_PATH = "/assets/backgrounds/field.png";
 export const FIELD_SOURCE_WIDTH = 864;
 export const FIELD_SOURCE_HEIGHT = 1536;
 
