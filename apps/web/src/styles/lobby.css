@@ -166,23 +166,29 @@ button.artifact-card {
   font-weight: 900;
 }
 
+.hero-card .hero-portrait {
+  width: 104px;
+  height: 92px;
+  margin: 20px auto 10px;
+}
+
 .mythic-hero-portrait {
   position: relative;
   overflow: hidden;
-  background: radial-gradient(circle at 50% 18%, rgba(255, 255, 255, 0.24), rgba(54, 31, 36, 0.86) 58%, #211816 100%);
+  background: radial-gradient(circle at 50% 18%, rgba(255, 255, 255, 0.24), rgba(54, 31, 36, 0.72) 58%, #211816 100%);
 }
 
 .mythic-hero-idle-sprite {
   position: absolute;
   left: 50%;
-  top: 50%;
-  width: 88%;
+  top: 0;
+  width: auto;
   height: 330%;
-  background-repeat: no-repeat;
-  background-position: center top;
-  background-size: 100% 400%;
-  image-rendering: auto;
-  transform: translate(-50%, -11.5%);
+  max-width: none;
+  pointer-events: none;
+  user-select: none;
+  transform: translateX(-50%) scale(0.72);
+  transform-origin: top center;
   filter: drop-shadow(0 7px 2px rgba(0, 0, 0, 0.32));
 }
 
@@ -214,7 +220,7 @@ button.artifact-card {
   display: grid;
   gap: 5px;
   align-content: start;
-  min-height: 188px;
+  min-height: 216px;
 }
 
 .collection-card em {
