@@ -71,6 +71,7 @@ import {
 } from "./pixiTestControlsView";
 
 export type PixiGameHandle = { cleanup: () => void };
+export type PixiGameOptions = { testMode?: boolean };
 
 let testControlsView: PixiTestControlsView | null = null;
 
@@ -114,7 +115,7 @@ function invalidateHud(refs: GameRefs) {
 
 function invalidateControls(refs: GameRefs) {
   invalidatePixiControlsView(refs.controlsView);
-  if (testControlsView) testControlsView.lastKey = "";
+  if (refs.isTestMode && testControlsView) testControlsView.lastKey = "";
 }
 
 function getCellIndexFromHero(state: GameState, hero: BoardHero | null) {
@@ -188,6 +189,7 @@ function floatText(refs: GameRefs, value: string, x: number, y: number, color: n
 }
 
 function submitFinalResultOnce(refs: GameRefs) {
+  if (refs.isTestMode) return;
   if (refs.resultSubmitted || (refs.state.status !== "failed" && refs.state.status !== "cleared")) return;
   refs.resultSubmitted = true;
 
@@ -212,7 +214,13 @@ function controlHandlers(refs: GameRefs) {
 }
 
 function drawTestControls(refs: GameRefs, layout: GameLayout) {
+  if (!refs.isTestMode) return;
   if (!testControlsView) testControlsView = createPixiTestControlsView(refs.controls);
+  updatePixiTestControlsView(testControlsView, refs, layout);
+}
+
+function updateTestControls(refs: GameRefs, layout: GameLayout) {
+  if (!refs.isTestMode || !testControlsView) return;
   updatePixiTestControlsView(testControlsView, refs, layout);
 }
 
@@ -257,7 +265,7 @@ function tick(refs: GameRefs, deltaMs: number) {
     }
     drawTopHud(refs, layout);
     drawControls(refs, layout, controlHandlers(refs));
-    if (testControlsView) updatePixiTestControlsView(testControlsView, refs, layout);
+    updateTestControls(refs, layout);
     if (refs.combatTimer <= 0) finishAutoWave(refs, false, createWaveFlowRuntimeOptions());
     else if (refs.activeEnemies.length > 0 && refs.activeEnemies.every((enemy) => !enemy.alive)) finishAutoWave(refs, true, createWaveFlowRuntimeOptions());
     return;
@@ -266,16 +274,16 @@ function tick(refs: GameRefs, deltaMs: number) {
   refs.resultTimer -= deltaSeconds;
   drawTopHud(refs, layout);
   drawControls(refs, layout, controlHandlers(refs));
-  if (testControlsView) updatePixiTestControlsView(testControlsView, refs, layout);
+  updateTestControls(refs, layout);
   if (refs.resultTimer <= 0) {
     refs.wavePhase = "countdown";
     drawControls(refs, layout, controlHandlers(refs));
     drawTopHud(refs, layout);
-    if (testControlsView) updatePixiTestControlsView(testControlsView, refs, layout);
+    updateTestControls(refs, layout);
   }
 }
 
-export function createPixiGame(parent: HTMLElement): PixiGameHandle {
+export function createPixiGame(parent: HTMLElement, options: PixiGameOptions = {}): PixiGameHandle {
   const app = new Application();
   const stage = new Container();
   const seed = `pixi-${Date.now()}`;
@@ -313,6 +321,7 @@ export function createPixiGame(parent: HTMLElement): PixiGameHandle {
     waveLostLives: 0,
     lastWaveSummary: null,
     resultSubmitted: false,
+    isTestMode: options.testMode ?? false,
     testEnemyHpMultiplier: 1,
   };
   let destroyed = false;
@@ -370,8 +379,10 @@ export function createPixiGame(parent: HTMLElement): PixiGameHandle {
       destroyed = true;
       clearMenuAndUnitInfo(refs, { clearMenu });
       clearDrag(refs);
-      testControlsView?.root.destroy({ children: true });
-      testControlsView = null;
+      if (refs.isTestMode) {
+        testControlsView?.root.destroy({ children: true });
+        testControlsView = null;
+      }
       refs.activeEnemies.forEach(destroyActiveEnemy);
       app.destroy({ removeView: true }, { children: true });
     },
