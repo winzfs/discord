@@ -213,15 +213,21 @@ function controlHandlers(refs: GameRefs) {
   };
 }
 
+function createTestControlOptions(refs: GameRefs) {
+  return {
+    onChange: () => render(refs),
+  };
+}
+
 function drawTestControls(refs: GameRefs, layout: GameLayout) {
   if (!refs.isTestMode) return;
   if (!testControlsView) testControlsView = createPixiTestControlsView(refs.controls);
-  updatePixiTestControlsView(testControlsView, refs, layout);
+  updatePixiTestControlsView(testControlsView, refs, layout, createTestControlOptions(refs));
 }
 
 function updateTestControls(refs: GameRefs, layout: GameLayout) {
   if (!refs.isTestMode || !testControlsView) return;
-  updatePixiTestControlsView(testControlsView, refs, layout);
+  updatePixiTestControlsView(testControlsView, refs, layout, createTestControlOptions(refs));
 }
 
 function render(refs: GameRefs) {
