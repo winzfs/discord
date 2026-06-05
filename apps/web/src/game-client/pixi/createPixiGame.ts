@@ -71,6 +71,7 @@ import {
 } from "./pixiTestControlsView";
 import { chargeMythicUltimatesOverTime, getAttackIntervalMultiplier } from "./pixiUltimateRuntime";
 import { destroyFxGraphicsPool } from "./pixiFxPoolRuntime";
+import { preloadHeroSpriteTextures } from "./pixiHeroSpriteView";
 
 export type PixiGameHandle = { cleanup: () => void };
 export type PixiGameOptions = { testMode?: boolean };
@@ -349,6 +350,14 @@ export function createPixiGame(parent: HTMLElement, options: PixiGameOptions = {
       resolution: Math.min(window.devicePixelRatio || 1, 2),
       autoDensity: true,
     });
+
+    if (destroyed) {
+      destroyFxGraphicsPool(refs);
+      app.destroy({ removeView: true }, { children: true });
+      return;
+    }
+
+    await preloadHeroSpriteTextures();
 
     if (destroyed) {
       destroyFxGraphicsPool(refs);
