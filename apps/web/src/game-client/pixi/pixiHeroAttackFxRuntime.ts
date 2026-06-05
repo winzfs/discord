@@ -70,6 +70,17 @@ function drawShortTracer(
   drawLine(graphics, tailPoint, headPoint, 0xffffff, alpha * 0.9, Math.max(1, width * 0.36));
 }
 
+function drawProjectileTail(graphics: Graphics, from: Point, to: Point, easedProgress: number, color: number, alpha: number, width: number, tailDistance = 18) {
+  const headPoint = pointAt(from, to, easedProgress);
+  const distance = Math.max(1, Math.hypot(to.x - from.x, to.y - from.y));
+  const tailProgress = Math.max(0, easedProgress - tailDistance / distance);
+  const tailPoint = pointAt(from, to, tailProgress);
+
+  drawLine(graphics, tailPoint, headPoint, color, alpha * 0.24, width * 2.1);
+  drawLine(graphics, tailPoint, headPoint, color, alpha * 0.58, width);
+  drawLine(graphics, tailPoint, headPoint, 0xffffff, alpha * 0.72, Math.max(1, width * 0.34));
+}
+
 function drawSoftOrb(graphics: Graphics, point: Point, color: number, radius: number, alpha: number) {
   graphics.circle(point.x, point.y, radius * 1.9);
   graphics.fill({ color, alpha: alpha * 0.08 });
@@ -264,9 +275,10 @@ function spawnGenjiShuriken(refs: GameRefs, options: PixiHeroAttackFxOptions, fr
         const local = clamp01((progress - index * 0.06) / 0.78);
         if (local <= 0 || local >= 1) return;
         const end = { x: targetAtFire.x + offset * 10, y: targetAtFire.y - Math.abs(offset) * 5 };
-        const point = pointAt(from, end, easeOutExpo(local));
-        drawShortTracer(fx, from, end, local, 0x7dff7a, 0.14, 1.8, 0.035);
-        drawSoftOrb(fx, point, 0x7dff7a, 2.4, 0.58);
+        const eased = easeOutExpo(local);
+        const point = pointAt(from, end, eased);
+        drawProjectileTail(fx, from, end, eased, 0x7dff7a, 0.16, 1.7, 14);
+        drawSoftOrb(fx, point, 0x7dff7a, 2.2, 0.5);
         drawShuriken(fx, point, angle + local * Math.PI * 8 + offset * 0.4, 0x7dff7a, 0.92, 6.5);
       });
 
