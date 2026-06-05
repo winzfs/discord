@@ -1,5 +1,6 @@
 import { Graphics } from "pixi.js";
 import type { ActiveEnemy, GameRefs } from "./pixiGameTypes";
+import { acquireFxGraphics, releaseFxGraphics } from "./pixiFxPoolRuntime";
 
 export type PixiUltimateFxOptions = {
   addAnimation: (
@@ -109,8 +110,7 @@ function drawSlash(graphics: Graphics, center: Point, color: number, progress: n
 }
 
 export function spawnDvaSelfDestructFx(refs: GameRefs, options: PixiUltimateFxOptions, center: Point, radius: number) {
-  const fx = new Graphics();
-  refs.effects.addChild(fx);
+  const fx = acquireFxGraphics(refs);
   options.addAnimation(refs, {
     duration: 820,
     update: (progress) => {
@@ -124,7 +124,7 @@ export function spawnDvaSelfDestructFx(refs: GameRefs, options: PixiUltimateFxOp
       fx.circle(center.x, center.y, radius * (0.22 + blast * 0.48));
       fx.fill({ color: 0xff78d8, alpha: 0.1 * fade });
     },
-    done: () => fx.destroy(),
+    done: () => releaseFxGraphics(refs, fx),
   });
 }
 
@@ -138,8 +138,7 @@ export function spawnZaryaGravitonFx(
   onFrame: (progress: number) => void,
   onDone: () => void,
 ) {
-  const fx = new Graphics();
-  refs.effects.addChild(fx);
+  const fx = acquireFxGraphics(refs);
   options.addAnimation(refs, {
     duration,
     update: (progress) => {
@@ -160,7 +159,7 @@ export function spawnZaryaGravitonFx(
       }
     },
     done: () => {
-      fx.destroy();
+      releaseFxGraphics(refs, fx);
       onDone();
     },
   });
@@ -173,8 +172,7 @@ export function spawnTracerPulseBombFx(
   radius: number,
   onExplode: (x: number, y: number) => void,
 ) {
-  const fx = new Graphics();
-  refs.effects.addChild(fx);
+  const fx = acquireFxGraphics(refs);
   options.addAnimation(refs, {
     duration: 520,
     update: (progress) => {
@@ -188,9 +186,8 @@ export function spawnTracerPulseBombFx(
     done: () => {
       const x = target.x;
       const y = target.y;
-      fx.destroy();
-      const explosion = new Graphics();
-      refs.effects.addChild(explosion);
+      releaseFxGraphics(refs, fx);
+      const explosion = acquireFxGraphics(refs);
       options.addAnimation(refs, {
         duration: 520,
         update: (progress) => {
@@ -198,7 +195,7 @@ export function spawnTracerPulseBombFx(
           drawBurst(explosion, { x, y }, 0xffc857, progress, radius, 18);
           drawBurst(explosion, { x, y }, 0xffffff, clamp01(progress * 1.25), radius * 0.5, 10);
         },
-        done: () => explosion.destroy(),
+        done: () => releaseFxGraphics(refs, explosion),
       });
       onExplode(x, y);
     },
@@ -214,8 +211,7 @@ export function spawnCassidyDeadeyeFx(
   getLockRatio: (progress: number) => number,
   onDone: () => void,
 ) {
-  const fx = new Graphics();
-  refs.effects.addChild(fx);
+  const fx = acquireFxGraphics(refs);
   options.addAnimation(refs, {
     duration,
     update: (progress) => {
@@ -233,15 +229,14 @@ export function spawnCassidyDeadeyeFx(
       });
     },
     done: () => {
-      fx.destroy();
+      releaseFxGraphics(refs, fx);
       onDone();
     },
   });
 }
 
 export function spawnWinstonPrimalRageFx(refs: GameRefs, options: PixiUltimateFxOptions, center: Point, radius: number) {
-  const fx = new Graphics();
-  refs.effects.addChild(fx);
+  const fx = acquireFxGraphics(refs);
   options.addAnimation(refs, {
     duration: 620,
     update: (progress) => {
@@ -253,13 +248,12 @@ export function spawnWinstonPrimalRageFx(refs: GameRefs, options: PixiUltimateFx
         drawLightning(fx, center, end, 0x87b7ff, progress + index * 0.1, 3.2);
       }
     },
-    done: () => fx.destroy(),
+    done: () => releaseFxGraphics(refs, fx),
   });
 }
 
 export function spawnGenjiDragonbladeFx(refs: GameRefs, options: PixiUltimateFxOptions, from: Point, targets: ActiveEnemy[], onDone: () => void) {
-  const fx = new Graphics();
-  refs.effects.addChild(fx);
+  const fx = acquireFxGraphics(refs);
   options.addAnimation(refs, {
     duration: 620,
     update: (progress) => {
@@ -275,15 +269,14 @@ export function spawnGenjiDragonbladeFx(refs: GameRefs, options: PixiUltimateFxO
       });
     },
     done: () => {
-      fx.destroy();
+      releaseFxGraphics(refs, fx);
       onDone();
     },
   });
 }
 
 export function spawnAnaNanoBoostFx(refs: GameRefs, options: PixiUltimateFxOptions, center: Point) {
-  const fx = new Graphics();
-  refs.effects.addChild(fx);
+  const fx = acquireFxGraphics(refs);
   options.addAnimation(refs, {
     duration: 720,
     update: (progress) => {
@@ -296,13 +289,12 @@ export function spawnAnaNanoBoostFx(refs: GameRefs, options: PixiUltimateFxOptio
         drawRing(fx, p, 7 + progress * 8, 0x7dffb2, 0.28 * (1 - progress), 2);
       }
     },
-    done: () => fx.destroy(),
+    done: () => releaseFxGraphics(refs, fx),
   });
 }
 
 export function spawnKirikoKitsuneRushFx(refs: GameRefs, options: PixiUltimateFxOptions, center: Point) {
-  const fx = new Graphics();
-  refs.effects.addChild(fx);
+  const fx = acquireFxGraphics(refs);
   options.addAnimation(refs, {
     duration: 1200,
     update: (progress) => {
@@ -317,13 +309,12 @@ export function spawnKirikoKitsuneRushFx(refs: GameRefs, options: PixiUltimateFx
       drawEnergyCore(fx, center, 0xff8ad8, progress, 16);
       drawBurst(fx, center, 0xff8ad8, clamp01(progress * 0.8), 132, 12);
     },
-    done: () => fx.destroy(),
+    done: () => releaseFxGraphics(refs, fx),
   });
 }
 
 export function spawnIllariCaptiveSunFx(refs: GameRefs, options: PixiUltimateFxOptions, center: Point, radius: number, onDone: () => void) {
-  const fx = new Graphics();
-  refs.effects.addChild(fx);
+  const fx = acquireFxGraphics(refs);
   options.addAnimation(refs, {
     duration: 720,
     update: (progress) => {
@@ -337,7 +328,7 @@ export function spawnIllariCaptiveSunFx(refs: GameRefs, options: PixiUltimateFxO
       if (progress > 0.42) drawBurst(fx, center, 0xfff06a, (progress - 0.42) / 0.58, radius, 20);
     },
     done: () => {
-      fx.destroy();
+      releaseFxGraphics(refs, fx);
       onDone();
     },
   });
