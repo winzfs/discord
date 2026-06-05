@@ -16,6 +16,10 @@ export const router = createBrowserRouter([
     element: <GamePage />,
   },
   {
+    path: "/play-test",
+    element: <GamePage testMode />,
+  },
+  {
     path: "/lobby",
     element: <LobbyPage />,
   },
