@@ -11,6 +11,7 @@ import { getProgressHeroPower, applyEconomyRewardBonus } from "./pixiProgressBon
 import { getPixiUnitAttackRange, isPointInPixiUnitRange } from "./pixiUnitRange";
 import { chargeMythicUltimateFromAttack, tryTriggerMythicUltimate } from "./pixiUltimateRuntime";
 import { applyMythicHeroSkillEffects } from "./pixiSkillRuntime";
+import { pickWinstonBeamTargets, spawnWinstonElectricBeam } from "./pixiWinstonBeamRuntime";
 
 export type PixiCombatRuntimeOptions = {
   getCellCenter: (refs: GameRefs, cellIndex: number) => { x: number; y: number; cell: number };
@@ -292,6 +293,24 @@ export function spawnAttackEffects(refs: GameRefs, options: PixiCombatRuntimeOpt
     if (!target.alive) return;
 
     if (tryTriggerUltimateAttack(refs, options, hero, from, target, damage)) {
+      return;
+    }
+
+    if (hero.heroId === "winston") {
+      const beamTargets = pickWinstonBeamTargets(refs, target);
+      spawnWinstonElectricBeam(
+        refs,
+        {
+          addAnimation: options.addAnimation,
+          applyDamage: (enemy, value) => damageEnemy(refs, enemy, value, options),
+        },
+        from,
+        beamTargets,
+        damage,
+        () => {
+          if (index === 0) options.floatText(refs, `${Math.round(damage * 0.72)}`, target.x, target.y - 18, 0x87b7ff);
+        },
+      );
       return;
     }
 
