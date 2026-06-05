@@ -20,7 +20,7 @@ export type PixiGenjiDashRuntimeOptions = {
 
 const GENJI_DASH_MAX_TARGETS = 3;
 const GENJI_DASH_DURATION = 260;
-const GENJI_DASH_STAGGER = 118;
+const GENJI_DASH_STAGGER = 1000;
 const GENJI_GREEN = 0x7dff7a;
 
 function clamp01(value: number) {
