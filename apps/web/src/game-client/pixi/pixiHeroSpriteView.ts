@@ -19,6 +19,7 @@ const SPRITE_HERO_IDS = new Set(["tracer", "kiriko", "dva"]);
 
 const HERO_SPRITE_SCALE: Record<string, number> = {
   kiriko: 1.17,
+  dva: 1.18,
 };
 
 let textureCache = new Map<string, Texture>();
