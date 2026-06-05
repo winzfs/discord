@@ -78,6 +78,12 @@ export function chargeMythicUltimatesOverTime(refs: GameRefs, deltaSeconds: numb
   return changed;
 }
 
+export function getAttackIntervalMultiplier(refs: GameRefs) {
+  const now = Date.now();
+  const multiplier = refs.kitsuneRushUntil && refs.kitsuneRushUntil > now ? 0.5 : 1;
+  return multiplier;
+}
+
 function showUltimatePulse(refs: GameRefs, options: PixiUltimateRuntimeOptions, x: number, y: number, color: number, radius = 92, duration = 520) {
   const pulse = new Graphics();
   refs.effects.addChild(pulse);
@@ -147,38 +153,38 @@ function triggerZaryaGraviton(
   const radius = 112;
   const pullRadius = 205;
   const duration = 3000;
+  const until = Date.now() + duration;
   const originalSpeeds = new Map<number, number>();
   const vortex = new Graphics();
 
   refs.effects.addChild(vortex);
-  options.floatText(refs, `${label} 중력자탄! 좁은 범위 3초 속박`, center.x, center.y - 48, 0xff7de9);
+  options.floatText(refs, `${label} 중력자탄! 흡입/속박`, center.x, center.y - 48, 0xff7de9);
 
   options.addAnimation(refs, {
     duration,
     update: (progress) => {
       vortex.clear();
       vortex.circle(center.x, center.y, radius * (0.9 + Math.sin(progress * Math.PI * 12) * 0.05));
-      vortex.stroke({ color: 0xff7de9, width: 7, alpha: 0.58 });
-      vortex.circle(center.x, center.y, pullRadius);
-      vortex.stroke({ color: 0xffb6f4, width: 2, alpha: 0.18 });
+      vortex.stroke({ color: 0xff7de9, width: 7, alpha: 0.62 });
 
       enemiesInRadius(refs, center.x, center.y, pullRadius).forEach((enemy) => {
         if (!originalSpeeds.has(enemy.id)) originalSpeeds.set(enemy.id, enemy.speed);
 
-        const dx = center.x - enemy.x;
-        const dy = center.y - enemy.y;
+        const sourceX = enemy.controlX ?? enemy.x;
+        const sourceY = enemy.controlY ?? enemy.y;
+        const dx = center.x - sourceX;
+        const dy = center.y - sourceY;
         const distance = Math.max(1, Math.hypot(dx, dy));
-        const pullStrength = distance <= radius ? 0.34 : 0.18;
+        const pullStrength = distance <= radius ? 0.48 : 0.26;
+        const nextX = distance <= radius * 0.22 ? center.x : sourceX + dx * pullStrength;
+        const nextY = distance <= radius * 0.22 ? center.y : sourceY + dy * pullStrength;
 
         enemy.speed = 0;
-        enemy.x += dx * pullStrength;
-        enemy.y += dy * pullStrength;
-
-        if (distance <= radius * 0.28) {
-          enemy.x = center.x;
-          enemy.y = center.y;
-        }
-
+        enemy.controlUntil = until;
+        enemy.controlX = nextX;
+        enemy.controlY = nextY;
+        enemy.x = nextX;
+        enemy.y = nextY;
         updateEnemyViewPosition(enemy.view, enemy.x, enemy.y, enemy.progress);
       });
     },
@@ -186,7 +192,12 @@ function triggerZaryaGraviton(
       vortex.destroy();
       originalSpeeds.forEach((speed, enemyId) => {
         const enemy = refs.activeEnemies.find((candidate) => candidate.id === enemyId && candidate.alive);
-        if (enemy) enemy.speed = Math.max(enemy.speed, speed);
+        if (enemy) {
+          enemy.speed = Math.max(enemy.speed, speed);
+          enemy.controlUntil = undefined;
+          enemy.controlX = undefined;
+          enemy.controlY = undefined;
+        }
       });
       damageEnemiesInRadius(refs, options, center.x, center.y, radius + 8, Math.round(baseDamage * 2.4));
     },
@@ -337,9 +348,9 @@ export function tryTriggerMythicUltimate(
   }
 
   if (hero.heroId === "kiriko") {
-    refs.progressBonuses.attackMultiplier *= 1.1;
+    refs.kitsuneRushUntil = Date.now() + 5000;
     showUltimatePulse(refs, options, from.x, from.y, 0xff8ad8, 136);
-    options.floatText(refs, `${label} 여우길! 공격력 +10%`, from.x, from.y - 42, 0xff8ad8);
+    options.floatText(refs, `${label} 여우길! 공격속도 200%`, from.x, from.y - 42, 0xff8ad8);
     return true;
   }
 
