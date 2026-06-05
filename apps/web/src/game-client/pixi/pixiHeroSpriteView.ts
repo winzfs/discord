@@ -33,19 +33,26 @@ const HERO_SPRITE_SCALE: Record<string, number> = {
 let textureCache = new Map<string, Texture>();
 let loadingCache = new Set<string>();
 
-function requestHeroTexture(heroId: string) {
+async function loadHeroTexture(heroId: string) {
   const path = HERO_TEXTURE_PATHS[heroId];
-  if (!path || textureCache.has(heroId) || loadingCache.has(heroId)) return;
+  if (!path || textureCache.has(heroId)) return;
 
   loadingCache.add(heroId);
-  void Assets.load<Texture>(path)
-    .then((texture) => {
-      textureCache.set(heroId, texture);
-      loadingCache.delete(heroId);
-    })
-    .catch(() => {
-      loadingCache.delete(heroId);
-    });
+  try {
+    const texture = await Assets.load<Texture>(path);
+    textureCache.set(heroId, texture);
+  } finally {
+    loadingCache.delete(heroId);
+  }
+}
+
+function requestHeroTexture(heroId: string) {
+  if (loadingCache.has(heroId)) return;
+  void loadHeroTexture(heroId).catch(() => undefined);
+}
+
+export async function preloadHeroSpriteTextures() {
+  await Promise.all(Object.keys(HERO_TEXTURE_PATHS).map((heroId) => loadHeroTexture(heroId).catch(() => undefined)));
 }
 
 function createFrameTexture(texture: Texture, row: number, rows: number) {
