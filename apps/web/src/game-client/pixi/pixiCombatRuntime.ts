@@ -10,6 +10,7 @@ import { destroyActiveEnemy } from "./pixiEnemyRuntime";
 import { getProgressHeroPower, applyEconomyRewardBonus } from "./pixiProgressBonuses";
 import { getPixiUnitAttackRange, isPointInPixiUnitRange } from "./pixiUnitRange";
 import { chargeMythicUltimateFromAttack, tryTriggerMythicUltimate } from "./pixiUltimateRuntime";
+import { applyMythicHeroSkillEffects } from "./pixiSkillRuntime";
 
 export type PixiCombatRuntimeOptions = {
   getCellCenter: (refs: GameRefs, cellIndex: number) => { x: number; y: number; cell: number };
@@ -258,6 +259,20 @@ function tryTriggerUltimateAttack(refs: GameRefs, options: PixiCombatRuntimeOpti
   return triggered;
 }
 
+function applySkillEffects(refs: GameRefs, options: PixiCombatRuntimeOptions, hero: BoardHero, role: HeroRole, target: ActiveEnemy, damage: number) {
+  return applyMythicHeroSkillEffects(
+    refs,
+    {
+      damageEnemy: (refs, enemy, damage) => damageEnemy(refs, enemy, damage, options),
+      floatText: options.floatText,
+    },
+    hero,
+    role,
+    target,
+    damage,
+  );
+}
+
 export function spawnAttackEffects(refs: GameRefs, options: PixiCombatRuntimeOptions) {
   const heroes = getAllBoardHeroes(refs.state.board);
   if (heroes.length === 0) return;
@@ -271,8 +286,10 @@ export function spawnAttackEffects(refs: GameRefs, options: PixiCombatRuntimeOpt
     const target = pickAttackTarget(refs, role, from, range);
     if (!target) return;
 
-    const damage = getHeroDamage(refs, hero);
+    let damage = getHeroDamage(refs, hero);
     triggerHeroSpriteAttack(refs, hero, from, target, options);
+    damage = applySkillEffects(refs, options, hero, role, target, damage);
+    if (!target.alive) return;
 
     if (tryTriggerUltimateAttack(refs, options, hero, from, target, damage)) {
       return;
