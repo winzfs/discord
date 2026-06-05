@@ -26,6 +26,12 @@ function pointAt(from: Point, to: Point, progress: number) {
   return { x: lerp(from.x, to.x, progress), y: lerp(from.y, to.y, progress) };
 }
 
+function drawLine(graphics: Graphics, from: Point, to: Point, color: number, alpha: number, width: number) {
+  graphics.moveTo(from.x, from.y);
+  graphics.lineTo(to.x, to.y);
+  graphics.stroke({ color, width, alpha });
+}
+
 function drawRing(graphics: Graphics, point: Point, radius: number, color: number, alpha: number, width = 4) {
   graphics.circle(point.x, point.y, radius);
   graphics.stroke({ color, width, alpha });
