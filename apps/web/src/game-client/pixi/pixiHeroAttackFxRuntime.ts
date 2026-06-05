@@ -258,7 +258,7 @@ function spawnGenjiShuriken(refs: GameRefs, options: PixiHeroAttackFxOptions, fr
         if (local <= 0 || local >= 1) return;
         const end = { x: targetAtFire.x + offset * 10, y: targetAtFire.y - Math.abs(offset) * 5 };
         const point = pointAt(from, end, easeOutExpo(local));
-        drawShortTracer(fx, from, end, local, 0x7dff7a, 0.36, 3.4, 0.12);
+        drawShortTracer(fx, from, end, local, 0x7dff7a, 0.14, 1.8, 0.035);
         drawSoftOrb(fx, point, 0x7dff7a, 2.4, 0.58);
         drawShuriken(fx, point, angle + local * Math.PI * 8 + offset * 0.4, 0x7dff7a, 0.92, 6.5);
       });
