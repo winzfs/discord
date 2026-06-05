@@ -19,11 +19,12 @@ React / Vite
 PixiJS
 - 실제 게임 플레이 화면
 - /play 전용 전체화면 캔버스
-- 전장, 보드, 몬스터, 소환, 이동, 합성, 공격, 웨이브, 이펙트 렌더링
+- 전장, 보드, 몬스터, 소환, 이동, 합성, 공격, 웨이브, 스킬, 궁극기, 이펙트 렌더링
 
 packages/game
 - 순수 게임 규칙
 - 소환/보드/합성/도박/신화 조합/웨이브/점수 계산 보조 로직
+- 영웅/스킬/적/웨이브/밸런스 데이터
 ```
 
 ## 2. 현재 라우트
@@ -52,7 +53,7 @@ packages/game
 - 적 개체 생성, 실제 경로 이동, HP바 표시
 - 적 누수 시 코어 HP 감소
 - 유닛 자동 타겟팅
-- 투사체 공격 연출
+- 영웅별 기본공격 연출
 - 적 HP 감소, 처치, 보상 지급
 - 딜러/탱커/지원 역할군별 전투 효과
 - 탱커 감속 효과
@@ -71,8 +72,17 @@ packages/game
 - 신화 조합 메뉴
 - 고유 유닛 재료 기반 신화 조합
 - 신화 조합 재료 보유 수 / 필요 수 표시
-- 트레이서 스프라이트 공격 방향 연출
+- 유닛 정보 패널에 스킬/궁극기 조건과 효과 표시
+- 신화 영웅 궁극기 게이지 바 표시
+- 공격/시간 경과 기반 궁극기 게이지 충전
+- 신화 영웅 스킬 확률 발동
+- 신화 영웅 궁극기 발동
+- Tracer, Kiriko, D.Va, Zarya, Cassidy, Winston 스프라이트 시트 적용
+- 영웅별 기본공격 고유 FX
+- 영웅별 궁극기 고유 FX
+- `Graphics` 풀 기반 FX 객체 재사용 최적화
 - 테스트 모드 컨트롤
+- 테스트 모드 몬스터 체력 배율 옵션
 - 게임 종료 시 기록 저장 API 호출
 
 ## 4. 현재 화면 구조
@@ -113,12 +123,19 @@ apps/web/src/game-client/pixi/pixiRenderRuntime.ts
 apps/web/src/game-client/pixi/pixiBoardRuntime.ts
 apps/web/src/game-client/pixi/pixiBoardRenderRuntime.ts
 apps/web/src/game-client/pixi/pixiBoardView.ts
+apps/web/src/game-client/pixi/pixiHeroSpriteView.ts
 apps/web/src/game-client/pixi/pixiHudView.ts
 apps/web/src/game-client/pixi/pixiControlsView.ts
 apps/web/src/game-client/pixi/pixiEnemyRuntime.ts
 apps/web/src/game-client/pixi/pixiEnemyMovementRuntime.ts
 apps/web/src/game-client/pixi/pixiEnemyView.ts
 apps/web/src/game-client/pixi/pixiCombatRuntime.ts
+apps/web/src/game-client/pixi/pixiSkillRuntime.ts
+apps/web/src/game-client/pixi/pixiUltimateRuntime.ts
+apps/web/src/game-client/pixi/pixiHeroAttackFxRuntime.ts
+apps/web/src/game-client/pixi/pixiUltimateFxRuntime.ts
+apps/web/src/game-client/pixi/pixiWinstonBeamRuntime.ts
+apps/web/src/game-client/pixi/pixiFxPoolRuntime.ts
 apps/web/src/game-client/pixi/pixiWaveRuntime.ts
 apps/web/src/game-client/pixi/pixiWaveFlowRuntime.ts
 apps/web/src/game-client/pixi/pixiWaveFeedbackRuntime.ts
@@ -139,7 +156,7 @@ apps/web/src/game-client/pixi/animation/animationManager.ts
 
 `GamePage.tsx`는 PixiJS를 붙이는 host 역할만 담당합니다.
 
-`createPixiGame.ts`는 아직 Pixi Application 초기화, refs 구성, ticker phase 연결, 이벤트 바인딩, runtime options 조립을 담당합니다. 기능별 구현은 가능한 한 별도 runtime/view 파일로 분리합니다.
+`createPixiGame.ts`는 Pixi Application 초기화, refs 구성, ticker phase 연결, 이벤트 바인딩, runtime options 조립, cleanup을 담당합니다. 기능별 구현은 가능한 한 별도 runtime/view 파일로 분리합니다.
 
 ## 6. 분리 원칙
 
@@ -147,10 +164,12 @@ apps/web/src/game-client/pixi/animation/animationManager.ts
 
 - `createPixiGame.ts`는 최종적으로 초기화, 조립, cleanup만 담당하도록 줄입니다.
 - 화면 배치는 `gameLayout.ts`에서 계산합니다.
-- 보드, HUD, 컨트롤, 적, 전투, 웨이브, 드래그, 선택 UI는 별도 파일에서 관리합니다.
+- 보드, HUD, 컨트롤, 적, 전투, 스킬, 궁극기, 이펙트, 웨이브, 드래그, 선택 UI는 별도 파일에서 관리합니다.
 - 소환/합성/도박/신화 조합 등 핵심 규칙은 `packages/game`에서 가져옵니다.
 - PixiJS 내부에서 게임 규칙을 중복 구현하지 않습니다.
-- 단, 현재 실시간 전투/보상/점수 일부는 Pixi runtime에서 직접 갱신하므로 추후 `packages/game` 쪽으로 계산 기준을 모아야 합니다.
+- 단, 현재 실시간 전투/보상/점수/스킬 일부는 Pixi runtime에서 직접 갱신하므로 추후 `packages/game` 쪽으로 계산 기준을 모아야 합니다.
+- 이펙트 구현은 `pixiHeroAttackFxRuntime.ts`, `pixiUltimateFxRuntime.ts`, `pixiWinstonBeamRuntime.ts`처럼 별도 파일에 둡니다.
+- PixiJS `Graphics` 객체는 `pixiFxPoolRuntime.ts`를 통해 재사용합니다.
 
 ## 7. 렌더링 원칙
 
@@ -173,6 +192,7 @@ PixiJS:
 - 터치 입력
 - 소환/신화/도박/강화/웨이브 버튼
 - 전투 연출
+- 스킬/궁극기 연출
 
 `packages/game`:
 
@@ -181,6 +201,7 @@ PixiJS:
 - 보드/스택/합성 규칙
 - 도박/신화 조합 규칙
 - 웨이브 데이터
+- 영웅/스킬/적 데이터
 - 점수 계산 보조
 
 ### 7.2 DOM 버튼 금지
@@ -204,22 +225,83 @@ PixiJS:
 ```text
 hero.assetKey -> assetManifest -> PixiJS Texture
 enemy.assetKey -> assetManifest -> PixiJS Texture
+public/assets/heroes/*.png -> pixiHeroSpriteView.ts
+```
+
+현재 직접 등록된 영웅 스프라이트:
+
+```text
+apps/web/public/assets/heroes/tracer.png
+apps/web/public/assets/heroes/kiriko.png
+apps/web/public/assets/heroes/d.va.png
+apps/web/public/assets/heroes/zarya.png
+apps/web/public/assets/heroes/cassidy.png
+apps/web/public/assets/heroes/winston.png
 ```
 
 `packages/game`은 이미지 경로를 직접 알면 안 됩니다.
 
-## 8. 다음 개선 우선순위
+### 7.4 FX 최적화 원칙
 
-1. `createPixiGame.ts`의 ticker/refs/options 조립 책임 추가 분리
-2. 점수/보상 계산 기준을 `packages/game` 쪽으로 이동
-3. `durationSeconds` 실제 측정 후 기록 저장
-4. 랭킹 저장 전 score/wave/kills 상한 검증 추가
-5. `game_runs.suspicious`, `hidden` 컬럼을 활용한 비정상 기록 처리
-6. 유닛별 고유 효과 시각화 강화
-7. 실제 이미지/스프라이트 에셋 교체 확대
+최근 공격/궁극기 이펙트가 늘어나면서 `Graphics` 생성/파괴 비용이 커질 수 있습니다.
+
+현재 원칙:
+
+- 이펙트 퀄리티를 낮추지 않습니다.
+- 대신 `new Graphics()` / `destroy()` 반복을 줄입니다.
+- `pixiFxPoolRuntime.ts`에서 `Graphics` 풀을 관리합니다.
+- 게임 인스턴스별 풀은 `WeakMap<GameRefs, Graphics[]>` 기반입니다.
+- 풀 최대치는 현재 96개입니다.
+- 게임 cleanup 시 `destroyFxGraphicsPool(refs)`로 명시 정리합니다.
+
+## 8. 신화 영웅 전투 구현 요약
+
+현재 신화 영웅은 기본공격, 스킬 1/2, 궁극기를 가집니다.
+
+### 8.1 기본공격/스킬
+
+- 스킬은 `pixiSkillRuntime.ts`에서 처리합니다.
+- 공격형 스킬은 기본 42% 확률로 발동합니다.
+- 제어형 스킬은 기본 30% 확률로 발동합니다.
+- 지원형 스킬은 기본 24% 확률로 발동합니다.
+- 자리야 입자포는 예외로 지속 공격/차지형으로 항상 동작합니다.
+- 아나 수면총은 일반/보스 모두 3초 수면 효과를 적용할 수 있습니다.
+- 겐지 질풍참은 체력이 낮은 적을 우선 공격하고 처치 시 연속 발동합니다.
+- 윈스턴 기본공격은 좁은 전기 광선형 체인 공격입니다.
+
+### 8.2 궁극기
+
+- 궁극기 게이지 최대치는 100입니다.
+- 전투 중 시간 경과와 공격 시 게이지가 충전됩니다.
+- 게이지가 가득 차면 다음 공격 시 궁극기가 발동됩니다.
+- 궁극기 발동 후 게이지는 0으로 돌아갑니다.
+
+현재 궁극기 방향:
+
+```text
+D.Va: 영웅 위치 기준 자폭 광역 폭발
+자리야: 중력자탄 3초 흡입/속박
+트레이서: 펄스폭탄 부착 후 폭발
+캐서디: 보이는 적 락온 후 진행도 비례 피해
+윈스턴: 원시의 분노 광역 충격파/감속
+겐지: 용검 연속 베기
+아나: 나노 강화제 공격 배율 증가
+키리코: 여우길 5초 공격속도 200%
+일리아리: 태양 작렬 광역 폭발
+```
+
+## 9. 다음 개선 우선순위
+
+1. `pnpm build:web`와 `pnpm typecheck`로 최근 FX/최적화 코드 검증
+2. `/play`, `/play-test`에서 공격/궁극기 이펙트 회귀 테스트
+3. `createPixiGame.ts`의 ticker/refs/options 조립 책임 추가 분리
+4. 점수/보상 계산 기준을 `packages/game` 쪽으로 이동
+5. `durationSeconds` 실제 측정 후 기록 저장
+6. 랭킹 저장 전 score/wave/kills 상한 검증 추가
+7. `game_runs.suspicious`, `hidden` 컬럼을 활용한 비정상 기록 처리
 8. 모바일 터치 UX 회귀 테스트
 
-## 9. 확인 체크리스트
+## 10. 확인 체크리스트
 
 기능 추가 후 반드시 다음을 확인합니다.
 
@@ -237,7 +319,9 @@ pnpm dev:web
 - 소환/스택/이동/스왑 정상
 - 합성/판매/신화 메뉴 정상
 - 적이 외곽 경로를 따라 이동
-- 유닛 투사체가 적을 향해 발사
+- 유닛 기본공격 FX가 적을 향해 표시
+- 신화 영웅 궁극기 게이지 표시
+- 신화 영웅 궁극기 발동과 FX 표시
 - 적 HP바 감소/처치/코인 보상 정상
 - 누수 시 코어 HP 감소 정상
 - 웨이브 결과/행운석 보상 정상
