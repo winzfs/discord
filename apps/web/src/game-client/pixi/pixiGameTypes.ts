@@ -95,7 +95,7 @@ export type GameRefs = {
   testEnemyHpMultiplier: number;
   heroSpriteAttacks: Record<string, HeroSpriteAttackState>;
   zaryaBeamCharges: Record<string, ZaryaBeamChargeState>;
-  mythicUltimateCharges: Record<string, MythicUltimateChargeState>;
+  mythicUltimateCharges?: Record<string, MythicUltimateChargeState>;
 };
 
 export const WAVE_COUNTDOWN_SECONDS = 8;
