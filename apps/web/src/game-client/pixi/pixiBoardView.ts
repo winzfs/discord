@@ -3,7 +3,7 @@ import type { BoardHero } from "@discord-random-defense/game";
 import { getHeroById } from "@discord-random-defense/game";
 import { colors, gradeColor } from "./gameTheme";
 import { canDrawHeroSprite, drawHeroSprite } from "./pixiHeroSpriteView";
-import type { HeroSpriteAttackState, MythicUltimateChargeState } from "./pixiGameTypes";
+import type { HeroSpriteAttackState, HeroSpriteOffsetState, MythicUltimateChargeState } from "./pixiGameTypes";
 
 export type BoardMetrics = {
   cols: number;
@@ -23,6 +23,7 @@ export type BoardPointerHandlers = {
 
 export type BoardRenderState = {
   heroSpriteAttacks: Record<string, HeroSpriteAttackState>;
+  heroSpriteOffsets?: Record<string, HeroSpriteOffsetState>;
   mythicUltimateCharges?: Record<string, MythicUltimateChargeState>;
   now: number;
 };
@@ -199,6 +200,15 @@ function drawUltimateChargeBar(target: Container, hero: BoardHero, cell: number,
   target.addChild(bar);
 }
 
+function getTransientSpriteOffset(hero: BoardHero, renderState?: BoardRenderState) {
+  if (!hero.instanceId || !renderState) return { x: 0, y: 0 };
+
+  const offset = renderState.heroSpriteOffsets?.[hero.instanceId];
+  if (!offset || offset.until <= renderState.now) return { x: 0, y: 0 };
+
+  return { x: offset.x, y: offset.y };
+}
+
 function drawUnitMarker(
   target: Container,
   x: number,
@@ -212,9 +222,10 @@ function drawUnitMarker(
 ) {
   const unitCell = Math.min(cellWidth, cellHeight);
   const offset = getStackOffset(stackCount, stackIndex, unitCell);
+  const transientOffset = getTransientSpriteOffset(hero, renderState);
   const marker = new Container();
-  marker.x = x + cellWidth / 2 + offset.x;
-  marker.y = y + cellHeight * 0.48 + offset.y;
+  marker.x = x + cellWidth / 2 + offset.x + transientOffset.x;
+  marker.y = y + cellHeight * 0.48 + offset.y + transientOffset.y;
   drawUnitShape(marker, hero, unitCell, offset.scale, renderState);
   drawUltimateChargeBar(marker, hero, unitCell, offset.scale, renderState);
   target.addChild(marker);
