@@ -12,15 +12,34 @@ export type UpdateActiveEnemiesOptions = {
   floatText: (refs: GameRefs, value: string, x: number, y: number, color: number) => void;
 };
 
+function updateControlledEnemyPosition(enemy: GameRefs["activeEnemies"][number], now: number) {
+  if (enemy.controlUntil && enemy.controlUntil > now && enemy.controlX !== undefined && enemy.controlY !== undefined) {
+    enemy.x = enemy.controlX;
+    enemy.y = enemy.controlY;
+    updateEnemyViewPosition(enemy.view, enemy.x, enemy.y, enemy.progress);
+    return true;
+  }
+
+  if (enemy.sleepUntil && enemy.sleepUntil > now) {
+    updateEnemyViewPosition(enemy.view, enemy.x, enemy.y, enemy.progress);
+    return true;
+  }
+
+  return false;
+}
+
 export function updateActiveEnemies(
   refs: GameRefs,
   deltaSeconds: number,
   options: UpdateActiveEnemiesOptions,
 ) {
   const layout = createGameLayout(refs.app.renderer.width, refs.app.renderer.height);
+  const now = Date.now();
 
   for (const enemy of refs.activeEnemies) {
     if (!enemy.alive) continue;
+
+    if (updateControlledEnemyPosition(enemy, now)) continue;
 
     enemy.progress += (deltaSeconds * enemy.speed) / WAVE_COMBAT_SECONDS;
 
