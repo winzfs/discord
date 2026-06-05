@@ -26,7 +26,7 @@ export const skills: SkillDefinition[] = [
   { id: "cassidy-deadeye", displayName: "황야의 무법자", type: "ultimate", assetKey: "skill.placeholder", tags: ["cassidy", "boss-killer", "execute"] },
 
   { id: "genji-shuriken", displayName: "수리검", type: "attack", assetKey: "skill.placeholder", tags: ["genji", "multi-shot", "fast"] },
-  { id: "genji-deflect", displayName: "튕겨내기", type: "attack", assetKey: "skill.placeholder", tags: ["genji", "reflect", "splash"] },
+  { id: "genji-swift-strike", displayName: "질풍참", type: "attack", assetKey: "skill.placeholder", tags: ["genji", "dash", "low-hp-target"] },
   { id: "genji-dragonblade", displayName: "용검", type: "ultimate", assetKey: "skill.placeholder", tags: ["genji", "chain-kill", "execute"] },
 
   { id: "ana-biotic-rifle", displayName: "생체 소총", type: "support", assetKey: "skill.placeholder", tags: ["ana", "vulnerable", "single-target"] },
