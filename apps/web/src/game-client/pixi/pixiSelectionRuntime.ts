@@ -1,5 +1,6 @@
 import type { GameRefs } from "./pixiGameTypes";
 import { clearPixiUnitInfoView, drawPixiUnitInfoView } from "./pixiUnitInfoView";
+import { clearPixiUnitRangePreview, drawPixiUnitRangePreview } from "./pixiUnitRangeView";
 
 export type PixiSelectionRuntimeOptions = {
   clearMenu: (refs: GameRefs) => void;
@@ -8,11 +9,13 @@ export type PixiSelectionRuntimeOptions = {
 export function clearUnitSelection(refs: GameRefs) {
   refs.selectedCellIndex = null;
   clearPixiUnitInfoView(refs.info);
+  clearPixiUnitRangePreview(refs);
 }
 
 export function drawSelectedUnitInfo(refs: GameRefs) {
   if (refs.selectedCellIndex === null) {
     clearPixiUnitInfoView(refs.info);
+    clearPixiUnitRangePreview(refs);
     return;
   }
 
@@ -24,6 +27,7 @@ export function drawSelectedUnitInfo(refs: GameRefs) {
     return;
   }
 
+  drawPixiUnitRangePreview(refs, refs.selectedCellIndex, hero);
   drawPixiUnitInfoView(refs.info, {
     hero,
     stackCount: cell.units.length,
