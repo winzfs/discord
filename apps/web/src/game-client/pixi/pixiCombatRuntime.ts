@@ -30,13 +30,14 @@ export type PixiCombatRuntimeOptions = {
   drawBoard: (refs: GameRefs, layout: ReturnType<typeof createGameLayout>) => void;
 };
 
-const SPRITE_ATTACK_HERO_IDS = new Set(["tracer", "kiriko", "dva", "zarya", "cassidy"]);
+const SPRITE_ATTACK_HERO_IDS = new Set(["tracer", "kiriko", "dva", "zarya", "cassidy", "winston"]);
 const ZARYA_MAX_BEAM_CHARGE = 6;
 const ZARYA_BEAM_CHAIN_WINDOW_MS = 1200;
 
 function getHeroSpriteAttackDuration(heroId: string) {
   if (heroId === "cassidy") return 520;
   if (heroId === "zarya") return 620;
+  if (heroId === "winston") return 420;
   return 260;
 }
 
