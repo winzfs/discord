@@ -1,9 +1,19 @@
 import { updateEnemyViewPosition } from "./pixiEnemyView";
-import { Graphics } from "pixi.js";
 import { getAllBoardHeroes, getHeroById } from "@discord-random-defense/game";
 import type { BoardHero } from "@discord-random-defense/game";
 import type { ActiveEnemy, GameRefs } from "./pixiGameTypes";
 import { colors } from "./gameTheme";
+import {
+  spawnAnaNanoBoostFx,
+  spawnCassidyDeadeyeFx,
+  spawnDvaSelfDestructFx,
+  spawnGenjiDragonbladeFx,
+  spawnIllariCaptiveSunFx,
+  spawnKirikoKitsuneRushFx,
+  spawnTracerPulseBombFx,
+  spawnWinstonPrimalRageFx,
+  spawnZaryaGravitonFx,
+} from "./pixiUltimateFxRuntime";
 
 export const MYTHIC_ULTIMATE_MAX_CHARGE = 100;
 const MYTHIC_ULTIMATE_TIME_CHARGE_PER_SECOND = 2.8;
@@ -80,29 +90,15 @@ export function chargeMythicUltimatesOverTime(refs: GameRefs, deltaSeconds: numb
 
 export function getAttackIntervalMultiplier(refs: GameRefs) {
   const now = Date.now();
-  const multiplier = refs.kitsuneRushUntil && refs.kitsuneRushUntil > now ? 0.5 : 1;
-  return multiplier;
-}
-
-function showUltimatePulse(refs: GameRefs, options: PixiUltimateRuntimeOptions, x: number, y: number, color: number, radius = 92, duration = 520) {
-  const pulse = new Graphics();
-  refs.effects.addChild(pulse);
-
-  options.addAnimation(refs, {
-    duration,
-    update: (progress) => {
-      pulse.clear();
-      pulse.circle(x, y, radius * (0.35 + progress * 0.8));
-      pulse.stroke({ color, width: 7 * (1 - progress), alpha: 0.72 * (1 - progress) });
-      pulse.circle(x, y, radius * (0.18 + progress * 0.48));
-      pulse.fill({ color, alpha: 0.16 * (1 - progress) });
-    },
-    done: () => pulse.destroy(),
-  });
+  return refs.kitsuneRushUntil && refs.kitsuneRushUntil > now ? 0.5 : 1;
 }
 
 function liveEnemies(refs: GameRefs) {
   return refs.activeEnemies.filter((enemy) => enemy.alive);
+}
+
+function enemiesInRadius(refs: GameRefs, x: number, y: number, radius: number) {
+  return liveEnemies(refs).filter((enemy) => Math.hypot(enemy.x - x, enemy.y - y) <= radius);
 }
 
 function damageEnemiesInRadius(
@@ -113,21 +109,17 @@ function damageEnemiesInRadius(
   radius: number,
   damage: number,
 ) {
-  liveEnemies(refs).forEach((enemy) => {
-    if (Math.hypot(enemy.x - x, enemy.y - y) <= radius) {
-      options.damageEnemy(refs, enemy, damage);
-    }
-  });
-}
-
-function enemiesInRadius(refs: GameRefs, x: number, y: number, radius: number) {
-  return liveEnemies(refs).filter((enemy) => Math.hypot(enemy.x - x, enemy.y - y) <= radius);
+  enemiesInRadius(refs, x, y, radius).forEach((enemy) => options.damageEnemy(refs, enemy, damage));
 }
 
 function slowEnemiesInRadius(refs: GameRefs, x: number, y: number, radius: number, multiplier: number) {
   enemiesInRadius(refs, x, y, radius).forEach((enemy) => {
     enemy.speed = Math.max(0.16, enemy.speed * multiplier);
   });
+}
+
+function fxOptions(options: PixiUltimateRuntimeOptions) {
+  return { addAnimation: options.addAnimation };
 }
 
 function triggerDvaSelfDestruct(
@@ -138,9 +130,9 @@ function triggerDvaSelfDestruct(
   baseDamage: number,
 ) {
   const radius = 210;
-  showUltimatePulse(refs, options, from.x, from.y, 0xff78d8, radius, 680);
+  spawnDvaSelfDestructFx(refs, fxOptions(options), from, radius);
   damageEnemiesInRadius(refs, options, from.x, from.y, radius, Math.round(baseDamage * 4.5));
-  options.floatText(refs, `${label} 자폭! 공격력 450%`, from.x, from.y - 46, 0xff78d8);
+  options.floatText(refs, `${label} 자폭! 공격력 450%`, from.x, from.y - 54, 0xff78d8);
 }
 
 function triggerZaryaGraviton(
@@ -155,18 +147,17 @@ function triggerZaryaGraviton(
   const duration = 3000;
   const until = Date.now() + duration;
   const originalSpeeds = new Map<number, number>();
-  const vortex = new Graphics();
 
-  refs.effects.addChild(vortex);
-  options.floatText(refs, `${label} 중력자탄! 흡입/속박`, center.x, center.y - 48, 0xff7de9);
+  options.floatText(refs, `${label} 중력자탄! 흡입/속박`, center.x, center.y - 54, 0xff7de9);
 
-  options.addAnimation(refs, {
+  spawnZaryaGravitonFx(
+    refs,
+    fxOptions(options),
+    center,
+    radius,
+    pullRadius,
     duration,
-    update: (progress) => {
-      vortex.clear();
-      vortex.circle(center.x, center.y, radius * (0.9 + Math.sin(progress * Math.PI * 12) * 0.05));
-      vortex.stroke({ color: 0xff7de9, width: 7, alpha: 0.62 });
-
+    () => {
       enemiesInRadius(refs, center.x, center.y, pullRadius).forEach((enemy) => {
         if (!originalSpeeds.has(enemy.id)) originalSpeeds.set(enemy.id, enemy.speed);
 
@@ -188,8 +179,7 @@ function triggerZaryaGraviton(
         updateEnemyViewPosition(enemy.view, enemy.x, enemy.y, enemy.progress);
       });
     },
-    done: () => {
-      vortex.destroy();
+    () => {
       originalSpeeds.forEach((speed, enemyId) => {
         const enemy = refs.activeEnemies.find((candidate) => candidate.id === enemyId && candidate.alive);
         if (enemy) {
@@ -201,7 +191,7 @@ function triggerZaryaGraviton(
       });
       damageEnemiesInRadius(refs, options, center.x, center.y, radius + 8, Math.round(baseDamage * 2.4));
     },
-  });
+  );
 }
 
 function triggerTracerPulseBomb(
@@ -211,36 +201,16 @@ function triggerTracerPulseBomb(
   target: ActiveEnemy,
   baseDamage: number,
 ) {
-  const bomb = new Graphics();
   const explosionRadius = 105;
-  refs.effects.addChild(bomb);
   options.floatText(refs, `${label} 펄스 폭탄 부착!`, target.x, target.y - 44, 0xffc857);
-
-  options.addAnimation(refs, {
-    duration: 500,
-    update: (progress) => {
-      bomb.clear();
-      if (!target.alive) return;
-      const pulse = 0.8 + Math.sin(progress * Math.PI * 12) * 0.18;
-      bomb.circle(target.x, target.y - 10, 9 * pulse);
-      bomb.fill({ color: 0xffc857, alpha: 0.95 });
-      bomb.circle(target.x, target.y - 10, 16 * pulse);
-      bomb.stroke({ color: 0xffffff, width: 2, alpha: 0.75 });
-    },
-    done: () => {
-      const x = target.x;
-      const y = target.y;
-      bomb.destroy();
-      showUltimatePulse(refs, options, x, y, 0xffc857, explosionRadius, 420);
-      damageEnemiesInRadius(refs, options, x, y, explosionRadius, Math.round(baseDamage * 5.2));
-      options.floatText(refs, `펄스 폭발! 공격력 520%`, x, y - 42, 0xffc857);
-    },
+  spawnTracerPulseBombFx(refs, fxOptions(options), target, explosionRadius, (x, y) => {
+    damageEnemiesInRadius(refs, options, x, y, explosionRadius, Math.round(baseDamage * 5.2));
+    options.floatText(refs, `펄스 폭발! 공격력 520%`, x, y - 44, 0xffc857);
   });
 }
 
 function getCassidyDeadeyeLockRatio(baseDamage: number) {
-  const attackFactor = Math.max(0.18, Math.min(0.82, baseDamage / 520));
-  return attackFactor;
+  return Math.max(0.18, Math.min(0.82, baseDamage / 520));
 }
 
 function triggerCassidyDeadeye(
@@ -252,40 +222,91 @@ function triggerCassidyDeadeye(
 ) {
   const targets = liveEnemies(refs);
   const duration = 3000;
-  const lock = new Graphics();
-  refs.effects.addChild(lock);
-  options.floatText(refs, `${label} 황야의 무법자! 느린 락온`, from.x, from.y - 48, 0xffd166);
+  options.floatText(refs, `${label} 황야의 무법자!`, from.x, from.y - 54, 0xffd166);
 
-  options.addAnimation(refs, {
+  spawnCassidyDeadeyeFx(
+    refs,
+    fxOptions(options),
+    from,
+    targets,
     duration,
-    update: (progress) => {
-      lock.clear();
-      const lockRatio = Math.min(1, progress * getCassidyDeadeyeLockRatio(baseDamage));
-      targets.forEach((enemy) => {
-        if (!enemy.alive) return;
-        lock.moveTo(from.x, from.y);
-        lock.lineTo(enemy.x, enemy.y);
-        lock.stroke({ color: 0xffd166, width: 2, alpha: 0.12 + lockRatio * 0.36 });
-        lock.circle(enemy.x, enemy.y, 11 + lockRatio * 15);
-        lock.stroke({ color: lockRatio >= 1 ? 0xfff06a : 0xffd166, width: 3, alpha: 0.28 + lockRatio * 0.44 });
-      });
-    },
-    done: () => {
-      lock.destroy();
+    (progress) => Math.min(1, progress * getCassidyDeadeyeLockRatio(baseDamage)),
+    () => {
       const lockRatio = Math.min(1, getCassidyDeadeyeLockRatio(baseDamage));
       const damage = lockRatio >= 1 ? Number.POSITIVE_INFINITY : Math.round(baseDamage * 4 * lockRatio);
       targets.forEach((enemy) => {
         if (!enemy.alive) return;
         options.damageEnemy(refs, enemy, Number.isFinite(damage) ? damage : enemy.hp);
       });
-      options.floatText(
-        refs,
-        lockRatio >= 1 ? "전원 락온 처치!" : `락온 ${Math.round(lockRatio * 100)}% 피해`,
-        from.x,
-        from.y - 68,
-        0xffd166,
-      );
+      options.floatText(refs, lockRatio >= 1 ? "전원 락온 처치!" : `락온 ${Math.round(lockRatio * 100)}% 피해`, from.x, from.y - 72, 0xffd166);
     },
+  );
+}
+
+function triggerWinstonPrimalRage(
+  refs: GameRefs,
+  options: PixiUltimateRuntimeOptions,
+  label: string,
+  from: { x: number; y: number },
+  baseDamage: number,
+) {
+  spawnWinstonPrimalRageFx(refs, fxOptions(options), from, 170);
+  slowEnemiesInRadius(refs, from.x, from.y, 170, 0.52);
+  damageEnemiesInRadius(refs, options, from.x, from.y, 170, Math.round(baseDamage * 2.4));
+  options.floatText(refs, `${label} 원시의 분노! 공격력 240%`, from.x, from.y - 48, 0x87b7ff);
+}
+
+function triggerGenjiDragonblade(
+  refs: GameRefs,
+  options: PixiUltimateRuntimeOptions,
+  label: string,
+  from: { x: number; y: number },
+  baseDamage: number,
+) {
+  const targets = liveEnemies(refs).sort((a, b) => b.progress - a.progress).slice(0, 5);
+  options.floatText(refs, `${label} 용검!`, from.x, from.y - 48, 0x7dff7a);
+  spawnGenjiDragonbladeFx(refs, fxOptions(options), from, targets, () => {
+    targets.forEach((enemy) => {
+      if (enemy.alive) options.damageEnemy(refs, enemy, Math.round(baseDamage * 2.1));
+    });
+    options.floatText(refs, `용검 베기 공격력 210%`, from.x, from.y - 68, 0x7dff7a);
+  });
+}
+
+function triggerAnaNanoBoost(
+  refs: GameRefs,
+  options: PixiUltimateRuntimeOptions,
+  label: string,
+  from: { x: number; y: number },
+) {
+  refs.progressBonuses.attackMultiplier *= 1.12;
+  spawnAnaNanoBoostFx(refs, fxOptions(options), from);
+  options.floatText(refs, `${label} 나노 강화제! 공격력 +12%`, from.x, from.y - 48, 0x7dffb2);
+}
+
+function triggerKirikoKitsuneRush(
+  refs: GameRefs,
+  options: PixiUltimateRuntimeOptions,
+  label: string,
+  from: { x: number; y: number },
+) {
+  refs.kitsuneRushUntil = Date.now() + 5000;
+  spawnKirikoKitsuneRushFx(refs, fxOptions(options), from);
+  options.floatText(refs, `${label} 여우길! 공격속도 200%`, from.x, from.y - 48, 0xff8ad8);
+}
+
+function triggerIllariCaptiveSun(
+  refs: GameRefs,
+  options: PixiUltimateRuntimeOptions,
+  label: string,
+  center: { x: number; y: number },
+  baseDamage: number,
+) {
+  const radius = 150;
+  options.floatText(refs, `${label} 태양 작렬!`, center.x, center.y - 48, 0xfff06a);
+  spawnIllariCaptiveSunFx(refs, fxOptions(options), center, radius, () => {
+    damageEnemiesInRadius(refs, options, center.x, center.y, radius, Math.round(baseDamage * 3));
+    options.floatText(refs, `태양 폭발 공격력 300%`, center.x, center.y - 68, 0xfff06a);
   });
 }
 
@@ -308,56 +329,36 @@ export function tryTriggerMythicUltimate(
     triggerDvaSelfDestruct(refs, options, label, from, baseDamage);
     return true;
   }
-
   if (hero.heroId === "zarya") {
     triggerZaryaGraviton(refs, options, label, center, baseDamage);
     return true;
   }
-
   if (hero.heroId === "tracer") {
     triggerTracerPulseBomb(refs, options, label, target, baseDamage);
     return true;
   }
-
   if (hero.heroId === "cassidy") {
     triggerCassidyDeadeye(refs, options, label, from, baseDamage);
     return true;
   }
-
   if (hero.heroId === "winston") {
-    showUltimatePulse(refs, options, from.x, from.y, 0x87b7ff, 130);
-    slowEnemiesInRadius(refs, from.x, from.y, 170, 0.52);
-    damageEnemiesInRadius(refs, options, from.x, from.y, 170, Math.round(baseDamage * 2.4));
-    options.floatText(refs, `${label} 원시의 분노! 공격력 240%`, from.x, from.y - 42, 0x87b7ff);
+    triggerWinstonPrimalRage(refs, options, label, from, baseDamage);
     return true;
   }
-
   if (hero.heroId === "genji") {
-    const targets = liveEnemies(refs).sort((a, b) => b.progress - a.progress).slice(0, 5);
-    targets.forEach((enemy) => options.damageEnemy(refs, enemy, Math.round(baseDamage * 2.1)));
-    showUltimatePulse(refs, options, from.x, from.y, 0x7dff7a, 122);
-    options.floatText(refs, `${label} 용검! 공격력 210%`, from.x, from.y - 42, 0x7dff7a);
+    triggerGenjiDragonblade(refs, options, label, from, baseDamage);
     return true;
   }
-
   if (hero.heroId === "ana") {
-    refs.progressBonuses.attackMultiplier *= 1.12;
-    showUltimatePulse(refs, options, from.x, from.y, 0x7dffb2, 126);
-    options.floatText(refs, `${label} 나노 강화제! 공격력 +12%`, from.x, from.y - 42, 0x7dffb2);
+    triggerAnaNanoBoost(refs, options, label, from);
     return true;
   }
-
   if (hero.heroId === "kiriko") {
-    refs.kitsuneRushUntil = Date.now() + 5000;
-    showUltimatePulse(refs, options, from.x, from.y, 0xff8ad8, 136);
-    options.floatText(refs, `${label} 여우길! 공격속도 200%`, from.x, from.y - 42, 0xff8ad8);
+    triggerKirikoKitsuneRush(refs, options, label, from);
     return true;
   }
-
   if (hero.heroId === "illari") {
-    showUltimatePulse(refs, options, center.x, center.y, 0xfff06a, 140);
-    damageEnemiesInRadius(refs, options, center.x, center.y, 150, Math.round(baseDamage * 3));
-    options.floatText(refs, `${label} 태양 작렬! 공격력 300%`, center.x, center.y - 42, 0xfff06a);
+    triggerIllariCaptiveSun(refs, options, label, center, baseDamage);
     return true;
   }
 
