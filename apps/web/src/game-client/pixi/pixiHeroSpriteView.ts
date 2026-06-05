@@ -20,7 +20,7 @@ const SPRITE_HERO_IDS = new Set(["tracer", "kiriko", "dva", "zarya"]);
 
 const HERO_SPRITE_SCALE: Record<string, number> = {
   kiriko: 1.17,
-  dva: 1.2,
+  dva: 1.3,
   zarya: 1.2,
 };
 
