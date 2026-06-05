@@ -8,6 +8,7 @@ import { MAX_ATTACKERS_PER_TICK } from "./pixiGameTypes";
 import { updateEnemyViewHp } from "./pixiEnemyView";
 import { destroyActiveEnemy } from "./pixiEnemyRuntime";
 import { getProgressHeroPower, applyEconomyRewardBonus } from "./pixiProgressBonuses";
+import { getPixiUnitAttackRange, isPointInPixiUnitRange } from "./pixiUnitRange";
 
 export type PixiCombatRuntimeOptions = {
   getCellCenter: (refs: GameRefs, cellIndex: number) => { x: number; y: number; cell: number };
@@ -31,8 +32,10 @@ function roleAccent(role: HeroRole | undefined) {
   return 0xffd166;
 }
 
-function pickAttackTarget(refs: GameRefs, role: HeroRole | undefined): ActiveEnemy | null {
-  const liveEnemies = refs.activeEnemies.filter((enemy) => enemy.alive && enemy.progress >= 0);
+function pickAttackTarget(refs: GameRefs, role: HeroRole | undefined, from: { x: number; y: number }, range: number): ActiveEnemy | null {
+  const liveEnemies = refs.activeEnemies.filter(
+    (enemy) => enemy.alive && enemy.progress >= 0 && isPointInPixiUnitRange(from, enemy, range),
+  );
   if (liveEnemies.length === 0) return null;
 
   if (role === "damage") {
@@ -129,11 +132,12 @@ export function spawnAttackEffects(refs: GameRefs, options: PixiCombatRuntimeOpt
   heroes.slice(0, Math.min(heroes.length, MAX_ATTACKERS_PER_TICK)).forEach((hero, index) => {
     const definition = getHeroById(hero.heroId);
     const role = definition?.role ?? "damage";
-    const target = pickAttackTarget(refs, role);
-    if (!target) return;
-
     const fromIndex = hero.position.row * refs.state.boardSize.columns + hero.position.column;
     const from = options.getCellCenter(refs, fromIndex);
+    const range = getPixiUnitAttackRange(hero);
+    const target = pickAttackTarget(refs, role, from, range);
+    if (!target) return;
+
     const damage = getHeroDamage(refs, hero);
 
     const projectile = new Graphics();
