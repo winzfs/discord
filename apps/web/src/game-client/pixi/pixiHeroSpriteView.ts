@@ -5,6 +5,7 @@ import type { HeroSpriteAttackState } from "./pixiGameTypes";
 const HERO_TEXTURE_PATHS: Record<string, string> = {
   tracer: "/assets/heroes/tracer.png?v=20260605-tracer1",
   kiriko: "/assets/heroes/kiriko.png?v=20260605-kiriko1",
+  dva: "/assets/heroes/d.va.png?v=20260605-dva1",
 };
 
 const HERO_FRAME_ROWS = {
@@ -14,7 +15,7 @@ const HERO_FRAME_ROWS = {
   attackRight: 3,
 } as const;
 
-const SPRITE_HERO_IDS = new Set(["tracer", "kiriko"]);
+const SPRITE_HERO_IDS = new Set(["tracer", "kiriko", "dva"]);
 
 const HERO_SPRITE_SCALE: Record<string, number> = {
   kiriko: 1.17,
