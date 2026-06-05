@@ -11,6 +11,7 @@ import { getProgressHeroPower, applyEconomyRewardBonus } from "./pixiProgressBon
 import { getPixiUnitAttackRange, isPointInPixiUnitRange } from "./pixiUnitRange";
 import { chargeMythicUltimateFromAttack, tryTriggerMythicUltimate } from "./pixiUltimateRuntime";
 import { applyMythicHeroSkillEffects } from "./pixiSkillRuntime";
+import { spawnDistinctHeroAttackFx } from "./pixiHeroAttackFxRuntime";
 import { pickWinstonBeamTargets, spawnWinstonElectricBeam } from "./pixiWinstonBeamRuntime";
 
 export type PixiCombatRuntimeOptions = {
@@ -324,6 +325,23 @@ export function spawnAttackEffects(refs: GameRefs, options: PixiCombatRuntimeOpt
           options.floatText(refs, `${beamDamage}`, target.x, target.y - 18, charge >= 4 ? 0xff7de9 : colors.yellow);
         }
       });
+      return;
+    }
+
+    if (
+      spawnDistinctHeroAttackFx(
+        refs,
+        {
+          addAnimation: options.addAnimation,
+          applyDamage: (enemy, value) => damageEnemy(refs, enemy, value, options),
+          floatText: (value, x, y, color) => options.floatText(refs, value, x, y, color),
+        },
+        hero.heroId,
+        from,
+        target,
+        damage,
+      )
+    ) {
       return;
     }
 
