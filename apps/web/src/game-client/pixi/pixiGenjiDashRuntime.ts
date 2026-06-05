@@ -1,6 +1,7 @@
 import { Graphics } from "pixi.js";
 import type { BoardHero } from "@discord-random-defense/game";
 import type { ActiveEnemy, GameRefs } from "./pixiGameTypes";
+import { acquireFxGraphics, releaseFxGraphics } from "./pixiFxPoolRuntime";
 
 type Point = { x: number; y: number };
 
@@ -119,13 +120,11 @@ function spawnDashAnimation(
   damage: number,
   order: number,
 ) {
-  const fx = new Graphics();
+  const fx = acquireFxGraphics(refs);
   const targetAtDash = { x: target.x, y: target.y };
   const delay = order * GENJI_DASH_STAGGER;
   const totalDuration = delay + GENJI_DASH_DURATION;
   let hitApplied = false;
-
-  refs.effects.addChild(fx);
 
   options.addAnimation(refs, {
     duration: totalDuration,
@@ -155,7 +154,7 @@ function spawnDashAnimation(
       options.drawBoard(refs);
     },
     done: () => {
-      fx.destroy();
+      releaseFxGraphics(refs, fx);
       options.drawBoard(refs);
     },
   });
@@ -169,9 +168,8 @@ function spawnReturnAnimation(
   from: Point,
   delay: number,
 ) {
-  const fx = new Graphics();
+  const fx = acquireFxGraphics(refs);
   const totalDuration = delay + GENJI_RETURN_DURATION;
-  refs.effects.addChild(fx);
 
   options.addAnimation(refs, {
     duration: totalDuration,
@@ -191,7 +189,7 @@ function spawnReturnAnimation(
       options.drawBoard(refs);
     },
     done: () => {
-      fx.destroy();
+      releaseFxGraphics(refs, fx);
       delete refs.heroSpriteOffsets[hero.instanceId];
       options.drawBoard(refs);
     },
