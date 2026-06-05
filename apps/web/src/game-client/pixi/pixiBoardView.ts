@@ -149,6 +149,15 @@ function getStackOffset(stackCount: number, index: number, cell: number) {
   return { x: cell * 0.17, y: cell * 0.13, scale: 0.74 };
 }
 
+function drawGradeBadge(target: Container, x: number, y: number, cellWidth: number, cellHeight: number, hero: BoardHero) {
+  const radius = Math.max(5, Math.min(cellWidth, cellHeight) * 0.085);
+  const badge = new Graphics();
+  badge.circle(x + cellWidth / 2, y + cellHeight * 0.82, radius);
+  badge.fill({ color: gradeColor(hero.grade), alpha: 0.96 });
+  badge.stroke({ color: colors.black, width: Math.max(1.5, radius * 0.28), alpha: 0.72 });
+  target.addChild(badge);
+}
+
 function drawUnitMarker(target: Container, x: number, y: number, cellWidth: number, cellHeight: number, hero: BoardHero, stackCount: number, stackIndex: number) {
   const unitCell = Math.min(cellWidth, cellHeight);
   const offset = getStackOffset(stackCount, stackIndex, unitCell);
@@ -157,6 +166,10 @@ function drawUnitMarker(target: Container, x: number, y: number, cellWidth: numb
   marker.y = y + cellHeight * 0.48 + offset.y;
   drawUnitShape(marker, hero, unitCell, offset.scale);
   target.addChild(marker);
+
+  if (stackIndex === stackCount - 1) {
+    drawGradeBadge(target, x, y, cellWidth, cellHeight, hero);
+  }
 }
 
 export function drawBoardCells(target: Container, board: Array<{ units: BoardHero[] }>, metrics: BoardMetrics, canMergeCell: (cellIndex: number) => boolean, handlers: BoardPointerHandlers) {
@@ -168,14 +181,15 @@ export function drawBoardCells(target: Container, board: Array<{ units: BoardHer
     const x = metrics.startX + col * (metrics.cellWidth + metrics.gap);
     const y = metrics.startY + row * (metrics.cellHeight + metrics.gap);
     const units = boardCell.units;
-    const firstUnit = units[0];
     const canMerge = canMergeCell(index);
 
-    const cell = new Graphics();
-    cell.roundRect(x, y, metrics.cellWidth, metrics.cellHeight, 12);
-    cell.fill({ color: units.length > 0 ? 0x6ac144 : 0x539832, alpha: units.length > 0 ? 0.96 : 0.45 });
-    cell.stroke({ color: canMerge ? colors.yellow : firstUnit ? gradeColor(firstUnit.grade) : 0x3e7629, width: units.length >= 3 ? 4 : units.length > 0 ? 3 : 2, alpha: 0.9 });
-    target.addChild(cell);
+    if (canMerge) {
+      const mergeHint = new Graphics();
+      mergeHint.circle(x + metrics.cellWidth / 2, y + metrics.cellHeight * 0.84, Math.max(6, metrics.cell * 0.1));
+      mergeHint.fill({ color: colors.yellow, alpha: 0.86 });
+      mergeHint.stroke({ color: colors.black, width: 2, alpha: 0.55 });
+      target.addChild(mergeHint);
+    }
 
     units.forEach((unit, unitIndex) => drawUnitMarker(target, x, y, metrics.cellWidth, metrics.cellHeight, unit, units.length, unitIndex));
 
