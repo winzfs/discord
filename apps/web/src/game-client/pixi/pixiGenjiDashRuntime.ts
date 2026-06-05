@@ -22,6 +22,7 @@ const GENJI_DASH_MAX_TARGETS = 3;
 const GENJI_DASH_DURATION = 260;
 const GENJI_DASH_STAGGER = 1000;
 const GENJI_RETURN_DURATION = 220;
+const GENJI_OFFSET_HOLD_MS = GENJI_DASH_STAGGER + GENJI_RETURN_DURATION + 120;
 const GENJI_GREEN = 0x7dff7a;
 
 function clamp01(value: number) {
@@ -72,14 +73,14 @@ function setDashOffset(refs: GameRefs, hero: BoardHero, origin: Point, point: Po
   refs.heroSpriteOffsets[hero.instanceId] = {
     x: point.x - origin.x,
     y: point.y - origin.y,
-    until: Date.now() + 90,
+    until: Date.now() + GENJI_OFFSET_HOLD_MS,
   };
 }
 
 function setDashDirection(refs: GameRefs, hero: BoardHero, from: Point, to: Point) {
   refs.heroSpriteAttacks[hero.instanceId] = {
     direction: to.x < from.x ? "left" : "right",
-    until: Date.now() + 120,
+    until: Date.now() + GENJI_DASH_DURATION,
   };
 }
 
