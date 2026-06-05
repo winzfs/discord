@@ -1,4 +1,5 @@
 import { Text } from "pixi.js";
+import type { TextStyleOptions } from "pixi.js";
 import { colors } from "./gameTheme";
 
 type GameTextOptions = {
@@ -14,7 +15,7 @@ export function makeGameText(value: string, options: GameTextOptions = {}) {
   const fill = options.fill ?? colors.white;
   const stroke = options.stroke ?? colors.black;
   const strokeWidth = options.strokeWidth ?? Math.max(2, Math.round(size * 0.16));
-  const style = {
+  const style: TextStyleOptions = {
     fill,
     fontFamily: "Arial, Pretendard, system-ui, sans-serif",
     fontSize: size,
