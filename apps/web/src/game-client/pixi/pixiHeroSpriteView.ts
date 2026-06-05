@@ -17,7 +17,7 @@ const HERO_FRAME_ROWS = {
 const SPRITE_HERO_IDS = new Set(["tracer", "kiriko"]);
 
 const HERO_SPRITE_SCALE: Record<string, number> = {
-  kiriko: 1.12,
+  kiriko: 1.17,
 };
 
 let textureCache = new Map<string, Texture>();
