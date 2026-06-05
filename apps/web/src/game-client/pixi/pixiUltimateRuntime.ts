@@ -7,13 +7,13 @@ import {
   spawnAnaNanoBoostFx,
   spawnCassidyDeadeyeFx,
   spawnDvaSelfDestructFx,
-  spawnGenjiDragonbladeFx,
   spawnIllariCaptiveSunFx,
   spawnKirikoKitsuneRushFx,
   spawnTracerPulseBombFx,
   spawnWinstonPrimalRageFx,
   spawnZaryaGravitonFx,
 } from "./pixiUltimateFxRuntime";
+import { spawnGenjiDragonbladeFx } from "./pixiGenjiDragonbladeFxRuntime";
 
 export const MYTHIC_ULTIMATE_MAX_CHARGE = 100;
 const MYTHIC_ULTIMATE_TIME_CHARGE_PER_SECOND = 2.8;
