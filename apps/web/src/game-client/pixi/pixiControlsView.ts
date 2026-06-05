@@ -34,6 +34,7 @@ export type PixiButtonView = {
 export type PixiControlsView = {
   root: Container;
   dock: Graphics;
+  waveBacking: Graphics;
   summon: PixiButtonView;
   mythic: PixiButtonView;
   gamble: PixiButtonView;
@@ -57,6 +58,15 @@ function makeText(value: string, size = 18, fill: number = colors.white) {
 
 function redrawPanel(graphics: Graphics, width: number, height: number, fill: number, disabled: boolean, radius = 14) {
   paintControlButton(graphics, width, height, fill, disabled, radius);
+}
+
+function drawWaveBacking(graphics: Graphics, x: number, y: number, width: number, height: number) {
+  graphics.clear();
+  graphics.roundRect(x + 4, y + 7, width, height, 18);
+  graphics.fill({ color: 0x000000, alpha: 0.24 });
+  graphics.roundRect(x, y, width, height, 18);
+  graphics.fill({ color: 0x2d211d, alpha: 0.74 });
+  graphics.stroke({ color: 0x1a1110, width: 4, alpha: 0.86 });
 }
 
 function createButton(width: number, height: number, color: number, onTap: () => void): PixiButtonView {
@@ -112,6 +122,7 @@ export function createPixiControlsView(parent: Container, handlers: {
   const view: PixiControlsView = {
     root: new Container(),
     dock: new Graphics(),
+    waveBacking: new Graphics(),
     summon: createButton(10, 78, colors.yellow, handlers.onSummon),
     mythic: createButton(92, 62, colors.orange, handlers.onMythic),
     gamble: createButton(92, 62, colors.blue, handlers.onGamble),
@@ -119,7 +130,7 @@ export function createPixiControlsView(parent: Container, handlers: {
     wave: createButton(112, 48, colors.orange, handlers.onWave),
     lastKey: "",
   };
-  view.root.addChild(view.dock, view.summon.root, view.mythic.root, view.gamble.root, view.upgrade.root, view.wave.root);
+  view.root.addChild(view.dock, view.waveBacking, view.summon.root, view.mythic.root, view.gamble.root, view.upgrade.root, view.wave.root);
   parent.addChild(view.root);
   return view;
 }
@@ -179,6 +190,7 @@ export function updatePixiControlsView(view: PixiControlsView, layout: GameLayou
   view.wave.height = 58;
   view.wave.root.x = layout.width - 148;
   view.wave.root.y = layout.mapTop + 96;
+  drawWaveBacking(view.waveBacking, view.wave.root.x - 8, view.wave.root.y - 8, view.wave.width + 16, view.wave.height + 16);
   updateButton(view.wave, "웨이브", waveLabel, snapshot.waveDisabled);
 }
 
