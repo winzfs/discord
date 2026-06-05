@@ -91,6 +91,8 @@ export function updatePixiTestControlsView(
   const buttonWidth = 64;
   const buttonHeight = 28;
   const gap = 8;
+  const hpButtonWidth = 36;
+  const hpButtonGap = 4;
   const panelHeight = 148;
 
   view.root.x = 12;
@@ -127,9 +129,9 @@ export function updatePixiTestControlsView(
 
   pixiTestEnemyHpMultipliers.forEach((multiplier, index) => {
     const selected = refs.testEnemyHpMultiplier === multiplier;
-    const x = 120 + index * 46;
+    const x = 102 + index * (hpButtonWidth + hpButtonGap);
     const y = 100;
-    const button = makeButton(`x${multiplier}`, 40, 28, selected ? colors.green : colors.blue, () => {
+    const button = makeButton(`x${multiplier}`, hpButtonWidth, 28, selected ? colors.green : colors.blue, () => {
       setPixiTestEnemyHpMultiplier(refs, multiplier);
       view.lastKey = "";
       options.onChange();
