@@ -31,6 +31,7 @@ export function drawBoard(
     },
     {
       heroSpriteAttacks: refs.heroSpriteAttacks,
+      mythicUltimateCharges: refs.mythicUltimateCharges,
       now: Date.now(),
     },
   );
