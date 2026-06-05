@@ -21,6 +21,7 @@ import {
 import { loadLobbyProgress, saveLobbyProgress } from "../game-lobby/lobbyProgressStorage";
 import "../styles/lobby.css";
 import "../styles/lobby-polish.css";
+import "../styles/lobby-stage-polish.css";
 
 function roleLabel(role: string) {
   if (role === "tank") return "탱커";
