@@ -46,6 +46,10 @@ export type ActiveEnemy = {
   alive: boolean;
   boss: boolean;
   view: EnemyView;
+  controlUntil?: number;
+  controlX?: number;
+  controlY?: number;
+  sleepUntil?: number;
 };
 
 export type WaveSummary = {
