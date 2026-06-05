@@ -1,4 +1,3 @@
-import { Graphics } from "pixi.js";
 import { getAllBoardHeroes, getHeroById } from "@discord-random-defense/game";
 import type { BoardHero, HeroRole } from "@discord-random-defense/game";
 import { colors } from "./gameTheme";
@@ -35,6 +34,17 @@ export type PixiCombatRuntimeOptions = {
 const SPRITE_ATTACK_HERO_IDS = new Set(["tracer", "kiriko", "dva", "zarya", "cassidy", "winston", "genji"]);
 const ZARYA_MAX_BEAM_CHARGE = 6;
 const ZARYA_BEAM_CHAIN_WINDOW_MS = 1200;
+let boardDrawQueued = false;
+
+function requestBoardDraw(refs: GameRefs, options: PixiCombatRuntimeOptions) {
+  if (boardDrawQueued) return;
+  boardDrawQueued = true;
+
+  window.requestAnimationFrame(() => {
+    boardDrawQueued = false;
+    options.drawBoard(refs, createGameLayout(refs.app.renderer.width, refs.app.renderer.height));
+  });
+}
 
 function getHeroSpriteAttackDuration(heroId: string) {
   if (heroId === "cassidy") return 520;
@@ -152,11 +162,10 @@ function triggerHeroSpriteAttack(refs: GameRefs, hero: BoardHero, from: { x: num
     until: Date.now() + duration,
   };
 
-  const layout = createGameLayout(refs.app.renderer.width, refs.app.renderer.height);
-  options.drawBoard(refs, layout);
+  requestBoardDraw(refs, options);
 
   window.setTimeout(() => {
-    options.drawBoard(refs, createGameLayout(refs.app.renderer.width, refs.app.renderer.height));
+    requestBoardDraw(refs, options);
   }, duration + 20);
 }
 
@@ -257,13 +266,12 @@ function tryTriggerUltimateAttack(refs: GameRefs, options: PixiCombatRuntimeOpti
     damage,
   );
 
-  const layout = createGameLayout(refs.app.renderer.width, refs.app.renderer.height);
-  options.drawBoard(refs, layout);
+  requestBoardDraw(refs, options);
   return triggered;
 }
 
 function drawBoardNow(refs: GameRefs, options: PixiCombatRuntimeOptions) {
-  options.drawBoard(refs, createGameLayout(refs.app.renderer.width, refs.app.renderer.height));
+  requestBoardDraw(refs, options);
 }
 
 function applySkillEffects(refs: GameRefs, options: PixiCombatRuntimeOptions, hero: BoardHero, role: HeroRole, target: ActiveEnemy, damage: number, from: { x: number; y: number }) {
