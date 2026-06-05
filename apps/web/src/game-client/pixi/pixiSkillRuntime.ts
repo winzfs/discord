@@ -22,6 +22,7 @@ type Point = { x: number; y: number };
 const ATTACK_SKILL_CHANCE = 0.42;
 const CONTROL_SKILL_CHANCE = 0.3;
 const SUPPORT_SKILL_CHANCE = 0.24;
+const GENJI_SWIFT_STRIKE_CHANCE = 0.22;
 
 function roll(refs: GameRefs, chance: number) {
   return refs.random() < chance;
@@ -159,7 +160,7 @@ function applyGenjiSkills(refs: GameRefs, options: PixiSkillRuntimeOptions, hero
     showSkillText(options, refs, "수리검", target, 0x7dff7a);
   }
 
-  if (roll(refs, ATTACK_SKILL_CHANCE)) {
+  if (roll(refs, GENJI_SWIFT_STRIKE_CHANCE)) {
     spawnGenjiDashStrike(refs, options, hero, from, baseDamage);
   }
 
