@@ -35,6 +35,7 @@ const SPRITE_ATTACK_HERO_IDS = new Set(["tracer", "kiriko", "dva", "zarya", "cas
 const ZARYA_MAX_BEAM_CHARGE = 6;
 const ZARYA_BEAM_CHAIN_WINDOW_MS = 1200;
 let boardDrawQueued = false;
+let hudControlsDrawQueued = false;
 
 function requestBoardDraw(refs: GameRefs, options: PixiCombatRuntimeOptions) {
   if (boardDrawQueued) return;
@@ -43,6 +44,18 @@ function requestBoardDraw(refs: GameRefs, options: PixiCombatRuntimeOptions) {
   window.requestAnimationFrame(() => {
     boardDrawQueued = false;
     options.drawBoard(refs, createGameLayout(refs.app.renderer.width, refs.app.renderer.height));
+  });
+}
+
+function requestHudControlsDraw(refs: GameRefs, options: PixiCombatRuntimeOptions) {
+  if (hudControlsDrawQueued) return;
+  hudControlsDrawQueued = true;
+
+  window.requestAnimationFrame(() => {
+    hudControlsDrawQueued = false;
+    const layout = createGameLayout(refs.app.renderer.width, refs.app.renderer.height);
+    options.drawTopHud(refs, layout);
+    options.drawControls(refs, layout);
   });
 }
 
@@ -127,10 +140,7 @@ function damageEnemy(
   options.floatText(refs, `+${reward}`, enemy.x, enemy.y - 26, colors.green);
   destroyActiveEnemy(enemy);
   options.invalidateControls(refs);
-
-  const layout = createGameLayout(refs.app.renderer.width, refs.app.renderer.height);
-  options.drawTopHud(refs, layout);
-  options.drawControls(refs, layout);
+  requestHudControlsDraw(refs, options);
 }
 
 function applyTankSlow(enemy: ActiveEnemy) {
