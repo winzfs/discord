@@ -148,15 +148,10 @@ function drawCellUnitShadow(target: Container, x: number, y: number, cellWidth: 
   const centerX = x + cellWidth / 2;
   const centerY = y + cellHeight * 0.78;
 
-  const shadow = new Graphics();
-  shadow.ellipse(centerX, centerY, cell * 0.44, cell * 0.15);
-  shadow.fill({ color: 0x0c2408, alpha: 0.72 });
-  target.addChild(shadow);
-
-  const gradeTint = new Graphics();
-  gradeTint.ellipse(centerX, centerY, cell * 0.36, cell * 0.11);
-  gradeTint.fill({ color: gradeColor(hero.grade), alpha: 0.64 });
-  target.addChild(gradeTint);
+  const base = new Graphics();
+  base.ellipse(centerX, centerY, cell * 0.44, cell * 0.18);
+  base.fill({ color: gradeColor(hero.grade), alpha: 0.78 });
+  target.addChild(base);
 }
 
 function drawUnitMarker(target: Container, x: number, y: number, cellWidth: number, cellHeight: number, hero: BoardHero, stackCount: number, stackIndex: number) {
