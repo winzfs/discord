@@ -4,14 +4,17 @@ import type { HeroSpriteAttackState } from "./pixiGameTypes";
 
 const HERO_TEXTURE_PATHS: Record<string, string> = {
   tracer: "/assets/heroes/tracer.png?v=20260605-tracer1",
+  kiriko: "/assets/heroes/kiriko.png?v=20260605-kiriko1",
 };
 
-const TRACER_FRAME_ROWS = {
+const HERO_FRAME_ROWS = {
   idleLeft: 0,
   idleRight: 1,
   attackLeft: 2,
   attackRight: 3,
 } as const;
+
+const SPRITE_HERO_IDS = new Set(["tracer", "kiriko"]);
 
 let textureCache = new Map<string, Texture>();
 let loadingCache = new Set<string>();
@@ -40,15 +43,15 @@ function createFrameTexture(texture: Texture, row: number, rows: number) {
   });
 }
 
-function pickTracerFrameRow(attackState: HeroSpriteAttackState | null | undefined, now: number) {
+function pickHeroSpriteFrameRow(attackState: HeroSpriteAttackState | null | undefined, now: number) {
   const isAttacking = attackState && attackState.until > now;
   const direction = attackState?.direction ?? "left";
 
   if (isAttacking) {
-    return direction === "left" ? TRACER_FRAME_ROWS.attackLeft : TRACER_FRAME_ROWS.attackRight;
+    return direction === "left" ? HERO_FRAME_ROWS.attackLeft : HERO_FRAME_ROWS.attackRight;
   }
 
-  return direction === "left" ? TRACER_FRAME_ROWS.idleLeft : TRACER_FRAME_ROWS.idleRight;
+  return direction === "left" ? HERO_FRAME_ROWS.idleLeft : HERO_FRAME_ROWS.idleRight;
 }
 
 export function canDrawHeroSprite(hero: Pick<BoardHero, "heroId">) {
@@ -70,8 +73,8 @@ export function drawHeroSprite(
     return false;
   }
 
-  if (hero.heroId === "tracer") {
-    const frameTexture = createFrameTexture(texture, pickTracerFrameRow(attackState, now), 4);
+  if (SPRITE_HERO_IDS.has(hero.heroId)) {
+    const frameTexture = createFrameTexture(texture, pickHeroSpriteFrameRow(attackState, now), 4);
     const sprite = new Sprite(frameTexture);
     const maxWidth = cell * 1.23 * scale;
     const maxHeight = cell * 1.47 * scale;
