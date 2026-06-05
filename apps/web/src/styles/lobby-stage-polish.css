@@ -1,10 +1,10 @@
 .lobby-stage {
   display: block;
-  min-height: 360px;
+  min-height: 300px;
   overflow: hidden;
   isolation: isolate;
   background:
-    radial-gradient(circle at 50% 28%, rgba(255, 216, 94, 0.34), transparent 120px),
+    radial-gradient(circle at 50% 24%, rgba(255, 216, 94, 0.34), transparent 110px),
     radial-gradient(ellipse at 50% 88%, rgba(0, 0, 0, 0.52), transparent 58%),
     linear-gradient(180deg, #241716 0%, #3b241f 48%, #201514 100%);
 }
@@ -23,9 +23,9 @@
   position: absolute;
   left: -8%;
   right: -8%;
-  bottom: 28px;
+  bottom: 18px;
   z-index: 1;
-  height: 122px;
+  height: 104px;
   border-radius: 50%;
   background:
     radial-gradient(ellipse at 50% 48%, rgba(255, 190, 96, 0.18), transparent 34%),
@@ -36,9 +36,9 @@
 .lobby-stage::before {
   left: 10%;
   right: 10%;
-  bottom: 64px;
+  bottom: 54px;
   z-index: 1;
-  height: 70px;
+  height: 60px;
   opacity: 0.7;
 }
 
@@ -53,10 +53,10 @@
   display: grid;
   place-items: center;
   gap: 4px;
-  width: 112px;
-  height: 112px;
+  width: 104px;
+  height: 104px;
   border: 5px solid #241713;
-  border-radius: 30px;
+  border-radius: 28px;
   background: linear-gradient(180deg, #ce7a4b, #8d4f36);
   color: #fff7dd;
   font: inherit;
@@ -70,13 +70,13 @@
 
 .stage-node-icon {
   display: grid;
-  width: 44px;
-  height: 44px;
+  width: 40px;
+  height: 40px;
   place-items: center;
-  border-radius: 15px;
+  border-radius: 14px;
   background: rgba(48, 29, 24, 0.48);
   box-shadow: inset 0 3px 0 rgba(255, 255, 255, 0.12);
-  font-size: 1.1rem;
+  font-size: 1.05rem;
 }
 
 .stage-node strong,
@@ -88,28 +88,28 @@
 .stage-node small,
 .stage-hero-showcase small {
   color: rgba(255, 245, 220, 0.86);
-  font-size: 0.72rem;
+  font-size: 0.7rem;
   font-weight: 900;
 }
 
 .stage-node-shop {
-  left: 9%;
-  bottom: 92px;
+  left: 8%;
+  bottom: 72px;
   transform: rotate(-3deg);
 }
 
 .stage-node-hero {
-  right: 7%;
-  bottom: 86px;
+  right: 8%;
+  bottom: 72px;
   background: linear-gradient(180deg, #f17055, #bd4637);
   transform: rotate(3deg);
 }
 
 .stage-hero-showcase {
   left: 50%;
-  bottom: 74px;
+  bottom: 66px;
   display: grid;
-  width: 166px;
+  width: 154px;
   transform: translateX(-50%);
   place-items: center;
   color: #fff7dd;
@@ -118,9 +118,9 @@
 
 .stage-boss-aura {
   position: absolute;
-  top: -30px;
-  width: 190px;
-  height: 190px;
+  top: -26px;
+  width: 176px;
+  height: 176px;
   border-radius: 50%;
   background: radial-gradient(circle, rgba(255, 199, 69, 0.22), transparent 62%);
   filter: blur(1px);
@@ -132,12 +132,12 @@
   left: auto;
   bottom: auto;
   display: grid;
-  width: 152px;
-  height: 148px;
-  margin-bottom: 12px;
+  width: 136px;
+  height: 132px;
+  margin-bottom: 10px;
   place-items: center;
   border: 6px solid #241713;
-  border-radius: 38px;
+  border-radius: 34px;
   background:
     radial-gradient(circle at 52% 22%, rgba(255, 255, 255, 0.16), transparent 25%),
     linear-gradient(180deg, #a5684c, #6f3e30);
@@ -150,15 +150,19 @@
 }
 
 .stage-hero-showcase .stage-boss span {
-  font-size: 1.22rem;
+  font-size: 1.18rem;
 }
 
 .stage-cta-stack {
-  right: 24px;
-  bottom: 38px;
+  left: 50%;
+  bottom: 16px;
   display: grid;
+  grid-template-columns: 1fr 1fr;
+  width: min(340px, calc(100% - 32px));
   gap: 10px;
-  justify-items: end;
+  transform: translateX(-50%);
+  justify-items: stretch;
+  z-index: 4;
 }
 
 .stage-cta-stack .battle-start,
@@ -167,77 +171,91 @@
   right: auto;
   bottom: auto;
   display: inline-grid;
-  min-width: 126px;
+  min-width: 0;
   place-items: center;
   text-align: center;
 }
 
 .stage-cta-stack .battle-start {
-  padding: 15px 20px;
-  border-radius: 19px;
-  font-size: 1.06rem;
+  padding: 14px 14px;
+  border-radius: 18px;
+  font-size: 1.02rem;
 }
 
 .stage-cta-stack .stage-speech {
-  padding: 12px 16px;
+  padding: 12px 12px;
   border-radius: 18px;
 }
 
 @media (max-width: 430px) {
   .lobby-stage {
-    min-height: 330px;
+    min-height: 292px;
   }
 
   .stage-node {
-    width: 96px;
-    height: 96px;
-    border-radius: 26px;
+    width: 82px;
+    height: 82px;
+    border-radius: 23px;
+  }
+
+  .stage-node-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 12px;
+  }
+
+  .stage-node small {
+    display: none;
   }
 
   .stage-node-shop {
-    left: 7%;
-    bottom: 86px;
+    left: 8%;
+    bottom: 118px;
   }
 
   .stage-node-hero {
-    right: 5%;
-    bottom: 80px;
+    right: 8%;
+    bottom: 118px;
+    opacity: 0.84;
   }
 
   .stage-hero-showcase {
-    bottom: 78px;
-    width: 150px;
+    bottom: 92px;
+    width: 138px;
   }
 
   .stage-hero-showcase .stage-boss {
-    width: 134px;
-    height: 132px;
+    width: 112px;
+    height: 108px;
+    border-radius: 30px;
+  }
+
+  .stage-hero-showcase small {
+    display: none;
   }
 
   .stage-cta-stack {
-    right: 18px;
-    bottom: 30px;
-    gap: 8px;
-  }
-
-  .stage-cta-stack .battle-start,
-  .stage-cta-stack .stage-speech {
-    min-width: 112px;
+    bottom: 18px;
+    width: calc(100% - 40px);
   }
 }
 
 @media (max-width: 370px) {
+  .lobby-stage {
+    min-height: 276px;
+  }
+
   .stage-node {
-    width: 88px;
-    height: 88px;
+    width: 76px;
+    height: 76px;
   }
 
   .stage-hero-showcase .stage-boss {
-    width: 120px;
-    height: 120px;
+    width: 102px;
+    height: 100px;
   }
 
   .stage-hero-showcase {
-    bottom: 86px;
+    bottom: 96px;
   }
 }
