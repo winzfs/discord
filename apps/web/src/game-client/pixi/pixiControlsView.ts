@@ -50,11 +50,11 @@ function redrawPanel(graphics: Graphics, width: number, height: number, fill: nu
 
 function drawWaveBacking(graphics: Graphics, x: number, y: number, width: number, height: number) {
   graphics.clear();
-  graphics.roundRect(x + 4, y + 6, width, height, 18);
-  graphics.fill({ color: 0x000000, alpha: 0.18 });
-  graphics.roundRect(x, y, width, height, 18);
-  graphics.fill({ color: 0x2d211d, alpha: 0.6 });
-  graphics.stroke({ color: 0x1a1110, width: 4, alpha: 0.78 });
+  graphics.roundRect(x + 3, y + 5, width, height, 16);
+  graphics.fill({ color: 0x000000, alpha: 0.14 });
+  graphics.roundRect(x, y, width, height, 16);
+  graphics.fill({ color: 0x2d211d, alpha: 0.48 });
+  graphics.stroke({ color: 0x1a1110, width: 3, alpha: 0.66 });
 }
 
 function createButton(width: number, height: number, color: number, onTap: () => void): PixiButtonView {
@@ -83,21 +83,21 @@ function updateButton(button: PixiButtonView, label: string, sub: string, disabl
   button.disabled = disabled;
   button.root.eventMode = disabled ? "none" : "static";
   button.root.cursor = disabled ? "default" : "pointer";
-  button.root.alpha = disabled ? 0.9 : 1;
+  button.root.alpha = disabled ? 0.94 : 1;
 
-  redrawPanel(button.background, button.width, button.height, disabled ? 0x5f574f : button.color, disabled, compact ? 16 : 20);
+  redrawPanel(button.background, button.width, button.height, disabled ? 0x645e57 : button.color, disabled, compact ? 15 : 19);
 
   button.subText.text = sub;
-  button.subText.x = compact ? 12 : 16;
-  button.subText.y = compact ? 5 : 9;
-  button.subText.style.fill = disabled ? 0x201b18 : colors.black;
-  button.subText.style.fontSize = compact ? 10 : 12;
+  button.subText.x = compact ? 11 : 15;
+  button.subText.y = compact ? 5 : 8;
+  button.subText.style.fill = disabled ? 0x1f1a17 : colors.black;
+  button.subText.style.fontSize = compact ? 9 : 11;
 
   button.mainText.text = label;
   button.mainText.x = button.width / 2;
-  button.mainText.y = compact ? 21 : 32;
-  button.mainText.style.fill = disabled ? 0xf2e5d7 : colors.white;
-  button.mainText.style.fontSize = compact ? 17 : 23;
+  button.mainText.y = compact ? 20 : 30;
+  button.mainText.style.fill = disabled ? 0xffefe0 : colors.white;
+  button.mainText.style.fontSize = compact ? 16 : 22;
 }
 
 export function createPixiControlsView(parent: Container, handlers: {
@@ -144,41 +144,41 @@ export function updatePixiControlsView(view: PixiControlsView, layout: GameLayou
   if (!force && view.lastKey === key) return;
   view.lastKey = key;
 
-  paintControlDock(view.dock, 18, layout.height - 108, layout.width - 36, 94);
+  paintControlDock(view.dock, 20, layout.height - 102, layout.width - 40, 88);
 
-  const summonWidth = Math.min(layout.width * 0.44, layout.width - 240);
+  const summonWidth = Math.min(layout.width * 0.42, layout.width - 250);
   view.summon.width = summonWidth;
-  view.summon.height = 74;
+  view.summon.height = 70;
   view.summon.root.x = (layout.width - summonWidth) / 2;
-  view.summon.root.y = layout.height - 92;
+  view.summon.root.y = layout.height - 87;
   updateButton(view.summon, "소환", snapshot.summonDisabled ? `부족 ${snapshot.summonLabel.replace(/[^0-9]/g, "") || ""}`.trim() : snapshot.summonLabel, snapshot.summonDisabled);
 
-  view.mythic.width = 92;
-  view.mythic.height = 60;
-  view.mythic.root.x = 28;
-  view.mythic.root.y = layout.height - 86;
+  view.mythic.width = 88;
+  view.mythic.height = 58;
+  view.mythic.root.x = 30;
+  view.mythic.root.y = layout.height - 81;
   updateButton(view.mythic, "신화", snapshot.mythicReady ? "가능" : "조합", snapshot.mythicDisabled);
 
-  view.gamble.width = 92;
-  view.gamble.height = 60;
-  view.gamble.root.x = layout.width - 120;
-  view.gamble.root.y = layout.height - 86;
+  view.gamble.width = 88;
+  view.gamble.height = 58;
+  view.gamble.root.x = layout.width - 118;
+  view.gamble.root.y = layout.height - 81;
   updateButton(view.gamble, "도박", "행운석 2", snapshot.gambleDisabled);
 
-  view.upgrade.width = 190;
-  view.upgrade.height = 46;
-  view.upgrade.color = snapshot.upgradeDisabled ? 0x5f574f : 0x2f8f55;
+  view.upgrade.width = 176;
+  view.upgrade.height = 42;
+  view.upgrade.color = snapshot.upgradeDisabled ? 0x645e57 : 0x2f8f55;
   view.upgrade.root.x = (layout.width - view.upgrade.width) / 2;
-  view.upgrade.root.y = layout.height - 152;
+  view.upgrade.root.y = layout.height - 145;
   updateButton(view.upgrade, snapshot.upgradeDisabled ? "강화 불가" : "공격력 강화", `비용 ${snapshot.upgradeCost}`, snapshot.upgradeDisabled);
 
-  const waveLabel = snapshot.wavePhase === "combat" ? `${snapshot.aliveEnemyCount}마리` : snapshot.wavePhase === "result" ? "시작 가능" : "대기";
+  const waveLabel = snapshot.wavePhase === "combat" ? `${snapshot.aliveEnemyCount}마리` : snapshot.wavePhase === "result" ? "가능" : "대기";
   view.wave.color = snapshot.wavePhase === "combat" ? 0xd94a4a : snapshot.wavePhase === "result" ? 0xffc42a : colors.orange;
-  view.wave.width = 112;
-  view.wave.height = 50;
-  view.wave.root.x = layout.width - 132;
-  view.wave.root.y = layout.mapTop + 132;
-  drawWaveBacking(view.waveBacking, view.wave.root.x - 7, view.wave.root.y - 7, view.wave.width + 14, view.wave.height + 14);
+  view.wave.width = 96;
+  view.wave.height = 44;
+  view.wave.root.x = layout.width - 112;
+  view.wave.root.y = layout.mapTop + 150;
+  drawWaveBacking(view.waveBacking, view.wave.root.x - 5, view.wave.root.y - 5, view.wave.width + 10, view.wave.height + 10);
   updateButton(view.wave, "웨이브", waveLabel, snapshot.waveDisabled);
 }
 
