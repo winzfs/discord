@@ -165,14 +165,14 @@ export function updatePixiHudView(view: PixiHudView, layout: GameLayout, snapsho
   view.unitsText.x = layout.width - 74;
   view.unitsText.y = chipY + 5;
 
-  const bottomChipY = layout.bottomY - 66;
-  drawChip(view.luckChip, 22, bottomChipY, 118, 30, 0x223d48);
+  const resourceY = layout.height - 196;
+  drawChip(view.luckChip, 22, resourceY, 118, 30, 0x223d48);
   view.luckText.text = `행운석 ${snapshot.luckStones}`;
   view.luckText.x = 34;
-  view.luckText.y = bottomChipY + 5;
+  view.luckText.y = resourceY + 5;
 
-  drawChip(view.coinChip, 22, bottomChipY + 34, 106, 30, 0x4f3d1e);
+  drawChip(view.coinChip, 22, resourceY + 34, 106, 30, 0x4f3d1e);
   view.coinText.text = `코인 ${snapshot.resources}`;
   view.coinText.x = 34;
-  view.coinText.y = bottomChipY + 39;
+  view.coinText.y = resourceY + 39;
 }
