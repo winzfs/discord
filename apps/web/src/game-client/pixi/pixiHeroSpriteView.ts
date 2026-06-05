@@ -9,6 +9,7 @@ const HERO_TEXTURE_PATHS: Record<string, string> = {
   zarya: "/assets/heroes/zarya.png?v=20260605-zarya1",
   cassidy: "/assets/heroes/cassidy.png?v=20260605-cassidy1",
   winston: "/assets/heroes/winston.png?v=20260606-winston1",
+  genji: "/assets/heroes/genji.png?v=20260606-genji1",
 };
 
 const HERO_FRAME_ROWS = {
@@ -18,7 +19,7 @@ const HERO_FRAME_ROWS = {
   attackRight: 3,
 } as const;
 
-const SPRITE_HERO_IDS = new Set(["tracer", "kiriko", "dva", "zarya", "cassidy", "winston"]);
+const SPRITE_HERO_IDS = new Set(["tracer", "kiriko", "dva", "zarya", "cassidy", "winston", "genji"]);
 
 const HERO_SPRITE_SCALE: Record<string, number> = {
   kiriko: 1.17,
@@ -26,6 +27,7 @@ const HERO_SPRITE_SCALE: Record<string, number> = {
   zarya: 1.2,
   cassidy: 1.2,
   winston: 1.22,
+  genji: 1.18,
 };
 
 let textureCache = new Map<string, Texture>();
