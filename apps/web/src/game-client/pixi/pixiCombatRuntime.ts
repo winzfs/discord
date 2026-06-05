@@ -28,9 +28,12 @@ export type PixiCombatRuntimeOptions = {
 };
 
 const SPRITE_ATTACK_HERO_IDS = new Set(["tracer", "kiriko", "dva", "zarya", "cassidy"]);
+const ZARYA_MAX_BEAM_CHARGE = 6;
+const ZARYA_BEAM_CHAIN_WINDOW_MS = 1200;
 
 function getHeroSpriteAttackDuration(heroId: string) {
   if (heroId === "cassidy") return 520;
+  if (heroId === "zarya") return 620;
   return 260;
 }
 
@@ -163,28 +166,68 @@ function applyAttackDamage(refs: GameRefs, hero: BoardHero, role: HeroRole, targ
   }
 }
 
+function updateZaryaBeamCharge(refs: GameRefs, hero: BoardHero, target: ActiveEnemy) {
+  const now = Date.now();
+  const previous = refs.zaryaBeamCharges[hero.instanceId];
+  const isContinuing =
+    previous &&
+    previous.targetId === target.id &&
+    now - previous.lastAttackAt <= ZARYA_BEAM_CHAIN_WINDOW_MS;
+
+  const charge = isContinuing
+    ? Math.min(ZARYA_MAX_BEAM_CHARGE, previous.charge + 1)
+    : 1;
+
+  refs.zaryaBeamCharges[hero.instanceId] = {
+    targetId: target.id,
+    charge,
+    lastAttackAt: now,
+  };
+
+  return charge;
+}
+
+function getZaryaBeamDamage(baseDamage: number, charge: number) {
+  return Math.round(baseDamage * (0.78 + charge * 0.16));
+}
+
 function spawnZaryaBeamEffect(
   refs: GameRefs,
   options: PixiCombatRuntimeOptions,
   from: { x: number; y: number },
   target: ActiveEnemy,
+  charge: number,
   done: () => void,
 ) {
   const beam = new Graphics();
-  const targetAtFire = { x: target.x, y: target.y };
+  const duration = 620;
+  const baseOuterWidth = 7 + charge * 1.9;
+  const baseInnerWidth = 2.5 + charge * 0.7;
   refs.effects.addChild(beam);
 
   options.addAnimation(refs, {
-    duration: 220,
+    duration,
     update: (progress) => {
-      const alpha = 1 - progress * 0.45;
+      if (!target.alive) {
+        beam.alpha = Math.max(0, 1 - progress);
+        return;
+      }
+
+      const pulse = 0.72 + Math.sin(progress * Math.PI * 8) * 0.18;
+      const alpha = 0.92 - progress * 0.18;
+      const outerWidth = baseOuterWidth * pulse;
+      const innerWidth = baseInnerWidth * (0.9 + pulse * 0.12);
+
       beam.clear();
       beam.moveTo(from.x, from.y);
-      beam.lineTo(targetAtFire.x, targetAtFire.y);
-      beam.stroke({ color: 0xff7de9, width: 9, alpha: 0.28 * alpha });
+      beam.lineTo(target.x, target.y);
+      beam.stroke({ color: 0xff4fd8, width: outerWidth, alpha: 0.28 * alpha });
       beam.moveTo(from.x, from.y);
-      beam.lineTo(targetAtFire.x, targetAtFire.y);
-      beam.stroke({ color: 0xfff0fb, width: 3.5, alpha });
+      beam.lineTo(target.x, target.y);
+      beam.stroke({ color: 0xff9ff1, width: Math.max(3, outerWidth * 0.52), alpha: 0.32 * alpha });
+      beam.moveTo(from.x, from.y);
+      beam.lineTo(target.x, target.y);
+      beam.stroke({ color: 0xffffff, width: innerWidth, alpha });
     },
     done: () => {
       beam.destroy();
@@ -210,10 +253,12 @@ export function spawnAttackEffects(refs: GameRefs, options: PixiCombatRuntimeOpt
     triggerHeroSpriteAttack(refs, hero, from, target, options);
 
     if (hero.heroId === "zarya") {
-      spawnZaryaBeamEffect(refs, options, from, target, () => {
-        applyAttackDamage(refs, hero, role, target, damage, options);
+      const charge = updateZaryaBeamCharge(refs, hero, target);
+      const beamDamage = getZaryaBeamDamage(damage, charge);
+      spawnZaryaBeamEffect(refs, options, from, target, charge, () => {
+        applyAttackDamage(refs, hero, role, target, beamDamage, options);
         if (index === 0) {
-          options.floatText(refs, `${damage}`, target.x, target.y - 18, colors.yellow);
+          options.floatText(refs, `${beamDamage}`, target.x, target.y - 18, charge >= 4 ? 0xff7de9 : colors.yellow);
         }
       });
       return;
