@@ -65,11 +65,16 @@ function consumeMythicUltimateCharge(refs: GameRefs, hero: Pick<BoardHero, "inst
 }
 
 export function chargeMythicUltimatesOverTime(refs: GameRefs, deltaSeconds: number) {
-  if (refs.wavePhase !== "combat") return;
+  if (refs.wavePhase !== "combat") return false;
 
+  let changed = false;
   getAllBoardHeroes(refs.state.board).forEach((hero) => {
-    addMythicUltimateCharge(refs, hero, MYTHIC_ULTIMATE_TIME_CHARGE_PER_SECOND * deltaSeconds);
+    const before = Math.floor(getMythicUltimateCharge(refs, hero));
+    const after = Math.floor(addMythicUltimateCharge(refs, hero, MYTHIC_ULTIMATE_TIME_CHARGE_PER_SECOND * deltaSeconds));
+    if (before !== after) changed = true;
   });
+
+  return changed;
 }
 
 function showUltimatePulse(refs: GameRefs, options: PixiUltimateRuntimeOptions, x: number, y: number, color: number, radius = 92) {
@@ -178,7 +183,6 @@ export function tryTriggerMythicUltimate(
   }
 
   if (hero.heroId === "ana") {
-    addMythicUltimateCharge(refs, hero, 0);
     refs.progressBonuses.attackMultiplier *= 1.12;
     showUltimatePulse(refs, options, from.x, from.y, 0x7dffb2, 126);
     options.floatText(refs, `${label} 나노 강화제!`, from.x, from.y - 42, 0x7dffb2);
