@@ -26,6 +26,8 @@ export type BoardRenderState = {
   now: number;
 };
 
+type DrawableBoardHero = Pick<BoardHero, "grade" | "heroId"> & Partial<Pick<BoardHero, "instanceId">>;
+
 function roleAccent(role: string | undefined) {
   if (role === "tank") return 0x87b7ff;
   if (role === "support") return 0x7dffb2;
@@ -138,17 +140,17 @@ function drawFallbackUnitShape(target: Container, hero: Pick<BoardHero, "grade" 
 
 export function drawUnitShape(
   target: Container,
-  hero: Pick<BoardHero, "grade" | "heroId" | "instanceId">,
+  hero: DrawableBoardHero,
   cell: number,
   scale = 1,
   renderState?: BoardRenderState,
 ) {
-  const attackState = renderState?.heroSpriteAttacks[hero.instanceId];
+  const attackState = hero.instanceId ? renderState?.heroSpriteAttacks[hero.instanceId] : null;
   if (canDrawHeroSprite(hero) && drawHeroSprite(target, hero, cell, scale, attackState, renderState?.now)) return;
   drawFallbackUnitShape(target, hero, cell, scale);
 }
 
-export function createUnitGhost(hero: Pick<BoardHero, "grade" | "heroId" | "instanceId">, cell: number, alpha = 0.92) {
+export function createUnitGhost(hero: Pick<BoardHero, "grade" | "heroId">, cell: number, alpha = 0.92) {
   const ghost = new Container();
   ghost.alpha = alpha;
   drawUnitShape(ghost, hero, cell, 0.94);
