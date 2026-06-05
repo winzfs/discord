@@ -69,7 +69,7 @@ import {
   updatePixiTestControlsView,
   type PixiTestControlsView,
 } from "./pixiTestControlsView";
-import { chargeMythicUltimatesOverTime } from "./pixiUltimateRuntime";
+import { chargeMythicUltimatesOverTime, getAttackIntervalMultiplier } from "./pixiUltimateRuntime";
 
 export type PixiGameHandle = { cleanup: () => void };
 export type PixiGameOptions = { testMode?: boolean };
@@ -263,7 +263,8 @@ function tick(refs: GameRefs, deltaMs: number) {
       drawBoard(refs, layout, createDragRuntimeOptions);
     }
     if (refs.attackTimer <= 0) {
-      refs.attackTimer = isBossWave(refs.state) ? 0.34 : 0.48;
+      const baseAttackInterval = isBossWave(refs.state) ? 0.34 : 0.48;
+      refs.attackTimer = baseAttackInterval * getAttackIntervalMultiplier(refs);
       spawnAttackEffects(refs, {
         getCellCenter,
         addAnimation,
