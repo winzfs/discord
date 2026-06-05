@@ -23,6 +23,10 @@
 - /play-test 전용 신화 실험실 패널 추가
 - 테스트 모드에서 신화 영웅 자유 소환
 - 테스트 모드에서 몬스터 HP 배율 조정
+- 트레이서 스프라이트 시트 적용
+- 트레이서 기본 대기 방향을 왼쪽으로 설정
+- 트레이서 공격 시 타겟 방향에 따라 공격 프레임 전환
+- 트레이서 표시 크기를 기존 대비 1.5배 확대
 ```
 
 ---
@@ -364,7 +368,100 @@ UI 보정 기록:
 
 ---
 
-## 12. 현재 한계
+## 12. 트레이서 스프라이트 시트 적용
+
+트레이서만 우선 스프라이트 시트를 적용했습니다. 다른 영웅은 아직 기존 도형 렌더를 유지합니다.
+
+이미지 파일:
+
+```text
+apps/web/public/assets/heroes/tracer.png
+```
+
+Pixi 접근 경로:
+
+```text
+/assets/heroes/tracer.png?v=20260605-tracer1
+```
+
+관련 파일:
+
+```text
+apps/web/src/game-client/pixi/pixiHeroSpriteView.ts
+apps/web/src/game-client/pixi/pixiBoardView.ts
+apps/web/src/game-client/pixi/pixiBoardRenderRuntime.ts
+apps/web/src/game-client/pixi/pixiCombatRuntime.ts
+apps/web/src/game-client/pixi/pixiGameTypes.ts
+apps/web/src/game-client/pixi/createPixiGame.ts
+```
+
+스프라이트 시트 구조:
+
+```text
+1열 4행
+1행: 왼쪽 대기
+2행: 오른쪽 대기
+3행: 왼쪽 공격
+4행: 오른쪽 공격
+```
+
+현재 표시 규칙:
+
+```text
+- 기본 표시: 왼쪽 대기
+- 공격 시 타겟이 왼쪽이면 왼쪽 공격 프레임
+- 공격 시 타겟이 오른쪽이면 오른쪽 공격 프레임
+- 공격 상태는 약 0.26초 유지
+- 약 0.28초 뒤 보드만 다시 그려 대기 프레임으로 복귀
+- 스프라이트 로드 전에는 기존 도형 유닛으로 fallback
+```
+
+공격 프레임 상태는 `GameRefs.heroSpriteAttacks`에 저장합니다.
+
+```ts
+heroSpriteAttacks: Record<string, HeroSpriteAttackState>;
+```
+
+`HeroSpriteAttackState` 구조:
+
+```ts
+export type HeroSpriteAttackState = {
+  direction: "left" | "right";
+  until: number;
+};
+```
+
+크기 설정:
+
+```ts
+const maxWidth = cell * 1.23 * scale;
+const maxHeight = cell * 1.47 * scale;
+const ratio = Math.min(maxWidth / frameTexture.width, maxHeight / frameTexture.height);
+```
+
+이 값은 기존 기준값 `0.82 / 0.98`에서 1.5배 키운 값입니다.
+`ratio = Math.min(...)` 방식은 그대로 유지하므로 원본 가로세로 비율은 깨지지 않습니다.
+
+위치 설정:
+
+```ts
+sprite.anchor.set(0.5, 0.74);
+sprite.y = cell * 0.2 * scale;
+```
+
+빌드 에러 수정 기록:
+
+```text
+- createUnitGhost()는 드래그 미리보기에서도 사용됨
+- 드래그 미리보기에는 instanceId가 없는 Pick<BoardHero, "grade" | "heroId"> 타입이 들어올 수 있음
+- drawUnitShape()가 instanceId를 필수로 요구하면서 TypeScript 빌드 실패 발생
+- DrawableBoardHero 타입을 추가해 instanceId를 optional로 변경
+- instanceId가 있을 때만 heroSpriteAttacks에서 공격 상태를 조회하도록 수정
+```
+
+---
+
+## 13. 현재 한계
 
 현재 구현은 테스트 기반입니다.
 
@@ -374,11 +471,12 @@ UI 보정 기록:
 - 신화 조합법은 테스트용 밸런스
 - 테스트 컨트롤은 개발용 단순 패널
 - HP 직접 숫자 입력은 아직 없음
+- 트레이서 외 영웅은 아직 스프라이트 시트를 적용하지 않음
 ```
 
 ---
 
-## 13. 배포 후 확인 항목
+## 14. 배포 후 확인 항목
 
 `/play`에서 확인할 것:
 
@@ -397,13 +495,18 @@ UI 보정 기록:
 4. 몬스터 HP 배율 버튼이 x0.5 / x1 / x2 / x5 / x10으로 표시되는지
 5. HP 배율 선택 후 새로 생성되는 몬스터 체력에 반영되는지
 6. 테스트 모드 결과가 기록 저장으로 제출되지 않는지
+7. 트레이서 기본 프레임이 왼쪽 대기인지
+8. 트레이서 공격 시 타겟 방향에 따라 왼쪽/오른쪽 공격 프레임으로 바뀌는지
+9. 트레이서 크기가 기존보다 1.5배 커졌는지
+10. 트레이서 원본 가로세로 비율이 찌그러지지 않는지
+11. 드래그 미리보기/유닛 이동에서 빌드 에러 없이 동작하는지
 ```
 
 ---
 
-## 14. 다음 작업 후보
+## 15. 다음 작업 후보
 
-### 14.1 오버워치 신화 스킬 실제 효과 연결
+### 15.1 오버워치 신화 스킬 실제 효과 연결
 
 현재는 스킬 데이터와 태그 중심으로 구성되어 있습니다.
 다음 단계에서 `pixiCombatRuntime.ts` 또는 별도 스킬 런타임으로 실제 효과를 분리 적용합니다.
@@ -430,7 +533,7 @@ pixiHeroStatusRuntime.ts
 9. 일리아리 표식 폭발
 ```
 
-### 14.2 테스트 모드 UI 개선
+### 15.2 테스트 모드 UI 개선
 
 ```text
 - 패널 접기/펼치기
@@ -441,11 +544,21 @@ pixiHeroStatusRuntime.ts
 - 보드 초기화 버튼
 ```
 
-### 14.3 신화 조합 UI 개선
+### 15.3 신화 조합 UI 개선
 
 ```text
 - 조합 재료 보유 여부 표시
 - 부족 재료 표시
 - 조합 가능 항목 강조
 - 재료 상세 보기
+```
+
+### 15.4 영웅 스프라이트 확대 적용
+
+```text
+- 캐서디 스프라이트 시트 추가
+- 겐지 스프라이트 시트 추가
+- 탱커/지원 영웅 스프라이트 적용
+- 공통 스프라이트 프레임 규격 정리
+- idle/attack 외 이동/스킬/궁극기 프레임 확장
 ```
