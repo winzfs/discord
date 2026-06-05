@@ -122,9 +122,16 @@ function drawArcSlash(graphics: Graphics, center: Point, progress: number, color
   const local = clamp01(progress);
   const alpha = 0.9 * (1 - local * 0.4);
   const angle = -1.35 + local * 2.05 + angleOffset;
+  const outerStart = { x: center.x + Math.cos(angle) * radius, y: center.y + Math.sin(angle) * radius };
+  const innerRadius = radius * 0.64;
+  const innerAngle = angle + 0.08;
+  const innerStart = { x: center.x + Math.cos(innerAngle) * innerRadius, y: center.y + Math.sin(innerAngle) * innerRadius };
+
+  graphics.moveTo(outerStart.x, outerStart.y);
   graphics.arc(center.x, center.y, radius, angle, angle + 1.1);
   graphics.stroke({ color, width: 5.2 * (1 - local * 0.36), alpha: alpha * 0.38 });
-  graphics.arc(center.x, center.y, radius * 0.64, angle + 0.08, angle + 0.92);
+  graphics.moveTo(innerStart.x, innerStart.y);
+  graphics.arc(center.x, center.y, innerRadius, innerAngle, angle + 0.92);
   graphics.stroke({ color: 0xffffff, width: 1.6, alpha });
 }
 
