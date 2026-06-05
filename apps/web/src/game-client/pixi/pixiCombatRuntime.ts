@@ -31,7 +31,7 @@ export type PixiCombatRuntimeOptions = {
   drawBoard: (refs: GameRefs, layout: ReturnType<typeof createGameLayout>) => void;
 };
 
-const SPRITE_ATTACK_HERO_IDS = new Set(["tracer", "kiriko", "dva", "zarya", "cassidy", "winston"]);
+const SPRITE_ATTACK_HERO_IDS = new Set(["tracer", "kiriko", "dva", "zarya", "cassidy", "winston", "genji"]);
 const ZARYA_MAX_BEAM_CHARGE = 6;
 const ZARYA_BEAM_CHAIN_WINDOW_MS = 1200;
 
@@ -360,24 +360,13 @@ export function spawnAttackEffects(refs: GameRefs, options: PixiCombatRuntimeOpt
         const eased = 1 - Math.pow(1 - progress, 2);
         projectile.x = from.x + (targetAtFire.x - from.x) * eased;
         projectile.y = from.y + (targetAtFire.y - from.y) * eased;
-        projectile.alpha = 1 - progress * 0.2;
+        projectile.alpha = Math.max(0, 1 - progress * 0.18);
       },
       done: () => {
         projectile.destroy();
         applyAttackDamage(refs, hero, role, target, damage, options);
-
-        if (index === 0) {
-          options.floatText(refs, `${damage}`, target.x, target.y - 18, colors.yellow);
-        }
+        if (index === 0) options.floatText(refs, `${damage}`, target.x, target.y - 18, roleAccent(role));
       },
     });
   });
-}
-
-
-export function calculatePixiFirepower(refs: GameRefs) {
-  return getAllBoardHeroes(refs.state.board).reduce(
-    (sum, hero) => sum + getHeroDamage(refs, hero),
-    0,
-  );
 }
