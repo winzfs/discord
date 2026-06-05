@@ -16,6 +16,11 @@ export type DragState = {
 
 export type WavePhase = "countdown" | "combat" | "result";
 
+export type HeroSpriteAttackState = {
+  direction: "left" | "right";
+  until: number;
+};
+
 export type ActiveEnemy = {
   id: number;
   enemyId: string;
@@ -77,6 +82,7 @@ export type GameRefs = {
   resultSubmitted: boolean;
   isTestMode: boolean;
   testEnemyHpMultiplier: number;
+  heroSpriteAttacks: Record<string, HeroSpriteAttackState>;
 };
 
 export const WAVE_COUNTDOWN_SECONDS = 8;
