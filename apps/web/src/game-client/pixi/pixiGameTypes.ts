@@ -21,6 +21,12 @@ export type HeroSpriteAttackState = {
   until: number;
 };
 
+export type ZaryaBeamChargeState = {
+  targetId: number;
+  charge: number;
+  lastAttackAt: number;
+};
+
 export type ActiveEnemy = {
   id: number;
   enemyId: string;
@@ -83,6 +89,7 @@ export type GameRefs = {
   isTestMode: boolean;
   testEnemyHpMultiplier: number;
   heroSpriteAttacks: Record<string, HeroSpriteAttackState>;
+  zaryaBeamCharges: Record<string, ZaryaBeamChargeState>;
 };
 
 export const WAVE_COUNTDOWN_SECONDS = 8;
