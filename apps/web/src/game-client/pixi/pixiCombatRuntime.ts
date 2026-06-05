@@ -262,17 +262,24 @@ function tryTriggerUltimateAttack(refs: GameRefs, options: PixiCombatRuntimeOpti
   return triggered;
 }
 
-function applySkillEffects(refs: GameRefs, options: PixiCombatRuntimeOptions, hero: BoardHero, role: HeroRole, target: ActiveEnemy, damage: number) {
+function drawBoardNow(refs: GameRefs, options: PixiCombatRuntimeOptions) {
+  options.drawBoard(refs, createGameLayout(refs.app.renderer.width, refs.app.renderer.height));
+}
+
+function applySkillEffects(refs: GameRefs, options: PixiCombatRuntimeOptions, hero: BoardHero, role: HeroRole, target: ActiveEnemy, damage: number, from: { x: number; y: number }) {
   return applyMythicHeroSkillEffects(
     refs,
     {
+      addAnimation: options.addAnimation,
       damageEnemy: (refs, enemy, damage) => damageEnemy(refs, enemy, damage, options),
+      drawBoard: (refs) => drawBoardNow(refs, options),
       floatText: options.floatText,
     },
     hero,
     role,
     target,
     damage,
+    from,
   );
 }
 
@@ -291,7 +298,7 @@ export function spawnAttackEffects(refs: GameRefs, options: PixiCombatRuntimeOpt
 
     let damage = getHeroDamage(refs, hero);
     triggerHeroSpriteAttack(refs, hero, from, target, options);
-    damage = applySkillEffects(refs, options, hero, role, target, damage);
+    damage = applySkillEffects(refs, options, hero, role, target, damage, from);
     if (!target.alive) return;
 
     if (tryTriggerUltimateAttack(refs, options, hero, from, target, damage)) {
