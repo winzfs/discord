@@ -141,29 +141,37 @@ export function updatePixiControlsView(view: PixiControlsView, layout: GameLayou
   if (!force && view.lastKey === key) return;
   view.lastKey = key;
 
-  const summonWidth = layout.width * 0.52;
+  const summonWidth = Math.min(layout.width * 0.48, layout.width - 230);
   view.summon.width = summonWidth;
-  view.summon.height = 78;
+  view.summon.height = 80;
   view.summon.root.x = (layout.width - summonWidth) / 2;
-  view.summon.root.y = layout.height - 104;
+  view.summon.root.y = layout.height - 100;
   updateButton(view.summon, "소환", snapshot.summonLabel, snapshot.summonDisabled);
 
-  view.mythic.root.x = 18;
-  view.mythic.root.y = layout.height - 96;
+  view.mythic.width = 96;
+  view.mythic.height = 64;
+  view.mythic.root.x = 20;
+  view.mythic.root.y = layout.height - 92;
   updateButton(view.mythic, "신화", snapshot.mythicReady ? "가능" : "조합", snapshot.mythicDisabled);
 
-  view.gamble.root.x = layout.width - 110;
-  view.gamble.root.y = layout.height - 96;
+  view.gamble.width = 96;
+  view.gamble.height = 64;
+  view.gamble.root.x = layout.width - 116;
+  view.gamble.root.y = layout.height - 92;
   updateButton(view.gamble, "도박", "행운석 2", snapshot.gambleDisabled);
 
-  view.upgrade.root.x = (layout.width - 184) / 2;
-  view.upgrade.root.y = layout.height - 166;
+  view.upgrade.width = 204;
+  view.upgrade.height = 52;
+  view.upgrade.root.x = (layout.width - view.upgrade.width) / 2;
+  view.upgrade.root.y = layout.height - 172;
   updateButton(view.upgrade, "공격력 강화", `비용 ${snapshot.upgradeCost}`, snapshot.upgradeDisabled);
 
   const waveLabel = snapshot.wavePhase === "combat" ? `${snapshot.aliveEnemyCount}마리` : snapshot.wavePhase === "result" ? "바로 시작" : "시작";
   view.wave.color = snapshot.wavePhase === "combat" ? colors.red : colors.orange;
-  view.wave.root.x = layout.width - 132;
-  view.wave.root.y = layout.mapTop + 105;
+  view.wave.width = 120;
+  view.wave.height = 54;
+  view.wave.root.x = layout.width - 138;
+  view.wave.root.y = layout.mapTop + 100;
   updateButton(view.wave, "웨이브", waveLabel, snapshot.waveDisabled);
 }
 
