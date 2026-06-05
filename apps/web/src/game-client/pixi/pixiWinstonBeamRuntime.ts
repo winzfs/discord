@@ -1,5 +1,6 @@
 import { Graphics } from "pixi.js";
 import type { ActiveEnemy, GameRefs } from "./pixiGameTypes";
+import { acquireFxGraphics, releaseFxGraphics } from "./pixiFxPoolRuntime";
 
 export type PixiWinstonBeamRuntimeOptions = {
   addAnimation: (
@@ -77,8 +78,7 @@ export function spawnWinstonElectricBeam(
   baseDamage: number,
   done?: () => void,
 ) {
-  const beam = new Graphics();
-  refs.effects.addChild(beam);
+  const beam = acquireFxGraphics(refs);
 
   options.addAnimation(refs, {
     duration: 420,
@@ -104,7 +104,7 @@ export function spawnWinstonElectricBeam(
       });
     },
     done: () => {
-      beam.destroy();
+      releaseFxGraphics(refs, beam);
       targets.forEach((enemy, index) => {
         if (!enemy.alive) return;
         const multiplier = index === 0 ? 0.72 : 0.46;
