@@ -1,6 +1,9 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { LobbyBottomNav } from "../components/lobby/LobbyBottomNav";
 import { LobbyHeroPortrait } from "../components/lobby/LobbyHeroPortrait";
+import { LobbyStage } from "../components/lobby/LobbyStage";
+import { LobbyTopBar } from "../components/lobby/LobbyTopBar";
 import { getLobbyHeroSkillDetails } from "../components/lobby/lobbyHeroSkillDetails";
 import {
   formatPercent,
@@ -92,30 +95,6 @@ function createArtifactDetail(artifact: LobbyArtifact): Detail {
     canUpgrade: artifact.owned && artifact.pieces >= required && artifact.level < artifact.maxLevel,
     lockedText: artifact.owned ? undefined : "유물 조각을 획득하면 활성화됩니다.",
   };
-}
-
-function LobbyTopBar({ gold, crystals }: { gold: number; crystals: number }) {
-  return (
-    <header className="lobby-topbar">
-      <div className="lobby-profile">
-        <div className="lobby-avatar">오</div>
-        <div><strong>오파후</strong><span>Lv.12</span></div>
-      </div>
-      <div className="lobby-currencies"><span>30/30</span><span>{gold}</span><span>{crystals}</span></div>
-    </header>
-  );
-}
-
-function LobbyStage({ difficulty, onDifficulty }: { difficulty: number; onDifficulty: () => void }) {
-  return (
-    <section className="lobby-stage">
-      <div className="stage-character stage-left">상인</div>
-      <div className="stage-character stage-boss">거인</div>
-      <div className="stage-character stage-right">검사</div>
-      <button className="stage-speech" type="button" onClick={onDifficulty}>난이도 {difficulty}</button>
-      <Link className="battle-start" to={`/play?difficulty=${difficulty}`}>빠른 시작</Link>
-    </section>
-  );
 }
 
 function ShopView({ onPick }: { onPick: (name: string, price: string) => void }) {
@@ -349,9 +328,14 @@ export function LobbyPage() {
       {activeTab === "battle" && <BattleView difficulty={difficulty} />}
       {activeTab === "artifacts" && <ArtifactsView artifacts={artifacts} onDetail={setDetail} />}
       {detail && <DetailPanel detail={detail} gold={gold} onClose={() => setDetail(null)} onUpgrade={upgradeSelected} />}
-      <nav className="lobby-bottom-nav">
-        {tabs.map((tab) => <button className={activeTab === tab.id ? "active" : ""} key={tab.id} type="button" onClick={() => { setActiveTab(tab.id); setDetail(null); }}>{tab.label}</button>)}
-      </nav>
+      <LobbyBottomNav
+        activeTab={activeTab}
+        tabs={tabs}
+        onTabChange={(tabId) => {
+          setActiveTab(tabId);
+          setDetail(null);
+        }}
+      />
     </main>
   );
 }
