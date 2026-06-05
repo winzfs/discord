@@ -167,9 +167,9 @@ button.artifact-card {
 }
 
 .hero-card .hero-portrait {
-  width: 104px;
-  height: 92px;
-  margin: 20px auto 10px;
+  width: 112px;
+  height: 98px;
+  margin: 18px auto 10px;
 }
 
 .mythic-hero-portrait {
@@ -181,13 +181,13 @@ button.artifact-card {
 .mythic-hero-idle-sprite {
   position: absolute;
   left: 50%;
-  top: 0;
+  top: 12px;
   width: auto;
-  height: 330%;
+  height: 365%;
   max-width: none;
   pointer-events: none;
   user-select: none;
-  transform: translateX(-50%) scale(0.72);
+  transform: translateX(-50%) scale(0.9);
   transform-origin: top center;
   filter: drop-shadow(0 7px 2px rgba(0, 0, 0, 0.32));
 }
@@ -220,7 +220,7 @@ button.artifact-card {
   display: grid;
   gap: 5px;
   align-content: start;
-  min-height: 216px;
+  min-height: 226px;
 }
 
 .collection-card em {
