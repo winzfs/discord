@@ -25,11 +25,13 @@ export function paintControlButton(
 
 export function paintControlDock(graphics: Graphics, x: number, y: number, width: number, height: number) {
   graphics.clear();
-  graphics.roundRect(x + 5, y + 8, width, height, 24);
-  graphics.fill({ color: 0x000000, alpha: 0.3 });
-  graphics.roundRect(x, y, width, height, 24);
-  graphics.fill({ color: 0x2c211f, alpha: 0.92 });
-  graphics.stroke({ color: 0x1c1210, width: 5, alpha: 0.95 });
-  graphics.roundRect(x + 10, y + 8, Math.max(0, width - 20), 24, 12);
-  graphics.fill({ color: 0xffffff, alpha: 0.05 });
+  graphics.roundRect(x + 6, y + 9, width, height, 28);
+  graphics.fill({ color: 0x000000, alpha: 0.34 });
+  graphics.roundRect(x, y, width, height, 28);
+  graphics.fill({ color: 0x251b19, alpha: 0.9 });
+  graphics.stroke({ color: 0x120c0b, width: 5, alpha: 0.95 });
+  graphics.roundRect(x + 9, y + 7, Math.max(0, width - 18), Math.max(0, height * 0.3), 18);
+  graphics.fill({ color: 0xffffff, alpha: 0.06 });
+  graphics.roundRect(x + 12, y + height - 15, Math.max(0, width - 24), 8, 6);
+  graphics.fill({ color: 0x000000, alpha: 0.18 });
 }
