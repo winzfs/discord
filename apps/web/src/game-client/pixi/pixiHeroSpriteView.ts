@@ -73,8 +73,8 @@ export function drawHeroSprite(
   if (hero.heroId === "tracer") {
     const frameTexture = createFrameTexture(texture, pickTracerFrameRow(attackState, now), 4);
     const sprite = new Sprite(frameTexture);
-    const maxWidth = cell * 0.82 * scale;
-    const maxHeight = cell * 0.98 * scale;
+    const maxWidth = cell * 1.23 * scale;
+    const maxHeight = cell * 1.47 * scale;
     const ratio = Math.min(maxWidth / frameTexture.width, maxHeight / frameTexture.height);
 
     sprite.anchor.set(0.5, 0.74);
