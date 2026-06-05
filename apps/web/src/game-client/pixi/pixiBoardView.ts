@@ -3,7 +3,7 @@ import type { BoardHero } from "@discord-random-defense/game";
 import { getHeroById } from "@discord-random-defense/game";
 import { colors, gradeColor } from "./gameTheme";
 import { canDrawHeroSprite, drawHeroSprite } from "./pixiHeroSpriteView";
-import type { HeroSpriteAttackState } from "./pixiGameTypes";
+import type { HeroSpriteAttackState, MythicUltimateChargeState } from "./pixiGameTypes";
 
 export type BoardMetrics = {
   cols: number;
@@ -23,6 +23,7 @@ export type BoardPointerHandlers = {
 
 export type BoardRenderState = {
   heroSpriteAttacks: Record<string, HeroSpriteAttackState>;
+  mythicUltimateCharges?: Record<string, MythicUltimateChargeState>;
   now: number;
 };
 
@@ -175,6 +176,29 @@ function drawCellUnitShadow(target: Container, x: number, y: number, cellWidth: 
   target.addChild(base);
 }
 
+function drawUltimateChargeBar(target: Container, hero: BoardHero, cell: number, scale: number, renderState?: BoardRenderState) {
+  if (hero.grade !== "mythic") return;
+
+  const charge = hero.instanceId ? (renderState?.mythicUltimateCharges?.[hero.instanceId]?.charge ?? 0) : 0;
+  const ratio = Math.max(0, Math.min(1, charge / 100));
+  const width = cell * 0.58 * scale;
+  const height = Math.max(3, cell * 0.055 * scale);
+  const x = -width / 2;
+  const y = cell * 0.43 * scale;
+  const bar = new Graphics();
+
+  bar.roundRect(x, y, width, height, height / 2);
+  bar.fill({ color: 0x19140b, alpha: 0.82 });
+  bar.stroke({ color: colors.black, width: 1.2, alpha: 0.55 });
+
+  if (ratio > 0) {
+    bar.roundRect(x, y, width * ratio, height, height / 2);
+    bar.fill({ color: ratio >= 1 ? 0xfff06a : 0xffc857, alpha: 0.98 });
+  }
+
+  target.addChild(bar);
+}
+
 function drawUnitMarker(
   target: Container,
   x: number,
@@ -192,6 +216,7 @@ function drawUnitMarker(
   marker.x = x + cellWidth / 2 + offset.x;
   marker.y = y + cellHeight * 0.48 + offset.y;
   drawUnitShape(marker, hero, unitCell, offset.scale, renderState);
+  drawUltimateChargeBar(marker, hero, unitCell, offset.scale, renderState);
   target.addChild(marker);
 }
 
