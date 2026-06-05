@@ -100,6 +100,7 @@ export type GameRefs = {
   heroSpriteAttacks: Record<string, HeroSpriteAttackState>;
   zaryaBeamCharges: Record<string, ZaryaBeamChargeState>;
   mythicUltimateCharges?: Record<string, MythicUltimateChargeState>;
+  kitsuneRushUntil?: number;
 };
 
 export const WAVE_COUNTDOWN_SECONDS = 8;
