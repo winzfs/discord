@@ -1,3 +1,4 @@
+import { updateEnemyViewPosition } from "./pixiEnemyView";
 import { Graphics } from "pixi.js";
 import { getAllBoardHeroes, getHeroById } from "@discord-random-defense/game";
 import type { BoardHero } from "@discord-random-defense/game";
@@ -123,22 +124,6 @@ function slowEnemiesInRadius(refs: GameRefs, x: number, y: number, radius: numbe
   });
 }
 
-function drawCircleMarker(refs: GameRefs, options: PixiUltimateRuntimeOptions, x: number, y: number, radius: number, color: number, duration: number) {
-  const marker = new Graphics();
-  refs.effects.addChild(marker);
-  options.addAnimation(refs, {
-    duration,
-    update: (progress) => {
-      marker.clear();
-      marker.circle(x, y, radius);
-      marker.stroke({ color, width: 4, alpha: 0.42 + Math.sin(progress * Math.PI * 8) * 0.12 });
-      marker.circle(x, y, radius * 0.18);
-      marker.fill({ color, alpha: 0.12 });
-    },
-    done: () => marker.destroy(),
-  });
-}
-
 function triggerDvaSelfDestruct(
   refs: GameRefs,
   options: PixiUltimateRuntimeOptions,
@@ -159,23 +144,23 @@ function triggerZaryaGraviton(
   center: { x: number; y: number },
   baseDamage: number,
 ) {
-  const radius = 165;
-  const pullRadius = 255;
+  const radius = 112;
+  const pullRadius = 205;
   const duration = 3000;
   const originalSpeeds = new Map<number, number>();
   const vortex = new Graphics();
 
   refs.effects.addChild(vortex);
-  options.floatText(refs, `${label} 중력자탄! 3초 속박`, center.x, center.y - 48, 0xff7de9);
+  options.floatText(refs, `${label} 중력자탄! 좁은 범위 3초 속박`, center.x, center.y - 48, 0xff7de9);
 
   options.addAnimation(refs, {
     duration,
     update: (progress) => {
       vortex.clear();
-      vortex.circle(center.x, center.y, radius * (0.88 + Math.sin(progress * Math.PI * 10) * 0.05));
-      vortex.stroke({ color: 0xff7de9, width: 7, alpha: 0.55 });
+      vortex.circle(center.x, center.y, radius * (0.9 + Math.sin(progress * Math.PI * 12) * 0.05));
+      vortex.stroke({ color: 0xff7de9, width: 7, alpha: 0.58 });
       vortex.circle(center.x, center.y, pullRadius);
-      vortex.stroke({ color: 0xffb6f4, width: 2, alpha: 0.22 });
+      vortex.stroke({ color: 0xffb6f4, width: 2, alpha: 0.18 });
 
       enemiesInRadius(refs, center.x, center.y, pullRadius).forEach((enemy) => {
         if (!originalSpeeds.has(enemy.id)) originalSpeeds.set(enemy.id, enemy.speed);
@@ -183,17 +168,18 @@ function triggerZaryaGraviton(
         const dx = center.x - enemy.x;
         const dy = center.y - enemy.y;
         const distance = Math.max(1, Math.hypot(dx, dy));
-        const isBound = distance <= radius;
+        const pullStrength = distance <= radius ? 0.34 : 0.18;
 
-        if (isBound) {
-          enemy.speed = 0;
-          enemy.x = center.x + (enemy.x - center.x) * 0.72;
-          enemy.y = center.y + (enemy.y - center.y) * 0.72;
-        } else {
-          enemy.speed = Math.min(enemy.speed, 0.08);
-          enemy.x += (dx / distance) * 7;
-          enemy.y += (dy / distance) * 7;
+        enemy.speed = 0;
+        enemy.x += dx * pullStrength;
+        enemy.y += dy * pullStrength;
+
+        if (distance <= radius * 0.28) {
+          enemy.x = center.x;
+          enemy.y = center.y;
         }
+
+        updateEnemyViewPosition(enemy.view, enemy.x, enemy.y, enemy.progress);
       });
     },
     done: () => {
@@ -202,7 +188,7 @@ function triggerZaryaGraviton(
         const enemy = refs.activeEnemies.find((candidate) => candidate.id === enemyId && candidate.alive);
         if (enemy) enemy.speed = Math.max(enemy.speed, speed);
       });
-      damageEnemiesInRadius(refs, options, center.x, center.y, radius + 20, Math.round(baseDamage * 2.4));
+      damageEnemiesInRadius(refs, options, center.x, center.y, radius + 8, Math.round(baseDamage * 2.4));
     },
   });
 }
@@ -241,6 +227,11 @@ function triggerTracerPulseBomb(
   });
 }
 
+function getCassidyDeadeyeLockRatio(baseDamage: number) {
+  const attackFactor = Math.max(0.18, Math.min(0.82, baseDamage / 520));
+  return attackFactor;
+}
+
 function triggerCassidyDeadeye(
   refs: GameRefs,
   options: PixiUltimateRuntimeOptions,
@@ -252,25 +243,25 @@ function triggerCassidyDeadeye(
   const duration = 3000;
   const lock = new Graphics();
   refs.effects.addChild(lock);
-  options.floatText(refs, `${label} 황야의 무법자!`, from.x, from.y - 48, 0xffd166);
+  options.floatText(refs, `${label} 황야의 무법자! 느린 락온`, from.x, from.y - 48, 0xffd166);
 
   options.addAnimation(refs, {
     duration,
     update: (progress) => {
       lock.clear();
-      const lockRatio = Math.min(1, progress * Math.max(0.45, baseDamage / 130));
+      const lockRatio = Math.min(1, progress * getCassidyDeadeyeLockRatio(baseDamage));
       targets.forEach((enemy) => {
         if (!enemy.alive) return;
         lock.moveTo(from.x, from.y);
         lock.lineTo(enemy.x, enemy.y);
-        lock.stroke({ color: 0xffd166, width: 2, alpha: 0.18 + lockRatio * 0.42 });
-        lock.circle(enemy.x, enemy.y, 13 + lockRatio * 13);
-        lock.stroke({ color: lockRatio >= 1 ? 0xfff06a : 0xffd166, width: 3, alpha: 0.35 + lockRatio * 0.42 });
+        lock.stroke({ color: 0xffd166, width: 2, alpha: 0.12 + lockRatio * 0.36 });
+        lock.circle(enemy.x, enemy.y, 11 + lockRatio * 15);
+        lock.stroke({ color: lockRatio >= 1 ? 0xfff06a : 0xffd166, width: 3, alpha: 0.28 + lockRatio * 0.44 });
       });
     },
     done: () => {
       lock.destroy();
-      const lockRatio = Math.min(1, Math.max(0.45, baseDamage / 130));
+      const lockRatio = Math.min(1, getCassidyDeadeyeLockRatio(baseDamage));
       const damage = lockRatio >= 1 ? Number.POSITIVE_INFINITY : Math.round(baseDamage * 4 * lockRatio);
       targets.forEach((enemy) => {
         if (!enemy.alive) return;
@@ -278,7 +269,7 @@ function triggerCassidyDeadeye(
       });
       options.floatText(
         refs,
-        lockRatio >= 1 ? "전원 락온 처치!" : `락온 피해 ${Math.round(lockRatio * 100)}%`,
+        lockRatio >= 1 ? "전원 락온 처치!" : `락온 ${Math.round(lockRatio * 100)}% 피해`,
         from.x,
         from.y - 68,
         0xffd166,
