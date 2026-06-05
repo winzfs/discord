@@ -12,10 +12,10 @@
 - `/game`은 일반 웹 레이아웃 안의 게임 안내/시작 페이지로 사용합니다.
 - `/lobby`는 로비/상점/성장 화면으로 사용합니다.
 - React는 대시보드, 로그인, 랭킹, 프로필, 관리자 UI를 담당합니다.
-- PixiJS는 실제 게임 플레이 화면과 터치/전투/웨이브 연출을 담당합니다.
+- PixiJS는 실제 게임 플레이 화면과 터치/전투/웨이브/스킬/궁극기 연출을 담당합니다.
 - 게임 규칙은 `packages/game`의 순수 TypeScript 로직으로 관리합니다.
 - 기존에 동작하던 PixiJS 클라이언트를 새로 만들지 않고, 기존 클라이언트에 작은 단위로 기능을 추가합니다.
-- 한 파일에 기능을 몰아넣지 않고, 렌더링/컨트롤/보드/적/전투/웨이브 런타임을 계속 분리합니다.
+- 한 파일에 기능을 몰아넣지 않고, 렌더링/컨트롤/보드/적/전투/스킬/궁극기/이펙트/웨이브 런타임을 계속 분리합니다.
 
 ## 2. 완료된 인프라
 
@@ -157,7 +157,7 @@ API는 `game_runs`에 기록을 저장하고, 최고 점수일 경우 `leaderboa
 - 적이 실제 경로를 따라 이동
 - 적 누수 시 코어 HP 감소
 - 유닛 자동 타겟팅
-- 투사체 공격 연출
+- 영웅별 기본공격 FX
 - 적 HP 감소와 HP바 갱신
 - 적 처치 시 코인 보상 지급
 - 딜러 보스 우선 타겟팅
@@ -177,15 +177,55 @@ API는 `game_runs`에 기록을 저장하고, 최고 점수일 경우 `leaderboa
 - 전역 등급 합성 로직
 - 유닛 판매 메뉴
 - 유닛 클릭 정보 패널
+- 스킬 1/2 좌우 분리 정보 표시
+- 궁극기 효과와 발동 조건 표시
 - 빈 화면 터치 시 메뉴/정보 패널 닫기
 - 신화 조합 메뉴
 - 고유 유닛 재료 기반 신화 조합
 - 신화 조합 재료 보유 수 / 필요 수 표시
-- 트레이서 스프라이트 공격 방향 연출
+- 신화 영웅 궁극기 게이지 바
+- 공격/시간 경과 기반 궁극기 게이지 충전
+- 신화 영웅 스킬 확률 발동
+- 신화 영웅 궁극기 발동
+- Tracer, Kiriko, D.Va, Zarya, Cassidy, Winston 스프라이트 시트 적용
 - 테스트 모드 컨트롤
+- 테스트 모드 몬스터 체력 50배/100배 옵션
 - 게임 종료 시 기록 저장 API 호출
 
-### 3.3 PixiJS 파일 분리 현황
+### 3.3 신화 영웅 스킬/궁극기 상태
+
+현재 신화 영웅:
+
+```text
+D.Va, 자리야, 윈스턴, 트레이서, 캐서디, 겐지, 아나, 키리코, 일리아리
+```
+
+현재 스킬 발동 구조:
+
+- 공격형 스킬: 기본 42% 확률
+- 제어형 스킬: 기본 30% 확률
+- 지원형 스킬: 기본 24% 확률
+- 자리야 입자포: 지속 빔/차지형 예외 처리
+- 아나 수면총: 일반/보스 모두 3초 수면 가능
+- 겐지 질풍참: 체력 낮은 적 우선, 처치 시 연속 발동
+- 키리코 여우길: 5초간 공격속도 200%
+- 윈스턴 기본공격: 좁은 전기 광선형 체인 공격
+
+현재 궁극기 구현:
+
+```text
+D.Va: 영웅 위치 기준 자폭 광역 폭발
+자리야: 중력자탄 3초 흡입/속박
+트레이서: 펄스폭탄 부착 후 0.5초 뒤 폭발
+캐서디: 3초 락온 후 진행도 비례 피해
+윈스턴: 원시의 분노 광역 충격파/감속
+겐지: 용검 연속 베기
+아나: 나노 강화제 공격 배율 증가
+키리코: 여우길 공격속도 200%
+일리아리: 태양 작렬 광역 폭발
+```
+
+### 3.4 PixiJS 파일 분리 현황
 
 현재 주요 PixiJS 파일:
 
@@ -201,12 +241,19 @@ apps/web/src/game-client/pixi/pixiRenderRuntime.ts
 apps/web/src/game-client/pixi/pixiBoardRuntime.ts
 apps/web/src/game-client/pixi/pixiBoardRenderRuntime.ts
 apps/web/src/game-client/pixi/pixiBoardView.ts
+apps/web/src/game-client/pixi/pixiHeroSpriteView.ts
 apps/web/src/game-client/pixi/pixiHudView.ts
 apps/web/src/game-client/pixi/pixiControlsView.ts
 apps/web/src/game-client/pixi/pixiEnemyRuntime.ts
 apps/web/src/game-client/pixi/pixiEnemyMovementRuntime.ts
 apps/web/src/game-client/pixi/pixiEnemyView.ts
 apps/web/src/game-client/pixi/pixiCombatRuntime.ts
+apps/web/src/game-client/pixi/pixiSkillRuntime.ts
+apps/web/src/game-client/pixi/pixiUltimateRuntime.ts
+apps/web/src/game-client/pixi/pixiHeroAttackFxRuntime.ts
+apps/web/src/game-client/pixi/pixiUltimateFxRuntime.ts
+apps/web/src/game-client/pixi/pixiWinstonBeamRuntime.ts
+apps/web/src/game-client/pixi/pixiFxPoolRuntime.ts
 apps/web/src/game-client/pixi/pixiWaveRuntime.ts
 apps/web/src/game-client/pixi/pixiWaveFlowRuntime.ts
 apps/web/src/game-client/pixi/pixiWaveFeedbackRuntime.ts
@@ -236,6 +283,24 @@ apps/web/src/game-client/pixi/animation/animationManager.ts
 - cleanup
 
 다음 리팩터링 목표는 `createPixiGame.ts`를 초기화/조립/cleanup 중심으로 더 줄이는 것입니다.
+
+### 3.5 FX/최적화 상태
+
+최근 기본공격/궁극기 이펙트가 강화되었습니다.
+
+구현된 FX 파일:
+
+- `pixiHeroAttackFxRuntime.ts`: D.Va, 트레이서, 캐서디, 겐지, 아나, 키리코, 일리아리 기본공격 고유 FX
+- `pixiWinstonBeamRuntime.ts`: 윈스턴 전기 광선형 기본공격 FX
+- `pixiUltimateFxRuntime.ts`: 신화 영웅 궁극기 고유 FX
+- `pixiFxPoolRuntime.ts`: `Graphics` 객체 재사용 풀
+
+최적화 방향:
+
+- 이펙트 퀄리티를 낮추지 않고 객체 생성/파괴 비용을 줄입니다.
+- 공격/궁극기/윈스턴 전기 FX는 `acquireFxGraphics` / `releaseFxGraphics`를 사용합니다.
+- 게임 cleanup 시 `destroyFxGraphicsPool(refs)`로 풀을 정리합니다.
+- 현재 풀 최대치는 게임 인스턴스당 96개입니다.
 
 ## 4. 현재 게임 규칙 구현 상태
 
@@ -298,7 +363,7 @@ apps/web/src/game-client/pixi/animation/animationManager.ts
 
 주의:
 
-- 실제 `/play`의 실시간 적 이동/공격/처치/보상 처리는 Pixi runtime 쪽에서 직접 갱신하는 부분이 있습니다.
+- 실제 `/play`의 실시간 적 이동/공격/처치/보상/스킬/궁극기 처리는 Pixi runtime 쪽에서 직접 갱신하는 부분이 있습니다.
 - 장기적으로 점수/보상/검증 기준은 `packages/game` 쪽으로 더 모으는 것이 좋습니다.
 
 ## 5. 현재 주요 유닛/등급
@@ -361,24 +426,29 @@ mythic
 
 이번 동기화에서 반영한 차이:
 
-- API placeholder 표현 제거
-- Discord OAuth 실제 구현 상태 반영
-- 게임 기록 저장 / 랭킹 API 연결 상태 반영
+- API placeholder 표현 제거 상태 유지
+- Discord OAuth 실제 구현 상태 반영 상태 유지
+- 게임 기록 저장 / 랭킹 API 연결 상태 반영 상태 유지
 - 4x5 보드 표현으로 통일
 - `/play-test`, `/lobby` 라우트 반영
-- 실제 PixiJS runtime 파일 목록 반영
-- 신화 유닛 목록을 현재 코드 기준으로 수정
-- 적 이동/공격/웨이브가 실제 구현된 상태로 수정
-- 다음 작업에서 로그인/랭킹 연결을 “이후”로 보던 표현을 제거
+- 실제 PixiJS runtime 파일 목록 최신화
+- 신화 유닛 목록을 현재 코드 기준으로 유지
+- 적 이동/공격/웨이브가 실제 구현된 상태로 유지
+- 신화 영웅 스킬/궁극기 게이지/궁극기 발동 구현 반영
+- 영웅별 기본공격 FX와 궁극기 FX 구현 반영
+- Tracer, Kiriko, D.Va, Zarya, Cassidy, Winston 스프라이트 적용 반영
+- `pixiFxPoolRuntime.ts` 기반 `Graphics` 풀 최적화 반영
 
 ## 8. 현재 주요 리스크
 
-1. `createPixiGame.ts`에 아직 조립 책임이 많습니다.
-2. 점수/보상 계산이 `packages/game`과 Pixi runtime에 나뉘어 있습니다.
-3. `durationSeconds`가 현재 0으로 저장됩니다.
-4. 클라이언트 결과를 서버가 아직 강하게 재검증하지 않습니다.
-5. 로컬 OAuth 테스트 시 `secure: true` cookie 때문에 HTTP 환경에서 세션 저장이 안 될 수 있습니다.
-6. 새 기능 추가 후 `pnpm build:web`, `pnpm typecheck`, `/play` 회귀 테스트가 필요합니다.
+1. `pnpm build:web`, `pnpm typecheck`를 최근 FX/최적화 변경 이후 아직 실행 확인해야 합니다.
+2. `createPixiGame.ts`에 아직 조립 책임이 많습니다.
+3. 점수/보상 계산이 `packages/game`과 Pixi runtime에 나뉘어 있습니다.
+4. `durationSeconds`가 현재 0으로 저장됩니다.
+5. 클라이언트 결과를 서버가 아직 강하게 재검증하지 않습니다.
+6. 로컬 OAuth 테스트 시 `secure: true` cookie 때문에 HTTP 환경에서 세션 저장이 안 될 수 있습니다.
+7. 이펙트가 화려해진 만큼 모바일 실기기 프레임 확인이 필요합니다.
+8. 궁극기/스킬/FX가 늘어났으므로 `/play-test`에서 신화 영웅별 회귀 테스트가 필요합니다.
 
 ## 9. 다음 작업 우선순위
 
@@ -393,8 +463,10 @@ mythic
 5. 소환/드래그/스택/합성/판매 회귀 테스트
 6. 웨이브 시작/적 이동/공격/누수/보상 회귀 테스트
 7. 신화 조합창 재료 표시/조합 가능 여부 확인
-8. 게임 종료 후 로그인 상태 기록 저장 확인
-9. 랭킹 화면 기록 반영 확인
+8. 신화 영웅 스킬 1/2 확률 발동 확인
+9. 신화 영웅 궁극기 게이지/발동/FX 확인
+10. 게임 종료 후 로그인 상태 기록 저장 확인
+11. 랭킹 화면 기록 반영 확인
 
 ### 9.2 다음 개발
 
@@ -403,9 +475,10 @@ mythic
 3. suspicious/hidden 기록 처리 추가
 4. 점수/보상 계산 기준을 `packages/game` 쪽으로 정리
 5. `createPixiGame.ts` 추가 분리
-6. 유닛별 고유 효과 시각화 강화
-7. 실제 이미지/스프라이트 에셋 교체 확대
-8. 모바일 터치 UX 개선
+6. 보드 전체 리렌더 감소와 게이지 레이어 분리
+7. 모바일 실기기 프레임/발열 확인
+8. 실제 이미지/스프라이트 에셋 교체 확대
+9. 모바일 터치 UX 개선
 
 ## 10. 개발 원칙
 
@@ -414,4 +487,5 @@ mythic
 - 기존에 동작하던 클라이언트를 버리고 새로 만들지 않습니다.
 - 전체 파일 재생성 방식은 지양하고, 기능 단위로 작은 패치를 적용합니다.
 - PixiJS 객체는 매 프레임 재생성하지 않고, 가능한 한 생성 후 재사용합니다.
+- 이펙트 퀄리티를 낮추기보다 객체 풀/레이어 분리/리렌더 최소화로 최적화합니다.
 - 작업 중 진행상황을 짧게 공유합니다.
