@@ -27,6 +27,8 @@ export type PixiCombatRuntimeOptions = {
   drawBoard: (refs: GameRefs, layout: ReturnType<typeof createGameLayout>) => void;
 };
 
+const SPRITE_ATTACK_HERO_IDS = new Set(["tracer", "kiriko"]);
+
 function roleAccent(role: HeroRole | undefined) {
   if (role === "tank") return 0x87b7ff;
   if (role === "support") return 0x7dffb2;
@@ -127,7 +129,7 @@ function applySupportSplash(
 }
 
 function triggerHeroSpriteAttack(refs: GameRefs, hero: BoardHero, from: { x: number; y: number }, target: ActiveEnemy, options: PixiCombatRuntimeOptions) {
-  if (hero.heroId !== "tracer") return;
+  if (!SPRITE_ATTACK_HERO_IDS.has(hero.heroId)) return;
 
   refs.heroSpriteAttacks[hero.instanceId] = {
     direction: target.x < from.x ? "left" : "right",
