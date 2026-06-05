@@ -2,6 +2,7 @@ import { Container, Graphics, Text } from "pixi.js";
 import type { GameLayout } from "./gameLayout";
 import { colors } from "./gameTheme";
 import { paintControlButton, paintControlDock } from "./pixiControlButtonPaint";
+import { makeGameText } from "./pixiTextStyles";
 
 export type ControlsWavePhase = "countdown" | "combat" | "result";
 
@@ -43,19 +44,6 @@ export type PixiControlsView = {
   lastKey: string;
 };
 
-function makeText(value: string, size = 18, fill: number = colors.white) {
-  return new Text({
-    text: value,
-    style: {
-      fill,
-      fontFamily: "Arial, sans-serif",
-      fontSize: size,
-      fontWeight: "bold",
-      stroke: { color: colors.black, width: size > 18 ? 4 : 2 },
-    },
-  });
-}
-
 function redrawPanel(graphics: Graphics, width: number, height: number, fill: number, disabled: boolean, radius = 14) {
   paintControlButton(graphics, width, height, fill, disabled, radius);
 }
@@ -73,8 +61,8 @@ function createButton(width: number, height: number, color: number, onTap: () =>
   const root = new Container();
   const background = new Graphics();
   const compact = height <= 56;
-  const subText = makeText("", compact ? 10 : 12, colors.black);
-  const mainText = makeText("", compact ? 17 : 22, colors.white);
+  const subText = makeGameText("", { size: compact ? 10 : 12, fill: colors.black, strokeWidth: 1, shadow: false });
+  const mainText = makeGameText("", { size: compact ? 17 : 22, fill: colors.white, strokeWidth: compact ? 3 : 4 });
   mainText.anchor.set(0.5, 0);
 
   root.addChild(background, subText, mainText);
