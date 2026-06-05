@@ -61,6 +61,7 @@ export type GameRefs = {
   dragging: DragState | null;
   movementLocked: boolean;
   selectedCellIndex: number | null;
+  rangePreview: Container | null;
   menu: Container | null;
   wavePhase: WavePhase;
   nextWaveTimer: number;
