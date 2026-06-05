@@ -50,11 +50,11 @@ function redrawPanel(graphics: Graphics, width: number, height: number, fill: nu
 
 function drawWaveBacking(graphics: Graphics, x: number, y: number, width: number, height: number) {
   graphics.clear();
-  graphics.roundRect(x + 3, y + 5, width, height, 16);
-  graphics.fill({ color: 0x000000, alpha: 0.14 });
-  graphics.roundRect(x, y, width, height, 16);
-  graphics.fill({ color: 0x2d211d, alpha: 0.48 });
-  graphics.stroke({ color: 0x1a1110, width: 3, alpha: 0.66 });
+  graphics.roundRect(x + 3, y + 5, width, height, 14);
+  graphics.fill({ color: 0x000000, alpha: 0.12 });
+  graphics.roundRect(x, y, width, height, 14);
+  graphics.fill({ color: 0x2d211d, alpha: 0.34 });
+  graphics.stroke({ color: 0x1a1110, width: 3, alpha: 0.52 });
 }
 
 function createButton(width: number, height: number, color: number, onTap: () => void): PixiButtonView {
@@ -174,10 +174,10 @@ export function updatePixiControlsView(view: PixiControlsView, layout: GameLayou
 
   const waveLabel = snapshot.wavePhase === "combat" ? `${snapshot.aliveEnemyCount}마리` : snapshot.wavePhase === "result" ? "가능" : "대기";
   view.wave.color = snapshot.wavePhase === "combat" ? 0xd94a4a : snapshot.wavePhase === "result" ? 0xffc42a : colors.orange;
-  view.wave.width = 96;
-  view.wave.height = 44;
-  view.wave.root.x = layout.width - 112;
-  view.wave.root.y = layout.mapTop + 150;
+  view.wave.width = 104;
+  view.wave.height = 42;
+  view.wave.root.x = (layout.width - view.wave.width) / 2;
+  view.wave.root.y = layout.topHudY + 110;
   drawWaveBacking(view.waveBacking, view.wave.root.x - 5, view.wave.root.y - 5, view.wave.width + 10, view.wave.height + 10);
   updateButton(view.wave, "웨이브", waveLabel, snapshot.waveDisabled);
 }
