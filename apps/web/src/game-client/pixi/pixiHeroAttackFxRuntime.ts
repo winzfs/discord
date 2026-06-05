@@ -117,16 +117,30 @@ function drawImpactBurst(graphics: Graphics, point: Point, color: number, progre
   }
 }
 
-function drawArcSlash(graphics: Graphics, center: Point, progress: number, color: number, radius = 34, angleOffset = 0) {
+function drawArcSlash(graphics: Graphics, center: Point, progress: number, color: number, radius = 24, angleOffset = 0) {
   const local = clamp01(progress);
   const alpha = 0.9 * (1 - local * 0.4);
   const angle = -1.35 + local * 2.05 + angleOffset;
-  graphics.arc(center.x, center.y, radius, angle, angle + 1.28);
-  graphics.stroke({ color, width: 9 * (1 - local * 0.38), alpha: alpha * 0.22 });
-  graphics.arc(center.x, center.y, radius * 0.76, angle + 0.08, angle + 1.12);
-  graphics.stroke({ color, width: 4.2 * (1 - local * 0.28), alpha: alpha * 0.52 });
-  graphics.arc(center.x, center.y, radius * 0.58, angle + 0.16, angle + 0.95);
-  graphics.stroke({ color: 0xffffff, width: 1.8, alpha });
+  graphics.arc(center.x, center.y, radius, angle, angle + 1.1);
+  graphics.stroke({ color, width: 5.2 * (1 - local * 0.36), alpha: alpha * 0.38 });
+  graphics.arc(center.x, center.y, radius * 0.64, angle + 0.08, angle + 0.92);
+  graphics.stroke({ color: 0xffffff, width: 1.6, alpha });
+}
+
+function drawShuriken(graphics: Graphics, point: Point, angle: number, color: number, alpha: number, size = 8) {
+  for (let index = 0; index < 4; index += 1) {
+    const bladeAngle = angle + index * (Math.PI / 2);
+    const tip = { x: point.x + Math.cos(bladeAngle) * size, y: point.y + Math.sin(bladeAngle) * size };
+    const left = { x: point.x + Math.cos(bladeAngle + 2.45) * size * 0.34, y: point.y + Math.sin(bladeAngle + 2.45) * size * 0.34 };
+    const right = { x: point.x + Math.cos(bladeAngle - 2.45) * size * 0.34, y: point.y + Math.sin(bladeAngle - 2.45) * size * 0.34 };
+    graphics.moveTo(tip.x, tip.y);
+    graphics.lineTo(left.x, left.y);
+    graphics.lineTo(point.x, point.y);
+    graphics.lineTo(right.x, right.y);
+    graphics.fill({ color: index % 2 === 0 ? 0xffffff : color, alpha: alpha * (index % 2 === 0 ? 0.9 : 0.72) });
+  }
+  graphics.circle(point.x, point.y, size * 0.18);
+  graphics.fill({ color, alpha });
 }
 
 function finishHit(fx: Graphics, options: PixiHeroAttackFxOptions, target: ActiveEnemy, damage: number, color: number) {
@@ -235,10 +249,11 @@ function graphicsBullet(graphics: Graphics, point: Point, angle: number, color: 
 function spawnGenjiShuriken(refs: GameRefs, options: PixiHeroAttackFxOptions, from: Point, target: ActiveEnemy, damage: number) {
   const fx = new Graphics();
   const targetAtFire = { x: target.x, y: target.y };
+  const angle = angleBetween(from, targetAtFire);
   refs.effects.addChild(fx);
 
   options.addAnimation(refs, {
-    duration: 240,
+    duration: 230,
     update: (progress) => {
       fx.clear();
       [-1, 0, 1].forEach((offset, index) => {
@@ -246,11 +261,17 @@ function spawnGenjiShuriken(refs: GameRefs, options: PixiHeroAttackFxOptions, fr
         if (local <= 0 || local >= 1) return;
         const end = { x: targetAtFire.x + offset * 10, y: targetAtFire.y - Math.abs(offset) * 5 };
         const point = pointAt(from, end, easeOutExpo(local));
-        drawShortTracer(fx, from, end, local, 0x7dff7a, 0.42, 4.6, 0.16);
-        drawArcSlash(fx, point, local, 0x7dff7a, 15 + Math.abs(offset) * 3, offset * 0.28);
-        drawSoftOrb(fx, point, 0x7dff7a, 2.8, 0.7);
+        drawShortTracer(fx, from, end, local, 0x7dff7a, 0.36, 3.4, 0.12);
+        drawSoftOrb(fx, point, 0x7dff7a, 2.4, 0.58);
+        drawShuriken(fx, point, angle + local * Math.PI * 8 + offset * 0.4, 0x7dff7a, 0.92, 6.5);
       });
-      if (progress > 0.58) drawImpactBurst(fx, targetAtFire, 0x7dff7a, (progress - 0.58) / 0.42, 22, 8);
+
+      if (progress > 0.66) {
+        const hitProgress = (progress - 0.66) / 0.34;
+        drawArcSlash(fx, targetAtFire, hitProgress, 0x7dff7a, 18, -0.3);
+        drawArcSlash(fx, targetAtFire, hitProgress, 0x7dff7a, 14, 1.4);
+        drawImpactBurst(fx, targetAtFire, 0x7dff7a, hitProgress, 18, 7);
+      }
     },
     done: () => finishHit(fx, options, target, damage, 0x7dff7a),
   });
