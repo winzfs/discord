@@ -65,14 +65,16 @@ export function createPixiHudView(parent: Container): PixiHudView {
     luckChip: new Graphics(),
     firepowerText: makeGameText("화력 0", { size: 14, strokeWidth: 2 }),
     unitsText: makeGameText("0 / 0", { size: 14, strokeWidth: 2 }),
-    coinText: makeGameText("코인 0", { size: 15, fill: colors.yellow, strokeWidth: 3 }),
-    luckText: makeGameText("행운석 0", { size: 15, fill: colors.blue, strokeWidth: 3 }),
+    coinText: makeGameText("코인 0", { size: 14, fill: colors.yellow, strokeWidth: 3 }),
+    luckText: makeGameText("행운석 0", { size: 14, fill: colors.blue, strokeWidth: 3 }),
   };
 
   view.waveText.anchor.set(0.5, 0);
   view.timerText.anchor.set(0.5, 0);
   view.hpText.anchor.set(0.5, 0);
   view.unitsText.anchor.set(0.5, 0);
+  view.coinText.anchor.set(0.5, 0);
+  view.luckText.anchor.set(0.5, 0);
 
   view.root.addChild(
     view.waveBox,
@@ -146,14 +148,19 @@ export function updatePixiHudView(view: PixiHudView, layout: GameLayout, snapsho
   view.unitsText.x = layout.width - 76;
   view.unitsText.y = chipY + 5;
 
-  const resourceY = layout.height - 228;
-  drawChip(view.luckChip, 24, resourceY, 118, 30, 0x223d48);
+  const resourceY = layout.height - 206;
+  const resourceGap = 8;
+  const resourceWidth = 96;
+  const resourceTotalWidth = resourceWidth * 2 + resourceGap;
+  const resourceX = layout.width / 2 - resourceTotalWidth / 2;
+
+  drawChip(view.luckChip, resourceX, resourceY, resourceWidth, 28, 0x223d48);
   view.luckText.text = `행운석 ${snapshot.luckStones}`;
-  view.luckText.x = 36;
+  view.luckText.x = resourceX + resourceWidth / 2;
   view.luckText.y = resourceY + 5;
 
-  drawChip(view.coinChip, 24, resourceY + 36, 106, 30, 0x4f3d1e);
+  drawChip(view.coinChip, resourceX + resourceWidth + resourceGap, resourceY, resourceWidth, 28, 0x4f3d1e);
   view.coinText.text = `코인 ${snapshot.resources}`;
-  view.coinText.x = 36;
-  view.coinText.y = resourceY + 41;
+  view.coinText.x = resourceX + resourceWidth + resourceGap + resourceWidth / 2;
+  view.coinText.y = resourceY + 5;
 }
