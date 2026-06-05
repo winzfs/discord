@@ -29,5 +29,9 @@ export function drawBoard(
           createDragRuntimeOptions(),
         ),
     },
+    {
+      heroSpriteAttacks: refs.heroSpriteAttacks,
+      now: Date.now(),
+    },
   );
 }
