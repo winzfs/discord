@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { LobbyHeroPortrait } from "../components/lobby/LobbyHeroPortrait";
 import {
   formatPercent,
   getArtifactEffectAtLevel,
@@ -146,7 +147,7 @@ function HeroesView({ heroes, onDetail }: { heroes: LobbyHero[]; onDetail: (deta
               onClick={() => onDetail(detail)}
             >
               <em>{gradeLabel(hero.grade)}</em>
-              <div className="hero-portrait">{hero.owned ? hero.displayName.slice(0, 2) : "?"}</div>
+              <LobbyHeroPortrait hero={hero} />
               <strong>{hero.displayName}</strong>
               <small>{hero.owned ? `Lv.${hero.level} · ${roleLabel(hero.role)}` : "미보유"}</small>
               <span>{hero.owned ? `${hero.shards}/${required}` : "비활성"}</span>
