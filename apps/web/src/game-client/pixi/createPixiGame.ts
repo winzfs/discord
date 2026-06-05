@@ -296,6 +296,7 @@ export function createPixiGame(parent: HTMLElement): PixiGameHandle {
     waveLostLives: 0,
     lastWaveSummary: null,
     resultSubmitted: false,
+    testEnemyHpMultiplier: 1,
   };
   let destroyed = false;
 
