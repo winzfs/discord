@@ -70,6 +70,7 @@ import {
   type PixiTestControlsView,
 } from "./pixiTestControlsView";
 import { chargeMythicUltimatesOverTime, getAttackIntervalMultiplier } from "./pixiUltimateRuntime";
+import { destroyFxGraphicsPool } from "./pixiFxPoolRuntime";
 
 export type PixiGameHandle = { cleanup: () => void };
 export type PixiGameOptions = { testMode?: boolean };
@@ -350,6 +351,7 @@ export function createPixiGame(parent: HTMLElement, options: PixiGameOptions = {
     });
 
     if (destroyed) {
+      destroyFxGraphicsPool(refs);
       app.destroy({ removeView: true }, { children: true });
       return;
     }
@@ -398,6 +400,7 @@ export function createPixiGame(parent: HTMLElement, options: PixiGameOptions = {
         testControlsView = null;
       }
       refs.activeEnemies.forEach(destroyActiveEnemy);
+      destroyFxGraphicsPool(refs);
       app.destroy({ removeView: true }, { children: true });
     },
   };
