@@ -41,15 +41,15 @@ function getSkillConditionText(heroId: string, skill: SkillDefinition) {
     return "자동 공격 시 지속 빔. 같은 대상 연속 공격 시 차지/피해 증가";
   }
 
-  if (skill.type === "attack") return "기본 자동 공격 컨셉. 현재 전투력/사거리 계산에 반영";
-  if (skill.type === "ultimate") return "궁극기 컨셉 데이터만 있음. 아직 자동 발동 미구현";
-  return "스킬 컨셉 데이터만 있음. 아직 자동 발동 미구현";
+  if (skill.type === "ultimate") return "노란 궁극기 게이지 100% 충전 시 자동 발동";
+  if (skill.type === "attack") return "자동 공격 시 함께 발동";
+  if (skill.type === "control") return "자동 공격 적중 시 감속/약화 효과로 발동";
+  return "자동 공격 적중 시 보조 효과로 발동";
 }
 
-function getSkillStatusText(heroId: string, skill: SkillDefinition) {
-  if (heroId === "zarya" && skill.id === "zarya-particle-cannon") return "발동 중";
-  if (skill.type === "attack") return "부분 반영";
-  return "미구현";
+function getSkillStatusText(skill: SkillDefinition) {
+  if (skill.type === "ultimate") return "게이지 발동";
+  return "자동 발동";
 }
 
 function makeInfoLine(value: string, y: number, fill = 0xd8d0c8, size = 11) {
@@ -116,7 +116,7 @@ export function drawPixiUnitInfoView(target: Container, options: PixiUnitInfoVie
     y += 16;
   } else {
     normalSkills.slice(0, 2).forEach((skill) => {
-      const line = `${skill.displayName} [${skillTypeLabel(skill.type)} · ${getSkillStatusText(options.hero.heroId, skill)}]`;
+      const line = `${skill.displayName} [${skillTypeLabel(skill.type)} · ${getSkillStatusText(skill)}]`;
       view.addChild(makeInfoLine(line, y, colors.white));
       y += 15;
       view.addChild(makeInfoLine(`조건: ${getSkillConditionText(options.hero.heroId, skill)}`, y, 0xb7afa8, 10));
@@ -134,7 +134,7 @@ export function drawPixiUnitInfoView(target: Container, options: PixiUnitInfoVie
     view.addChild(makeInfoLine("등록된 궁극기 없음", y, 0xb7afa8));
   } else {
     ultimateSkills.slice(0, 1).forEach((skill) => {
-      const line = `${skill.displayName} [${getSkillStatusText(options.hero.heroId, skill)}]`;
+      const line = `${skill.displayName} [${getSkillStatusText(skill)}]`;
       view.addChild(makeInfoLine(line, y, colors.white));
       y += 15;
       view.addChild(makeInfoLine(`조건: ${getSkillConditionText(options.hero.heroId, skill)}`, y, 0xb7afa8, 10));
