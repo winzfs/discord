@@ -144,33 +144,24 @@ function getStackOffset(stackCount: number, index: number, cell: number) {
   return { x: cell * 0.17, y: cell * 0.13, scale: 0.74 };
 }
 
-function drawUnitBaseShadow(target: Container, x: number, y: number, cellWidth: number, cellHeight: number, cell: number, hero: BoardHero, offsetX: number, offsetY: number, scale: number) {
+function drawCellUnitShadow(target: Container, x: number, y: number, cellWidth: number, cellHeight: number, cell: number, hero: BoardHero) {
+  const centerX = x + cellWidth / 2;
+  const centerY = y + cellHeight * 0.74;
+
   const shadow = new Graphics();
-  shadow.ellipse(
-    x + cellWidth / 2 + offsetX,
-    y + cellHeight * 0.72 + offsetY,
-    cell * 0.22 * scale,
-    cell * 0.065 * scale,
-  );
-  shadow.fill({ color: 0x1f3d17, alpha: 0.28 });
+  shadow.ellipse(centerX, centerY, cell * 0.25, cell * 0.075);
+  shadow.fill({ color: 0x10260d, alpha: 0.58 });
   target.addChild(shadow);
 
-  const gradeGlow = new Graphics();
-  gradeGlow.ellipse(
-    x + cellWidth / 2 + offsetX,
-    y + cellHeight * 0.72 + offsetY,
-    cell * 0.17 * scale,
-    cell * 0.045 * scale,
-  );
-  gradeGlow.fill({ color: gradeColor(hero.grade), alpha: 0.34 });
-  target.addChild(gradeGlow);
+  const gradeTint = new Graphics();
+  gradeTint.ellipse(centerX, centerY, cell * 0.2, cell * 0.055);
+  gradeTint.fill({ color: gradeColor(hero.grade), alpha: 0.56 });
+  target.addChild(gradeTint);
 }
 
 function drawUnitMarker(target: Container, x: number, y: number, cellWidth: number, cellHeight: number, hero: BoardHero, stackCount: number, stackIndex: number) {
   const unitCell = Math.min(cellWidth, cellHeight);
   const offset = getStackOffset(stackCount, stackIndex, unitCell);
-  drawUnitBaseShadow(target, x, y, cellWidth, cellHeight, unitCell, hero, offset.x, offset.y, offset.scale);
-
   const marker = new Container();
   marker.x = x + cellWidth / 2 + offset.x;
   marker.y = y + cellHeight * 0.48 + offset.y;
@@ -194,6 +185,10 @@ export function drawBoardCells(target: Container, board: Array<{ units: BoardHer
       mergeHint.ellipse(x + metrics.cellWidth / 2, y + metrics.cellHeight * 0.76, metrics.cell * 0.18, metrics.cell * 0.055);
       mergeHint.fill({ color: colors.yellow, alpha: 0.42 });
       target.addChild(mergeHint);
+    }
+
+    if (units.length > 0) {
+      drawCellUnitShadow(target, x, y, metrics.cellWidth, metrics.cellHeight, metrics.cell, units[0]);
     }
 
     units.forEach((unit, unitIndex) => drawUnitMarker(target, x, y, metrics.cellWidth, metrics.cellHeight, unit, units.length, unitIndex));
