@@ -1,5 +1,6 @@
 import { Assets, Container, Rectangle, Sprite, Texture } from "pixi.js";
 import type { BoardHero } from "@discord-random-defense/game";
+import type { HeroSpriteAttackState } from "./pixiGameTypes";
 
 const HERO_TEXTURE_PATHS: Record<string, string> = {
   tracer: "/assets/heroes/tracer.png?v=20260605-tracer1",
@@ -39,15 +40,29 @@ function createFrameTexture(texture: Texture, row: number, rows: number) {
   });
 }
 
-function pickTracerFrameRow() {
-  return TRACER_FRAME_ROWS.idleRight;
+function pickTracerFrameRow(attackState: HeroSpriteAttackState | null | undefined, now: number) {
+  const isAttacking = attackState && attackState.until > now;
+  const direction = attackState?.direction ?? "right";
+
+  if (isAttacking) {
+    return direction === "left" ? TRACER_FRAME_ROWS.attackLeft : TRACER_FRAME_ROWS.attackRight;
+  }
+
+  return direction === "left" ? TRACER_FRAME_ROWS.idleLeft : TRACER_FRAME_ROWS.idleRight;
 }
 
 export function canDrawHeroSprite(hero: Pick<BoardHero, "heroId">) {
   return Boolean(HERO_TEXTURE_PATHS[hero.heroId]);
 }
 
-export function drawHeroSprite(target: Container, hero: Pick<BoardHero, "heroId">, cell: number, scale = 1) {
+export function drawHeroSprite(
+  target: Container,
+  hero: Pick<BoardHero, "heroId">,
+  cell: number,
+  scale = 1,
+  attackState?: HeroSpriteAttackState | null,
+  now = Date.now(),
+) {
   const texture = textureCache.get(hero.heroId);
 
   if (!texture) {
@@ -56,7 +71,7 @@ export function drawHeroSprite(target: Container, hero: Pick<BoardHero, "heroId"
   }
 
   if (hero.heroId === "tracer") {
-    const frameTexture = createFrameTexture(texture, pickTracerFrameRow(), 4);
+    const frameTexture = createFrameTexture(texture, pickTracerFrameRow(attackState, now), 4);
     const sprite = new Sprite(frameTexture);
     const maxWidth = cell * 0.82 * scale;
     const maxHeight = cell * 0.98 * scale;
