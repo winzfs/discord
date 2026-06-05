@@ -44,6 +44,15 @@ const ownedHeroIds = new Set([
   "plasma-mage",
   "core-knight",
   "overclock-tech",
+  "dva",
+  "zarya",
+  "winston",
+  "tracer",
+  "cassidy",
+  "genji",
+  "ana",
+  "kiriko",
+  "illari",
 ]);
 
 const ownedArtifactIds = new Set([
@@ -88,7 +97,7 @@ export function formatPercent(value: number) {
 
 export const initialHeroes: LobbyHero[] = heroes.map((hero, index) => {
   const owned = ownedHeroIds.has(hero.id);
-  const level = owned ? Math.max(1, Math.min(6, index + 1)) : 0;
+  const level = owned ? hero.grade === "mythic" ? 6 : Math.max(1, Math.min(6, index + 1)) : 0;
   const required = getHeroUpgradeRequirement(Math.max(1, level));
   return {
     ...hero,
