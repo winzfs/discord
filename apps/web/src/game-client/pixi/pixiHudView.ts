@@ -2,6 +2,7 @@ import { Container, Graphics, Text } from "pixi.js";
 import type { GameLayout } from "./gameLayout";
 import { colors } from "./gameTheme";
 import { drawGamePanel, drawSegmentedBar } from "./pixiGameUiPrimitives";
+import { makeGameText } from "./pixiTextStyles";
 
 export type HudWavePhase = "countdown" | "combat" | "result";
 
@@ -38,26 +39,6 @@ export type PixiHudView = {
   luckText: Text;
 };
 
-function makeText(value: string, size = 18, fill: number = colors.white) {
-  return new Text({
-    text: value,
-    style: {
-      fill,
-      fontFamily: "Arial, sans-serif",
-      fontSize: size,
-      fontWeight: "bold",
-      stroke: { color: colors.black, width: size > 18 ? 4 : 2 },
-      dropShadow: {
-        color: 0x000000,
-        alpha: 0.35,
-        blur: 0,
-        distance: 2,
-        angle: Math.PI / 2,
-      },
-    },
-  });
-}
-
 function drawChip(graphics: Graphics, x: number, y: number, width: number, height: number, fill: number) {
   graphics.clear();
   graphics.roundRect(x + 3, y + 5, width, height, height / 2);
@@ -73,19 +54,19 @@ export function createPixiHudView(parent: Container): PixiHudView {
   const view: PixiHudView = {
     root: new Container(),
     waveBox: new Graphics(),
-    waveText: makeText("WAVE 1", 18),
-    timerText: makeText("NEXT 8s", 19),
+    waveText: makeGameText("WAVE 1", { size: 18, strokeWidth: 3 }),
+    timerText: makeGameText("NEXT 8s", { size: 19, strokeWidth: 3 }),
     hpBackground: new Graphics(),
     hpFill: new Graphics(),
-    hpText: makeText("100 / 100", 16),
+    hpText: makeGameText("100 / 100", { size: 16, strokeWidth: 3 }),
     firepowerChip: new Graphics(),
     unitsChip: new Graphics(),
     coinChip: new Graphics(),
     luckChip: new Graphics(),
-    firepowerText: makeText("화력 0", 14),
-    unitsText: makeText("0 / 0", 14),
-    coinText: makeText("코인 0", 15, colors.yellow),
-    luckText: makeText("행운석 0", 15, colors.blue),
+    firepowerText: makeGameText("화력 0", { size: 14, strokeWidth: 2 }),
+    unitsText: makeGameText("0 / 0", { size: 14, strokeWidth: 2 }),
+    coinText: makeGameText("코인 0", { size: 15, fill: colors.yellow, strokeWidth: 3 }),
+    luckText: makeGameText("행운석 0", { size: 15, fill: colors.blue, strokeWidth: 3 }),
   };
 
   view.waveText.anchor.set(0.5, 0);
