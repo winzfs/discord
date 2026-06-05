@@ -163,26 +163,19 @@ function applyAttackDamage(refs: GameRefs, hero: BoardHero, role: HeroRole, targ
   }
 }
 
-function spawnZaryaBeamEffect(refs: GameRefs, from: { x: number; y: number }, target: ActiveEnemy, done: () => void) {
+function spawnZaryaBeamEffect(
+  refs: GameRefs,
+  options: PixiCombatRuntimeOptions,
+  from: { x: number; y: number },
+  target: ActiveEnemy,
+  done: () => void,
+) {
   const beam = new Graphics();
   const targetAtFire = { x: target.x, y: target.y };
   refs.effects.addChild(beam);
 
-  optionsAddBeamAnimation(refs, beam, from, targetAtFire, done);
-}
-
-function optionsAddBeamAnimation(
-  refs: GameRefs,
-  beam: Graphics,
-  from: { x: number; y: number },
-  targetAtFire: { x: number; y: number },
-  done: () => void,
-) {
-  const duration = 220;
-
-  refs.animations.push({
-    elapsed: 0,
-    duration,
+  options.addAnimation(refs, {
+    duration: 220,
     update: (progress) => {
       const alpha = 1 - progress * 0.45;
       beam.clear();
@@ -217,7 +210,7 @@ export function spawnAttackEffects(refs: GameRefs, options: PixiCombatRuntimeOpt
     triggerHeroSpriteAttack(refs, hero, from, target, options);
 
     if (hero.heroId === "zarya") {
-      spawnZaryaBeamEffect(refs, from, target, () => {
+      spawnZaryaBeamEffect(refs, options, from, target, () => {
         applyAttackDamage(refs, hero, role, target, damage, options);
         if (index === 0) {
           options.floatText(refs, `${damage}`, target.x, target.y - 18, colors.yellow);
