@@ -3,7 +3,7 @@ import type { ActiveEnemy, GameRefs } from "./pixiGameTypes";
 import { createEnemyView, destroyEnemyView, updateEnemyViewHp } from "./pixiEnemyView";
 
 export function createActiveEnemy(
-  refs: Pick<GameRefs, "effects" | "nextEnemyId" | "state">,
+  refs: Pick<GameRefs, "effects" | "nextEnemyId" | "state" | "testEnemyHpMultiplier">,
   enemyId: string,
   bossOverride = false,
 ): ActiveEnemy | null {
@@ -13,7 +13,8 @@ export function createActiveEnemy(
   const boss = bossOverride || definition.type === "boss";
   const wave = refs.state.currentWave;
   const hpScale = 0.68 + wave * 0.11 + (boss ? wave * 0.16 : 0);
-  const maxHp = Math.round(definition.health * hpScale);
+  const testMultiplier = Math.max(0.1, refs.testEnemyHpMultiplier || 1);
+  const maxHp = Math.round(definition.health * hpScale * testMultiplier);
   const view = createEnemyView(enemyId, definition.type, boss);
 
   refs.effects.addChild(view.root);
