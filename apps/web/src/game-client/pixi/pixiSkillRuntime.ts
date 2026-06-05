@@ -1,7 +1,7 @@
-import { Graphics } from "pixi.js";
 import type { BoardHero, HeroRole } from "@discord-random-defense/game";
 import type { ActiveEnemy, GameRefs } from "./pixiGameTypes";
 import { colors } from "./gameTheme";
+import { spawnGenjiDashStrike } from "./pixiGenjiDashRuntime";
 
 export type PixiSkillRuntimeOptions = {
   addAnimation: (
@@ -22,29 +22,9 @@ type Point = { x: number; y: number };
 const ATTACK_SKILL_CHANCE = 0.42;
 const CONTROL_SKILL_CHANCE = 0.3;
 const SUPPORT_SKILL_CHANCE = 0.24;
-const GENJI_DASH_MAX_TARGETS = 3;
-const GENJI_DASH_DURATION = 260;
-const GENJI_DASH_STAGGER = 118;
 
 function roll(refs: GameRefs, chance: number) {
   return refs.random() < chance;
-}
-
-function clamp01(value: number) {
-  return Math.max(0, Math.min(1, value));
-}
-
-function lerp(start: number, end: number, progress: number) {
-  return start + (end - start) * progress;
-}
-
-function easeOutCubic(progress: number) {
-  return 1 - Math.pow(1 - clamp01(progress), 3);
-}
-
-function easeInCubic(progress: number) {
-  const local = clamp01(progress);
-  return local * local * local;
 }
 
 function liveEnemies(refs: GameRefs) {
@@ -64,12 +44,6 @@ function frontEnemies(refs: GameRefs, target: ActiveEnemy, count: number) {
     .slice(0, count);
 }
 
-function lowestHpEnemies(refs: GameRefs, count: number) {
-  return liveEnemies(refs)
-    .sort((a, b) => a.hp / a.maxHp - b.hp / b.maxHp)
-    .slice(0, count);
-}
-
 function bossOrFrontEnemy(refs: GameRefs, target: ActiveEnemy) {
   return liveEnemies(refs).find((enemy) => enemy.boss) ?? target;
 }
@@ -82,17 +56,6 @@ function showSkillText(
   color: number,
 ) {
   options.floatText(refs, label, target.x, target.y - 34, color);
-}
-
-function drawDashSlash(fx: Graphics, point: Point, local: number, color: number) {
-  const alpha = Math.max(0, 1 - local);
-  const radius = 18 + local * 18;
-  const startAngle = -1.45 + local * 0.85;
-
-  fx.arc(point.x, point.y, radius, startAngle, startAngle + 1.85);
-  fx.stroke({ color, width: Math.max(1, 7 * alpha), alpha: 0.55 * alpha });
-  fx.arc(point.x, point.y, radius * 0.72, startAngle + 0.12, startAngle + 1.54);
-  fx.stroke({ color: 0xffffff, width: Math.max(1, 2.4 * alpha), alpha: 0.86 * alpha });
 }
 
 function applyDvaSkills(refs: GameRefs, options: PixiSkillRuntimeOptions, target: ActiveEnemy, baseDamage: number) {
@@ -118,7 +81,6 @@ function applyDvaSkills(refs: GameRefs, options: PixiSkillRuntimeOptions, target
 function applyZaryaSkills(refs: GameRefs, options: PixiSkillRuntimeOptions, hero: BoardHero, target: ActiveEnemy, baseDamage: number) {
   const beamCharge = refs.zaryaBeamCharges[hero.instanceId]?.charge ?? 1;
 
-  // Particle Cannon is always on. Barrier Charge is a support proc once beam is built up.
   if (beamCharge >= 3 && roll(refs, SUPPORT_SKILL_CHANCE)) {
     target.speed = Math.max(0.18, target.speed * 0.72);
     showSkillText(options, refs, "방벽 충전", target, 0xff7de9);
@@ -186,91 +148,6 @@ function applyCassidySkills(refs: GameRefs, options: PixiSkillRuntimeOptions, ta
   return damage;
 }
 
-function setGenjiDashOffset(refs: GameRefs, hero: BoardHero, from: Point, point: Point) {
-  refs.heroSpriteOffsets[hero.instanceId] = {
-    x: point.x - from.x,
-    y: point.y - from.y,
-    until: Date.now() + 90,
-  };
-}
-
-function spawnGenjiDashAnimation(
-  refs: GameRefs,
-  options: PixiSkillRuntimeOptions,
-  hero: BoardHero,
-  from: Point,
-  target: ActiveEnemy,
-  damage: number,
-  order: number,
-) {
-  const fx = new Graphics();
-  const targetAtDash = { x: target.x, y: target.y };
-  const delay = order * GENJI_DASH_STAGGER;
-  const totalDuration = delay + GENJI_DASH_DURATION;
-  let hitApplied = false;
-
-  refs.effects.addChild(fx);
-
-  options.addAnimation(refs, {
-    duration: totalDuration,
-    update: (progress) => {
-      const elapsed = progress * totalDuration;
-      if (elapsed < delay) return;
-
-      const local = clamp01((elapsed - delay) / GENJI_DASH_DURATION);
-      const toTargetProgress = local < 0.58
-        ? easeOutCubic(local / 0.58)
-        : 1 - easeInCubic((local - 0.58) / 0.42);
-      const point = {
-        x: lerp(from.x, targetAtDash.x, toTargetProgress),
-        y: lerp(from.y, targetAtDash.y, toTargetProgress),
-      };
-
-      refs.heroSpriteAttacks[hero.instanceId] = {
-        direction: targetAtDash.x < from.x ? "left" : "right",
-        until: Date.now() + 120,
-      };
-      setGenjiDashOffset(refs, hero, from, point);
-
-      fx.clear();
-      if (local >= 0.32) {
-        drawDashSlash(fx, targetAtDash, clamp01((local - 0.32) / 0.5), 0x7dff7a);
-      }
-      if (local < 0.72) {
-        fx.moveTo(from.x, from.y);
-        fx.lineTo(point.x, point.y);
-        fx.stroke({ color: 0x7dff7a, width: 4.5, alpha: 0.28 * (1 - local * 0.45) });
-        fx.moveTo(from.x, from.y);
-        fx.lineTo(point.x, point.y);
-        fx.stroke({ color: 0xffffff, width: 1.4, alpha: 0.62 * (1 - local * 0.5) });
-      }
-
-      if (!hitApplied && local >= 0.46) {
-        hitApplied = true;
-        if (target.alive) {
-          options.damageEnemy(refs, target, damage);
-          options.floatText(refs, order === 0 ? "질풍참" : `질풍참 ${order + 1}`, targetAtDash.x, targetAtDash.y - 34, 0x7dff7a);
-        }
-      }
-
-      options.drawBoard(refs);
-    },
-    done: () => {
-      fx.destroy();
-      delete refs.heroSpriteOffsets[hero.instanceId];
-      options.drawBoard(refs);
-    },
-  });
-}
-
-function applyGenjiDashStrike(refs: GameRefs, options: PixiSkillRuntimeOptions, hero: BoardHero, from: Point, baseDamage: number) {
-  const targets = lowestHpEnemies(refs, GENJI_DASH_MAX_TARGETS);
-  if (targets.length === 0) return;
-
-  const dashDamage = Math.max(1, Math.round(baseDamage * 1.08));
-  targets.forEach((target, index) => spawnGenjiDashAnimation(refs, options, hero, from, target, dashDamage, index));
-}
-
 function applyGenjiSkills(refs: GameRefs, options: PixiSkillRuntimeOptions, hero: BoardHero, from: Point, target: ActiveEnemy, baseDamage: number) {
   let damage = baseDamage;
 
@@ -283,7 +160,7 @@ function applyGenjiSkills(refs: GameRefs, options: PixiSkillRuntimeOptions, hero
   }
 
   if (roll(refs, ATTACK_SKILL_CHANCE)) {
-    applyGenjiDashStrike(refs, options, hero, from, baseDamage);
+    spawnGenjiDashStrike(refs, options, hero, from, baseDamage);
   }
 
   return damage;
