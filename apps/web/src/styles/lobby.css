@@ -166,6 +166,26 @@ button.artifact-card {
   font-weight: 900;
 }
 
+.mythic-hero-portrait {
+  position: relative;
+  overflow: hidden;
+  background: radial-gradient(circle at 50% 18%, rgba(255, 255, 255, 0.24), rgba(54, 31, 36, 0.86) 58%, #211816 100%);
+}
+
+.mythic-hero-idle-sprite {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 88%;
+  height: 330%;
+  background-repeat: no-repeat;
+  background-position: center top;
+  background-size: 100% 400%;
+  image-rendering: auto;
+  transform: translate(-50%, -11.5%);
+  filter: drop-shadow(0 7px 2px rgba(0, 0, 0, 0.32));
+}
+
 .price { font-size: 1.35rem; }
 
 .panel-tabs {
@@ -357,43 +377,4 @@ button.artifact-card {
   background: #ffd02f;
   color: #3a2418;
   font-weight: 900;
-}
-
-.lobby-upgrade:disabled {
-  background: #9b8b79;
-  color: #4c4138;
-}
-
-.lobby-bottom-nav {
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 12;
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  background: rgba(74, 55, 52, 0.96);
-  border-top: 4px solid rgba(255, 255, 255, 0.12);
-}
-
-.lobby-bottom-nav a,
-.lobby-bottom-nav button {
-  padding: 14px 4px;
-  border: 0;
-  background: transparent;
-  color: #fff8e6;
-  text-align: center;
-  text-decoration: none;
-  font-weight: 900;
-}
-
-.lobby-bottom-nav button.active {
-  background: rgba(255, 208, 47, 0.25);
-  color: #ffd02f;
-}
-
-@media (min-width: 760px) {
-  .lobby-shell { max-width: 460px; margin: 0 auto; border-left: 1px solid rgba(255,255,255,0.12); border-right: 1px solid rgba(255,255,255,0.12); }
-  .lobby-bottom-nav { max-width: 460px; margin: 0 auto; }
-  .detail-drawer { max-width: 430px; margin: 0 auto; }
 }
