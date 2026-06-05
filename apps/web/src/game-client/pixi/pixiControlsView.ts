@@ -50,11 +50,11 @@ function redrawPanel(graphics: Graphics, width: number, height: number, fill: nu
 
 function drawWaveBacking(graphics: Graphics, x: number, y: number, width: number, height: number) {
   graphics.clear();
-  graphics.roundRect(x + 3, y + 5, width, height, 14);
-  graphics.fill({ color: 0x000000, alpha: 0.12 });
-  graphics.roundRect(x, y, width, height, 14);
-  graphics.fill({ color: 0x2d211d, alpha: 0.34 });
-  graphics.stroke({ color: 0x1a1110, width: 3, alpha: 0.52 });
+  graphics.roundRect(x + 2, y + 4, width, height, 12);
+  graphics.fill({ color: 0x000000, alpha: 0.1 });
+  graphics.roundRect(x, y, width, height, 12);
+  graphics.fill({ color: 0x2d211d, alpha: 0.22 });
+  graphics.stroke({ color: 0x1a1110, width: 2, alpha: 0.42 });
 }
 
 function createButton(width: number, height: number, color: number, onTap: () => void): PixiButtonView {
@@ -95,7 +95,7 @@ function updateButton(button: PixiButtonView, label: string, sub: string, disabl
 
   button.mainText.text = label;
   button.mainText.x = button.width / 2;
-  button.mainText.y = compact ? 20 : 30;
+  button.mainText.y = sub ? (compact ? 20 : 30) : (compact ? 9 : 22);
   button.mainText.style.fill = disabled ? 0xffefe0 : colors.white;
   button.mainText.style.fontSize = compact ? 16 : 22;
 }
@@ -172,14 +172,13 @@ export function updatePixiControlsView(view: PixiControlsView, layout: GameLayou
   view.upgrade.root.y = layout.height - 145;
   updateButton(view.upgrade, snapshot.upgradeDisabled ? "강화 불가" : "공격력 강화", `비용 ${snapshot.upgradeCost}`, snapshot.upgradeDisabled);
 
-  const waveLabel = snapshot.wavePhase === "combat" ? `${snapshot.aliveEnemyCount}마리` : snapshot.wavePhase === "result" ? "가능" : "대기";
   view.wave.color = snapshot.wavePhase === "combat" ? 0xd94a4a : snapshot.wavePhase === "result" ? 0xffc42a : colors.orange;
-  view.wave.width = 104;
-  view.wave.height = 42;
+  view.wave.width = 92;
+  view.wave.height = 32;
   view.wave.root.x = (layout.width - view.wave.width) / 2;
-  view.wave.root.y = layout.topHudY + 110;
-  drawWaveBacking(view.waveBacking, view.wave.root.x - 5, view.wave.root.y - 5, view.wave.width + 10, view.wave.height + 10);
-  updateButton(view.wave, "웨이브", waveLabel, snapshot.waveDisabled);
+  view.wave.root.y = layout.topHudY + 114;
+  drawWaveBacking(view.waveBacking, view.wave.root.x - 4, view.wave.root.y - 4, view.wave.width + 8, view.wave.height + 8);
+  updateButton(view.wave, "웨이브", "", snapshot.waveDisabled);
 }
 
 export function invalidatePixiControlsView(view: PixiControlsView | null) {
