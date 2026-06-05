@@ -9,6 +9,7 @@ import { updateEnemyViewHp } from "./pixiEnemyView";
 import { destroyActiveEnemy } from "./pixiEnemyRuntime";
 import { getProgressHeroPower, applyEconomyRewardBonus } from "./pixiProgressBonuses";
 import { getPixiUnitAttackRange, isPointInPixiUnitRange } from "./pixiUnitRange";
+import { chargeMythicUltimateFromAttack, tryTriggerMythicUltimate } from "./pixiUltimateRuntime";
 
 export type PixiCombatRuntimeOptions = {
   getCellCenter: (refs: GameRefs, cellIndex: number) => { x: number; y: number; cell: number };
@@ -236,6 +237,27 @@ function spawnZaryaBeamEffect(
   });
 }
 
+function tryTriggerUltimateAttack(refs: GameRefs, options: PixiCombatRuntimeOptions, hero: BoardHero, from: { x: number; y: number }, target: ActiveEnemy, damage: number) {
+  chargeMythicUltimateFromAttack(refs, hero);
+
+  const triggered = tryTriggerMythicUltimate(
+    refs,
+    {
+      addAnimation: options.addAnimation,
+      floatText: options.floatText,
+      damageEnemy: (refs, enemy, damage) => damageEnemy(refs, enemy, damage, options),
+    },
+    hero,
+    from,
+    target,
+    damage,
+  );
+
+  const layout = createGameLayout(refs.app.renderer.width, refs.app.renderer.height);
+  options.drawBoard(refs, layout);
+  return triggered;
+}
+
 export function spawnAttackEffects(refs: GameRefs, options: PixiCombatRuntimeOptions) {
   const heroes = getAllBoardHeroes(refs.state.board);
   if (heroes.length === 0) return;
@@ -251,6 +273,10 @@ export function spawnAttackEffects(refs: GameRefs, options: PixiCombatRuntimeOpt
 
     const damage = getHeroDamage(refs, hero);
     triggerHeroSpriteAttack(refs, hero, from, target, options);
+
+    if (tryTriggerUltimateAttack(refs, options, hero, from, target, damage)) {
+      return;
+    }
 
     if (hero.heroId === "zarya") {
       const charge = updateZaryaBeamCharge(refs, hero, target);
