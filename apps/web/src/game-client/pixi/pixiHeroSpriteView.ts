@@ -22,11 +22,12 @@ const HERO_FRAME_ROWS = {
 const SPRITE_HERO_IDS = new Set(["tracer", "kiriko", "dva", "zarya", "cassidy", "winston", "genji"]);
 
 const HERO_SPRITE_SCALE: Record<string, number> = {
-  kiriko: 1.17,
-  dva: 1.3,
-  zarya: 1.2,
-  cassidy: 1.2,
-  winston: 1.22,
+  tracer: 1.1,
+  kiriko: 1.31,
+  dva: 1.47,
+  zarya: 1.32,
+  cassidy: 1.38,
+  winston: 1.43,
   genji: 1.18,
 };
 
