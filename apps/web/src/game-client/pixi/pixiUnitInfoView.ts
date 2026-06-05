@@ -51,7 +51,7 @@ function getHeroSkillEffectLines(heroId: string, skill: SkillDefinition) {
     "cassidy-peacekeeper": ["42%: 치명타", "피해 155%"],
     "cassidy-magnetic-grenade": ["30%: 감속/표식", "일반114%, 보스124%"],
     "genji-shuriken": ["42%: 선두 2명", "각 32% 추가"],
-    "genji-deflect": ["42%: 질풍참", "저체력 처치 시 연속"],
+    "genji-swift-strike": ["42%: 저체력 3명", "이동 참격 108%"],
     "ana-biotic-rifle": ["24%: 취약 사격", "일반122%, 보스138%"],
     "ana-sleep-dart": ["30%: 3초 수면", "보스도 적용"],
     "kiriko-kunai": ["42%: 급소 판정", "일반102%, 급소168%"],
