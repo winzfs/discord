@@ -27,6 +27,18 @@ const GENJI_OFFSET_HOLD_MS = GENJI_DASH_STAGGER + GENJI_RETURN_DURATION + 120;
 const GENJI_TRAIL_LENGTH = 76;
 const GENJI_GREEN = 0x7dff7a;
 
+let boardDrawQueued = false;
+
+function requestBoardDraw(refs: GameRefs, options: PixiGenjiDashRuntimeOptions) {
+  if (boardDrawQueued) return;
+  boardDrawQueued = true;
+
+  window.requestAnimationFrame(() => {
+    boardDrawQueued = false;
+    options.drawBoard(refs);
+  });
+}
+
 function clamp01(value: number) {
   return Math.max(0, Math.min(1, value));
 }
@@ -151,11 +163,11 @@ function spawnDashAnimation(
         }
       }
 
-      options.drawBoard(refs);
+      requestBoardDraw(refs, options);
     },
     done: () => {
       releaseFxGraphics(refs, fx);
-      options.drawBoard(refs);
+      requestBoardDraw(refs, options);
     },
   });
 }
@@ -186,12 +198,12 @@ function spawnReturnAnimation(
       fx.clear();
       if (local < 0.9) drawShortTrail(fx, from, point, local, 0.58);
 
-      options.drawBoard(refs);
+      requestBoardDraw(refs, options);
     },
     done: () => {
       releaseFxGraphics(refs, fx);
       delete refs.heroSpriteOffsets[hero.instanceId];
-      options.drawBoard(refs);
+      requestBoardDraw(refs, options);
     },
   });
 }
