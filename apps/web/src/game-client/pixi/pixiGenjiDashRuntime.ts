@@ -74,6 +74,7 @@ function spawnDashAnimation(
   target: ActiveEnemy,
   damage: number,
   order: number,
+  isFinalDash: boolean,
 ) {
   const fx = new Graphics();
   const targetAtDash = { x: target.x, y: target.y };
@@ -127,7 +128,7 @@ function spawnDashAnimation(
     },
     done: () => {
       fx.destroy();
-      delete refs.heroSpriteOffsets[hero.instanceId];
+      if (isFinalDash) delete refs.heroSpriteOffsets[hero.instanceId];
       options.drawBoard(refs);
     },
   });
@@ -144,5 +145,5 @@ export function spawnGenjiDashStrike(
   if (targets.length === 0) return;
 
   const dashDamage = Math.max(1, Math.round(baseDamage * 1.08));
-  targets.forEach((target, index) => spawnDashAnimation(refs, options, hero, from, target, dashDamage, index));
+  targets.forEach((target, index) => spawnDashAnimation(refs, options, hero, from, target, dashDamage, index, index === targets.length - 1));
 }
