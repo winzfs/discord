@@ -23,6 +23,7 @@ const GENJI_DASH_DURATION = 260;
 const GENJI_DASH_STAGGER = 1000;
 const GENJI_RETURN_DURATION = 220;
 const GENJI_OFFSET_HOLD_MS = GENJI_DASH_STAGGER + GENJI_RETURN_DURATION + 120;
+const GENJI_TRAIL_LENGTH = 76;
 const GENJI_GREEN = 0x7dff7a;
 
 function clamp01(value: number) {
@@ -49,6 +50,30 @@ function pointBetween(from: Point, to: Point, progress: number) {
     x: lerp(from.x, to.x, progress),
     y: lerp(from.y, to.y, progress),
   };
+}
+
+function distanceBetween(from: Point, to: Point) {
+  return Math.hypot(to.x - from.x, to.y - from.y);
+}
+
+function trailStartPoint(from: Point, point: Point) {
+  const distance = distanceBetween(from, point);
+  if (distance <= GENJI_TRAIL_LENGTH) return from;
+
+  const ratio = (distance - GENJI_TRAIL_LENGTH) / distance;
+  return pointBetween(from, point, ratio);
+}
+
+function drawShortTrail(fx: Graphics, from: Point, point: Point, local: number, alphaScale = 1) {
+  const trailStart = trailStartPoint(from, point);
+  const alpha = Math.max(0, 1 - local * 0.42) * alphaScale;
+
+  fx.moveTo(trailStart.x, trailStart.y);
+  fx.lineTo(point.x, point.y);
+  fx.stroke({ color: GENJI_GREEN, width: 4.5, alpha: 0.3 * alpha });
+  fx.moveTo(trailStart.x, trailStart.y);
+  fx.lineTo(point.x, point.y);
+  fx.stroke({ color: 0xffffff, width: 1.4, alpha: 0.66 * alpha });
 }
 
 function lowHpTargets(enemies: ActiveEnemy[]) {
@@ -117,14 +142,7 @@ function spawnDashAnimation(
 
       fx.clear();
       if (local >= 0.32) drawDashSlash(fx, targetAtDash, clamp01((local - 0.32) / 0.5));
-      if (local < 0.86) {
-        fx.moveTo(from.x, from.y);
-        fx.lineTo(point.x, point.y);
-        fx.stroke({ color: GENJI_GREEN, width: 4.5, alpha: 0.3 * (1 - local * 0.35) });
-        fx.moveTo(from.x, from.y);
-        fx.lineTo(point.x, point.y);
-        fx.stroke({ color: 0xffffff, width: 1.4, alpha: 0.66 * (1 - local * 0.42) });
-      }
+      if (local < 0.86) drawShortTrail(fx, from, point, local);
 
       if (!hitApplied && local >= 0.46) {
         hitApplied = true;
@@ -168,14 +186,7 @@ function spawnReturnAnimation(
       setDashOffset(refs, hero, origin, point);
 
       fx.clear();
-      if (local < 0.9) {
-        fx.moveTo(from.x, from.y);
-        fx.lineTo(point.x, point.y);
-        fx.stroke({ color: GENJI_GREEN, width: 3.2, alpha: 0.16 * (1 - local * 0.35) });
-        fx.moveTo(from.x, from.y);
-        fx.lineTo(point.x, point.y);
-        fx.stroke({ color: 0xffffff, width: 1, alpha: 0.35 * (1 - local * 0.45) });
-      }
+      if (local < 0.9) drawShortTrail(fx, from, point, local, 0.58);
 
       options.drawBoard(refs);
     },
