@@ -27,6 +27,11 @@ export type ZaryaBeamChargeState = {
   lastAttackAt: number;
 };
 
+export type MythicUltimateChargeState = {
+  charge: number;
+  lastUltimateAt: number;
+};
+
 export type ActiveEnemy = {
   id: number;
   enemyId: string;
@@ -90,6 +95,7 @@ export type GameRefs = {
   testEnemyHpMultiplier: number;
   heroSpriteAttacks: Record<string, HeroSpriteAttackState>;
   zaryaBeamCharges: Record<string, ZaryaBeamChargeState>;
+  mythicUltimateCharges: Record<string, MythicUltimateChargeState>;
 };
 
 export const WAVE_COUNTDOWN_SECONDS = 8;
