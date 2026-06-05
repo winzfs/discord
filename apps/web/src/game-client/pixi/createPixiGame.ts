@@ -329,6 +329,7 @@ export function createPixiGame(parent: HTMLElement, options: PixiGameOptions = {
     resultSubmitted: false,
     isTestMode: options.testMode ?? false,
     testEnemyHpMultiplier: 1,
+    heroSpriteAttacks: {},
   };
   let destroyed = false;
 
