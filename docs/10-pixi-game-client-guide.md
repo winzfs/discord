@@ -1,12 +1,10 @@
 # 10. PixiJS 게임 클라이언트 가이드
 
-## 1. 방향 변경 요약
+## 1. 현재 방향
 
-초기 프로토타입은 React DOM 기반의 보드 UI로 시작했지만, 모바일에서 확인한 결과 웹 대시보드 느낌이 강했습니다.
+게임 플레이 화면은 React DOM UI가 아니라 **PixiJS 기반 독립 캔버스 화면**으로 구현합니다.
 
-따라서 게임 플레이 화면은 React UI가 아니라 **PixiJS 기반 독립 캔버스 화면**으로 전환합니다.
-
-최종 구조:
+역할 분리는 다음과 같습니다.
 
 ```text
 React / Vite
@@ -16,138 +14,143 @@ React / Vite
 - 랭킹
 - 프로필
 - 관리자
+- /play에 PixiJS host 제공
 
 PixiJS
 - 실제 게임 플레이 화면
 - /play 전용 전체화면 캔버스
-- 전장, 보드, 몬스터, 소환, 합성, 이펙트 렌더링
+- 전장, 보드, 몬스터, 소환, 이동, 합성, 공격, 웨이브, 이펙트 렌더링
 
 packages/game
-- 소환/합성/웨이브/점수 계산 순수 로직
+- 순수 게임 규칙
+- 소환/보드/합성/도박/신화 조합/웨이브/점수 계산 보조 로직
 ```
 
-## 2. 현재 구현 상태
+## 2. 현재 라우트
 
-현재 `/play`는 `MainLayout` 밖에 있는 독립 라우트입니다.
+현재 게임 관련 라우트는 다음처럼 분리합니다.
 
 ```text
-/play
+/game       일반 웹 레이아웃 안의 게임 안내/시작 페이지
+/play       PixiJS 기반 실제 게임 화면
+/play-test  테스트 컨트롤이 포함된 PixiJS 게임 화면
+/lobby      로비/상점/성장 화면
 ```
 
-이 화면에서는 헤더, 푸터, 일반 웹 레이아웃을 제거하고 PixiJS 캔버스만 렌더링합니다.
+`/play`와 `/play-test`는 `MainLayout` 밖에 있는 독립 화면입니다.
 
-현재 구현된 기능:
+## 3. 현재 구현 상태
 
-- PixiJS Application 생성
-- 전체화면 캔버스 렌더링
-- 밝은 필드형 배경
-- 숲/필드 분위기의 임시 배경 도형
-- 흙길 형태의 몬스터 이동 경로
-- 중앙 영웅 배치판
-- 상단 WAVE 박스
-- 상단 코어 HP 바
-- 하단 소환 버튼
-- 일반/희귀 합성 버튼
-- 웨이브 시작 버튼
-- 소환 애니메이션
-- 합성 플래시
-- 몬스터 이동 연출
-- 코인 획득 플로팅 텍스트
+현재 `/play`는 단순 placeholder가 아니라 실제 플레이 가능한 PixiJS MVP입니다.
 
-## 3. 참고 화면 기준
+구현된 핵심 기능:
 
-사용자가 제공한 운빨존많겜 실제 게임 화면을 기준으로 다음 방향을 참고합니다.
+- PixiJS Application 생성 및 전체화면 캔버스 렌더링
+- `countdown -> combat -> result` 웨이브 phase 처리
+- 5x4 영웅 배치 보드
+- 보드 외곽을 도는 몬스터 이동 경로
+- 적 개체 생성, 실제 경로 이동, HP바 표시
+- 적 누수 시 코어 HP 감소
+- 유닛 자동 타겟팅
+- 투사체 공격 연출
+- 적 HP 감소, 처치, 보상 지급
+- 딜러/탱커/지원 역할군별 전투 효과
+- 탱커 감속 효과
+- 지원형 스플래시 보조 피해
+- 보스 우선 타겟팅
+- 보스 웨이브 경고 연출
+- 웨이브 결과 표시
+- 완벽 방어 시 행운석 보상
+- 랜덤 유닛 소환
+- 소환 비용 증가 및 할인 보정
+- 행운석 도박 소환
+- 유닛 드래그 이동, 자리 교환, 같은 유닛 중첩
+- 셀 3스택 기반 합성
+- 전역 등급 합성 로직
+- 유닛 판매 메뉴
+- 신화 조합 메뉴
+- 고유 유닛 재료 기반 신화 조합
+- 신화 조합 재료 보유 수 / 필요 수 표시
+- 트레이서 스프라이트 공격 방향 연출
+- 테스트 모드 컨트롤
+- 게임 종료 시 기록 저장 API 호출
 
-참고할 요소:
+## 4. 현재 화면 구조
 
-- 밝은 숲/필드 배경
-- 외곽을 따라 이동하는 몬스터 길
-- 중앙의 초록색 유닛 배치판
-- 상단 웨이브/타이머/체력 바
-- 하단 대형 소환 버튼
-- 하단 주변 재화/강화/도박/합성 버튼
-- 귀엽고 단순한 캐릭터 실루엣
-- 몬스터가 줄지어 길을 따라 이동하는 느낌
-
-그대로 복제하지 않고, 오버워치 디스코드 팬게임에 맞게 재해석합니다.
-
-## 4. 화면 구조
-
-권장 모바일 화면 구조:
+모바일 기준 권장 화면 구조:
 
 ```text
 ┌────────────────────────────┐
 │        WAVE / TIMER         │
 │        CORE HP BAR          │
+│   화력 / 유닛 수 / 재화      │
 ├────────────────────────────┤
-│    숲/필드 배경 + 흙길       │
+│    필드 배경 + 외곽 이동길    │
 │                            │
 │       중앙 영웅 배치판        │
-│       4 x 4 필드            │
+│       5 x 4 필드            │
 │                            │
-│    외곽 길 위 몬스터 이동     │
+│    길 위 몬스터 이동/전투     │
 ├────────────────────────────┤
-│  재화 / 점수 / 인원 / 확률    │
-│     [대형 소환 버튼]         │
-│ [합성] [강화] [기타 버튼]     │
+│ [소환] [신화] [도박] [강화] │
+│        [웨이브 시작]         │
 └────────────────────────────┘
 ```
 
-## 5. 현재 파일 구조
+## 5. 현재 주요 파일 구조
 
-현재 PixiJS 게임 클라이언트 핵심 파일:
+현재 PixiJS 게임 클라이언트는 다음 파일들로 나뉘어 있습니다.
 
 ```text
 apps/web/src/pages/GamePage.tsx
+apps/web/src/game-client/submitGameRun.ts
 apps/web/src/game-client/pixi/createPixiGame.ts
+apps/web/src/game-client/pixi/pixiGameTypes.ts
+apps/web/src/game-client/pixi/gameLayout.ts
+apps/web/src/game-client/pixi/gameTheme.ts
+apps/web/src/game-client/pixi/pixiGameLayerOrder.ts
+apps/web/src/game-client/pixi/pixiRenderRuntime.ts
+apps/web/src/game-client/pixi/pixiBoardRuntime.ts
+apps/web/src/game-client/pixi/pixiBoardRenderRuntime.ts
+apps/web/src/game-client/pixi/pixiBoardView.ts
+apps/web/src/game-client/pixi/pixiHudView.ts
+apps/web/src/game-client/pixi/pixiControlsView.ts
+apps/web/src/game-client/pixi/pixiEnemyRuntime.ts
+apps/web/src/game-client/pixi/pixiEnemyMovementRuntime.ts
+apps/web/src/game-client/pixi/pixiEnemyView.ts
+apps/web/src/game-client/pixi/pixiCombatRuntime.ts
+apps/web/src/game-client/pixi/pixiWaveRuntime.ts
+apps/web/src/game-client/pixi/pixiWaveFlowRuntime.ts
+apps/web/src/game-client/pixi/pixiWaveFeedbackRuntime.ts
+apps/web/src/game-client/pixi/pixiWaveRewardRuntime.ts
+apps/web/src/game-client/pixi/pixiSelectionRuntime.ts
+apps/web/src/game-client/pixi/pixiDragRuntime.ts
+apps/web/src/game-client/pixi/pixiUnitActionRuntime.ts
+apps/web/src/game-client/pixi/pixiControlActionRuntime.ts
+apps/web/src/game-client/pixi/pixiMythicMenuView.ts
+apps/web/src/game-client/pixi/pixiRunBoostRuntime.ts
+apps/web/src/game-client/pixi/pixiProgressBonuses.ts
+apps/web/src/game-client/pixi/pixiFloatingTextView.ts
+apps/web/src/game-client/pixi/pixiPathRuntime.ts
+apps/web/src/game-client/pixi/pixiUnitRange.ts
+apps/web/src/game-client/pixi/pixiSharedView.ts
+apps/web/src/game-client/pixi/animation/animationManager.ts
 ```
 
-`GamePage.tsx`는 PixiJS를 붙이는 호스트 역할만 합니다.
+`GamePage.tsx`는 PixiJS를 붙이는 host 역할만 담당합니다.
 
-게임 화면 구현은 `createPixiGame.ts`에 들어가 있습니다.
+`createPixiGame.ts`는 아직 Pixi Application 초기화, refs 구성, ticker phase 연결, 이벤트 바인딩, runtime options 조립을 담당합니다. 기능별 구현은 가능한 한 별도 runtime/view 파일로 분리합니다.
 
-현재는 빠른 프로토타입 단계라 하나의 파일에 PixiJS 렌더링 코드가 모여 있지만, 기능이 늘어나면 반드시 분리해야 합니다.
+## 6. 분리 원칙
 
-## 6. 다음 파일 분리 계획
+현재 구조 개선 원칙:
 
-`createPixiGame.ts`가 더 커지기 전에 다음 구조로 분리합니다.
-
-```text
-apps/web/src/game-client/pixi/
-  createPixiGame.ts
-  scene/
-    GameScene.ts
-  layers/
-    BackgroundLayer.ts
-    HudLayer.ts
-    MapLayer.ts
-    BoardLayer.ts
-    MonsterLayer.ts
-    ControlLayer.ts
-    EffectLayer.ts
-  ui/
-    buttons.ts
-    text.ts
-    panels.ts
-  layout/
-    gameLayout.ts
-  renderers/
-    heroRenderer.ts
-    monsterRenderer.ts
-    pathRenderer.ts
-  animation/
-    animationManager.ts
-  state/
-    pixiGameState.ts
-```
-
-원칙:
-
-- `createPixiGame.ts`는 PixiJS Application 생성과 cleanup만 담당합니다.
+- `createPixiGame.ts`는 최종적으로 초기화, 조립, cleanup만 담당하도록 줄입니다.
 - 화면 배치는 `gameLayout.ts`에서 계산합니다.
-- 배경/맵/보드/HUD/조작부/이펙트는 각각 별도 layer로 분리합니다.
-- 소환/합성/웨이브 규칙은 `packages/game`에서 가져옵니다.
+- 보드, HUD, 컨트롤, 적, 전투, 웨이브, 드래그, 선택 UI는 별도 파일에서 관리합니다.
+- 소환/합성/도박/신화 조합 등 핵심 규칙은 `packages/game`에서 가져옵니다.
 - PixiJS 내부에서 게임 규칙을 중복 구현하지 않습니다.
+- 단, 현재 실시간 전투/보상/점수 일부는 Pixi runtime에서 직접 갱신하므로 추후 `packages/game` 쪽으로 계산 기준을 모아야 합니다.
 
 ## 7. 렌더링 원칙
 
@@ -168,16 +171,17 @@ PixiJS:
 - 게임 화면 렌더링
 - 전장/보드/몬스터/유닛/이펙트
 - 터치 입력
-- 소환/합성 버튼
+- 소환/신화/도박/강화/웨이브 버튼
 - 전투 연출
 
 `packages/game`:
 
 - 순수 게임 규칙
 - 소환 확률
-- 합성 규칙
-- 웨이브 처리
-- 점수 계산
+- 보드/스택/합성 규칙
+- 도박/신화 조합 규칙
+- 웨이브 데이터
+- 점수 계산 보조
 
 ### 7.2 DOM 버튼 금지
 
@@ -189,139 +193,52 @@ PixiJS:
 
 - 모바일 게임 화면처럼 보이게 하기 위해
 - 캔버스 전체 렌더링 톤을 통일하기 위해
-- 추후 터치 이펙트와 애니메이션을 붙이기 쉽게 하기 위해
+- 터치 이펙트와 애니메이션을 붙이기 쉽게 하기 위해
 
 ### 7.3 에셋 교체 가능성 유지
 
-현재는 도형 기반 임시 캐릭터/몬스터를 사용합니다.
+현재는 도형 기반 유닛/몬스터와 일부 스프라이트를 함께 사용합니다.
 
-나중에 실제 이미지 에셋으로 교체할 때는 다음 구조로 연결합니다.
+이미지 에셋은 다음 흐름으로 교체합니다.
 
 ```text
 hero.assetKey -> assetManifest -> PixiJS Texture
 enemy.assetKey -> assetManifest -> PixiJS Texture
 ```
 
-`packages/game`은 이미지 경로를 알면 안 됩니다.
+`packages/game`은 이미지 경로를 직접 알면 안 됩니다.
 
-## 8. 비주얼 개선 우선순위
+## 8. 다음 개선 우선순위
 
-### 1순위: 유닛/몬스터 실루엣 개선
+1. `createPixiGame.ts`의 ticker/refs/options 조립 책임 추가 분리
+2. 점수/보상 계산 기준을 `packages/game` 쪽으로 이동
+3. `durationSeconds` 실제 측정 후 기록 저장
+4. 랭킹 저장 전 score/wave/kills 상한 검증 추가
+5. `game_runs.suspicious`, `hidden` 컬럼을 활용한 비정상 기록 처리
+6. 유닛별 고유 효과 시각화 강화
+7. 실제 이미지/스프라이트 에셋 교체 확대
+8. 모바일 터치 UX 회귀 테스트
 
-현재 유닛은 머리/몸 도형 기반 임시 표현입니다.
+## 9. 확인 체크리스트
 
-다음 단계에서는 역할별 실루엣을 나눕니다.
+기능 추가 후 반드시 다음을 확인합니다.
 
-- 딜러: 작은 몸, 총/조준선 느낌
-- 탱커: 큰 몸, 방패/실드 느낌
-- 지원: 둥근 오라, 파란/초록 지원 효과
-
-몬스터도 현재는 단순 도형입니다.
-
-다음 단계에서는 다음처럼 구분합니다.
-
-- 기본 몬스터: 작은 초록 슬라임형
-- 빠른 몬스터: 작은 길쭉한 러너형
-- 탱커 몬스터: 크고 둔한 덩어리형
-- 보스: 큰 체형, 별도 경고 연출
-
-### 2순위: 경로 개선
-
-현재 경로는 흙길 도형으로 표현합니다.
-
-개선 방향:
-
-- 몬스터가 왼쪽/오른쪽에 붙은 UI처럼 보이지 않게 하기
-- 실제 길 위를 따라 움직이는 느낌 강화
-- S자 또는 U자 경로를 자연스럽게 만들기
-- 보드와 경로가 겹치지 않게 여백 조정
-
-### 3순위: 하단 UI 개선
-
-현재 하단은 소환 버튼과 합성 버튼 중심입니다.
-
-개선 방향:
-
-- 소환 버튼 중앙 대형 유지
-- 소환 비용을 버튼 상단에 명확히 표시
-- 보유 코인 표시
-- 현재 유닛 수 `n / 16` 표시
-- 합성 가능 여부 표시
-- 강화 버튼은 MVP 이후 추가
-
-### 4순위: 전투감 추가
-
-MVP 전투 연출:
-
-- 웨이브 시작 시 몬스터 여러 마리 이동
-- 영웅이 투사체 발사
-- 데미지 숫자 표시
-- 처치 이펙트
-- 보스 등장 시 화면 흔들림
-- 합성 시 유닛 3개가 중앙으로 빨려 들어가는 연출
-
-## 9. PWA / 전체화면 계획
-
-현재 스마트폰 브라우저에서 실행하면 주소창이 보입니다.
-
-게임 몰입감을 높이려면 추후 PWA를 추가합니다.
-
-목표:
-
-- 홈 화면에 추가 가능
-- standalone display mode
-- 주소창 없이 앱처럼 실행
-- 모바일 세로 화면 최적화
-
-추가 예정 파일:
-
-```text
-apps/web/public/manifest.webmanifest
-apps/web/public/icons/
+```bash
+pnpm build:web
+pnpm typecheck
+pnpm dev:web
 ```
 
-HTML head에 manifest 연결도 필요합니다.
+화면 체크:
 
-## 10. 현재 한계
-
-현재 PixiJS 화면은 아직 비주얼 프로토타입입니다.
-
-아직 부족한 점:
-
-- 실제 캐릭터 이미지 없음
-- 실제 몬스터 이미지 없음
-- 공격/피격 판정 없음
-- 투사체 없음
-- 스킬 이펙트 없음
-- 결과 저장 없음
-- 랭킹 연결 없음
-- Discord 로그인 연결 없음
-- PixiJS 코드가 아직 파일 분리되지 않음
-
-따라서 현재 단계는 다음으로 정의합니다.
-
-```text
-PixiJS 기반 모바일 게임 화면 프로토타입 1차
-```
-
-## 11. 다음 작업 권장 순서
-
-1. `createPixiGame.ts` 파일 분리
-2. 유닛/몬스터 임시 렌더러 개선
-3. 몬스터 경로 이동 개선
-4. 소환/합성 연출 강화
-5. 하단 UI 정리
-6. PWA 설정 추가
-7. 결과 저장 API 연결
-8. 랭킹 연결
-9. Discord OAuth 연결
-
-## 12. 결론
-
-게임 화면은 React DOM이 아니라 PixiJS로 구현합니다.
-
-React는 서비스 UI를 담당하고, PixiJS는 실제 게임 플레이를 담당합니다.
-
-최종 목표는 다음과 같습니다.
-
-> 디스코드 커뮤니티 유저가 스마트폰에서 `/play`에 접속하면, 웹페이지가 아니라 모바일 캐주얼 디펜스 게임처럼 느껴지는 화면.
+- `/play` 진입 시 캔버스 정상 표시
+- `/play-test` 테스트 컨트롤 정상 표시
+- 5x4 보드 표시 정상
+- 소환/스택/이동/스왑 정상
+- 합성/판매/신화 메뉴 정상
+- 적이 외곽 경로를 따라 이동
+- 유닛 투사체가 적을 향해 발사
+- 적 HP바 감소/처치/코인 보상 정상
+- 누수 시 코어 HP 감소 정상
+- 웨이브 결과/행운석 보상 정상
+- 게임 종료 시 로그인 상태에서 기록 저장 정상
