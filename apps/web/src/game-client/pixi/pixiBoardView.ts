@@ -3,6 +3,7 @@ import type { BoardHero } from "@discord-random-defense/game";
 import { getHeroById } from "@discord-random-defense/game";
 import { colors, gradeColor } from "./gameTheme";
 import { canDrawHeroSprite, drawHeroSprite } from "./pixiHeroSpriteView";
+import type { HeroSpriteAttackState } from "./pixiGameTypes";
 
 export type BoardMetrics = {
   cols: number;
@@ -18,6 +19,11 @@ export type BoardMetrics = {
 export type BoardPointerHandlers = {
   canDrag: boolean;
   onCellPointerDown: (cellIndex: number, globalX: number, globalY: number, cellSize: number) => void;
+};
+
+export type BoardRenderState = {
+  heroSpriteAttacks: Record<string, HeroSpriteAttackState>;
+  now: number;
 };
 
 function roleAccent(role: string | undefined) {
@@ -130,12 +136,19 @@ function drawFallbackUnitShape(target: Container, hero: Pick<BoardHero, "grade" 
   }
 }
 
-export function drawUnitShape(target: Container, hero: Pick<BoardHero, "grade" | "heroId">, cell: number, scale = 1) {
-  if (canDrawHeroSprite(hero) && drawHeroSprite(target, hero, cell, scale)) return;
+export function drawUnitShape(
+  target: Container,
+  hero: Pick<BoardHero, "grade" | "heroId" | "instanceId">,
+  cell: number,
+  scale = 1,
+  renderState?: BoardRenderState,
+) {
+  const attackState = renderState?.heroSpriteAttacks[hero.instanceId];
+  if (canDrawHeroSprite(hero) && drawHeroSprite(target, hero, cell, scale, attackState, renderState?.now)) return;
   drawFallbackUnitShape(target, hero, cell, scale);
 }
 
-export function createUnitGhost(hero: Pick<BoardHero, "grade" | "heroId">, cell: number, alpha = 0.92) {
+export function createUnitGhost(hero: Pick<BoardHero, "grade" | "heroId" | "instanceId">, cell: number, alpha = 0.92) {
   const ghost = new Container();
   ghost.alpha = alpha;
   drawUnitShape(ghost, hero, cell, 0.94);
@@ -160,17 +173,34 @@ function drawCellUnitShadow(target: Container, x: number, y: number, cellWidth: 
   target.addChild(base);
 }
 
-function drawUnitMarker(target: Container, x: number, y: number, cellWidth: number, cellHeight: number, hero: BoardHero, stackCount: number, stackIndex: number) {
+function drawUnitMarker(
+  target: Container,
+  x: number,
+  y: number,
+  cellWidth: number,
+  cellHeight: number,
+  hero: BoardHero,
+  stackCount: number,
+  stackIndex: number,
+  renderState?: BoardRenderState,
+) {
   const unitCell = Math.min(cellWidth, cellHeight);
   const offset = getStackOffset(stackCount, stackIndex, unitCell);
   const marker = new Container();
   marker.x = x + cellWidth / 2 + offset.x;
   marker.y = y + cellHeight * 0.48 + offset.y;
-  drawUnitShape(marker, hero, unitCell, offset.scale);
+  drawUnitShape(marker, hero, unitCell, offset.scale, renderState);
   target.addChild(marker);
 }
 
-export function drawBoardCells(target: Container, board: Array<{ units: BoardHero[] }>, metrics: BoardMetrics, canMergeCell: (cellIndex: number) => boolean, handlers: BoardPointerHandlers) {
+export function drawBoardCells(
+  target: Container,
+  board: Array<{ units: BoardHero[] }>,
+  metrics: BoardMetrics,
+  canMergeCell: (cellIndex: number) => boolean,
+  handlers: BoardPointerHandlers,
+  renderState?: BoardRenderState,
+) {
   target.removeChildren();
 
   board.forEach((boardCell, index) => {
@@ -192,7 +222,7 @@ export function drawBoardCells(target: Container, board: Array<{ units: BoardHer
       drawCellUnitShadow(target, x, y, metrics.cellWidth, metrics.cellHeight, metrics.cell, units[0]);
     }
 
-    units.forEach((unit, unitIndex) => drawUnitMarker(target, x, y, metrics.cellWidth, metrics.cellHeight, unit, units.length, unitIndex));
+    units.forEach((unit, unitIndex) => drawUnitMarker(target, x, y, metrics.cellWidth, metrics.cellHeight, unit, units.length, unitIndex, renderState));
 
     const hit = new Graphics();
     hit.roundRect(x, y, metrics.cellWidth, metrics.cellHeight, 12);
