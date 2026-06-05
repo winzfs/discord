@@ -16,6 +16,10 @@ const HERO_FRAME_ROWS = {
 
 const SPRITE_HERO_IDS = new Set(["tracer", "kiriko"]);
 
+const HERO_SPRITE_SCALE: Record<string, number> = {
+  kiriko: 1.12,
+};
+
 let textureCache = new Map<string, Texture>();
 let loadingCache = new Set<string>();
 
@@ -76,8 +80,9 @@ export function drawHeroSprite(
   if (SPRITE_HERO_IDS.has(hero.heroId)) {
     const frameTexture = createFrameTexture(texture, pickHeroSpriteFrameRow(attackState, now), 4);
     const sprite = new Sprite(frameTexture);
-    const maxWidth = cell * 1.23 * scale;
-    const maxHeight = cell * 1.47 * scale;
+    const heroScale = HERO_SPRITE_SCALE[hero.heroId] ?? 1;
+    const maxWidth = cell * 1.23 * scale * heroScale;
+    const maxHeight = cell * 1.47 * scale * heroScale;
     const ratio = Math.min(maxWidth / frameTexture.width, maxHeight / frameTexture.height);
 
     sprite.anchor.set(0.5, 0.74);
