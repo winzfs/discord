@@ -27,10 +27,7 @@ export function LobbyHeroPortrait({ hero }: LobbyHeroPortraitProps) {
 
   return (
     <div className="hero-portrait mythic-hero-portrait" aria-label={`${hero.displayName} 대기 이미지`}>
-      <span
-        className="mythic-hero-idle-sprite"
-        style={{ backgroundImage: `url(${spriteUrl})` }}
-      />
+      <img className="mythic-hero-idle-sprite" src={spriteUrl} alt="" loading="lazy" draggable={false} />
     </div>
   );
 }
