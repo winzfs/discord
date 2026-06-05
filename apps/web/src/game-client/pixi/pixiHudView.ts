@@ -148,7 +148,7 @@ export function updatePixiHudView(view: PixiHudView, layout: GameLayout, snapsho
   view.unitsText.x = layout.width - 76;
   view.unitsText.y = chipY + 5;
 
-  const resourceY = layout.height - 206;
+  const resourceY = layout.height - 184;
   const resourceGap = 8;
   const resourceWidth = 96;
   const resourceTotalWidth = resourceWidth * 2 + resourceGap;
