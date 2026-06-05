@@ -42,7 +42,7 @@ function createFrameTexture(texture: Texture, row: number, rows: number) {
 
 function pickTracerFrameRow(attackState: HeroSpriteAttackState | null | undefined, now: number) {
   const isAttacking = attackState && attackState.until > now;
-  const direction = attackState?.direction ?? "right";
+  const direction = attackState?.direction ?? "left";
 
   if (isAttacking) {
     return direction === "left" ? TRACER_FRAME_ROWS.attackLeft : TRACER_FRAME_ROWS.attackRight;
