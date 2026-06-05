@@ -282,6 +282,7 @@ export function createPixiGame(parent: HTMLElement): PixiGameHandle {
     dragging: null,
     movementLocked: false,
     selectedCellIndex: null,
+    rangePreview: null,
     menu: null,
     wavePhase: "countdown",
     nextWaveTimer: WAVE_COUNTDOWN_SECONDS,
