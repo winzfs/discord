@@ -29,6 +29,11 @@ export type PixiCombatRuntimeOptions = {
 
 const SPRITE_ATTACK_HERO_IDS = new Set(["tracer", "kiriko", "dva", "zarya", "cassidy"]);
 
+function getHeroSpriteAttackDuration(heroId: string) {
+  if (heroId === "cassidy") return 520;
+  return 260;
+}
+
 function roleAccent(role: HeroRole | undefined) {
   if (role === "tank") return 0x87b7ff;
   if (role === "support") return 0x7dffb2;
@@ -131,9 +136,11 @@ function applySupportSplash(
 function triggerHeroSpriteAttack(refs: GameRefs, hero: BoardHero, from: { x: number; y: number }, target: ActiveEnemy, options: PixiCombatRuntimeOptions) {
   if (!SPRITE_ATTACK_HERO_IDS.has(hero.heroId)) return;
 
+  const duration = getHeroSpriteAttackDuration(hero.heroId);
+
   refs.heroSpriteAttacks[hero.instanceId] = {
     direction: target.x < from.x ? "left" : "right",
-    until: Date.now() + 260,
+    until: Date.now() + duration,
   };
 
   const layout = createGameLayout(refs.app.renderer.width, refs.app.renderer.height);
@@ -141,7 +148,7 @@ function triggerHeroSpriteAttack(refs: GameRefs, hero: BoardHero, from: { x: num
 
   window.setTimeout(() => {
     options.drawBoard(refs, createGameLayout(refs.app.renderer.width, refs.app.renderer.height));
-  }, 280);
+  }, duration + 20);
 }
 
 export function spawnAttackEffects(refs: GameRefs, options: PixiCombatRuntimeOptions) {
