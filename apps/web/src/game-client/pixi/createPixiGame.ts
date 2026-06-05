@@ -267,6 +267,7 @@ function tick(refs: GameRefs, deltaMs: number) {
         invalidateControls,
         drawTopHud,
         drawControls: (refs, layout) => drawControls(refs, layout, controlHandlers(refs)),
+        drawBoard: (refs, layout) => drawBoard(refs, layout, createDragRuntimeOptions),
       });
     }
     drawTopHud(refs, layout);
