@@ -1,6 +1,8 @@
 import {
+  getAllBoardHeroes,
   getBoardCapacity,
   getBoardUnitCount,
+  getHeroById,
   getMythicCraftAvailability,
   getPowerUpgradeCost,
   getRunBoostEffect,
@@ -11,7 +13,6 @@ import {
 import type { GameState } from "@discord-random-defense/game";
 import type { GameLayout } from "./gameLayout";
 import type { GameRefs } from "./pixiGameTypes";
-import { calculatePixiFirepower } from "./pixiCombatRuntime";
 import { drawPixiBackgroundView } from "./pixiBackgroundView";
 import { getPixiPathPoint } from "./pixiPathRuntime";
 import { createPixiHudView, updatePixiHudView } from "./pixiHudView";
@@ -22,6 +23,15 @@ export function drawBackground(refs: GameRefs, layout: GameLayout) {
 
 function isHudBossWave(refs: GameRefs) {
   return refs.state.currentWave % initialBalance.bossWaveInterval === 0;
+}
+
+function calculatePixiFirepower(refs: GameRefs) {
+  const baseFirepower = getAllBoardHeroes(refs.state.board).reduce((total, hero) => {
+    const definition = getHeroById(hero.heroId);
+    return total + (definition?.power ?? 0);
+  }, 0);
+
+  return Math.round(baseFirepower * refs.progressBonuses.attackMultiplier * (1 + refs.state.powerUpgradeLevel * 0.16));
 }
 
 export function drawTopHud(refs: GameRefs, layout: GameLayout) {
