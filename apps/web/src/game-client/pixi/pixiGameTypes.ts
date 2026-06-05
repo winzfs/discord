@@ -21,6 +21,12 @@ export type HeroSpriteAttackState = {
   until: number;
 };
 
+export type HeroSpriteOffsetState = {
+  x: number;
+  y: number;
+  until: number;
+};
+
 export type ZaryaBeamChargeState = {
   targetId: number;
   charge: number;
@@ -98,6 +104,7 @@ export type GameRefs = {
   isTestMode: boolean;
   testEnemyHpMultiplier: number;
   heroSpriteAttacks: Record<string, HeroSpriteAttackState>;
+  heroSpriteOffsets: Record<string, HeroSpriteOffsetState>;
   zaryaBeamCharges: Record<string, ZaryaBeamChargeState>;
   mythicUltimateCharges?: Record<string, MythicUltimateChargeState>;
   kitsuneRushUntil?: number;
