@@ -1,6 +1,7 @@
 import { Container, Graphics, Text } from "pixi.js";
 import type { GameLayout } from "./gameLayout";
 import { colors } from "./gameTheme";
+import { paintControlButton } from "./pixiControlButtonPaint";
 
 export type ControlsWavePhase = "countdown" | "combat" | "result";
 
@@ -54,10 +55,7 @@ function makeText(value: string, size = 18, fill: number = colors.white) {
 }
 
 function redrawPanel(graphics: Graphics, width: number, height: number, fill: number, stroke = 0x51351e, radius = 14) {
-  graphics.clear();
-  graphics.roundRect(0, 0, width, height, radius);
-  graphics.fill({ color: fill, alpha: 1 });
-  graphics.stroke({ color: stroke, width: 3, alpha: 0.9 });
+  paintControlButton(graphics, width, height, fill, fill === 0x6f6259, radius);
 }
 
 function createButton(width: number, height: number, color: number, onTap: () => void): PixiButtonView {
