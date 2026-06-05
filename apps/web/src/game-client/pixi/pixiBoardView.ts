@@ -2,6 +2,7 @@ import { Container, Graphics } from "pixi.js";
 import type { BoardHero } from "@discord-random-defense/game";
 import { getHeroById } from "@discord-random-defense/game";
 import { colors, gradeColor } from "./gameTheme";
+import { canDrawHeroSprite, drawHeroSprite } from "./pixiHeroSpriteView";
 
 export type BoardMetrics = {
   cols: number;
@@ -73,7 +74,7 @@ function drawWeapon(target: Container, heroId: string, cell: number, scale: numb
   target.addChild(weapon);
 }
 
-export function drawUnitShape(target: Container, hero: Pick<BoardHero, "grade" | "heroId">, cell: number, scale = 1) {
+function drawFallbackUnitShape(target: Container, hero: Pick<BoardHero, "grade" | "heroId">, cell: number, scale = 1) {
   const definition = getHeroById(hero.heroId);
   const role = definition?.role ?? "damage";
   const accent = heroAccent(hero.heroId, roleAccent(role));
@@ -127,6 +128,11 @@ export function drawUnitShape(target: Container, hero: Pick<BoardHero, "grade" |
     halo.stroke({ color: accent, width: Math.max(1.5, 2.5 * scale), alpha: 0.7 });
     target.addChild(halo);
   }
+}
+
+export function drawUnitShape(target: Container, hero: Pick<BoardHero, "grade" | "heroId">, cell: number, scale = 1) {
+  if (canDrawHeroSprite(hero) && drawHeroSprite(target, hero, cell, scale)) return;
+  drawFallbackUnitShape(target, hero, cell, scale);
 }
 
 export function createUnitGhost(hero: Pick<BoardHero, "grade" | "heroId">, cell: number, alpha = 0.92) {
