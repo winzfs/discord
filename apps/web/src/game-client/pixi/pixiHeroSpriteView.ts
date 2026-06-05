@@ -19,6 +19,8 @@ const HERO_FRAME_ROWS = {
   attackRight: 3,
 } as const;
 
+const HERO_FRAME_ROW_COUNT = 4;
+
 const SPRITE_HERO_IDS = new Set(["tracer", "kiriko", "dva", "zarya", "cassidy", "winston", "genji"]);
 
 const HERO_SPRITE_SCALE: Record<string, number> = {
@@ -32,7 +34,20 @@ const HERO_SPRITE_SCALE: Record<string, number> = {
 };
 
 let textureCache = new Map<string, Texture>();
+let frameTextureCache = new Map<string, Texture[]>();
 let loadingCache = new Set<string>();
+
+function createHeroFrameTextures(texture: Texture) {
+  const frameWidth = texture.width;
+  const frameHeight = texture.height / HERO_FRAME_ROW_COUNT;
+
+  return Array.from({ length: HERO_FRAME_ROW_COUNT }, (_, row) =>
+    new Texture({
+      source: texture.source,
+      frame: new Rectangle(0, frameHeight * row, frameWidth, frameHeight),
+    }),
+  );
+}
 
 async function loadHeroTexture(heroId: string) {
   const path = HERO_TEXTURE_PATHS[heroId];
@@ -42,6 +57,7 @@ async function loadHeroTexture(heroId: string) {
   try {
     const texture = await Assets.load<Texture>(path);
     textureCache.set(heroId, texture);
+    frameTextureCache.set(heroId, createHeroFrameTextures(texture));
   } finally {
     loadingCache.delete(heroId);
   }
@@ -54,15 +70,6 @@ function requestHeroTexture(heroId: string) {
 
 export async function preloadHeroSpriteTextures() {
   await Promise.all(Object.keys(HERO_TEXTURE_PATHS).map((heroId) => loadHeroTexture(heroId).catch(() => undefined)));
-}
-
-function createFrameTexture(texture: Texture, row: number, rows: number) {
-  const frameWidth = texture.width;
-  const frameHeight = texture.height / rows;
-  return new Texture({
-    source: texture.source,
-    frame: new Rectangle(0, frameHeight * row, frameWidth, frameHeight),
-  });
 }
 
 function pickHeroSpriteFrameRow(attackState: HeroSpriteAttackState | null | undefined, now: number) {
@@ -96,7 +103,10 @@ export function drawHeroSprite(
   }
 
   if (SPRITE_HERO_IDS.has(hero.heroId)) {
-    const frameTexture = createFrameTexture(texture, pickHeroSpriteFrameRow(attackState, now), 4);
+    const frameRow = pickHeroSpriteFrameRow(attackState, now);
+    const frameTexture = frameTextureCache.get(hero.heroId)?.[frameRow];
+    if (!frameTexture) return false;
+
     const sprite = new Sprite(frameTexture);
     const heroScale = HERO_SPRITE_SCALE[hero.heroId] ?? 1;
     const maxWidth = cell * 1.23 * scale * heroScale;
