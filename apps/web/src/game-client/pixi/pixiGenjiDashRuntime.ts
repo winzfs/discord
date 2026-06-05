@@ -21,6 +21,7 @@ export type PixiGenjiDashRuntimeOptions = {
 const GENJI_DASH_MAX_TARGETS = 3;
 const GENJI_DASH_DURATION = 260;
 const GENJI_DASH_STAGGER = 1000;
+const GENJI_RETURN_DURATION = 220;
 const GENJI_GREEN = 0x7dff7a;
 
 function clamp01(value: number) {
@@ -35,9 +36,18 @@ function easeOutCubic(progress: number) {
   return 1 - Math.pow(1 - clamp01(progress), 3);
 }
 
-function easeInCubic(progress: number) {
+function easeInOutCubic(progress: number) {
   const local = clamp01(progress);
-  return local * local * local;
+  return local < 0.5
+    ? 4 * local * local * local
+    : 1 - Math.pow(-2 * local + 2, 3) / 2;
+}
+
+function pointBetween(from: Point, to: Point, progress: number) {
+  return {
+    x: lerp(from.x, to.x, progress),
+    y: lerp(from.y, to.y, progress),
+  };
 }
 
 function lowHpTargets(enemies: ActiveEnemy[]) {
@@ -58,11 +68,18 @@ function drawDashSlash(fx: Graphics, point: Point, local: number) {
   fx.stroke({ color: 0xffffff, width: Math.max(1, 2.4 * alpha), alpha: 0.86 * alpha });
 }
 
-function setDashOffset(refs: GameRefs, hero: BoardHero, from: Point, point: Point) {
+function setDashOffset(refs: GameRefs, hero: BoardHero, origin: Point, point: Point) {
   refs.heroSpriteOffsets[hero.instanceId] = {
-    x: point.x - from.x,
-    y: point.y - from.y,
+    x: point.x - origin.x,
+    y: point.y - origin.y,
     until: Date.now() + 90,
+  };
+}
+
+function setDashDirection(refs: GameRefs, hero: BoardHero, from: Point, to: Point) {
+  refs.heroSpriteAttacks[hero.instanceId] = {
+    direction: to.x < from.x ? "left" : "right",
+    until: Date.now() + 120,
   };
 }
 
@@ -70,11 +87,11 @@ function spawnDashAnimation(
   refs: GameRefs,
   options: PixiGenjiDashRuntimeOptions,
   hero: BoardHero,
+  origin: Point,
   from: Point,
   target: ActiveEnemy,
   damage: number,
   order: number,
-  isFinalDash: boolean,
 ) {
   const fx = new Graphics();
   const targetAtDash = { x: target.x, y: target.y };
@@ -91,29 +108,21 @@ function spawnDashAnimation(
       if (elapsed < delay) return;
 
       const local = clamp01((elapsed - delay) / GENJI_DASH_DURATION);
-      const toTargetProgress = local < 0.58
-        ? easeOutCubic(local / 0.58)
-        : 1 - easeInCubic((local - 0.58) / 0.42);
-      const point = {
-        x: lerp(from.x, targetAtDash.x, toTargetProgress),
-        y: lerp(from.y, targetAtDash.y, toTargetProgress),
-      };
+      const moveProgress = easeOutCubic(local);
+      const point = pointBetween(from, targetAtDash, moveProgress);
 
-      refs.heroSpriteAttacks[hero.instanceId] = {
-        direction: targetAtDash.x < from.x ? "left" : "right",
-        until: Date.now() + 120,
-      };
-      setDashOffset(refs, hero, from, point);
+      setDashDirection(refs, hero, from, targetAtDash);
+      setDashOffset(refs, hero, origin, point);
 
       fx.clear();
       if (local >= 0.32) drawDashSlash(fx, targetAtDash, clamp01((local - 0.32) / 0.5));
-      if (local < 0.72) {
+      if (local < 0.86) {
         fx.moveTo(from.x, from.y);
         fx.lineTo(point.x, point.y);
-        fx.stroke({ color: GENJI_GREEN, width: 4.5, alpha: 0.28 * (1 - local * 0.45) });
+        fx.stroke({ color: GENJI_GREEN, width: 4.5, alpha: 0.3 * (1 - local * 0.35) });
         fx.moveTo(from.x, from.y);
         fx.lineTo(point.x, point.y);
-        fx.stroke({ color: 0xffffff, width: 1.4, alpha: 0.62 * (1 - local * 0.5) });
+        fx.stroke({ color: 0xffffff, width: 1.4, alpha: 0.66 * (1 - local * 0.42) });
       }
 
       if (!hitApplied && local >= 0.46) {
@@ -128,7 +137,50 @@ function spawnDashAnimation(
     },
     done: () => {
       fx.destroy();
-      if (isFinalDash) delete refs.heroSpriteOffsets[hero.instanceId];
+      options.drawBoard(refs);
+    },
+  });
+}
+
+function spawnReturnAnimation(
+  refs: GameRefs,
+  options: PixiGenjiDashRuntimeOptions,
+  hero: BoardHero,
+  origin: Point,
+  from: Point,
+  delay: number,
+) {
+  const fx = new Graphics();
+  const totalDuration = delay + GENJI_RETURN_DURATION;
+  refs.effects.addChild(fx);
+
+  options.addAnimation(refs, {
+    duration: totalDuration,
+    update: (progress) => {
+      const elapsed = progress * totalDuration;
+      if (elapsed < delay) return;
+
+      const local = clamp01((elapsed - delay) / GENJI_RETURN_DURATION);
+      const point = pointBetween(from, origin, easeInOutCubic(local));
+
+      setDashDirection(refs, hero, from, origin);
+      setDashOffset(refs, hero, origin, point);
+
+      fx.clear();
+      if (local < 0.9) {
+        fx.moveTo(from.x, from.y);
+        fx.lineTo(point.x, point.y);
+        fx.stroke({ color: GENJI_GREEN, width: 3.2, alpha: 0.16 * (1 - local * 0.35) });
+        fx.moveTo(from.x, from.y);
+        fx.lineTo(point.x, point.y);
+        fx.stroke({ color: 0xffffff, width: 1, alpha: 0.35 * (1 - local * 0.45) });
+      }
+
+      options.drawBoard(refs);
+    },
+    done: () => {
+      fx.destroy();
+      delete refs.heroSpriteOffsets[hero.instanceId];
       options.drawBoard(refs);
     },
   });
@@ -145,5 +197,19 @@ export function spawnGenjiDashStrike(
   if (targets.length === 0) return;
 
   const dashDamage = Math.max(1, Math.round(baseDamage * 1.08));
-  targets.forEach((target, index) => spawnDashAnimation(refs, options, hero, from, target, dashDamage, index, index === targets.length - 1));
+  const targetPoints = targets.map((target) => ({ x: target.x, y: target.y }));
+
+  targets.forEach((target, index) => {
+    const dashFrom = index === 0 ? from : targetPoints[index - 1];
+    spawnDashAnimation(refs, options, hero, from, dashFrom, target, dashDamage, index);
+  });
+
+  spawnReturnAnimation(
+    refs,
+    options,
+    hero,
+    from,
+    targetPoints[targetPoints.length - 1],
+    targets.length * GENJI_DASH_STAGGER,
+  );
 }
