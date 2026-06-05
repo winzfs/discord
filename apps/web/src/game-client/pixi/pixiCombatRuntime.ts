@@ -151,6 +151,55 @@ function triggerHeroSpriteAttack(refs: GameRefs, hero: BoardHero, from: { x: num
   }, duration + 20);
 }
 
+function applyAttackDamage(refs: GameRefs, hero: BoardHero, role: HeroRole, target: ActiveEnemy, damage: number, options: PixiCombatRuntimeOptions) {
+  if (!target.alive) return;
+
+  if (role === "tank") applyTankSlow(target);
+
+  damageEnemy(refs, target, damage, options);
+
+  if (role === "support") {
+    applySupportSplash(refs, target, damage, options);
+  }
+}
+
+function spawnZaryaBeamEffect(refs: GameRefs, from: { x: number; y: number }, target: ActiveEnemy, done: () => void) {
+  const beam = new Graphics();
+  const targetAtFire = { x: target.x, y: target.y };
+  refs.effects.addChild(beam);
+
+  optionsAddBeamAnimation(refs, beam, from, targetAtFire, done);
+}
+
+function optionsAddBeamAnimation(
+  refs: GameRefs,
+  beam: Graphics,
+  from: { x: number; y: number },
+  targetAtFire: { x: number; y: number },
+  done: () => void,
+) {
+  const duration = 220;
+
+  refs.animations.push({
+    elapsed: 0,
+    duration,
+    update: (progress) => {
+      const alpha = 1 - progress * 0.45;
+      beam.clear();
+      beam.moveTo(from.x, from.y);
+      beam.lineTo(targetAtFire.x, targetAtFire.y);
+      beam.stroke({ color: 0xff7de9, width: 9, alpha: 0.28 * alpha });
+      beam.moveTo(from.x, from.y);
+      beam.lineTo(targetAtFire.x, targetAtFire.y);
+      beam.stroke({ color: 0xfff0fb, width: 3.5, alpha });
+    },
+    done: () => {
+      beam.destroy();
+      done();
+    },
+  });
+}
+
 export function spawnAttackEffects(refs: GameRefs, options: PixiCombatRuntimeOptions) {
   const heroes = getAllBoardHeroes(refs.state.board);
   if (heroes.length === 0) return;
@@ -166,6 +215,16 @@ export function spawnAttackEffects(refs: GameRefs, options: PixiCombatRuntimeOpt
 
     const damage = getHeroDamage(refs, hero);
     triggerHeroSpriteAttack(refs, hero, from, target, options);
+
+    if (hero.heroId === "zarya") {
+      spawnZaryaBeamEffect(refs, from, target, () => {
+        applyAttackDamage(refs, hero, role, target, damage, options);
+        if (index === 0) {
+          options.floatText(refs, `${damage}`, target.x, target.y - 18, colors.yellow);
+        }
+      });
+      return;
+    }
 
     const projectile = new Graphics();
     projectile.circle(0, 0, hero.grade === "mythic" ? 5 : 3.5);
@@ -186,15 +245,7 @@ export function spawnAttackEffects(refs: GameRefs, options: PixiCombatRuntimeOpt
       },
       done: () => {
         projectile.destroy();
-        if (!target.alive) return;
-
-        if (role === "tank") applyTankSlow(target);
-
-        damageEnemy(refs, target, damage, options);
-
-        if (role === "support") {
-          applySupportSplash(refs, target, damage, options);
-        }
+        applyAttackDamage(refs, hero, role, target, damage, options);
 
         if (index === 0) {
           options.floatText(refs, `${damage}`, target.x, target.y - 18, colors.yellow);
