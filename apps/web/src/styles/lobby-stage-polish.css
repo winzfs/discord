@@ -1,0 +1,243 @@
+.lobby-stage {
+  display: block;
+  min-height: 360px;
+  overflow: hidden;
+  isolation: isolate;
+  background:
+    radial-gradient(circle at 50% 28%, rgba(255, 216, 94, 0.34), transparent 120px),
+    radial-gradient(ellipse at 50% 88%, rgba(0, 0, 0, 0.52), transparent 58%),
+    linear-gradient(180deg, #241716 0%, #3b241f 48%, #201514 100%);
+}
+
+.stage-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background:
+    linear-gradient(90deg, rgba(0, 0, 0, 0.32), transparent 24%, transparent 76%, rgba(0, 0, 0, 0.32)),
+    repeating-linear-gradient(90deg, transparent 0 52px, rgba(255, 220, 150, 0.025) 52px 56px);
+  pointer-events: none;
+}
+
+.stage-floor {
+  position: absolute;
+  left: -8%;
+  right: -8%;
+  bottom: 28px;
+  z-index: 1;
+  height: 122px;
+  border-radius: 50%;
+  background:
+    radial-gradient(ellipse at 50% 48%, rgba(255, 190, 96, 0.18), transparent 34%),
+    radial-gradient(ellipse, rgba(0, 0, 0, 0.48), transparent 70%);
+  pointer-events: none;
+}
+
+.lobby-stage::before {
+  left: 10%;
+  right: 10%;
+  bottom: 64px;
+  z-index: 1;
+  height: 70px;
+  opacity: 0.7;
+}
+
+.stage-node,
+.stage-hero-showcase,
+.stage-cta-stack {
+  position: absolute;
+  z-index: 2;
+}
+
+.stage-node {
+  display: grid;
+  place-items: center;
+  gap: 4px;
+  width: 112px;
+  height: 112px;
+  border: 5px solid #241713;
+  border-radius: 30px;
+  background: linear-gradient(180deg, #ce7a4b, #8d4f36);
+  color: #fff7dd;
+  font: inherit;
+  font-weight: 1000;
+  box-shadow:
+    inset 0 5px 0 rgba(255, 255, 255, 0.18),
+    inset 0 -12px 0 rgba(0, 0, 0, 0.08),
+    0 12px 0 rgba(0, 0, 0, 0.24),
+    0 24px 28px rgba(0, 0, 0, 0.24);
+}
+
+.stage-node-icon {
+  display: grid;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  border-radius: 15px;
+  background: rgba(48, 29, 24, 0.48);
+  box-shadow: inset 0 3px 0 rgba(255, 255, 255, 0.12);
+  font-size: 1.1rem;
+}
+
+.stage-node strong,
+.stage-hero-showcase strong {
+  line-height: 1;
+  text-shadow: 0 3px 0 rgba(0, 0, 0, 0.22);
+}
+
+.stage-node small,
+.stage-hero-showcase small {
+  color: rgba(255, 245, 220, 0.86);
+  font-size: 0.72rem;
+  font-weight: 900;
+}
+
+.stage-node-shop {
+  left: 9%;
+  bottom: 92px;
+  transform: rotate(-3deg);
+}
+
+.stage-node-hero {
+  right: 7%;
+  bottom: 86px;
+  background: linear-gradient(180deg, #f17055, #bd4637);
+  transform: rotate(3deg);
+}
+
+.stage-hero-showcase {
+  left: 50%;
+  bottom: 74px;
+  display: grid;
+  width: 166px;
+  transform: translateX(-50%);
+  place-items: center;
+  color: #fff7dd;
+  text-align: center;
+}
+
+.stage-boss-aura {
+  position: absolute;
+  top: -30px;
+  width: 190px;
+  height: 190px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 199, 69, 0.22), transparent 62%);
+  filter: blur(1px);
+  pointer-events: none;
+}
+
+.stage-hero-showcase .stage-boss {
+  position: relative;
+  left: auto;
+  bottom: auto;
+  display: grid;
+  width: 152px;
+  height: 148px;
+  margin-bottom: 12px;
+  place-items: center;
+  border: 6px solid #241713;
+  border-radius: 38px;
+  background:
+    radial-gradient(circle at 52% 22%, rgba(255, 255, 255, 0.16), transparent 25%),
+    linear-gradient(180deg, #a5684c, #6f3e30);
+  transform: none;
+  box-shadow:
+    inset 0 6px 0 rgba(255, 255, 255, 0.14),
+    inset 0 -18px 0 rgba(0, 0, 0, 0.1),
+    0 14px 0 rgba(0, 0, 0, 0.24),
+    0 30px 32px rgba(0, 0, 0, 0.28);
+}
+
+.stage-hero-showcase .stage-boss span {
+  font-size: 1.22rem;
+}
+
+.stage-cta-stack {
+  right: 24px;
+  bottom: 38px;
+  display: grid;
+  gap: 10px;
+  justify-items: end;
+}
+
+.stage-cta-stack .battle-start,
+.stage-cta-stack .stage-speech {
+  position: relative;
+  right: auto;
+  bottom: auto;
+  display: inline-grid;
+  min-width: 126px;
+  place-items: center;
+  text-align: center;
+}
+
+.stage-cta-stack .battle-start {
+  padding: 15px 20px;
+  border-radius: 19px;
+  font-size: 1.06rem;
+}
+
+.stage-cta-stack .stage-speech {
+  padding: 12px 16px;
+  border-radius: 18px;
+}
+
+@media (max-width: 430px) {
+  .lobby-stage {
+    min-height: 330px;
+  }
+
+  .stage-node {
+    width: 96px;
+    height: 96px;
+    border-radius: 26px;
+  }
+
+  .stage-node-shop {
+    left: 7%;
+    bottom: 86px;
+  }
+
+  .stage-node-hero {
+    right: 5%;
+    bottom: 80px;
+  }
+
+  .stage-hero-showcase {
+    bottom: 78px;
+    width: 150px;
+  }
+
+  .stage-hero-showcase .stage-boss {
+    width: 134px;
+    height: 132px;
+  }
+
+  .stage-cta-stack {
+    right: 18px;
+    bottom: 30px;
+    gap: 8px;
+  }
+
+  .stage-cta-stack .battle-start,
+  .stage-cta-stack .stage-speech {
+    min-width: 112px;
+  }
+}
+
+@media (max-width: 370px) {
+  .stage-node {
+    width: 88px;
+    height: 88px;
+  }
+
+  .stage-hero-showcase .stage-boss {
+    width: 120px;
+    height: 120px;
+  }
+
+  .stage-hero-showcase {
+    bottom: 86px;
+  }
+}
