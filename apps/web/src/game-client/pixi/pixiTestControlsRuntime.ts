@@ -14,7 +14,7 @@ export const pixiTestMythicHeroIds = [
   "illari",
 ] as const;
 
-export const pixiTestEnemyHpMultipliers = [0.5, 1, 2, 5, 10] as const;
+export const pixiTestEnemyHpMultipliers = [0.5, 1, 2, 5, 10, 50, 100] as const;
 
 export type PixiTestMythicHeroId = (typeof pixiTestMythicHeroIds)[number];
 export type PixiTestEnemyHpMultiplier = (typeof pixiTestEnemyHpMultipliers)[number];
