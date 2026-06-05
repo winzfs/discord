@@ -7,6 +7,14 @@ export type PixiSkillRuntimeOptions = {
   floatText: (refs: GameRefs, value: string, x: number, y: number, color: number) => void;
 };
 
+const ATTACK_SKILL_CHANCE = 0.42;
+const CONTROL_SKILL_CHANCE = 0.3;
+const SUPPORT_SKILL_CHANCE = 0.24;
+
+function roll(refs: GameRefs, chance: number) {
+  return refs.random() < chance;
+}
+
 function liveEnemies(refs: GameRefs) {
   return refs.activeEnemies.filter((enemy) => enemy.alive);
 }
@@ -24,45 +32,53 @@ function frontEnemies(refs: GameRefs, target: ActiveEnemy, count: number) {
     .slice(0, count);
 }
 
+function lowestHpEnemies(refs: GameRefs, count: number) {
+  return liveEnemies(refs)
+    .sort((a, b) => a.hp / a.maxHp - b.hp / b.maxHp)
+    .slice(0, count);
+}
+
 function bossOrFrontEnemy(refs: GameRefs, target: ActiveEnemy) {
   return liveEnemies(refs).find((enemy) => enemy.boss) ?? target;
 }
 
-function maybeShowSkillText(
-  refs: GameRefs,
+function showSkillText(
   options: PixiSkillRuntimeOptions,
+  refs: GameRefs,
   label: string,
   target: ActiveEnemy,
   color: number,
-  chance = 0.18,
 ) {
-  if (refs.random() <= chance) {
-    options.floatText(refs, label, target.x, target.y - 34, color);
-  }
+  options.floatText(refs, label, target.x, target.y - 34, color);
 }
 
 function applyDvaSkills(refs: GameRefs, options: PixiSkillRuntimeOptions, target: ActiveEnemy, baseDamage: number) {
-  // Skill 1: Fusion Cannons - close spread damage.
-  nearbyEnemies(refs, target, 78).slice(0, 4).forEach((enemy) => {
-    options.damageEnemy(refs, enemy, Math.max(1, Math.round(baseDamage * 0.24)));
-  });
+  let damage = baseDamage;
 
-  // Skill 2: Defense Matrix - suppresses the lead enemy instead of adding more splash.
-  const lead = bossOrFrontEnemy(refs, target);
-  lead.speed = Math.max(0.18, lead.speed * 0.62);
-  maybeShowSkillText(refs, options, lead.id === target.id ? "융합포" : "방어 매트릭스", lead, 0xff78d8);
+  if (roll(refs, ATTACK_SKILL_CHANCE)) {
+    nearbyEnemies(refs, target, 78).slice(0, 4).forEach((enemy) => {
+      options.damageEnemy(refs, enemy, Math.max(1, Math.round(baseDamage * 0.24)));
+    });
+    damage = Math.round(damage * 1.04);
+    showSkillText(options, refs, "융합포", target, 0xff78d8);
+  }
 
-  return Math.round(baseDamage * 1.04);
+  if (roll(refs, CONTROL_SKILL_CHANCE)) {
+    const lead = bossOrFrontEnemy(refs, target);
+    lead.speed = Math.max(0.18, lead.speed * 0.62);
+    showSkillText(options, refs, "방어 매트릭스", lead, 0xff78d8);
+  }
+
+  return damage;
 }
 
 function applyZaryaSkills(refs: GameRefs, options: PixiSkillRuntimeOptions, hero: BoardHero, target: ActiveEnemy, baseDamage: number) {
   const beamCharge = refs.zaryaBeamCharges[hero.instanceId]?.charge ?? 1;
 
-  // Skill 1 is handled as the continuous beam in combat runtime.
-  // Skill 2: Barrier Charge - high beam charge briefly hardens the beam and slows the target.
-  if (beamCharge >= 3) {
+  // Particle Cannon is always on. Barrier Charge is a support proc once beam is built up.
+  if (beamCharge >= 3 && roll(refs, SUPPORT_SKILL_CHANCE)) {
     target.speed = Math.max(0.18, target.speed * 0.72);
-    maybeShowSkillText(refs, options, "방벽 충전", target, 0xff7de9, 0.28);
+    showSkillText(options, refs, "방벽 충전", target, 0xff7de9);
     return Math.round(baseDamage * 1.08);
   }
 
@@ -70,107 +86,149 @@ function applyZaryaSkills(refs: GameRefs, options: PixiSkillRuntimeOptions, hero
 }
 
 function applyWinstonSkills(refs: GameRefs, options: PixiSkillRuntimeOptions, target: ActiveEnemy, baseDamage: number) {
-  // Skill 1: Tesla Cannon - chain damage.
-  nearbyEnemies(refs, target, 100).slice(0, 3).forEach((enemy) => {
-    options.damageEnemy(refs, enemy, Math.max(1, Math.round(baseDamage * 0.34)));
-  });
+  let damage = Math.round(baseDamage * 0.86);
 
-  // Skill 2: Jump Pack - hits the furthest front target with a slow impact.
-  const front = frontEnemies(refs, target, 1)[0];
-  if (front) {
-    front.speed = Math.max(0.18, front.speed * 0.58);
-    options.damageEnemy(refs, front, Math.max(1, Math.round(baseDamage * 0.52)));
+  if (roll(refs, ATTACK_SKILL_CHANCE)) {
+    nearbyEnemies(refs, target, 86).slice(0, 2).forEach((enemy) => {
+      options.damageEnemy(refs, enemy, Math.max(1, Math.round(baseDamage * 0.26)));
+    });
+    showSkillText(options, refs, "테슬라 과충전", target, 0x87b7ff);
   }
 
-  maybeShowSkillText(refs, options, front ? "점프 팩 충격" : "테슬라 캐논", target, 0x87b7ff);
-  return Math.round(baseDamage * 0.9);
+  if (roll(refs, CONTROL_SKILL_CHANCE)) {
+    const front = frontEnemies(refs, target, 1)[0];
+    if (front) {
+      front.speed = Math.max(0.18, front.speed * 0.58);
+      options.damageEnemy(refs, front, Math.max(1, Math.round(baseDamage * 0.42)));
+      showSkillText(options, refs, "점프 팩 충격", front, 0x87b7ff);
+    }
+  }
+
+  return damage;
 }
 
 function applyTracerSkills(refs: GameRefs, options: PixiSkillRuntimeOptions, target: ActiveEnemy, baseDamage: number) {
-  // Skill 1: Pulse Pistols - main target multi-hit.
-  const multiHitBonus = Math.round(baseDamage * 0.18);
-  options.damageEnemy(refs, target, Math.max(1, multiHitBonus));
+  let damage = baseDamage;
 
-  // Skill 2: Blink - skips to a front enemy for a smaller extra shot.
-  frontEnemies(refs, target, 1).forEach((enemy) => {
-    options.damageEnemy(refs, enemy, Math.max(1, Math.round(baseDamage * 0.48)));
-  });
+  if (roll(refs, ATTACK_SKILL_CHANCE)) {
+    options.damageEnemy(refs, target, Math.max(1, Math.round(baseDamage * 0.18)));
+    damage = Math.round(damage * 0.96);
+    showSkillText(options, refs, "펄스 쌍권총", target, 0xffc857);
+  }
 
-  maybeShowSkillText(refs, options, "점멸 연사", target, 0xffc857);
-  return Math.round(baseDamage * 0.96);
+  if (roll(refs, ATTACK_SKILL_CHANCE)) {
+    frontEnemies(refs, target, 1).forEach((enemy) => {
+      options.damageEnemy(refs, enemy, Math.max(1, Math.round(baseDamage * 0.48)));
+      showSkillText(options, refs, "점멸", enemy, 0xffc857);
+    });
+  }
+
+  return damage;
 }
 
 function applyCassidySkills(refs: GameRefs, options: PixiSkillRuntimeOptions, target: ActiveEnemy, baseDamage: number) {
-  // Skill 1: Peacekeeper - precision critical.
-  const critical = refs.random() < 0.22;
+  let damage = baseDamage;
 
-  // Skill 2: Magnetic Grenade - mark/slow instead of just another damage bonus.
-  target.speed = Math.max(0.18, target.speed * 0.64);
-  const markedDamageBonus = target.boss ? 1.24 : 1.14;
+  if (roll(refs, ATTACK_SKILL_CHANCE)) {
+    damage = Math.round(damage * 1.55);
+    showSkillText(options, refs, "피스키퍼 치명타", target, 0xffd166);
+  }
 
-  maybeShowSkillText(refs, options, critical ? "피스키퍼 치명타" : "자력 수류탄 표식", target, 0xffd166, critical ? 0.35 : 0.2);
-  return Math.round(baseDamage * markedDamageBonus * (critical ? 1.55 : 1));
+  if (roll(refs, CONTROL_SKILL_CHANCE)) {
+    target.speed = Math.max(0.18, target.speed * 0.64);
+    damage = Math.round(damage * (target.boss ? 1.24 : 1.14));
+    showSkillText(options, refs, "자력 수류탄", target, 0xffd166);
+  }
+
+  return damage;
+}
+
+function applyGenjiDashStrike(refs: GameRefs, options: PixiSkillRuntimeOptions, baseDamage: number) {
+  let chainCount = 0;
+  let lastTarget: ActiveEnemy | null = null;
+
+  while (chainCount < 4) {
+    const target = lowestHpEnemies(refs, 1)[0];
+    if (!target) break;
+
+    lastTarget = target;
+    const dashDamage = Math.max(1, Math.round(baseDamage * 1.16));
+    options.damageEnemy(refs, target, dashDamage);
+    chainCount += 1;
+
+    if (target.alive) break;
+  }
+
+  if (lastTarget) showSkillText(options, refs, chainCount > 1 ? `질풍참 x${chainCount}` : "질풍참", lastTarget, 0x7dff7a);
 }
 
 function applyGenjiSkills(refs: GameRefs, options: PixiSkillRuntimeOptions, target: ActiveEnemy, baseDamage: number) {
-  // Skill 1: Shuriken - fan spread to two front enemies.
-  frontEnemies(refs, target, 2).forEach((enemy) => {
-    options.damageEnemy(refs, enemy, Math.max(1, Math.round(baseDamage * 0.32)));
-  });
+  let damage = baseDamage;
 
-  // Skill 2: Deflect - punishes boss/front threat with a stronger reflected strike.
-  const reflectTarget = bossOrFrontEnemy(refs, target);
-  if (reflectTarget.id !== target.id || reflectTarget.boss) {
-    options.damageEnemy(refs, reflectTarget, Math.max(1, Math.round(baseDamage * 0.62)));
-    maybeShowSkillText(refs, options, "튕겨내기", reflectTarget, 0x7dff7a, 0.34);
-  } else {
-    maybeShowSkillText(refs, options, "수리검", target, 0x7dff7a);
+  if (roll(refs, ATTACK_SKILL_CHANCE)) {
+    frontEnemies(refs, target, 2).forEach((enemy) => {
+      options.damageEnemy(refs, enemy, Math.max(1, Math.round(baseDamage * 0.32)));
+    });
+    damage = Math.round(damage * 0.98);
+    showSkillText(options, refs, "수리검", target, 0x7dff7a);
   }
 
-  return Math.round(baseDamage * 0.98);
+  if (roll(refs, ATTACK_SKILL_CHANCE)) {
+    applyGenjiDashStrike(refs, options, baseDamage);
+  }
+
+  return damage;
 }
 
 function applyAnaSkills(refs: GameRefs, options: PixiSkillRuntimeOptions, target: ActiveEnemy, baseDamage: number) {
-  // Skill 1: Biotic Rifle - vulnerability damage.
-  const vulnerableDamage = target.boss ? 1.38 : 1.22;
+  let damage = baseDamage;
 
-  // Skill 2: Sleep Dart - strong control, distinct from rifle damage.
-  if (refs.random() < 0.36 || target.boss) {
-    target.speed = Math.max(0.08, target.speed * 0.36);
-    maybeShowSkillText(refs, options, "수면총", target, 0x7dffb2, 0.42);
-  } else {
-    maybeShowSkillText(refs, options, "생체 소총", target, 0x7dffb2);
+  if (roll(refs, SUPPORT_SKILL_CHANCE)) {
+    damage = Math.round(damage * (target.boss ? 1.38 : 1.22));
+    showSkillText(options, refs, "생체 소총", target, 0x7dffb2);
   }
 
-  return Math.round(baseDamage * vulnerableDamage);
+  if (roll(refs, CONTROL_SKILL_CHANCE)) {
+    target.sleepUntil = Date.now() + 3000;
+    showSkillText(options, refs, "수면총 3초", target, 0x7dffb2);
+  }
+
+  return damage;
 }
 
 function applyKirikoSkills(refs: GameRefs, options: PixiSkillRuntimeOptions, target: ActiveEnemy, baseDamage: number) {
-  // Skill 1: Kunai - precision critical.
-  const precision = target.boss || target.progress > 0.7 || refs.random() < 0.24;
+  let damage = baseDamage;
 
-  // Skill 2: Protection Suzu - brief team tempo buff represented as tiny attack multiplier growth.
-  if (refs.random() < 0.2) {
-    refs.progressBonuses.attackMultiplier *= 1.006;
-    maybeShowSkillText(refs, options, "정화의 방울", target, 0xff8ad8, 0.36);
-  } else {
-    maybeShowSkillText(refs, options, precision ? "쿠나이 급소" : "쿠나이", target, 0xff8ad8, precision ? 0.32 : 0.12);
+  if (roll(refs, ATTACK_SKILL_CHANCE)) {
+    const precision = target.boss || target.progress > 0.7 || refs.random() < 0.24;
+    damage = Math.round(damage * (precision ? 1.68 : 1.02));
+    showSkillText(options, refs, precision ? "쿠나이 급소" : "쿠나이", target, 0xff8ad8);
   }
 
-  return Math.round(baseDamage * (precision ? 1.68 : 1.02));
+  if (roll(refs, SUPPORT_SKILL_CHANCE)) {
+    refs.progressBonuses.attackMultiplier *= 1.006;
+    showSkillText(options, refs, "정화의 방울", target, 0xff8ad8);
+  }
+
+  return damage;
 }
 
 function applyIllariSkills(refs: GameRefs, options: PixiSkillRuntimeOptions, target: ActiveEnemy, baseDamage: number) {
-  // Skill 1: Solar Rifle - charged single-target burst.
-  const charged = refs.random() < 0.34 || target.boss;
+  let damage = baseDamage;
 
-  // Skill 2: Healing Pylon - damage support aura as nearby bonus shots.
-  nearbyEnemies(refs, target, 86).slice(0, 2).forEach((enemy) => {
-    options.damageEnemy(refs, enemy, Math.max(1, Math.round(baseDamage * 0.26)));
-  });
+  if (roll(refs, ATTACK_SKILL_CHANCE)) {
+    damage = Math.round(damage * (target.boss ? 1.52 : 1.34));
+    showSkillText(options, refs, "태양 소총 충전", target, colors.yellow);
+  }
 
-  maybeShowSkillText(refs, options, charged ? "태양 소총 충전" : "치유 파일론 증폭", target, colors.yellow, charged ? 0.34 : 0.18);
-  return Math.round(baseDamage * (charged ? 1.52 : 1.08));
+  if (roll(refs, SUPPORT_SKILL_CHANCE)) {
+    nearbyEnemies(refs, target, 86).slice(0, 2).forEach((enemy) => {
+      options.damageEnemy(refs, enemy, Math.max(1, Math.round(baseDamage * 0.26)));
+    });
+    showSkillText(options, refs, "치유 파일론 증폭", target, colors.yellow);
+  }
+
+  return damage;
 }
 
 export function applyMythicHeroSkillEffects(
