@@ -1,5 +1,5 @@
 export type GameModeDifficulty = "normal" | "hard" | "hell" | "divine" | "origin";
-export type GameModeType = "single" | "coop" | "versus" | "challenge" | "infinite" | "daily" | "server-war";
+export type GameModeType = "single" | "coop" | "versus" | "challenge" | "infinite" | "daily" | "server-war" | "test";
 
 export type GameModeDefinition = {
   id: string;
@@ -46,6 +46,16 @@ export const gameModes: GameModeDefinition[] = [
     description: "강한 보스와 높은 체력의 적이 등장하는 고난이도 모드입니다.",
     unlockCondition: "어려움 방어 클리어",
     modifiers: ["몬스터 체력 증가", "제어 효과 크게 감소", "보스 특수 패턴"],
+  },
+  {
+    id: "mythic-lab",
+    displayName: "신화 실험실",
+    type: "test",
+    maxWave: 20,
+    energyCost: 0,
+    description: "오버워치 신화 영웅을 자유롭게 소환하고 몬스터 체력을 조정하는 테스트 스테이지입니다.",
+    unlockCondition: "개발 테스트 전용",
+    modifiers: ["신화 영웅 자유 소환", "몬스터 체력 수동 설정", "기록 저장 제외"],
   },
   {
     id: "coop-defense",
