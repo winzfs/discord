@@ -79,11 +79,6 @@ export function drawUnitShape(target: Container, hero: Pick<BoardHero, "grade" |
   const accent = heroAccent(hero.heroId, roleAccent(role));
   const baseColor = gradeColor(hero.grade);
 
-  const shadow = new Graphics();
-  shadow.ellipse(0, cell * 0.24 * scale, cell * 0.2 * scale, cell * 0.06 * scale);
-  shadow.fill({ color: 0x244f1e, alpha: 0.28 });
-  target.addChild(shadow);
-
   if (role === "support" || hero.grade === "mythic") {
     const aura = new Graphics();
     aura.circle(0, 0, cell * (hero.grade === "mythic" ? 0.36 : 0.31) * scale);
@@ -149,27 +144,38 @@ function getStackOffset(stackCount: number, index: number, cell: number) {
   return { x: cell * 0.17, y: cell * 0.13, scale: 0.74 };
 }
 
-function drawGradeBadge(target: Container, x: number, y: number, cellWidth: number, cellHeight: number, hero: BoardHero) {
-  const radius = Math.max(5, Math.min(cellWidth, cellHeight) * 0.085);
-  const badge = new Graphics();
-  badge.circle(x + cellWidth / 2, y + cellHeight * 0.82, radius);
-  badge.fill({ color: gradeColor(hero.grade), alpha: 0.96 });
-  badge.stroke({ color: colors.black, width: Math.max(1.5, radius * 0.28), alpha: 0.72 });
-  target.addChild(badge);
+function drawUnitBaseShadow(target: Container, x: number, y: number, cellWidth: number, cellHeight: number, cell: number, hero: BoardHero, offsetX: number, offsetY: number, scale: number) {
+  const shadow = new Graphics();
+  shadow.ellipse(
+    x + cellWidth / 2 + offsetX,
+    y + cellHeight * 0.72 + offsetY,
+    cell * 0.22 * scale,
+    cell * 0.065 * scale,
+  );
+  shadow.fill({ color: 0x1f3d17, alpha: 0.28 });
+  target.addChild(shadow);
+
+  const gradeGlow = new Graphics();
+  gradeGlow.ellipse(
+    x + cellWidth / 2 + offsetX,
+    y + cellHeight * 0.72 + offsetY,
+    cell * 0.17 * scale,
+    cell * 0.045 * scale,
+  );
+  gradeGlow.fill({ color: gradeColor(hero.grade), alpha: 0.34 });
+  target.addChild(gradeGlow);
 }
 
 function drawUnitMarker(target: Container, x: number, y: number, cellWidth: number, cellHeight: number, hero: BoardHero, stackCount: number, stackIndex: number) {
   const unitCell = Math.min(cellWidth, cellHeight);
   const offset = getStackOffset(stackCount, stackIndex, unitCell);
+  drawUnitBaseShadow(target, x, y, cellWidth, cellHeight, unitCell, hero, offset.x, offset.y, offset.scale);
+
   const marker = new Container();
   marker.x = x + cellWidth / 2 + offset.x;
   marker.y = y + cellHeight * 0.48 + offset.y;
   drawUnitShape(marker, hero, unitCell, offset.scale);
   target.addChild(marker);
-
-  if (stackIndex === stackCount - 1) {
-    drawGradeBadge(target, x, y, cellWidth, cellHeight, hero);
-  }
 }
 
 export function drawBoardCells(target: Container, board: Array<{ units: BoardHero[] }>, metrics: BoardMetrics, canMergeCell: (cellIndex: number) => boolean, handlers: BoardPointerHandlers) {
@@ -185,9 +191,8 @@ export function drawBoardCells(target: Container, board: Array<{ units: BoardHer
 
     if (canMerge) {
       const mergeHint = new Graphics();
-      mergeHint.circle(x + metrics.cellWidth / 2, y + metrics.cellHeight * 0.84, Math.max(6, metrics.cell * 0.1));
-      mergeHint.fill({ color: colors.yellow, alpha: 0.86 });
-      mergeHint.stroke({ color: colors.black, width: 2, alpha: 0.55 });
+      mergeHint.ellipse(x + metrics.cellWidth / 2, y + metrics.cellHeight * 0.76, metrics.cell * 0.18, metrics.cell * 0.055);
+      mergeHint.fill({ color: colors.yellow, alpha: 0.42 });
       target.addChild(mergeHint);
     }
 
