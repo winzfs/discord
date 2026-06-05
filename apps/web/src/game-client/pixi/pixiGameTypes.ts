@@ -75,6 +75,7 @@ export type GameRefs = {
   waveLostLives: number;
   lastWaveSummary: WaveSummary | null;
   resultSubmitted: boolean;
+  testEnemyHpMultiplier: number;
 };
 
 export const WAVE_COUNTDOWN_SECONDS = 8;
