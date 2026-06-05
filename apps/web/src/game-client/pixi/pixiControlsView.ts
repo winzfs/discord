@@ -1,7 +1,7 @@
 import { Container, Graphics, Text } from "pixi.js";
 import type { GameLayout } from "./gameLayout";
 import { colors } from "./gameTheme";
-import { paintControlButton } from "./pixiControlButtonPaint";
+import { paintControlButton, paintControlDock } from "./pixiControlButtonPaint";
 
 export type ControlsWavePhase = "countdown" | "combat" | "result";
 
@@ -33,6 +33,7 @@ export type PixiButtonView = {
 
 export type PixiControlsView = {
   root: Container;
+  dock: Graphics;
   summon: PixiButtonView;
   mythic: PixiButtonView;
   gamble: PixiButtonView;
@@ -108,6 +109,7 @@ export function createPixiControlsView(parent: Container, handlers: {
 }): PixiControlsView {
   const view: PixiControlsView = {
     root: new Container(),
+    dock: new Graphics(),
     summon: createButton(10, 78, colors.yellow, handlers.onSummon),
     mythic: createButton(92, 62, colors.orange, handlers.onMythic),
     gamble: createButton(92, 62, colors.blue, handlers.onGamble),
@@ -115,7 +117,7 @@ export function createPixiControlsView(parent: Container, handlers: {
     wave: createButton(112, 48, colors.orange, handlers.onWave),
     lastKey: "",
   };
-  view.root.addChild(view.summon.root, view.mythic.root, view.gamble.root, view.upgrade.root, view.wave.root);
+  view.root.addChild(view.dock, view.summon.root, view.mythic.root, view.gamble.root, view.upgrade.root, view.wave.root);
   parent.addChild(view.root);
   return view;
 }
@@ -140,6 +142,8 @@ export function updatePixiControlsView(view: PixiControlsView, layout: GameLayou
   const key = createControlsSnapshotKey(snapshot);
   if (!force && view.lastKey === key) return;
   view.lastKey = key;
+
+  paintControlDock(view.dock, 14, layout.height - 116, layout.width - 28, 106);
 
   const summonWidth = Math.min(layout.width * 0.48, layout.width - 230);
   view.summon.width = summonWidth;
