@@ -1,5 +1,6 @@
 import { Graphics } from "pixi.js";
 import type { ActiveEnemy, GameRefs } from "./pixiGameTypes";
+import { acquireFxGraphics, releaseFxGraphics } from "./pixiFxPoolRuntime";
 
 export type PixiHeroAttackFxOptions = {
   addAnimation: (
@@ -143,17 +144,16 @@ function drawShuriken(graphics: Graphics, point: Point, angle: number, color: nu
   graphics.fill({ color, alpha });
 }
 
-function finishHit(fx: Graphics, options: PixiHeroAttackFxOptions, target: ActiveEnemy, damage: number, color: number) {
-  fx.destroy();
+function finishHit(refs: GameRefs, fx: Graphics, options: PixiHeroAttackFxOptions, target: ActiveEnemy, damage: number, color: number) {
+  releaseFxGraphics(refs, fx);
   options.applyDamage(target, damage);
   options.floatText(`${damage}`, target.x, target.y - 18, color);
 }
 
 function spawnDvaFusionCannons(refs: GameRefs, options: PixiHeroAttackFxOptions, from: Point, target: ActiveEnemy, damage: number) {
-  const fx = new Graphics();
+  const fx = acquireFxGraphics(refs);
   const targetAtFire = { x: target.x, y: target.y };
   const angle = angleBetween(from, targetAtFire);
-  refs.effects.addChild(fx);
 
   options.addAnimation(refs, {
     duration: 205,
@@ -182,15 +182,14 @@ function spawnDvaFusionCannons(refs: GameRefs, options: PixiHeroAttackFxOptions,
         drawImpactBurst(fx, { x: targetAtFire.x + 7, y: targetAtFire.y - 4 }, 0x7ee8ff, (progress - 0.5) / 0.5, 18, 7);
       }
     },
-    done: () => finishHit(fx, options, target, damage, 0xff78d8),
+    done: () => finishHit(refs, fx, options, target, damage, 0xff78d8),
   });
 }
 
 function spawnTracerPulsePistols(refs: GameRefs, options: PixiHeroAttackFxOptions, from: Point, target: ActiveEnemy, damage: number) {
-  const fx = new Graphics();
+  const fx = acquireFxGraphics(refs);
   const targetAtFire = { x: target.x, y: target.y };
   const angle = angleBetween(from, targetAtFire);
-  refs.effects.addChild(fx);
 
   options.addAnimation(refs, {
     duration: 210,
@@ -210,15 +209,14 @@ function spawnTracerPulsePistols(refs: GameRefs, options: PixiHeroAttackFxOption
 
       if (progress > 0.52) drawImpactBurst(fx, targetAtFire, 0xffd166, (progress - 0.52) / 0.48, 20, 8);
     },
-    done: () => finishHit(fx, options, target, damage, 0xffc857),
+    done: () => finishHit(refs, fx, options, target, damage, 0xffc857),
   });
 }
 
 function spawnCassidyPeacekeeper(refs: GameRefs, options: PixiHeroAttackFxOptions, from: Point, target: ActiveEnemy, damage: number) {
-  const fx = new Graphics();
+  const fx = acquireFxGraphics(refs);
   const targetAtFire = { x: target.x, y: target.y };
   const angle = angleBetween(from, targetAtFire);
-  refs.effects.addChild(fx);
 
   options.addAnimation(refs, {
     duration: 220,
@@ -232,7 +230,7 @@ function spawnCassidyPeacekeeper(refs: GameRefs, options: PixiHeroAttackFxOption
       graphicsBullet(fx, bullet, angle, 0xffd166, 0.95 * (1 - progress * 0.18));
       if (progress > 0.6) drawImpactBurst(fx, targetAtFire, 0xffd166, (progress - 0.6) / 0.4, 30, 10);
     },
-    done: () => finishHit(fx, options, target, damage, 0xffd166),
+    done: () => finishHit(refs, fx, options, target, damage, 0xffd166),
   });
 }
 
@@ -247,10 +245,9 @@ function graphicsBullet(graphics: Graphics, point: Point, angle: number, color: 
 }
 
 function spawnGenjiShuriken(refs: GameRefs, options: PixiHeroAttackFxOptions, from: Point, target: ActiveEnemy, damage: number) {
-  const fx = new Graphics();
+  const fx = acquireFxGraphics(refs);
   const targetAtFire = { x: target.x, y: target.y };
   const angle = angleBetween(from, targetAtFire);
-  refs.effects.addChild(fx);
 
   options.addAnimation(refs, {
     duration: 230,
@@ -273,15 +270,14 @@ function spawnGenjiShuriken(refs: GameRefs, options: PixiHeroAttackFxOptions, fr
         drawImpactBurst(fx, targetAtFire, 0x7dff7a, hitProgress, 18, 7);
       }
     },
-    done: () => finishHit(fx, options, target, damage, 0x7dff7a),
+    done: () => finishHit(refs, fx, options, target, damage, 0x7dff7a),
   });
 }
 
 function spawnAnaBioticShot(refs: GameRefs, options: PixiHeroAttackFxOptions, from: Point, target: ActiveEnemy, damage: number) {
-  const fx = new Graphics();
+  const fx = acquireFxGraphics(refs);
   const targetAtFire = { x: target.x, y: target.y };
   const angle = angleBetween(from, targetAtFire);
-  refs.effects.addChild(fx);
 
   options.addAnimation(refs, {
     duration: 165,
@@ -294,14 +290,13 @@ function spawnAnaBioticShot(refs: GameRefs, options: PixiHeroAttackFxOptions, fr
       drawSoftOrb(fx, tip, 0x7dffb2, 3.4, 0.72);
       if (progress > 0.54) drawImpactBurst(fx, targetAtFire, 0x7dffb2, (progress - 0.54) / 0.46, 20, 7);
     },
-    done: () => finishHit(fx, options, target, damage, 0x7dffb2),
+    done: () => finishHit(refs, fx, options, target, damage, 0x7dffb2),
   });
 }
 
 function spawnKirikoKunai(refs: GameRefs, options: PixiHeroAttackFxOptions, from: Point, target: ActiveEnemy, damage: number) {
-  const fx = new Graphics();
+  const fx = acquireFxGraphics(refs);
   const targetAtFire = { x: target.x, y: target.y };
-  refs.effects.addChild(fx);
 
   options.addAnimation(refs, {
     duration: 230,
@@ -315,7 +310,7 @@ function spawnKirikoKunai(refs: GameRefs, options: PixiHeroAttackFxOptions, from
       graphicsKunai(fx, point, angleBetween(from, targetAtFire), 0xff8ad8, 0.96);
       if (progress > 0.64) drawImpactBurst(fx, targetAtFire, 0xff8ad8, (progress - 0.64) / 0.36, 19, 7);
     },
-    done: () => finishHit(fx, options, target, damage, 0xff8ad8),
+    done: () => finishHit(refs, fx, options, target, damage, 0xff8ad8),
   });
 }
 
@@ -332,10 +327,9 @@ function graphicsKunai(graphics: Graphics, point: Point, angle: number, color: n
 }
 
 function spawnIllariSolarShot(refs: GameRefs, options: PixiHeroAttackFxOptions, from: Point, target: ActiveEnemy, damage: number) {
-  const fx = new Graphics();
+  const fx = acquireFxGraphics(refs);
   const targetAtFire = { x: target.x, y: target.y };
   const angle = angleBetween(from, targetAtFire);
-  refs.effects.addChild(fx);
 
   options.addAnimation(refs, {
     duration: 185,
@@ -348,7 +342,7 @@ function spawnIllariSolarShot(refs: GameRefs, options: PixiHeroAttackFxOptions, 
       drawSoftOrb(fx, tip, 0xfff06a, 6.2 + Math.sin(progress * Math.PI * 10) * 1.2, 0.88);
       if (progress > 0.56) drawImpactBurst(fx, targetAtFire, 0xfff06a, (progress - 0.56) / 0.44, 30, 11);
     },
-    done: () => finishHit(fx, options, target, damage, 0xfff06a),
+    done: () => finishHit(refs, fx, options, target, damage, 0xfff06a),
   });
 }
 
