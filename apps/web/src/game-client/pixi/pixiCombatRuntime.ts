@@ -24,6 +24,7 @@ export type PixiCombatRuntimeOptions = {
   invalidateControls: (refs: GameRefs) => void;
   drawTopHud: (refs: GameRefs, layout: ReturnType<typeof createGameLayout>) => void;
   drawControls: (refs: GameRefs, layout: ReturnType<typeof createGameLayout>) => void;
+  drawBoard: (refs: GameRefs, layout: ReturnType<typeof createGameLayout>) => void;
 };
 
 function roleAccent(role: HeroRole | undefined) {
@@ -125,6 +126,22 @@ function applySupportSplash(
   }
 }
 
+function triggerHeroSpriteAttack(refs: GameRefs, hero: BoardHero, from: { x: number; y: number }, target: ActiveEnemy, options: PixiCombatRuntimeOptions) {
+  if (hero.heroId !== "tracer") return;
+
+  refs.heroSpriteAttacks[hero.instanceId] = {
+    direction: target.x < from.x ? "left" : "right",
+    until: Date.now() + 260,
+  };
+
+  const layout = createGameLayout(refs.app.renderer.width, refs.app.renderer.height);
+  options.drawBoard(refs, layout);
+
+  window.setTimeout(() => {
+    options.drawBoard(refs, createGameLayout(refs.app.renderer.width, refs.app.renderer.height));
+  }, 280);
+}
+
 export function spawnAttackEffects(refs: GameRefs, options: PixiCombatRuntimeOptions) {
   const heroes = getAllBoardHeroes(refs.state.board);
   if (heroes.length === 0) return;
@@ -139,6 +156,7 @@ export function spawnAttackEffects(refs: GameRefs, options: PixiCombatRuntimeOpt
     if (!target) return;
 
     const damage = getHeroDamage(refs, hero);
+    triggerHeroSpriteAttack(refs, hero, from, target, options);
 
     const projectile = new Graphics();
     projectile.circle(0, 0, hero.grade === "mythic" ? 5 : 3.5);
