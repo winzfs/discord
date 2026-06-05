@@ -135,25 +135,25 @@ export function updatePixiHudView(view: PixiHudView, layout: GameLayout, snapsho
   view.hpText.x = layout.width / 2;
   view.hpText.y = hpY + 4;
 
-  const chipY = hpY + 42;
-  drawChip(view.firepowerChip, 22, chipY, 104, 30, 0x3d3027);
+  const chipY = hpY + 44;
+  drawChip(view.firepowerChip, 24, chipY, 104, 30, 0x3d3027);
   view.firepowerText.text = `화력 ${snapshot.firepower}`;
-  view.firepowerText.x = 36;
+  view.firepowerText.x = 38;
   view.firepowerText.y = chipY + 5;
 
-  drawChip(view.unitsChip, layout.width - 126, chipY, 104, 30, 0x3d3027);
+  drawChip(view.unitsChip, layout.width - 128, chipY, 104, 30, 0x3d3027);
   view.unitsText.text = `${snapshot.unitCount} / ${snapshot.unitCapacity}`;
-  view.unitsText.x = layout.width - 74;
+  view.unitsText.x = layout.width - 76;
   view.unitsText.y = chipY + 5;
 
-  const resourceY = layout.height - 196;
-  drawChip(view.luckChip, 22, resourceY, 118, 30, 0x223d48);
+  const resourceY = layout.height - 228;
+  drawChip(view.luckChip, 24, resourceY, 118, 30, 0x223d48);
   view.luckText.text = `행운석 ${snapshot.luckStones}`;
-  view.luckText.x = 34;
+  view.luckText.x = 36;
   view.luckText.y = resourceY + 5;
 
-  drawChip(view.coinChip, 22, resourceY + 34, 106, 30, 0x4f3d1e);
+  drawChip(view.coinChip, 24, resourceY + 36, 106, 30, 0x4f3d1e);
   view.coinText.text = `코인 ${snapshot.resources}`;
-  view.coinText.x = 34;
-  view.coinText.y = resourceY + 39;
+  view.coinText.x = 36;
+  view.coinText.y = resourceY + 41;
 }
