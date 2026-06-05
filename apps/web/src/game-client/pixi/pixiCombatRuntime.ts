@@ -27,7 +27,7 @@ export type PixiCombatRuntimeOptions = {
   drawBoard: (refs: GameRefs, layout: ReturnType<typeof createGameLayout>) => void;
 };
 
-const SPRITE_ATTACK_HERO_IDS = new Set(["tracer", "kiriko", "dva", "zarya"]);
+const SPRITE_ATTACK_HERO_IDS = new Set(["tracer", "kiriko", "dva", "zarya", "cassidy"]);
 
 function roleAccent(role: HeroRole | undefined) {
   if (role === "tank") return 0x87b7ff;
