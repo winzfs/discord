@@ -146,7 +146,7 @@ API는 `game_runs`에 기록을 저장하고, 최고 점수일 경우 `leaderboa
 - 전체화면 캔버스 렌더링
 - 밝은 필드형 배경
 - 보드 외곽을 도는 몬스터 이동 경로
-- 중앙 5x4 영웅 배치판
+- 중앙 4x5 영웅 배치판
 - 상단 WAVE / 타이머 / 코어 HP / 화력 / 유닛 수 / 재화 HUD
 - 하단 소환 / 신화 / 도박 / 강화 / 웨이브 버튼
 - `countdown -> combat -> result` 웨이브 phase
@@ -273,7 +273,7 @@ apps/web/src/game-client/pixi/animation/animationManager.ts
 
 - 초기 게임 상태 생성
 - seed 기반 랜덤 유틸
-- 5x4 보드 생성
+- 4x5 보드 생성
 - 셀당 최대 3스택
 - 빈 칸 배치
 - 같은 유닛 중첩
@@ -364,7 +364,7 @@ mythic
 - API placeholder 표현 제거
 - Discord OAuth 실제 구현 상태 반영
 - 게임 기록 저장 / 랭킹 API 연결 상태 반영
-- 4x4 보드 표현을 5x4로 수정
+- 4x5 보드 표현으로 통일
 - `/play-test`, `/lobby` 라우트 반영
 - 실제 PixiJS runtime 파일 목록 반영
 - 신화 유닛 목록을 현재 코드 기준으로 수정
