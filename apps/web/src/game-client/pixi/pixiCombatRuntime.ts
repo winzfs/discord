@@ -13,6 +13,7 @@ import { chargeMythicUltimateFromAttack, tryTriggerMythicUltimate } from "./pixi
 import { applyMythicHeroSkillEffects } from "./pixiSkillRuntime";
 import { spawnDistinctHeroAttackFx } from "./pixiHeroAttackFxRuntime";
 import { pickWinstonBeamTargets, spawnWinstonElectricBeam } from "./pixiWinstonBeamRuntime";
+import { acquireFxGraphics, releaseFxGraphics } from "./pixiFxPoolRuntime";
 
 export type PixiCombatRuntimeOptions = {
   getCellCenter: (refs: GameRefs, cellIndex: number) => { x: number; y: number; cell: number };
@@ -204,11 +205,10 @@ function spawnZaryaBeamEffect(
   charge: number,
   done: () => void,
 ) {
-  const beam = new Graphics();
+  const beam = acquireFxGraphics(refs);
   const duration = 620;
   const baseOuterWidth = 7 + charge * 1.9;
   const baseInnerWidth = 2.5 + charge * 0.7;
-  refs.effects.addChild(beam);
 
   options.addAnimation(refs, {
     duration,
@@ -235,7 +235,7 @@ function spawnZaryaBeamEffect(
       beam.stroke({ color: 0xffffff, width: innerWidth, alpha });
     },
     done: () => {
-      beam.destroy();
+      releaseFxGraphics(refs, beam);
       done();
     },
   });
@@ -352,12 +352,11 @@ export function spawnAttackEffects(refs: GameRefs, options: PixiCombatRuntimeOpt
       return;
     }
 
-    const projectile = new Graphics();
+    const projectile = acquireFxGraphics(refs);
     projectile.circle(0, 0, hero.grade === "mythic" ? 5 : 3.5);
     projectile.fill({ color: roleAccent(role), alpha: 1 });
     projectile.x = from.x;
     projectile.y = from.y;
-    refs.effects.addChild(projectile);
 
     const targetAtFire = { x: target.x, y: target.y };
 
@@ -370,7 +369,7 @@ export function spawnAttackEffects(refs: GameRefs, options: PixiCombatRuntimeOpt
         projectile.alpha = Math.max(0, 1 - progress * 0.18);
       },
       done: () => {
-        projectile.destroy();
+        releaseFxGraphics(refs, projectile);
         applyAttackDamage(refs, hero, role, target, damage, options);
         if (index === 0) options.floatText(refs, `${damage}`, target.x, target.y - 18, roleAccent(role));
       },
