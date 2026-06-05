@@ -40,66 +40,87 @@ function getHeroSkillEffectLines(heroId: string, skill: SkillDefinition) {
   if (skill.type === "ultimate") return getHeroUltimateEffectLines(heroId);
 
   const descriptions: Record<string, string[]> = {
-    "dva-fusion-cannons": ["대상 주변 최대 4명에게 공격력 24% 확산 피해", "주 대상 피해 104%"],
-    "dva-defense-matrix": ["보스 또는 선두 적을 강하게 억제", "대상 이동속도 62%로 감소"],
-    "zarya-particle-cannon": ["자동공격이 지속 빔으로 변경", "연속 타격 시 94%→174%까지 피해/빔 강화"],
-    "zarya-projected-barrier": ["빔 차지 3단계 이상일 때 발동", "대상 감속 + 주 대상 피해 108%"],
-    "winston-tesla-cannon": ["대상 주변 최대 3명에게 공격력 34% 연쇄 피해", "주 대상 피해는 90%로 낮지만 광역 압박"],
-    "winston-jump-pack": ["선두 적 1명에게 공격력 52% 충격 피해", "충격 대상 이동속도 58%로 감소"],
-    "tracer-pulse-pistols": ["주 대상에게 공격력 18% 추가 다단히트", "주 대상 최종 피해 96%"],
-    "tracer-blink": ["선두 적 1명에게 공격력 48% 추가 사격", "후방보다 앞쪽 누수 방지 특화"],
-    "cassidy-peacekeeper": ["22% 확률 정밀 치명타", "표식과 함께 적용 시 최대 약 177% 피해"],
-    "cassidy-magnetic-grenade": ["대상 이동속도 64%로 감소", "일반 114%, 보스 124% 표식 피해"],
-    "genji-shuriken": ["선두 적 최대 2명에게 공격력 32% 수리검 피해", "주 대상 피해 98%"],
-    "genji-deflect": ["보스 또는 선두 위협에게 공격력 62% 반격 피해", "수리검과 별도 타겟 압박"],
-    "ana-biotic-rifle": ["취약 표식으로 일반 122%, 보스 138% 피해", "단일 핵심 대상 저격"],
-    "ana-sleep-dart": ["36% 확률 또는 보스에게 수면총 발동", "대상 이동속도 36%로 크게 감소"],
-    "kiriko-kunai": ["보스/전방/확률 조건에서 급소 판정", "일반 102%, 급소 168% 피해"],
-    "kiriko-protection-suzu": ["20% 확률로 정화의 방울 발동", "전투 공격 배율을 소량 누적 증가"],
-    "illari-solar-rifle": ["34% 확률 또는 보스에게 충전 사격", "일반 108%, 충전 152% 피해"],
-    "illari-healing-pylon": ["대상 주변 2명에게 공격력 26% 보조 피해", "광역 보조딜 역할"],
+    "dva-fusion-cannons": ["42%: 주변 4명 24% 피해", "주 대상 104%"],
+    "dva-defense-matrix": ["30%: 보스/선두 억제", "이속 62%로 감소"],
+    "zarya-particle-cannon": ["항상: 지속 빔", "94%→174% 강화"],
+    "zarya-projected-barrier": ["24%: 차지 3+ 조건", "감속 + 피해 108%"],
+    "winston-tesla-cannon": ["기본: 좁은 전기 광선", "최대 4명 72%/46%"],
+    "winston-jump-pack": ["30%: 선두 충격", "42% 피해 + 감속"],
+    "tracer-pulse-pistols": ["42%: 18% 추가타", "주 대상 96%"],
+    "tracer-blink": ["42%: 선두 적 48%", "누수 방지"],
+    "cassidy-peacekeeper": ["42%: 치명타", "피해 155%"],
+    "cassidy-magnetic-grenade": ["30%: 감속/표식", "일반114%, 보스124%"],
+    "genji-shuriken": ["42%: 선두 2명", "각 32% 추가"],
+    "genji-deflect": ["42%: 질풍참", "저체력 처치 시 연속"],
+    "ana-biotic-rifle": ["24%: 취약 사격", "일반122%, 보스138%"],
+    "ana-sleep-dart": ["30%: 3초 수면", "보스도 적용"],
+    "kiriko-kunai": ["42%: 급소 판정", "일반102%, 급소168%"],
+    "kiriko-protection-suzu": ["24%: 정화의 방울", "공격 배율 소량 증가"],
+    "illari-solar-rifle": ["42%: 충전 사격", "일반134%, 보스152%"],
+    "illari-healing-pylon": ["24%: 주변 2명", "각 26% 보조 피해"],
   };
 
-  return descriptions[skill.id] ?? ["자동 공격 적중 시 보조 효과 발동", "영웅 공격력 기반 피해"];
+  return descriptions[skill.id] ?? ["확률 발동", "영웅 공격력 기반"];
 }
 
 function getHeroUltimateEffectLines(heroId: string) {
-  if (heroId === "dva") return ["영웅 위치 기준 넓은 범위 자폭", "범위 내 적에게 공격력 450% 피해"];
-  if (heroId === "zarya") return ["대상 위치에 좁은 3초 중력자탄 생성", "주변 적을 중심으로 흡입/속박, 종료 시 240% 피해"];
-  if (heroId === "tracer") return ["대상에게 펄스폭탄 부착", "0.5초 후 폭발, 범위 공격력 520% 피해"];
-  if (heroId === "cassidy") return ["보이는 모든 적 3초 느린 락온", "공격력 비례 진행도. 100%면 처치, 아니면 비례 피해"];
-  if (heroId === "winston") return ["영웅 주변 광역 충격파", "공격력 240% 피해 + 감속"];
-  if (heroId === "genji") return ["전방 적 최대 5명 베기", "각 대상 공격력 210% 피해"];
-  if (heroId === "ana") return ["전투 전체 공격 배율 증가", "발동 시 공격력 배율 +12%"];
-  if (heroId === "kiriko") return ["여우길로 전투 전체 공격 배율 증가", "발동 시 공격력 배율 +10%"];
-  if (heroId === "illari") return ["대상 위치에 태양 폭발", "범위 내 적에게 공격력 300% 피해"];
+  if (heroId === "dva") return ["영웅 위치 기준 자폭", "넓은 범위 450% 피해"];
+  if (heroId === "zarya") return ["좁은 3초 중력자탄", "흡입/속박 + 240%"];
+  if (heroId === "tracer") return ["펄스폭탄 부착", "0.5초 후 520% 폭발"];
+  if (heroId === "cassidy") return ["3초 느린 락온", "진행도 비례 피해"];
+  if (heroId === "winston") return ["광역 충격파", "240% 피해 + 감속"];
+  if (heroId === "genji") return ["전방 5명 베기", "각 210% 피해"];
+  if (heroId === "ana") return ["나노 강화제", "공격 배율 +12%"];
+  if (heroId === "kiriko") return ["여우길 5초", "공격속도 200%"];
+  if (heroId === "illari") return ["태양 폭발", "범위 300% 피해"];
 
-  return ["노란 궁극기 게이지 100% 충전 시 발동", "범위 내 적에게 공격력 260% 피해"];
+  return ["게이지 100% 발동", "범위 260% 피해"];
 }
 
 function getSkillConditionText(heroId: string, skill: SkillDefinition) {
-  if (heroId === "zarya" && skill.id === "zarya-particle-cannon") {
-    return "조건: 자동 공격, 같은 대상 연속 타격";
-  }
-
-  if (skill.type === "ultimate") return "조건: 노란 궁극기 게이지 100%";
-  if (skill.id === "zarya-projected-barrier") return "조건: 입자포 차지 3단계 이상";
-  if (skill.id === "ana-sleep-dart") return "조건: 자동 공격 적중, 36% 또는 보스";
-  if (skill.id === "kiriko-protection-suzu") return "조건: 자동 공격 적중, 20% 확률";
-  if (skill.id === "illari-solar-rifle") return "조건: 자동 공격 적중, 34% 또는 보스";
-  return "조건: 자동 공격 적중";
+  if (heroId === "zarya" && skill.id === "zarya-particle-cannon") return "항상";
+  if (skill.type === "ultimate") return "게이지 100%";
+  if (skill.id === "zarya-projected-barrier") return "24%, 차지 3+";
+  if (skill.id === "ana-sleep-dart") return "30%, 보스 가능";
+  if (skill.type === "attack") return "42%";
+  if (skill.type === "control") return "30%";
+  return "24%";
 }
 
 function getSkillStatusText(skill: SkillDefinition) {
-  if (skill.type === "ultimate") return "게이지 발동";
-  return "자동 발동";
+  if (skill.type === "ultimate") return "게이지";
+  return "확률";
 }
 
-function makeInfoLine(value: string, y: number, fill = 0xd8d0c8, size = 10) {
+function makeInfoLine(value: string, x: number, y: number, fill = 0xd8d0c8, size = 10) {
   const text = makePixiText(value, size, fill);
-  text.x = 14;
+  text.x = x;
   text.y = y;
   return text;
+}
+
+function drawSkillCard(
+  view: Container,
+  skill: SkillDefinition,
+  heroId: string,
+  x: number,
+  y: number,
+  width: number,
+) {
+  const title = makePixiText(`${skill.displayName} [${skillTypeLabel(skill.type)}·${getSkillStatusText(skill)}]`, 9, colors.white);
+  title.x = x;
+  title.y = y;
+  view.addChild(title);
+
+  const condition = makeInfoLine(`조건: ${getSkillConditionText(heroId, skill)}`, x, y + 13, 0xb7afa8, 8);
+  view.addChild(condition);
+
+  getHeroSkillEffectLines(heroId, skill).slice(0, 2).forEach((line, index) => {
+    view.addChild(makeInfoLine(`- ${line}`, x, y + 25 + index * 11, 0xd8d0c8, 8));
+  });
+
+  const divider = makeInfoLine("", x + width - 1, y, 0xd8d0c8, 8);
+  view.addChild(divider);
 }
 
 export type PixiUnitInfoViewOptions = {
@@ -122,7 +143,7 @@ export function drawPixiUnitInfoView(target: Container, options: PixiUnitInfoVie
   const normalSkills = heroSkills.filter((skill) => skill.type !== "ultimate");
   const ultimateSkills = heroSkills.filter((skill) => skill.type === "ultimate");
   const width = Math.min(360, options.rendererWidth - 24);
-  const height = Math.min(278, options.rendererHeight - 120);
+  const height = Math.min(232, options.rendererHeight - 120);
   const view = new Container();
   view.x = Math.max(12, options.rendererWidth / 2 - width / 2);
   view.y = Math.max(62, options.rendererHeight - height - 118);
@@ -142,56 +163,33 @@ export function drawPixiUnitInfoView(target: Container, options: PixiUnitInfoVie
   const stats = definition
     ? `전투력 ${definition.power}  속도 ${definition.attackSpeed}  사거리 ${definition.range}`
     : "영웅 정보를 찾을 수 없음";
-  view.addChild(makeInfoLine(stats, 57, 0xd8d0c8, 11));
+  view.addChild(makeInfoLine(stats, 14, 57, 0xd8d0c8, 10));
+  view.addChild(makeInfoLine(`셀 ${options.cellIndex + 1} · 중첩 ${options.stackCount}/3`, 14, 74, options.stackCount >= 3 ? colors.yellow : 0xb7afa8, 10));
 
-  const stackText = makeInfoLine(`셀 ${options.cellIndex + 1} · 중첩 ${options.stackCount}/3`, 75, options.stackCount >= 3 ? colors.yellow : 0xb7afa8, 11);
-  view.addChild(stackText);
-
-  let y = 98;
   const skillTitle = makePixiText("스킬", 12, colors.green);
   skillTitle.x = 14;
-  skillTitle.y = y;
+  skillTitle.y = 96;
   view.addChild(skillTitle);
-  y += 18;
 
-  if (normalSkills.length === 0) {
-    view.addChild(makeInfoLine("등록된 스킬 없음", y, 0xb7afa8));
-    y += 16;
-  } else {
-    normalSkills.slice(0, 2).forEach((skill) => {
-      const line = `${skill.displayName} [${skillTypeLabel(skill.type)} · ${getSkillStatusText(skill)}]`;
-      view.addChild(makeInfoLine(line, y, colors.white, 10));
-      y += 14;
-      view.addChild(makeInfoLine(getSkillConditionText(options.hero.heroId, skill), y, 0xb7afa8, 9));
-      y += 13;
-      getHeroSkillEffectLines(options.hero.heroId, skill).forEach((effectLine) => {
-        view.addChild(makeInfoLine(`- ${effectLine}`, y, 0xd8d0c8, 9));
-        y += 12;
-      });
-      y += 2;
-    });
-  }
+  const cardWidth = (width - 38) / 2;
+  if (normalSkills[0]) drawSkillCard(view, normalSkills[0], options.hero.heroId, 14, 116, cardWidth);
+  if (normalSkills[1]) drawSkillCard(view, normalSkills[1], options.hero.heroId, 24 + cardWidth, 116, cardWidth);
 
+  const ultimateY = 172;
   const ultimateTitle = makePixiText("궁극기", 12, 0xffc46b);
   ultimateTitle.x = 14;
-  ultimateTitle.y = y;
+  ultimateTitle.y = ultimateY;
   view.addChild(ultimateTitle);
-  y += 18;
 
-  if (ultimateSkills.length === 0) {
-    view.addChild(makeInfoLine("등록된 궁극기 없음", y, 0xb7afa8));
-  } else {
-    ultimateSkills.slice(0, 1).forEach((skill) => {
-      const line = `${skill.displayName} [${getSkillStatusText(skill)}]`;
-      view.addChild(makeInfoLine(line, y, colors.white, 10));
-      y += 14;
-      view.addChild(makeInfoLine(getSkillConditionText(options.hero.heroId, skill), y, 0xb7afa8, 9));
-      y += 13;
-      getHeroUltimateEffectLines(options.hero.heroId).forEach((effectLine) => {
-        view.addChild(makeInfoLine(`- ${effectLine}`, y, 0xd8d0c8, 9));
-        y += 12;
-      });
+  const ultimate = ultimateSkills[0];
+  if (ultimate) {
+    view.addChild(makeInfoLine(`${ultimate.displayName} [${getSkillStatusText(ultimate)}]`, 14, ultimateY + 18, colors.white, 10));
+    view.addChild(makeInfoLine(`조건: ${getSkillConditionText(options.hero.heroId, ultimate)}`, 14, ultimateY + 32, 0xb7afa8, 8));
+    getHeroUltimateEffectLines(options.hero.heroId).slice(0, 2).forEach((line, index) => {
+      view.addChild(makeInfoLine(`- ${line}`, 14 + index * (cardWidth + 10), ultimateY + 44, 0xd8d0c8, 8));
     });
+  } else {
+    view.addChild(makeInfoLine("등록된 궁극기 없음", 14, ultimateY + 18, 0xb7afa8, 9));
   }
 
   target.addChild(view);
