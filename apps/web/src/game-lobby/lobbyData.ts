@@ -1,4 +1,5 @@
 import { artifacts, heroes, type ArtifactDefinition, type HeroDefinition } from "@discord-random-defense/game";
+import type { LobbyHeroSkillDetail } from "../components/lobby/lobbyHeroSkillDetails";
 
 export type LobbyTabId = "shop" | "heroes" | "battle" | "artifacts";
 export type CollectionKind = "hero" | "artifact";
@@ -9,6 +10,7 @@ export type Detail = {
   title: string;
   subtitle: string;
   stats: string[];
+  skills?: LobbyHeroSkillDetail[];
   owned: boolean;
   level: number;
   progressText: string;
