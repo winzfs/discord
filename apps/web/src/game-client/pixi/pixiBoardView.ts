@@ -146,16 +146,16 @@ function getStackOffset(stackCount: number, index: number, cell: number) {
 
 function drawCellUnitShadow(target: Container, x: number, y: number, cellWidth: number, cellHeight: number, cell: number, hero: BoardHero) {
   const centerX = x + cellWidth / 2;
-  const centerY = y + cellHeight * 0.74;
+  const centerY = y + cellHeight * 0.78;
 
   const shadow = new Graphics();
-  shadow.ellipse(centerX, centerY, cell * 0.25, cell * 0.075);
-  shadow.fill({ color: 0x10260d, alpha: 0.58 });
+  shadow.ellipse(centerX, centerY, cell * 0.44, cell * 0.15);
+  shadow.fill({ color: 0x0c2408, alpha: 0.72 });
   target.addChild(shadow);
 
   const gradeTint = new Graphics();
-  gradeTint.ellipse(centerX, centerY, cell * 0.2, cell * 0.055);
-  gradeTint.fill({ color: gradeColor(hero.grade), alpha: 0.56 });
+  gradeTint.ellipse(centerX, centerY, cell * 0.36, cell * 0.11);
+  gradeTint.fill({ color: gradeColor(hero.grade), alpha: 0.64 });
   target.addChild(gradeTint);
 }
 
@@ -182,8 +182,8 @@ export function drawBoardCells(target: Container, board: Array<{ units: BoardHer
 
     if (canMerge) {
       const mergeHint = new Graphics();
-      mergeHint.ellipse(x + metrics.cellWidth / 2, y + metrics.cellHeight * 0.76, metrics.cell * 0.18, metrics.cell * 0.055);
-      mergeHint.fill({ color: colors.yellow, alpha: 0.42 });
+      mergeHint.ellipse(x + metrics.cellWidth / 2, y + metrics.cellHeight * 0.78, metrics.cell * 0.34, metrics.cell * 0.1);
+      mergeHint.fill({ color: colors.yellow, alpha: 0.5 });
       target.addChild(mergeHint);
     }
 
