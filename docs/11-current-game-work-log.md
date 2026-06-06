@@ -116,29 +116,6 @@ packages/game/src/data/heroes.ts
 packages/game/src/data/skills.ts
 ```
 
-### 추가 스킬
-
-```text
-basic-shot
-focus-shot
-area-burst
-piercing-shot
-chain-spark
-burst-rocket
-barrier-guard
-team-boost
-core-guard
-overclock
-team-highlight
-highlight-barrage
-last-stand
-freeze-trap
-scrap-turret
-nano-pack
-gravity-mine
-orbital-laser
-```
-
 ### 추가 유닛
 
 일반:
@@ -171,6 +148,81 @@ orbital-laser
 궤도 저격수
 이지스 지휘관
 크로노 예언자
+```
+
+## 비신화 유닛 고유 스킬 부여
+
+### 목적
+
+일반/희귀/영웅/전설 유닛이 단순 재료처럼 보이지 않도록, 각 유닛에 타입별 개성을 가진 고유 스킬을 부여했습니다.
+
+규칙:
+
+```text
+일반 유닛: 약한 고유 스킬 1개
+희귀 유닛: 약한 고유 스킬 1개
+영웅 유닛: 약한 고유 스킬 1개
+전설 유닛: 고유 스킬 2개
+```
+
+스킬 타입 방향:
+
+```text
+공격형: 단일 공격, 연쇄 공격, 광역 폭발, 관통, 보스 추가 피해
+버프형: 공격속도 증가, 화력 증가, 팀 전체 강화, 궁극기 충전 보조
+디버프형: 감속, 빙결, 표식, 취약, 군중 제어
+경제형: 코인 보너스, 웨이브 보상 보조
+```
+
+### 일반 유닛 스킬
+
+```text
+스파크 러너: 스파크 잽
+루키 가드: 루키 배시
+미니 메딕: 미니 증폭
+고철 사수: 고철 도탄
+슬로우 봇: 감속 오일
+충전 조수: 충전 팁
+```
+
+### 희귀 유닛 스킬
+
+```text
+펄스 사수: 펄스 표식
+방벽 수호자: 방벽 고정
+야전 의무병: 전장 격려
+서리 감시자: 서리 결계
+폭발 정찰병: 폭발 조명탄
+나노 보조병: 나노 주입
+```
+
+### 영웅 유닛 스킬
+
+```text
+플라즈마 마도사: 플라즈마 오브
+코어 기사: 코어 앵커
+오버클럭 기술자: 가속 회로
+아크 캡틴: 아크 전류
+중력 간수: 중력 감옥
+전투 기술자: 지원 포탑
+```
+
+### 전설 유닛 스킬
+
+```text
+크레딧 해커: 현상금 해킹 + 네트워크 증폭
+레일건 에이스: 레일 관통탄 + 약점 조준
+라스트 바스티온: 요새 모드 + 최후 반격
+궤도 저격수: 궤도 레이저 + 궤도 락온
+이지스 지휘관: 이지스 명령 + 진압 지휘
+크로노 예언자: 시간 가속 + 예지 보상
+```
+
+### 추가 정리
+
+```text
+겐지가 존재하지 않는 genji-deflect 스킬을 참조하던 문제를 수정했습니다.
+겐지 신화 스킬은 genji-shuriken + genji-swift-strike + genji-dragonblade로 정리했습니다.
 ```
 
 ## 신화 조합 방식 변경
@@ -265,6 +317,8 @@ b109f3060177891d2120389717eebbdaae905b25
 b580ef7d90a3accd69d6202209fdc1ff88a3b7ce
 516892136d929001daea6899d0b6a5b26875c463
 e76438e3aa915dd62bf9450b44ca28b76d2afcb2
+75148eedc670d30c591146ee760e1543e61e5b9e
+d45589fab64c9980d5e33118aba179e16511841b
 ```
 
 ## 타입/빌드 점검 메모
@@ -286,6 +340,8 @@ createPixiGame.ts의 updateActiveEnemies 호출부는 getPathPoint만 전달
 ActiveEnemy의 leaked/exitQueued 필드는 타입에 남아 있지만 새 이동 로직에서는 사용하지 않음
 mythicRecipes는 다시 고유 heroId 기반 조합으로 변경
 mythicCraftSystem은 heroId 재료를 영웅 이름으로 표시
+일반/희귀/영웅 유닛은 고유 skillIds 1개
+전설 유닛은 고유 skillIds 2개
 ```
 
 ## 확인할 항목
@@ -302,4 +358,7 @@ mythicCraftSystem은 heroId 재료를 영웅 이름으로 표시
 /lobby 또는 /play 신화 조합 UI에서 새 고유 재료 조건이 정상 표시되는지
 /play 새 고유 신화 조합 재료가 정상 소모되는지
 /play 새로 추가된 일반/희귀/영웅/전설 유닛이 소환 풀에 포함되는지
+/play 일반/희귀/영웅 유닛이 고유 스킬 1개씩 표시되는지
+/play 전설 유닛이 고유 스킬 2개씩 표시되는지
+/play 겐지 스킬 참조 오류가 없는지
 ```
