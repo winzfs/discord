@@ -1,7 +1,7 @@
 import { Container, Graphics, Text } from "pixi.js";
 import type { HeroGrade } from "@discord-random-defense/game";
 import { colors, gradeColor } from "./gameTheme";
-import { makePixiPanel, makePixiText } from "./pixiSharedView";
+import { makePixiText } from "./pixiSharedView";
 
 export type MythicMenuIngredientViewModel = {
   label: string;
@@ -41,6 +41,8 @@ type RowSlot = {
   names: Text[];
   boundRecipeId: string | null;
   visibleIndex: number;
+  lastCanCraft: boolean | null;
+  lastIngredientKeys: string[];
 };
 
 function gradeLabel(grade: HeroGrade | undefined) {
@@ -178,10 +180,18 @@ function createRowSlot(rowWidth: number, rowHeight: number, rowStep: number, onC
     names,
     boundRecipeId: null,
     visibleIndex: -1,
+    lastCanCraft: null,
+    lastIngredientKeys: ["", "", "", ""],
   };
 }
 
+function ingredientKey(ingredient: MythicMenuIngredientViewModel | undefined) {
+  if (!ingredient) return "empty";
+  return `${ingredient.label}|${ingredient.grade ?? "common"}|${ingredient.fulfilled ? "1" : "0"}`;
+}
+
 function updateRowSlot(slot: RowSlot, item: MythicMenuRowViewModel, rowWidth: number, rowHeight: number, rowStep: number) {
+  const isSameRecipe = slot.boundRecipeId === item.recipeId;
   slot.root.visible = true;
   slot.root.y = item.index * rowStep;
   slot.visibleIndex = item.index;
@@ -189,13 +199,18 @@ function updateRowSlot(slot: RowSlot, item: MythicMenuRowViewModel, rowWidth: nu
   (slot.root as any).__recipeId = item.recipeId;
   (slot.root as any).__canCraft = item.canCraft;
 
-  drawRowPanel(slot.panel, rowWidth, rowHeight, item.canCraft);
+  if (slot.lastCanCraft !== item.canCraft) {
+    drawRowPanel(slot.panel, rowWidth, rowHeight, item.canCraft);
+    slot.lastCanCraft = item.canCraft;
+  }
+
   setText(slot.title, item.title, gradeColor(item.titleGrade));
   setText(slot.summary, item.summary, item.summary.includes("준비완료") ? 0xfff2a8 : 0xf0e8dd);
   slot.craftHint.visible = item.canCraft;
 
   for (let index = 0; index < 4; index += 1) {
     const ingredient = item.ingredients[index];
+    const key = ingredientKey(ingredient);
     const visible = Boolean(ingredient);
     slot.marks[index].visible = visible;
     slot.labelBackgrounds[index].visible = visible;
@@ -203,7 +218,14 @@ function updateRowSlot(slot: RowSlot, item: MythicMenuRowViewModel, rowWidth: nu
     slot.labelTexts[index].visible = visible;
     slot.names[index].visible = visible;
 
-    if (!ingredient) continue;
+    if (!ingredient) {
+      slot.lastIngredientKeys[index] = key;
+      continue;
+    }
+
+    if (isSameRecipe && slot.lastIngredientKeys[index] === key) continue;
+    slot.lastIngredientKeys[index] = key;
+
     setText(slot.marks[index], ingredient.fulfilled ? "✓" : "·", ingredient.fulfilled ? 0xfff2a8 : 0xd8d0c8);
     drawGradeBackground(slot.labelBackgrounds[index], ingredient.grade, ingredient.fulfilled);
     setText(slot.labelShadows[index], gradeLabel(ingredient.grade));
@@ -215,7 +237,8 @@ function updateRowSlot(slot: RowSlot, item: MythicMenuRowViewModel, rowWidth: nu
 }
 
 export function createMythicMenuRowPool(args: {
-  rows: MythicMenuRowViewModel[];
+  rowCount: number;
+  getRow: (index: number) => MythicMenuRowViewModel | null;
   rowWidth: number;
   rowHeight: number;
   rowStep: number;
@@ -224,7 +247,7 @@ export function createMythicMenuRowPool(args: {
 }): MythicMenuRowPool {
   const root = new Container();
   const visibleSlotCount = Math.min(
-    args.rows.length,
+    args.rowCount,
     Math.ceil(args.viewportHeight / args.rowStep) + 3,
   );
   const slots = Array.from({ length: visibleSlotCount }, () => createRowSlot(args.rowWidth, args.rowHeight, args.rowStep, args.onCraft));
@@ -235,7 +258,7 @@ export function createMythicMenuRowPool(args: {
 
   function render(scrollTop: number) {
     const start = Math.max(0, Math.floor(scrollTop / args.rowStep) - 1);
-    const end = Math.min(args.rows.length - 1, start + visibleSlotCount - 1);
+    const end = Math.min(args.rowCount - 1, start + visibleSlotCount - 1);
     if (start === renderedStart && end === renderedEnd) return;
 
     renderedStart = start;
@@ -243,7 +266,7 @@ export function createMythicMenuRowPool(args: {
 
     slots.forEach((slot, slotIndex) => {
       const rowIndex = start + slotIndex;
-      const item = args.rows[rowIndex];
+      const item = args.getRow(rowIndex);
       if (!item) {
         slot.root.visible = false;
         slot.visibleIndex = -1;
