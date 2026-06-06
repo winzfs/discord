@@ -72,6 +72,7 @@ import {
 import { chargeMythicUltimatesOverTime, getAttackIntervalMultiplier } from "./pixiUltimateRuntime";
 import { destroyFxGraphicsPool } from "./pixiFxPoolRuntime";
 import { preloadHeroSpriteTextures } from "./pixiHeroSpriteView";
+import { loadPixiLobbyHeroPool } from "./pixiLobbyHeroPool";
 
 export type PixiGameHandle = { cleanup: () => void };
 export type PixiGameOptions = { testMode?: boolean };
@@ -301,6 +302,7 @@ export function createPixiGame(parent: HTMLElement, options: PixiGameOptions = {
   const app = new Application();
   const stage = new Container();
   const seed = `pixi-${Date.now()}`;
+  const lobbyHeroPool = loadPixiLobbyHeroPool();
   const refs: GameRefs = {
     app,
     stage,
@@ -315,6 +317,8 @@ export function createPixiGame(parent: HTMLElement, options: PixiGameOptions = {
     controlsView: null,
     state: createInitialGameState(seed),
     progressBonuses: createPixiProgressBonuses(),
+    heroPool: lobbyHeroPool.heroes,
+    heroLevels: lobbyHeroPool.levels,
     random: createSeededRandom(seed),
     animations: [],
     lastSummonedIndex: null,
