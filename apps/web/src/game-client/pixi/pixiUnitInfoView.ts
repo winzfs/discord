@@ -77,6 +77,7 @@ export type PixiUnitInfoViewOptions = {
   cellIndex: number;
   rendererWidth: number;
   rendererHeight: number;
+  traitLines?: string[];
 };
 
 export function clearPixiUnitInfoView(target: Container) {
@@ -91,7 +92,7 @@ export function drawPixiUnitInfoView(target: Container, options: PixiUnitInfoVie
   const normalSkills = heroSkills.filter((skill) => skill.type !== "ultimate");
   const ultimateSkills = heroSkills.filter((skill) => skill.type === "ultimate");
   const width = Math.min(360, options.rendererWidth - 24);
-  const height = Math.min(244, options.rendererHeight - 120);
+  const height = Math.min(266, options.rendererHeight - 120);
   const view = new Container();
   view.x = Math.max(12, options.rendererWidth / 2 - width / 2);
   view.y = Math.max(62, options.rendererHeight - height - 118);
@@ -114,16 +115,25 @@ export function drawPixiUnitInfoView(target: Container, options: PixiUnitInfoVie
   view.addChild(makeInfoLine(stats, 14, 57, 0xd8d0c8, 10));
   view.addChild(makeInfoLine(`셀 ${options.cellIndex + 1} · 중첩 ${options.stackCount}/3`, 14, 74, options.stackCount >= 3 ? colors.yellow : 0xb7afa8, 10));
 
+  const traitLines = options.traitLines?.slice(0, 2) ?? [];
+  if (traitLines.length > 0) {
+    traitLines.forEach((line, index) => {
+      view.addChild(makeInfoLine(line, 14, 91 + index * 12, index === 0 ? 0x7dffb2 : 0xbde7ff, 9));
+    });
+  }
+
+  const skillTitleY = traitLines.length > 0 ? 118 : 96;
   const skillTitle = makePixiText("스킬", 12, colors.green);
   skillTitle.x = 14;
-  skillTitle.y = 96;
+  skillTitle.y = skillTitleY;
   view.addChild(skillTitle);
 
   const cardWidth = (width - 38) / 2;
-  if (normalSkills[0]) drawSkillCard(view, normalSkills[0], options.hero.heroId, 14, 116, cardWidth);
-  if (normalSkills[1]) drawSkillCard(view, normalSkills[1], options.hero.heroId, 24 + cardWidth, 116, cardWidth);
+  const skillCardY = skillTitleY + 20;
+  if (normalSkills[0]) drawSkillCard(view, normalSkills[0], options.hero.heroId, 14, skillCardY, cardWidth);
+  if (normalSkills[1]) drawSkillCard(view, normalSkills[1], options.hero.heroId, 24 + cardWidth, skillCardY, cardWidth);
 
-  const ultimateY = normalSkills.length > 1 ? 176 : 164;
+  const ultimateY = normalSkills.length > 1 ? skillCardY + 60 : skillCardY + 48;
   const ultimateTitle = makePixiText("궁극기", 12, 0xffc46b);
   ultimateTitle.x = 14;
   ultimateTitle.y = ultimateY;
