@@ -14,6 +14,10 @@ import { applyMythicHeroSkillEffects } from "./pixiSkillRuntime";
 import { spawnDistinctHeroAttackFx } from "./pixiHeroAttackFxRuntime";
 import { pickWinstonBeamTargets, spawnWinstonElectricBeam } from "./pixiWinstonBeamRuntime";
 import { acquireFxGraphics, releaseFxGraphics } from "./pixiFxPoolRuntime";
+import {
+  applyBaseHeroSkillPostDamage,
+  applyBaseHeroSkillPreDamage,
+} from "./pixiBaseHeroSkillRuntime";
 
 export type PixiCombatRuntimeOptions = {
   getCellCenter: (refs: GameRefs, cellIndex: number) => { x: number; y: number; cell: number };
@@ -182,12 +186,34 @@ function triggerHeroSpriteAttack(refs: GameRefs, hero: BoardHero, from: { x: num
   }, duration + 20);
 }
 
+function applyBaseHeroPostDamage(
+  refs: GameRefs,
+  hero: BoardHero,
+  role: HeroRole,
+  target: ActiveEnemy,
+  damage: number,
+  options: PixiCombatRuntimeOptions,
+) {
+  applyBaseHeroSkillPostDamage(
+    refs,
+    {
+      damageEnemy: (refs, enemy, damage) => damageEnemy(refs, enemy, damage, options),
+      floatText: options.floatText,
+    },
+    hero,
+    role,
+    target,
+    damage,
+  );
+}
+
 function applyAttackDamage(refs: GameRefs, hero: BoardHero, role: HeroRole, target: ActiveEnemy, damage: number, options: PixiCombatRuntimeOptions) {
   if (!target.alive) return;
 
   if (role === "tank") applyTankSlow(target);
 
   damageEnemy(refs, target, damage, options);
+  applyBaseHeroPostDamage(refs, hero, role, target, damage, options);
 
   if (role === "support") {
     applySupportSplash(refs, target, damage, options);
@@ -318,6 +344,7 @@ export function spawnAttackEffects(refs: GameRefs, options: PixiCombatRuntimeOpt
     if (!target) return;
 
     let damage = getHeroDamage(refs, hero);
+    damage = applyBaseHeroSkillPreDamage(hero, role, damage);
     triggerHeroSpriteAttack(refs, hero, from, target, options);
     damage = applySkillEffects(refs, options, hero, role, target, damage, from);
     if (!target.alive) return;
