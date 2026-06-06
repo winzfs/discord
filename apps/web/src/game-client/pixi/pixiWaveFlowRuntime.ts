@@ -52,7 +52,8 @@ export function finishAutoWave(
   readyImmediately = false,
   options: PixiWaveFlowRuntimeOptions,
 ) {
-  const alive = refs.activeEnemies.filter((enemy) => enemy.alive);
+  const alive = refs.activeEnemies.filter((enemy) => enemy.alive && !enemy.leaked);
+  const leakedDuringMovement = refs.activeEnemies.filter((enemy) => enemy.leaked).length;
   let lostLives = refs.waveLostLives;
 
   for (const enemy of alive) {
@@ -61,7 +62,7 @@ export function finishAutoWave(
     destroyActiveEnemy(enemy);
   }
 
-  const leaked = alive.length + refs.waveLostLives;
+  const leakedEnemies = leakedDuringMovement + alive.length;
   const perfect = lostLives <= 0;
   const baseLuckStoneReward = perfect
     ? options.isBossWave(refs.state)
@@ -84,7 +85,7 @@ export function finishAutoWave(
   refs.activeEnemies = [];
   refs.lastWaveSummary = {
     killed: refs.waveKilled,
-    leaked,
+    leaked: leakedEnemies,
     lostLives: reducedLostLives,
     reward: refs.waveReward,
     luckStoneReward,
