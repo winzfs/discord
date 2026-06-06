@@ -33,6 +33,12 @@ export function showBossWarning(refs: GameRefs, options: PixiWaveFeedbackRuntime
   });
 }
 
+function getInterestLabel(summary: WaveSummary) {
+  if (summary.interestReward <= 0) return "";
+
+  return `코인 이자 +${summary.interestReward} (${formatCoinInterestRate(summary.interestRate)}${summary.interestCapped ? " 한도" : ""})`;
+}
+
 export function showWaveResult(
   refs: GameRefs,
   summary: WaveSummary,
@@ -52,24 +58,32 @@ export function showWaveResult(
         ? colors.orange
         : colors.green;
 
-  const interestText =
-    summary.interestReward > 0
-      ? `  이자 +${summary.interestReward}(${formatCoinInterestRate(summary.interestRate)}${summary.interestCapped ? " 한도" : ""})`
-      : "";
+  const interestLabel = getInterestLabel(summary);
 
-  options.floatText(refs, label, refs.app.renderer.width / 2, refs.app.renderer.height * 0.38, color);
+  options.floatText(refs, label, refs.app.renderer.width / 2, refs.app.renderer.height * 0.32, color);
   options.floatText(
     refs,
     `처치 ${summary.killed} / 누수 ${summary.leaked}`,
     refs.app.renderer.width / 2,
-    refs.app.renderer.height * 0.46,
+    refs.app.renderer.height * 0.4,
     colors.white,
   );
+
+  if (interestLabel) {
+    options.floatText(
+      refs,
+      interestLabel,
+      refs.app.renderer.width / 2,
+      refs.app.renderer.height * 0.48,
+      colors.yellow,
+    );
+  }
+
   options.floatText(
     refs,
-    `처치 보상 +${summary.reward}${interestText}${summary.luckStoneReward > 0 ? `  행운석 +${summary.luckStoneReward}` : ""}`,
+    `처치 보상 +${summary.reward}${summary.luckStoneReward > 0 ? `  행운석 +${summary.luckStoneReward}` : ""}`,
     refs.app.renderer.width / 2,
-    refs.app.renderer.height - 132,
+    refs.app.renderer.height * (interestLabel ? 0.56 : 0.48),
     colors.green,
   );
 }
