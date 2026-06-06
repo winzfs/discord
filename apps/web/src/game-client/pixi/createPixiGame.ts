@@ -275,7 +275,7 @@ function tick(refs: GameRefs, deltaMs: number) {
   if (refs.wavePhase === "combat") {
     refs.combatTimer -= deltaSeconds;
     refs.attackTimer -= deltaSeconds;
-    updateActiveEnemies(refs, deltaSeconds, { getPathPoint, invalidateControls, floatText });
+    updateActiveEnemies(refs, deltaSeconds, { getPathPoint, invalidateControls, invalidateHud, floatText });
     if (chargeMythicUltimatesOverTime(refs, deltaSeconds)) {
       drawBoard(refs, layout, createDragRuntimeOptions);
     }
