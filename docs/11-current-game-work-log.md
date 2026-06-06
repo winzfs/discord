@@ -119,6 +119,9 @@ apps/web/src/game-client/pixi/pixiLobbyBattleRewards.ts
 전투 타이머가 0이 되는 순간 finishAutoWave()가 남은 몬스터를 전부 정리해서,
 한 마리가 들어간 직후 전체가 사라지는 것처럼 보이는 문제가 있었습니다.
 
+몬스터가 출구에서 처리되어도 refs.waveLostLives만 증가하고 refs.state.lives는 즉시 감소하지 않아,
+상단 HP가 바로 줄지 않는 문제가 있었습니다.
+
 결과창은 버튼을 누르지 않았는데도 클릭 즉시 사라지는 문제가 있었습니다.
 ```
 
@@ -136,6 +139,9 @@ finishAutoWave() 내부에도 살아있는 몬스터를 강제로 destroy하는 
 
 새 웨이브 스폰 시 spawnWaveMonsters()가 기존 activeEnemies를 전부 지우는 구조였습니다.
 이 때문에 타이머 종료/다음 웨이브 시작과 몬스터 이동 처리가 충돌했습니다.
+
+겹치는 웨이브 구조로 바뀐 뒤에도 HP 감소는 waveLostLives에만 누적되고,
+실제 lives 반영은 finishAutoWave() 시점에만 처리되어 즉시 HP 감소가 보이지 않았습니다.
 
 결과창은 refs.menu에 올라가는데, 전역 stage pointerdown에서 빈칸 클릭 시 메뉴를 정리하는 로직이 결과창 클릭까지 처리할 수 있었습니다.
 ```
@@ -164,11 +170,15 @@ GameRefs에 nextEnemyLeakAt 추가
 출구에 도달한 몬스터는 exitQueued 상태로 대기
 0.22초 간격으로 대기 중인 몬스터를 id 순서대로 1마리씩 누수 처리
 누수 처리된 몬스터는 다시 처리하지 않도록 방어
+출구 누수 처리 시 refs.state.lives를 즉시 감소
+생명이 0이 되면 즉시 status failed 처리
+HP 즉시 갱신을 위해 updateActiveEnemies 옵션에 invalidateHud 추가
 combatTimer <= 0만으로 웨이브 결과 처리하지 않도록 수정
 타이머가 끝나면 기존 몬스터를 유지한 채 다음 웨이브를 추가 스폰
 spawnWaveMonsters()가 기존 activeEnemies를 삭제하지 않도록 수정
 finishAutoWave()가 살아있는 몬스터를 강제로 제거하지 않도록 수정
 finishAutoWave()는 모든 몬스터가 처치/누수 처리된 뒤에만 요약 처리
+finishAutoWave()에서 lives를 다시 차감하지 않도록 중복 차감 제거
 웨이브 종료 시 누수 몬스터 수와 생명 피해량 계산 분리
 HUD의 countdown/combat timer는 Math.max(0, timer)로 음수 표시 방지
 최종 결과 상태에서는 stage 클릭으로 메뉴를 닫지 않도록 방어
@@ -192,6 +202,7 @@ GameState.maxLives 사용 제거 완료
 ActiveEnemy.leaked는 optional boolean으로 추가
 ActiveEnemy.exitQueued는 optional boolean으로 추가
 GameRefs.nextEnemyLeakAt 초기화 완료
+updateActiveEnemies 옵션에 invalidateHud 전달 완료
 ```
 
 다음 로컬 확인 명령:
@@ -211,9 +222,9 @@ pnpm dev:web
 /play 몬스터가 오른쪽 아래 출구 이후 아래쪽 가로 구간으로 이동하지 않는지
 /play 몬스터가 겹쳐도 출구에서 0.22초 간격으로 1마리씩 누수 처리되는지
 /play 전투 타이머가 0이 되면 다음 웨이브가 기존 몬스터를 지우지 않고 추가 스폰되는지
-/play 진행 중이던 몬스터가 오른쪽 아래 출구로 들어가며 HP를 깎는지
+/play 진행 중이던 몬스터가 오른쪽 아래 출구로 들어가며 HP를 즉시 깎는지
 /play 타이머가 음수로 표시되지 않는지
-/play 누수 시 HP가 해당 몬스터 damageToLife만큼 줄어드는지
+/play 누수 시 HP가 해당 몬스터 damageToLife만큼 바로 줄어드는지
 /play 전투 종료 시 결과 패널이 뜨는지
 결과창을 클릭해도 닫히지 않는지
 결과 등급/별점/보상 카드가 잘 보이는지
