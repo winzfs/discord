@@ -21,7 +21,7 @@ const HERO_FRAME_ROWS = {
   attackRight: 3,
 } as const;
 
-const HERO_REVERSED_DIRECTION_IDS = new Set(["illari"]);
+const HERO_REVERSED_IDLE_IDS = new Set(["illari"]);
 
 const HERO_FRAME_ROW_COUNT = 4;
 
@@ -78,21 +78,21 @@ export async function preloadHeroSpriteTextures() {
   await Promise.all(Object.keys(HERO_TEXTURE_PATHS).map((heroId) => loadHeroTexture(heroId).catch(() => undefined)));
 }
 
-function normalizeHeroSpriteDirection(heroId: string, direction: "left" | "right") {
-  if (!HERO_REVERSED_DIRECTION_IDS.has(heroId)) return direction;
+function reverseDirection(direction: "left" | "right") {
   return direction === "left" ? "right" : "left";
 }
 
 function pickHeroSpriteFrameRow(heroId: string, attackState: HeroSpriteAttackState | null | undefined, now: number) {
   const isAttacking = attackState && attackState.until > now;
   const shouldKeepDirection = attackState && attackState.idleUntil > now;
-  const direction = normalizeHeroSpriteDirection(heroId, shouldKeepDirection ? attackState.direction : "left");
+  const logicalDirection = shouldKeepDirection ? attackState.direction : "left";
 
   if (isAttacking) {
-    return direction === "left" ? HERO_FRAME_ROWS.attackLeft : HERO_FRAME_ROWS.attackRight;
+    return logicalDirection === "left" ? HERO_FRAME_ROWS.attackLeft : HERO_FRAME_ROWS.attackRight;
   }
 
-  return direction === "left" ? HERO_FRAME_ROWS.idleLeft : HERO_FRAME_ROWS.idleRight;
+  const idleDirection = HERO_REVERSED_IDLE_IDS.has(heroId) ? reverseDirection(logicalDirection) : logicalDirection;
+  return idleDirection === "left" ? HERO_FRAME_ROWS.idleLeft : HERO_FRAME_ROWS.idleRight;
 }
 
 export function canDrawHeroSprite(hero: Pick<BoardHero, "heroId">) {
