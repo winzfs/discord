@@ -1,8 +1,9 @@
 import { getGambleTier } from "../data/gamble";
+import { heroes } from "../data/heroes";
 import { placeHeroOnBoard } from "./boardSystem";
 import { pickHeroByGrade } from "./summonSystem";
 import type { GameState } from "../types/gameState";
-import type { BoardHero } from "../types/hero";
+import type { BoardHero, HeroDefinition } from "../types/hero";
 import type { SeededRandom } from "../utils/random";
 
 export type GambleResult = {
@@ -13,7 +14,7 @@ export type GambleResult = {
   reason?: "board_full" | "not_enough_luck_stones" | "unknown_tier" | "no_hero_for_grade";
 };
 
-export function gambleSummon(state: GameState, tierId: string, random: SeededRandom): GambleResult {
+function gambleSummonWithPool(state: GameState, tierId: string, random: SeededRandom, heroPool: HeroDefinition[]): GambleResult {
   const tier = getGambleTier(tierId);
   if (!tier) {
     return { state, summonedHero: null, success: false, usedTierId: tierId, reason: "unknown_tier" };
@@ -36,7 +37,7 @@ export function gambleSummon(state: GameState, tierId: string, random: SeededRan
     };
   }
 
-  const hero = pickHeroByGrade(grade, random);
+  const hero = pickHeroByGrade(grade, random, heroPool) ?? pickHeroByGrade(grade, random, heroes);
   if (!hero) {
     return { state, summonedHero: null, success, usedTierId: tierId, reason: "no_hero_for_grade" };
   }
@@ -62,4 +63,12 @@ export function gambleSummon(state: GameState, tierId: string, random: SeededRan
     success,
     usedTierId: tierId,
   };
+}
+
+export function gambleSummon(state: GameState, tierId: string, random: SeededRandom): GambleResult {
+  return gambleSummonWithPool(state, tierId, random, heroes);
+}
+
+export function gambleSummonFromPool(state: GameState, tierId: string, random: SeededRandom, heroPool: HeroDefinition[]): GambleResult {
+  return gambleSummonWithPool(state, tierId, random, heroPool.length > 0 ? heroPool : heroes);
 }
