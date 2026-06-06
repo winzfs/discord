@@ -1,10 +1,11 @@
 import type { Application, Container } from "pixi.js";
-import type { BoardHero, GameState } from "@discord-random-defense/game";
+import type { BoardHero, GameState, HeroDefinition } from "@discord-random-defense/game";
 import type { PixiHudView } from "./pixiHudView";
 import type { PixiControlsView } from "./pixiControlsView";
 import type { EnemyView } from "./pixiEnemyView";
 import type { PixiAnimation } from "./animation/animationManager";
 import type { PixiProgressBonuses } from "./pixiProgressBonuses";
+import type { PixiHeroLevelMap } from "./pixiLobbyHeroPool";
 
 export type DragState = {
   sourceIndex: number;
@@ -81,6 +82,8 @@ export type GameRefs = {
   controlsView: PixiControlsView | null;
   state: GameState;
   progressBonuses: PixiProgressBonuses;
+  heroPool: HeroDefinition[];
+  heroLevels: PixiHeroLevelMap;
   random: ReturnType<typeof import("@discord-random-defense/game").createSeededRandom>;
   animations: PixiAnimation[];
   lastSummonedIndex: number | null;
