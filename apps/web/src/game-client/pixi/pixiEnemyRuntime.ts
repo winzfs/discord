@@ -12,7 +12,7 @@ export function createActiveEnemy(
 
   const boss = bossOverride || definition.type === "boss";
   const wave = refs.state.currentWave;
-  const hpScale = 1.08 + wave * 0.14 + (boss ? wave * 0.22 : 0);
+  const hpScale = 1.75 + wave * 0.24 + (boss ? 1.35 + wave * 0.34 : 0);
   const testMultiplier = Math.max(0.1, refs.testEnemyHpMultiplier || 1);
   const maxHp = Math.round(definition.health * hpScale * testMultiplier);
   const view = createEnemyView(enemyId, definition.type, boss);
