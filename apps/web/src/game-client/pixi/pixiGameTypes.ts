@@ -51,6 +51,7 @@ export type ActiveEnemy = {
   progress: number;
   speed: number;
   alive: boolean;
+  leaked?: boolean;
   boss: boolean;
   view: EnemyView;
   controlUntil?: number;
