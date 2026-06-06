@@ -17,6 +17,10 @@
   animation: reveal-flash 1100ms ease-out both;
 }
 
+.recruit-reveal.is-revealed .recruit-reveal-flash {
+  animation: reveal-final-flash 520ms ease-out both;
+}
+
 .recruit-reveal-rays {
   position: absolute;
   width: 720px;
@@ -27,6 +31,10 @@
   filter: blur(0.4px);
   opacity: 0.74;
   animation: reveal-rays-spin 3600ms linear infinite, reveal-rays-pop 720ms ease-out both;
+}
+
+.recruit-reveal.is-charging .recruit-reveal-rays {
+  animation: reveal-rays-spin 1250ms linear infinite, reveal-rays-pop 420ms ease-out both;
 }
 
 .recruit-reveal-card {
@@ -49,11 +57,25 @@
   animation: reveal-card-in 520ms cubic-bezier(0.18, 1.25, 0.32, 1) both;
 }
 
+.recruit-reveal.is-charging .recruit-reveal-card {
+  overflow: hidden;
+  min-height: 360px;
+  background:
+    radial-gradient(circle at 50% 42%, rgba(255, 255, 255, 0.42), transparent 18%),
+    radial-gradient(circle at 50% 48%, rgba(255, 226, 95, 0.42), transparent 38%),
+    linear-gradient(180deg, #815642, #3b2420 100%);
+}
+
 .recruit-reveal-kicker {
   margin: 0;
   color: #5c3425;
   font-size: 0.9rem;
   font-weight: 1000;
+}
+
+.recruit-reveal.is-charging .recruit-reveal-kicker {
+  color: #ffe9b2;
+  text-shadow: 0 3px 0 rgba(0, 0, 0, 0.24);
 }
 
 .recruit-reveal-orb {
@@ -74,6 +96,22 @@
   animation: reveal-orb-pulse 1050ms ease-in-out infinite;
 }
 
+.recruit-reveal.is-charging .recruit-reveal-orb {
+  width: 156px;
+  height: 156px;
+  margin-top: 28px;
+  border-radius: 42px;
+  background:
+    radial-gradient(circle at 50% 32%, rgba(255, 255, 255, 0.9), transparent 18%),
+    radial-gradient(circle, #ffe66c, #ff9f3d 52%, #613328 100%);
+  box-shadow:
+    inset 0 8px 0 rgba(255, 255, 255, 0.36),
+    0 12px 0 rgba(0, 0, 0, 0.22),
+    0 0 28px rgba(255, 238, 143, 0.66),
+    0 0 78px rgba(255, 189, 57, 0.56);
+  animation: reveal-orb-charge 920ms ease-in-out infinite;
+}
+
 .recruit-reveal-orb span {
   color: #fff8e8;
   font-size: 1.35rem;
@@ -81,11 +119,16 @@
   text-shadow: 0 4px 0 rgba(0, 0, 0, 0.34);
 }
 
+.recruit-reveal.is-charging .recruit-reveal-orb span {
+  font-size: 3.2rem;
+}
+
 .recruit-reveal h2 {
   margin: 8px 0 4px;
   color: #fff8e8;
   font-size: 2rem;
   text-shadow: 0 4px 0 rgba(0, 0, 0, 0.34);
+  animation: reveal-title-pop 420ms cubic-bezier(0.18, 1.28, 0.32, 1) both;
 }
 
 .recruit-reveal-featured {
@@ -96,6 +139,32 @@
   background: rgba(59, 36, 30, 0.72);
   color: #ffeec4;
   font-weight: 1000;
+  animation: reveal-title-pop 460ms cubic-bezier(0.18, 1.28, 0.32, 1) both;
+}
+
+.recruit-reveal-charge {
+  display: grid;
+  gap: 8px;
+  margin-top: 22px;
+  color: #fff3c8;
+  text-shadow: 0 3px 0 rgba(0, 0, 0, 0.24);
+  animation: reveal-charge-text 720ms ease-in-out infinite alternate;
+}
+
+.recruit-reveal-charge strong,
+.recruit-reveal-charge span {
+  display: block;
+}
+
+.recruit-reveal-charge strong {
+  font-size: 1.2rem;
+  font-weight: 1000;
+}
+
+.recruit-reveal-charge span {
+  font-size: 0.9rem;
+  font-weight: 800;
+  opacity: 0.9;
 }
 
 .recruit-reveal-grid {
@@ -158,6 +227,7 @@
   font-size: 1.08rem;
   font-weight: 1000;
   box-shadow: inset 0 4px 0 rgba(255, 255, 255, 0.38), 0 7px 0 rgba(0, 0, 0, 0.2);
+  animation: reveal-title-pop 520ms cubic-bezier(0.18, 1.28, 0.32, 1) both;
 }
 
 .recruit-reveal.grade-common .recruit-reveal-orb { background-color: #6e9d4f; }
@@ -172,6 +242,10 @@
     0 0 56px rgba(255, 78, 112, 0.72);
 }
 
+.recruit-reveal.is-charging .recruit-reveal-orb {
+  background-color: transparent;
+}
+
 @keyframes reveal-backdrop-in {
   from { opacity: 0; }
   to { opacity: 1; }
@@ -181,6 +255,12 @@
   0% { opacity: 0; transform: scale(0.6); }
   18% { opacity: 1; transform: scale(1); }
   100% { opacity: 0; transform: scale(1.45); }
+}
+
+@keyframes reveal-final-flash {
+  0% { opacity: 0; transform: scale(0.8); }
+  45% { opacity: 0.88; transform: scale(1.1); }
+  100% { opacity: 0; transform: scale(1.55); }
 }
 
 @keyframes reveal-rays-spin {
@@ -203,6 +283,21 @@
   50% { transform: scale(1.04) rotate(1deg); }
 }
 
+@keyframes reveal-orb-charge {
+  0%, 100% { transform: scale(1) rotate(-2deg); filter: brightness(1); }
+  50% { transform: scale(1.12) rotate(2deg); filter: brightness(1.25); }
+}
+
+@keyframes reveal-title-pop {
+  from { opacity: 0; transform: translateY(10px) scale(0.9); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes reveal-charge-text {
+  from { opacity: 0.72; transform: translateY(0); }
+  to { opacity: 1; transform: translateY(-2px); }
+}
+
 @keyframes reveal-result-pop {
   from { opacity: 0; transform: translateY(12px) scale(0.92); }
   to { opacity: 1; transform: translateY(0) scale(1); }
@@ -220,6 +315,11 @@
   .recruit-reveal-orb {
     width: 106px;
     height: 106px;
+  }
+
+  .recruit-reveal.is-charging .recruit-reveal-orb {
+    width: 132px;
+    height: 132px;
   }
 
   .recruit-reveal h2 {
