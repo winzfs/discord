@@ -7,6 +7,7 @@ import { destroyActiveEnemy } from "./pixiEnemyRuntime";
 import { updateEnemyViewPosition } from "./pixiEnemyView";
 
 const EXIT_HOLD_PROGRESS = 0.998;
+const EXIT_DAMAGE_INTERVAL_MS = 220;
 
 export type UpdateActiveEnemiesOptions = {
   getPathPoint: (layout: GameLayout, progress: number) => { x: number; y: number };
@@ -30,13 +31,14 @@ function updateControlledEnemyPosition(enemy: GameRefs["activeEnemies"][number],
   return false;
 }
 
-function leakEnemy(refs: GameRefs, enemy: GameRefs["activeEnemies"][number], options: UpdateActiveEnemiesOptions) {
+function removeEnemyAtExit(refs: GameRefs, enemy: GameRefs["activeEnemies"][number], options: UpdateActiveEnemiesOptions) {
   if (enemy.leaked || !enemy.alive) return;
 
   enemy.leaked = true;
   enemy.alive = false;
   enemy.progress = 1;
   refs.waveLostLives += enemy.damageToLife;
+  refs.nextEnemyLeakAt = Date.now() + EXIT_DAMAGE_INTERVAL_MS;
   destroyActiveEnemy(enemy);
   options.invalidateControls(refs);
   options.floatText(
@@ -56,6 +58,12 @@ function holdEnemyAtExit(layout: GameLayout, enemy: GameRefs["activeEnemies"][nu
   updateEnemyViewPosition(enemy.view, point.x, point.y, enemy.progress);
 }
 
+function getExitTarget(enemies: GameRefs["activeEnemies"]) {
+  return enemies
+    .filter((enemy) => enemy.alive && !enemy.leaked && enemy.progress >= EXIT_HOLD_PROGRESS)
+    .sort((a, b) => a.id - b.id)[0] ?? null;
+}
+
 export function updateActiveEnemies(
   refs: GameRefs,
   deltaSeconds: number,
@@ -63,23 +71,21 @@ export function updateActiveEnemies(
 ) {
   const layout = createGameLayout(refs.app.renderer.width, refs.app.renderer.height);
   const now = Date.now();
-  let leakedThisFrame = false;
 
   for (const enemy of refs.activeEnemies) {
     if (!enemy.alive || enemy.leaked) continue;
+
+    if (enemy.progress >= EXIT_HOLD_PROGRESS) {
+      holdEnemyAtExit(layout, enemy, options);
+      continue;
+    }
 
     if (updateControlledEnemyPosition(enemy, now)) continue;
 
     enemy.progress += (deltaSeconds * enemy.speed) / WAVE_COMBAT_SECONDS;
 
     if (enemy.progress >= 1) {
-      if (leakedThisFrame) {
-        holdEnemyAtExit(layout, enemy, options);
-        continue;
-      }
-
-      leakedThisFrame = true;
-      leakEnemy(refs, enemy, options);
+      holdEnemyAtExit(layout, enemy, options);
       continue;
     }
 
@@ -88,4 +94,9 @@ export function updateActiveEnemies(
     enemy.y = point.y;
     updateEnemyViewPosition(enemy.view, point.x, point.y, enemy.progress);
   }
+
+  if (now < refs.nextEnemyLeakAt) return;
+
+  const exitTarget = getExitTarget(refs.activeEnemies);
+  if (exitTarget) removeEnemyAtExit(refs, exitTarget, options);
 }
