@@ -17,6 +17,8 @@ import { drawPixiBackgroundView } from "./pixiBackgroundView";
 import { getPixiPathPoint } from "./pixiPathRuntime";
 import { createPixiHudView, updatePixiHudView } from "./pixiHudView";
 
+const MONSTER_LIMIT = 100;
+
 export function drawBackground(refs: GameRefs, layout: GameLayout) {
   drawPixiBackgroundView(refs.world, layout, getPixiPathPoint);
 }
@@ -34,6 +36,10 @@ function calculatePixiFirepower(refs: GameRefs) {
   return Math.round(baseFirepower * refs.progressBonuses.attackMultiplier * (1 + refs.state.powerUpgradeLevel * 0.16));
 }
 
+function getAliveMonsterCount(refs: GameRefs) {
+  return refs.activeEnemies.filter((enemy) => enemy.alive).length;
+}
+
 export function drawTopHud(refs: GameRefs, layout: GameLayout) {
   if (!refs.hudView) refs.hudView = createPixiHudView(refs.hud);
 
@@ -42,8 +48,8 @@ export function drawTopHud(refs: GameRefs, layout: GameLayout) {
     wavePhase: refs.wavePhase,
     countdownSeconds: Math.max(0, refs.nextWaveTimer),
     combatSeconds: Math.max(0, refs.combatTimer),
-    lives: refs.state.lives,
-    maxLives: initialBalance.startingLives,
+    lives: getAliveMonsterCount(refs),
+    maxLives: MONSTER_LIMIT,
     firepower: calculatePixiFirepower(refs),
     unitCount: getBoardUnitCount(refs.state.board),
     unitCapacity: getBoardCapacity(refs.state.board),
@@ -117,7 +123,7 @@ export function drawControls(
       refs.state.resources < upgradeCost ||
       refs.movementLocked,
     wavePhase: refs.wavePhase,
-    aliveEnemyCount: refs.activeEnemies.filter((enemy) => enemy.alive).length,
+    aliveEnemyCount: getAliveMonsterCount(refs),
     waveDisabled: options.isFinished(refs.state) || refs.movementLocked || refs.wavePhase === "combat",
   });
 }
