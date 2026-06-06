@@ -91,6 +91,20 @@ function createRowViewModel(item: MythicCraftItem, index: number, state: GameSta
   };
 }
 
+function createLazyRowProvider(list: MythicCraftItem[], state: GameState) {
+  const cache = new Map<number, MythicMenuRowViewModel>();
+
+  return (index: number) => {
+    if (index < 0 || index >= list.length) return null;
+    const cached = cache.get(index);
+    if (cached) return cached;
+
+    const row = createRowViewModel(list[index], index, state);
+    cache.set(index, row);
+    return row;
+  };
+}
+
 function createScrollViewport(width: number, height: number) {
   const viewport = new Container();
   const spacer = new Graphics();
@@ -157,10 +171,10 @@ function bindVerticalDragScroll(
 
 export function createPixiMythicMenuView(options: PixiMythicMenuViewOptions) {
   const list = getMythicCraftAvailability(options.state);
-  const rows = list.map((item, index) => createRowViewModel(item, index, options.state));
+  const getRow = createLazyRowProvider(list, options.state);
   const width = Math.min(360, options.rendererWidth - 24);
   const maxHeight = Math.max(320, options.rendererHeight - 190);
-  const contentHeight = rows.length * ROW_STEP;
+  const contentHeight = list.length * ROW_STEP;
   const viewportHeight = Math.min(maxHeight - HEADER_HEIGHT - PANEL_MARGIN, contentHeight);
   const height = HEADER_HEIGHT + viewportHeight + PANEL_MARGIN;
   const menu = new Container();
@@ -185,7 +199,8 @@ export function createPixiMythicMenuView(options: PixiMythicMenuViewOptions) {
   spacer.fill({ color: 0x000000, alpha: 0.001 });
 
   const rowPool = createMythicMenuRowPool({
-    rows,
+    rowCount: list.length,
+    getRow,
     rowWidth,
     rowHeight: ROW_HEIGHT,
     rowStep: ROW_STEP,
