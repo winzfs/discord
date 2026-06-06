@@ -73,6 +73,7 @@ import { chargeMythicUltimatesOverTime, getAttackIntervalMultiplier } from "./pi
 import { destroyFxGraphicsPool } from "./pixiFxPoolRuntime";
 import { preloadHeroSpriteTextures } from "./pixiHeroSpriteView";
 import { loadPixiLobbyHeroPool } from "./pixiLobbyHeroPool";
+import { formatLobbyBattleReward, grantLobbyBattleReward } from "./pixiLobbyBattleRewards";
 
 export type PixiGameHandle = { cleanup: () => void };
 export type PixiGameOptions = { testMode?: boolean };
@@ -192,10 +193,18 @@ function floatText(refs: GameRefs, value: string, x: number, y: number, color: n
   addAnimation(refs, animation);
 }
 
+function grantLobbyRewardOnce(refs: GameRefs) {
+  if (refs.lobbyRewardGranted) return;
+  refs.lobbyRewardGranted = true;
+  const reward = grantLobbyBattleReward(refs.state);
+  floatText(refs, formatLobbyBattleReward(reward), refs.app.renderer.width / 2, refs.app.renderer.height * 0.38, colors.yellow);
+}
+
 function submitFinalResultOnce(refs: GameRefs) {
   if (refs.isTestMode) return;
   if (refs.resultSubmitted || (refs.state.status !== "failed" && refs.state.status !== "cleared")) return;
   refs.resultSubmitted = true;
+  grantLobbyRewardOnce(refs);
 
   void submitGameRun(refs.state)
     .then(() => {
@@ -339,6 +348,7 @@ export function createPixiGame(parent: HTMLElement, options: PixiGameOptions = {
     waveLostLives: 0,
     lastWaveSummary: null,
     resultSubmitted: false,
+    lobbyRewardGranted: false,
     isTestMode: options.testMode ?? false,
     testEnemyHpMultiplier: 1,
     heroSpriteAttacks: {},
