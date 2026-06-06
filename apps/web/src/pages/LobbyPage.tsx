@@ -22,6 +22,7 @@ import {
 } from "../game-lobby/lobbyData";
 import { recruitCosts, recruitHeroes, type RecruitPullMode, type RecruitResult } from "../game-lobby/lobbyRecruit";
 import { defaultLobbyLineupSize, loadLobbyProgress, saveLobbyProgress } from "../game-lobby/lobbyProgressStorage";
+import type { LobbyAccountProgress } from "../game-lobby/lobbyAccountProgress";
 import "../styles/lobby.css";
 import "../styles/lobby-polish.css";
 import "../styles/lobby-recruit-reveal.css";
@@ -122,6 +123,7 @@ export function LobbyPage() {
   const [heroes, setHeroes] = useState(savedProgress.heroes);
   const [artifacts, setArtifacts] = useState(savedProgress.artifacts);
   const [lineupHeroIds, setLineupHeroIds] = useState(savedProgress.lineupHeroIds);
+  const [accountProgress] = useState<LobbyAccountProgress>(savedProgress.accountProgress);
   const [lastRecruitResults, setLastRecruitResults] = useState<RecruitResult[]>([]);
   const [revealResults, setRevealResults] = useState<RecruitResult[]>([]);
   const [detail, setDetail] = useState<Detail | null>(null);
@@ -133,6 +135,7 @@ export function LobbyPage() {
     nextGold = gold,
     nextCrystals = crystals,
     nextLineupHeroIds = lineupHeroIds,
+    nextAccountProgress = accountProgress,
   ) => {
     saveLobbyProgress({
       heroes: nextHeroes,
@@ -140,6 +143,7 @@ export function LobbyPage() {
       gold: nextGold,
       crystals: nextCrystals,
       lineupHeroIds: nextLineupHeroIds,
+      accountProgress: nextAccountProgress,
     });
   };
 
@@ -256,7 +260,7 @@ export function LobbyPage() {
           />
         </>
       )}
-      {activeTab === "battle" && <BattleView difficulty={difficulty} />}
+      {activeTab === "battle" && <BattleView difficulty={difficulty} accountProgress={accountProgress} />}
       {activeTab === "artifacts" && (
         <ArtifactsView
           artifacts={artifacts}
