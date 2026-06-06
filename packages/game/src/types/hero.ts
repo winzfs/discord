@@ -7,6 +7,7 @@ export type AttackType = "single" | "area" | "support" | "control";
 export type HeroDefinition = {
   id: string;
   displayName: string;
+  description: string;
   role: HeroRole;
   grade: HeroGrade;
   attackType: AttackType;
