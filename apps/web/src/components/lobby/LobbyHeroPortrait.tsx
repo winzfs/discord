@@ -2,6 +2,7 @@ import type { LobbyHero } from "../../game-lobby/lobbyData";
 
 const HERO_IDLE_SPRITES: Record<string, string> = {
   "spark-runner": "/assets/heroes/private.png?v=20260607-private1",
+  "rookie-guard": "/assets/heroes/helixsecurity.png?v=20260607-helixsecurity1",
   tracer: "/assets/heroes/tracer.png?v=20260605-tracer1",
   kiriko: "/assets/heroes/kiriko.png?v=20260605-kiriko1",
   dva: "/assets/heroes/d.va.png?v=20260605-dva1",
@@ -13,7 +14,7 @@ const HERO_IDLE_SPRITES: Record<string, string> = {
   illari: "/assets/heroes/illari.png?v=20260606-illari1",
 };
 
-const SPRITE_PORTRAIT_IDS = new Set(["spark-runner", "tracer", "kiriko", "dva", "zarya", "cassidy", "winston", "genji", "ana", "illari"]);
+const SPRITE_PORTRAIT_IDS = new Set(["spark-runner", "rookie-guard", "tracer", "kiriko", "dva", "zarya", "cassidy", "winston", "genji", "ana", "illari"]);
 
 type LobbyHeroPortraitProps = {
   hero: LobbyHero;
