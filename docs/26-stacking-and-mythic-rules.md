@@ -51,16 +51,26 @@ apps/web/src/game-client/pixi/pixiMythicMenuRowPool.ts
 신화 조합 메뉴에서 재료 줄이 잘리는 문제가 있어 row 높이를 늘렸습니다.
 
 ```text
-ROW_HEIGHT 104 → 122
-ROW_GAP 8 → 9
+ROW_HEIGHT 104 → 122 → 148
+ROW_GAP 8 → 9 → 10
 ```
 
-재료 라벨 줄 간격도 넓혔습니다.
+재료 표시 제한을 제거했습니다.
 
 ```text
+기존: progress.slice(0, 4)
+변경: progress.map(...)
+```
+
+row pool도 재료를 최대 6개까지 표시할 수 있게 확장했습니다.
+
+```text
+MAX_VISIBLE_INGREDIENTS = 6
 INGREDIENT_START_Y = 66
 INGREDIENT_ROW_GAP = 25
 ```
+
+현재 조합 재료가 5개인 영웅도 3줄 구성으로 전부 표시됩니다.
 
 ## 6. 테스트 체크리스트
 
@@ -70,4 +80,5 @@ INGREDIENT_ROW_GAP = 25
 - 중첩된 유닛 스택끼리 다른 칸과 자리 교환되는지 확인
 - 합성 결과가 이미 필드에 있는 유닛이면 기존 스택에 먼저 중첩되는지 확인
 - 합성 결과가 신화면 기존 스택에 중첩되지 않는지 확인
-- 신화 조합 메뉴 재료 글자가 덜 잘리는지 확인
+- 신화 조합 메뉴에서 재료 5개짜리 조합도 모두 보이는지 확인
+- 신화 조합 메뉴 재료 글자가 하단 안내바에 가리지 않는지 확인
