@@ -24,6 +24,7 @@ const GENJI_DASH_DURATION = 260;
 const GENJI_DASH_STAGGER = 1000;
 const GENJI_RETURN_DURATION = 220;
 const GENJI_OFFSET_HOLD_MS = GENJI_DASH_STAGGER + GENJI_RETURN_DURATION + 120;
+const GENJI_IDLE_DIRECTION_HOLD_MS = 3000;
 const GENJI_TRAIL_LENGTH = 76;
 const GENJI_GREEN = 0x7dff7a;
 
@@ -116,9 +117,12 @@ function setDashOffset(refs: GameRefs, hero: BoardHero, origin: Point, point: Po
 }
 
 function setDashDirection(refs: GameRefs, hero: BoardHero, from: Point, to: Point) {
+  const now = Date.now();
+
   refs.heroSpriteAttacks[hero.instanceId] = {
     direction: to.x < from.x ? "left" : "right",
-    until: Date.now() + GENJI_DASH_DURATION,
+    until: now + GENJI_DASH_DURATION,
+    idleUntil: now + GENJI_IDLE_DIRECTION_HOLD_MS,
   };
 }
 
@@ -218,20 +222,11 @@ export function spawnGenjiDashStrike(
   const targets = lowHpTargets(refs.activeEnemies);
   if (targets.length === 0) return;
 
-  const dashDamage = Math.max(1, Math.round(baseDamage * 1.08));
-  const targetPoints = targets.map((target) => ({ x: target.x, y: target.y }));
-
+  let dashFrom = from;
   targets.forEach((target, index) => {
-    const dashFrom = index === 0 ? from : targetPoints[index - 1];
-    spawnDashAnimation(refs, options, hero, from, dashFrom, target, dashDamage, index);
+    spawnDashAnimation(refs, options, hero, from, dashFrom, target, baseDamage, index);
+    dashFrom = { x: target.x, y: target.y };
   });
 
-  spawnReturnAnimation(
-    refs,
-    options,
-    hero,
-    from,
-    targetPoints[targetPoints.length - 1],
-    targets.length * GENJI_DASH_STAGGER,
-  );
+  spawnReturnAnimation(refs, options, hero, from, dashFrom, targets.length * GENJI_DASH_STAGGER + GENJI_DASH_DURATION + 80);
 }
