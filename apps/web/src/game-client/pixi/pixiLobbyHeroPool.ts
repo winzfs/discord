@@ -11,8 +11,10 @@ export type PixiLobbyHeroPool = {
 export function loadPixiLobbyHeroPool(): PixiLobbyHeroPool {
   const progress = loadLobbyProgress();
   const ownedById = new Map(progress.heroes.filter((hero) => hero.owned).map((hero) => [hero.id, hero]));
+  const lineupIds = new Set(progress.lineupHeroIds.filter((id) => ownedById.has(id)));
+  const lineupHeroes = heroes.filter((hero) => lineupIds.has(hero.id));
   const ownedHeroes = heroes.filter((hero) => ownedById.has(hero.id));
-  const playableHeroes = ownedHeroes.length > 0 ? ownedHeroes : heroes;
+  const playableHeroes = lineupHeroes.length > 0 ? lineupHeroes : ownedHeroes.length > 0 ? ownedHeroes : heroes;
 
   return {
     heroes: playableHeroes,
