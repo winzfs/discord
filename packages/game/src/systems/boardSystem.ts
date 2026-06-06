@@ -7,9 +7,10 @@ export const MAX_STACK_PER_CELL = 3;
 export type MoveBoardHeroResult = {
   state: GameState;
   movedHero: BoardHero | null;
+  movedHeroes?: BoardHero[];
   swappedHeroes?: BoardHero[];
   action?: "move" | "stack" | "swap";
-  reason?: "empty_source" | "same_cell" | "target_full" | "invalid_cell";
+  reason?: "empty_source" | "same_cell" | "target_full" | "invalid_cell" | "mythic_stack_blocked";
 };
 
 export function createInitialBoard(rows: number, columns: number): BoardCell[] {
@@ -39,22 +40,29 @@ export function getBoardCapacity(board: BoardCell[]): number {
   return board.length * MAX_STACK_PER_CELL;
 }
 
-export function canPlaceHeroInCell(cell: BoardCell, heroId: string): boolean {
+function isMythicHero(hero: Pick<BoardHero, "grade">): boolean {
+  return hero.grade === "mythic";
+}
+
+export function canPlaceHeroInCell(cell: BoardCell, heroId: string, grade?: BoardHero["grade"]): boolean {
+  if (grade === "mythic" && cell.units.length > 0) return false;
+  if (cell.units.some((unit) => unit.grade === "mythic")) return false;
   if (cell.units.length >= MAX_STACK_PER_CELL) return false;
   if (cell.heroId === null) return true;
   return cell.heroId === heroId;
 }
 
-export function findStackableCellIndex(board: BoardCell[], heroId: string): number {
-  return board.findIndex((cell) => cell.heroId === heroId && cell.units.length < MAX_STACK_PER_CELL);
+export function findStackableCellIndex(board: BoardCell[], heroId: string, grade?: BoardHero["grade"]): number {
+  if (grade === "mythic") return -1;
+  return board.findIndex((cell) => canPlaceHeroInCell(cell, heroId, grade) && cell.heroId === heroId);
 }
 
 export function findEmptyCellIndex(board: BoardCell[]): number {
   return board.findIndex((cell) => cell.heroId === null && cell.units.length === 0);
 }
 
-export function findAvailableCellIndex(board: BoardCell[], heroId: string): number {
-  const stackableIndex = findStackableCellIndex(board, heroId);
+export function findAvailableCellIndex(board: BoardCell[], heroId: string, grade?: BoardHero["grade"]): number {
+  const stackableIndex = findStackableCellIndex(board, heroId, grade);
   if (stackableIndex >= 0) return stackableIndex;
   return findEmptyCellIndex(board);
 }
@@ -75,7 +83,7 @@ function createCellWithUnits(cell: BoardCell, units: BoardHero[]): BoardCell {
 }
 
 export function placeHeroOnBoard(state: GameState, hero: Omit<BoardHero, "position">): { state: GameState; placedHero: BoardHero | null; reason?: "board_full" } {
-  const cellIndex = findAvailableCellIndex(state.board, hero.heroId);
+  const cellIndex = findAvailableCellIndex(state.board, hero.heroId, hero.grade);
   if (cellIndex < 0) {
     return { state, placedHero: null, reason: "board_full" };
   }
@@ -114,51 +122,47 @@ export function moveOneHeroToCell(state: GameState, sourceCellIndex: number, tar
     return { state, movedHero: null, action: "move", reason: "invalid_cell" };
   }
 
-  const movingHero = sourceCell.units[sourceCell.units.length - 1];
-  if (!movingHero) {
+  const movingUnits = sourceCell.units;
+  const movingHero = movingUnits[0];
+  if (!movingHero || movingUnits.length === 0) {
     return { state, movedHero: null, action: "move", reason: "empty_source" };
   }
 
   if (targetCell.heroId === null) {
-    const movedHero: BoardHero = { ...movingHero, position: targetCell.position };
+    const movedUnits = updateUnitsPosition(movingUnits, targetCell.position);
     const nextBoard = state.board.map((cell, index) => {
-      if (index === sourceCellIndex) {
-        const nextUnits = cell.units.slice(0, -1);
-        return createCellWithUnits(cell, nextUnits);
-      }
-      if (index === targetCellIndex) {
-        return createCellWithUnits(cell, [movedHero]);
-      }
+      if (index === sourceCellIndex) return createCellWithUnits(cell, []);
+      if (index === targetCellIndex) return createCellWithUnits(cell, movedUnits);
       return cell;
     });
 
     return {
       state: { ...state, board: nextBoard },
-      movedHero,
+      movedHero: movedUnits[0] ?? null,
+      movedHeroes: movedUnits,
       action: "move",
     };
   }
 
   if (targetCell.heroId === movingHero.heroId) {
-    if (targetCell.units.length >= MAX_STACK_PER_CELL) {
+    if (targetCell.units.some(isMythicHero) || movingUnits.some(isMythicHero)) {
+      return { state, movedHero: null, action: "stack", reason: "mythic_stack_blocked" };
+    }
+    if (targetCell.units.length + movingUnits.length > MAX_STACK_PER_CELL) {
       return { state, movedHero: null, action: "stack", reason: "target_full" };
     }
 
-    const movedHero: BoardHero = { ...movingHero, position: targetCell.position };
+    const movedUnits = updateUnitsPosition(movingUnits, targetCell.position);
     const nextBoard = state.board.map((cell, index) => {
-      if (index === sourceCellIndex) {
-        const nextUnits = cell.units.slice(0, -1);
-        return createCellWithUnits(cell, nextUnits);
-      }
-      if (index === targetCellIndex) {
-        return createCellWithUnits(cell, [...cell.units, movedHero]);
-      }
+      if (index === sourceCellIndex) return createCellWithUnits(cell, []);
+      if (index === targetCellIndex) return createCellWithUnits(cell, [...cell.units, ...movedUnits]);
       return cell;
     });
 
     return {
       state: { ...state, board: nextBoard },
-      movedHero,
+      movedHero: movedUnits[0] ?? null,
+      movedHeroes: movedUnits,
       action: "stack",
     };
   }
@@ -174,6 +178,7 @@ export function moveOneHeroToCell(state: GameState, sourceCellIndex: number, tar
   return {
     state: { ...state, board: nextBoard },
     movedHero: { ...movingHero, position: targetCell.position },
+    movedHeroes: sourceUnits,
     swappedHeroes: [...sourceUnits, ...targetUnits],
     action: "swap",
   };
