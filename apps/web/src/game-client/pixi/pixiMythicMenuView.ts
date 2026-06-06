@@ -21,7 +21,7 @@ export type PixiMythicMenuViewOptions = {
 type IngredientProgress = ReturnType<typeof getMythicIngredientProgress>[number];
 
 const HEADER_HEIGHT = 58;
-const ROW_HEIGHT = 144;
+const ROW_HEIGHT = 100;
 const ROW_GAP = 8;
 const PANEL_MARGIN = 24;
 const MENU_TOP_RATIO = 0.11;
@@ -87,10 +87,16 @@ function summarizeIngredientProgress(progress: IngredientProgress[]) {
 function formatIngredientLabel(item: IngredientProgress) {
   const mark = item.fulfilled ? "✓" : "·";
   const grade = getIngredientGrade(item);
-  return `${mark} [${gradeLabel(grade)}] ${item.label}`;
+  return `${mark}[${gradeLabel(grade)}] ${item.label}`;
 }
 
-function drawIngredientSummary(row: Container, options: PixiMythicMenuViewOptions, recipe: ReturnType<typeof getMythicCraftAvailability>[number]["recipe"], y: number) {
+function drawIngredientSummary(
+  row: Container,
+  options: PixiMythicMenuViewOptions,
+  recipe: ReturnType<typeof getMythicCraftAvailability>[number]["recipe"],
+  y: number,
+  rowWidth: number,
+) {
   const progress = getMythicIngredientProgress(options.state, recipe);
   const summary = summarizeIngredientProgress(progress);
 
@@ -103,20 +109,13 @@ function drawIngredientSummary(row: Container, options: PixiMythicMenuViewOption
   summaryText.y = y;
   row.addChild(summaryText);
 
-  progress.forEach((item, index) => {
-    const grade = getIngredientGrade(item);
+  const columnWidth = Math.floor((rowWidth - 30) / 2);
+  progress.slice(0, 4).forEach((item, index) => {
     const line = makePixiText(formatIngredientLabel(item), 11, item.fulfilled ? 0xfff2a8 : 0xd8d0c8);
-    line.x = 12;
-    line.y = y + 22 + index * 17;
-    line.alpha = item.fulfilled ? 1 : 0.9;
+    line.x = 12 + (index % 2) * columnWidth;
+    line.y = y + 23 + Math.floor(index / 2) * 21;
+    line.alpha = item.fulfilled ? 1 : 0.92;
     row.addChild(line);
-
-    const marker = new Graphics();
-    marker.circle(0, 0, item.fulfilled ? 3.5 : 2.8);
-    marker.fill({ color: gradeColor(grade), alpha: item.fulfilled ? 1 : 0.55 });
-    marker.x = 318;
-    marker.y = line.y + 8;
-    row.addChild(marker);
   });
 }
 
@@ -244,7 +243,7 @@ export function createPixiMythicMenuView(options: PixiMythicMenuViewOptions) {
       bindCraftTap(row, item.recipe.id, options.onCraft);
     }
 
-    drawIngredientSummary(row, options, item.recipe, 37);
+    drawIngredientSummary(row, options, item.recipe, 37, rowWidth);
     content.addChild(row);
   });
 
