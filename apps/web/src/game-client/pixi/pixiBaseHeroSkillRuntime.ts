@@ -3,10 +3,19 @@ import type { BoardHero, HeroRole } from "@discord-random-defense/game";
 import { colors } from "./gameTheme";
 import type { ActiveEnemy, GameRefs } from "./pixiGameTypes";
 import { getProgressHeroMasteryEffect } from "./pixiProgressBonuses";
+import { spawnBaseSkillFx, type BaseSkillFxKind } from "./pixiBaseSkillFxRuntime";
 
 export type BaseHeroSkillRuntimeOptions = {
   damageEnemy: (refs: GameRefs, enemy: ActiveEnemy, damage: number) => void;
   floatText: (refs: GameRefs, value: string, x: number, y: number, color: number) => void;
+  addAnimation?: (
+    refs: GameRefs,
+    animation: {
+      duration: number;
+      update: (progress: number) => void;
+      done?: () => void;
+    },
+  ) => void;
 };
 
 type SkillProfile = {
@@ -16,6 +25,7 @@ type SkillProfile = {
   extraHitMultiplier: number;
   slowMultiplier: number;
   coinBonus: number;
+  fxKind: BaseSkillFxKind | null;
   text?: string;
   color: number;
 };
@@ -27,6 +37,7 @@ const DEFAULT_PROFILE: SkillProfile = {
   extraHitMultiplier: 0,
   slowMultiplier: 1,
   coinBonus: 0,
+  fxKind: null,
   color: colors.white,
 };
 
@@ -76,12 +87,14 @@ function buildSkillProfile(hero: BoardHero, role: HeroRole): SkillProfile {
 
   if (hasTag(skillIds, "attack")) {
     profile.damageMultiplier += 0.1 * gradeScale * damageScale;
+    profile.fxKind = "attack";
     profile.text = "공격";
     profile.color = colors.yellow;
   }
 
   if (hasTag(skillIds, "boss-killer")) {
     profile.damageMultiplier += 0.13 * gradeScale * damageScale;
+    profile.fxKind = "boss";
     profile.text = "약점";
     profile.color = colors.orange;
   }
@@ -89,12 +102,14 @@ function buildSkillProfile(hero: BoardHero, role: HeroRole): SkillProfile {
   if (hasTag(skillIds, "area-damage") || hasTag(skillIds, "burst")) {
     profile.splashMultiplier = Math.max(profile.splashMultiplier, (0.3 + 0.06 * gradeScale) * damageScale);
     profile.splashRadius = Math.max(profile.splashRadius, 64 + 12 * gradeScale);
+    profile.fxKind = "area";
     profile.text = "폭발";
     profile.color = colors.orange;
   }
 
   if (hasTag(skillIds, "chain") || hasTag(skillIds, "multi-hit") || hasTag(skillIds, "extra-hit")) {
     profile.extraHitMultiplier = Math.max(profile.extraHitMultiplier, (0.28 + 0.06 * gradeScale) * damageScale);
+    profile.fxKind = "chain";
     profile.text = "연쇄";
     profile.color = 0x88e9ff;
   }
@@ -102,6 +117,7 @@ function buildSkillProfile(hero: BoardHero, role: HeroRole): SkillProfile {
   if (hasTag(skillIds, "pierce") || hasTag(skillIds, "beam")) {
     profile.splashMultiplier = Math.max(profile.splashMultiplier, (0.36 + 0.05 * gradeScale) * damageScale);
     profile.splashRadius = Math.max(profile.splashRadius, 86 + 14 * gradeScale);
+    profile.fxKind = "beam";
     profile.text = "관통";
     profile.color = 0xbde7ff;
   }
@@ -110,6 +126,7 @@ function buildSkillProfile(hero: BoardHero, role: HeroRole): SkillProfile {
     const baseSlow = hasTag(skillIds, "freeze") ? 0.78 : hasTag(skillIds, "grouping") ? 0.8 : 0.86;
     profile.slowMultiplier = Math.min(profile.slowMultiplier, Math.max(0.64, 1 - (1 - baseSlow) * controlScale));
     profile.damageMultiplier += role === "tank" ? 0.02 * gradeScale : 0;
+    profile.fxKind = "control";
     profile.text = hasTag(skillIds, "freeze") ? "빙결" : hasTag(skillIds, "grouping") ? "중력" : "감속";
     profile.color = 0x8fdcff;
   }
@@ -117,18 +134,21 @@ function buildSkillProfile(hero: BoardHero, role: HeroRole): SkillProfile {
   if (hasTag(skillIds, "mark") || hasTag(skillIds, "vulnerable")) {
     profile.damageMultiplier += role === "damage" ? 0.12 * gradeScale : 0.04 * gradeScale;
     profile.slowMultiplier = Math.min(profile.slowMultiplier, role === "damage" ? 0.94 : 0.9);
+    profile.fxKind = "mark";
     profile.text = "표식";
     profile.color = 0xff8f74;
   }
 
   if (hasTag(skillIds, "buff") || hasTag(skillIds, "haste") || hasTag(skillIds, "power-up") || hasTag(skillIds, "team-wide")) {
     profile.damageMultiplier += role === "support" ? 0 : 0.03 * gradeScale;
+    profile.fxKind = "support";
     profile.text = "지원";
     profile.color = 0x7dffb2;
   }
 
   if (hasTag(skillIds, "turret") || hasTag(skillIds, "support-fire")) {
     profile.extraHitMultiplier = Math.max(profile.extraHitMultiplier, role === "support" ? 0.2 + 0.03 * gradeScale : 0.28 + 0.04 * gradeScale);
+    profile.fxKind = "turret";
     profile.text = "포탑";
     profile.color = 0xd8c1ff;
   }
@@ -136,12 +156,14 @@ function buildSkillProfile(hero: BoardHero, role: HeroRole): SkillProfile {
   if (hasTag(skillIds, "economy") || hasTag(skillIds, "coin-bonus") || hasTag(skillIds, "wave-reward")) {
     profile.coinBonus = Math.round(role === "support" ? 2 + gradeScale : 1 + gradeScale);
     profile.damageMultiplier += role === "support" ? 0 : 0.02 * gradeScale;
+    profile.fxKind = "economy";
     profile.text = "보상";
     profile.color = colors.green;
   }
 
   if (hasTag(skillIds, "overcrowd-bonus")) {
     profile.damageMultiplier += 0.03 * Math.min(8, Math.floor(hero.grade === "legendary" ? 5 : 2));
+    profile.fxKind = "control";
     profile.text = "반격";
     profile.color = colors.red;
   }
@@ -194,14 +216,15 @@ function applyExtraHit(
   profile: SkillProfile,
   options: BaseHeroSkillRuntimeOptions,
 ) {
-  if (profile.extraHitMultiplier <= 0) return;
+  if (profile.extraHitMultiplier <= 0) return null;
 
   const extraTarget = refs.activeEnemies
     .filter((enemy) => enemy.alive && enemy.id !== target.id && enemy.progress >= 0)
     .sort((a, b) => b.progress - a.progress)[0];
-  if (!extraTarget) return;
+  if (!extraTarget) return null;
 
   options.damageEnemy(refs, extraTarget, Math.max(1, Math.round(damage * profile.extraHitMultiplier)));
+  return extraTarget;
 }
 
 export function applyBaseHeroSkillPreDamage(hero: BoardHero, role: HeroRole, baseDamage: number) {
@@ -222,7 +245,8 @@ export function applyBaseHeroSkillPostDamage(
 
   applySlow(target, profile.slowMultiplier);
   applySplash(refs, target, damage, profile, options);
-  applyExtraHit(refs, target, damage, profile, options);
+  const extraTarget = applyExtraHit(refs, target, damage, profile, options);
+  spawnBaseSkillFx(refs, options.addAnimation ? { addAnimation: options.addAnimation } : undefined, profile.fxKind, target, extraTarget);
 
   if (profile.coinBonus > 0 && target.hp <= 0) {
     refs.state = {
