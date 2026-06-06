@@ -143,6 +143,9 @@ finishAutoWave() 내부에도 살아있는 몬스터를 강제로 destroy하는 
 겹치는 웨이브 구조로 바뀐 뒤에도 HP 감소는 waveLostLives에만 누적되고,
 실제 lives 반영은 finishAutoWave() 시점에만 처리되어 즉시 HP 감소가 보이지 않았습니다.
 
+한꺼번에 사라지는 문제를 피하려고 스폰 progress 간격을 넓혔지만,
+체감상 몬스터 소환 간격이 지나치게 멀어졌습니다.
+
 결과창은 refs.menu에 올라가는데, 전역 stage pointerdown에서 빈칸 클릭 시 메뉴를 정리하는 로직이 결과창 클릭까지 처리할 수 있었습니다.
 ```
 
@@ -176,6 +179,7 @@ HP 즉시 갱신을 위해 updateActiveEnemies 옵션에 invalidateHud 추가
 combatTimer <= 0만으로 웨이브 결과 처리하지 않도록 수정
 타이머가 끝나면 기존 몬스터를 유지한 채 다음 웨이브를 추가 스폰
 spawnWaveMonsters()가 기존 activeEnemies를 삭제하지 않도록 수정
+spawnWaveMonsters()의 progress 간격을 0.04/0.18에서 0.018/0.09로 축소해 몬스터 출현을 다시 촘촘하게 조정
 finishAutoWave()가 살아있는 몬스터를 강제로 제거하지 않도록 수정
 finishAutoWave()는 모든 몬스터가 처치/누수 처리된 뒤에만 요약 처리
 finishAutoWave()에서 lives를 다시 차감하지 않도록 중복 차감 제거
@@ -221,6 +225,7 @@ pnpm dev:web
 /play 몬스터가 오른쪽 아래 출구에서 멈추고 처리되는지
 /play 몬스터가 오른쪽 아래 출구 이후 아래쪽 가로 구간으로 이동하지 않는지
 /play 몬스터가 겹쳐도 출구에서 0.22초 간격으로 1마리씩 누수 처리되는지
+/play 몬스터 소환 간격이 너무 벌어지지 않고 자연스럽게 이어지는지
 /play 전투 타이머가 0이 되면 다음 웨이브가 기존 몬스터를 지우지 않고 추가 스폰되는지
 /play 진행 중이던 몬스터가 오른쪽 아래 출구로 들어가며 HP를 즉시 깎는지
 /play 타이머가 음수로 표시되지 않는지
