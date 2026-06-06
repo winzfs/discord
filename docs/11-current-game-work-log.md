@@ -225,6 +225,51 @@ packages/game/src/data/skills.ts
 겐지 신화 스킬은 genji-shuriken + genji-swift-strike + genji-dragonblade로 정리했습니다.
 ```
 
+## 비신화 유닛 고유 스킬 전투 효과 1차 반영
+
+### 추가 파일
+
+```text
+apps/web/src/game-client/pixi/pixiBaseHeroSkillRuntime.ts
+```
+
+### 연결 파일
+
+```text
+apps/web/src/game-client/pixi/pixiCombatRuntime.ts
+```
+
+### 적용 방식
+
+```text
+공격 전: 고유 스킬 태그를 읽어 피해량을 소폭 보정
+공격 후: 감속, 광역 피해, 연쇄 추가타, 경제 보너스를 적용
+신화 유닛은 기존 신화 스킬 런타임을 그대로 사용
+비신화 유닛만 신규 고유 스킬 런타임을 사용
+```
+
+### 적용된 태그 효과
+
+```text
+attack: 기본 피해량 소폭 증가
+boss-killer: 보스/강한 적 대응 피해량 보정
+area-damage, burst: 주변 몬스터에게 약한 광역 피해
+chain, multi-hit, extra-hit: 앞쪽 다른 몬스터에게 약한 추가타
+pierce, beam: 넓은 범위의 약한 관통형 피해
+slow, freeze, grouping: 대상 이동 속도 감소
+mark, vulnerable: 피해량 보정과 약한 감속
+turret, support-fire: 보조 추가타
+economy, coin-bonus, wave-reward: 처치 시 소량 코인/점수 보너스
+```
+
+### 주의 사항
+
+```text
+이번 단계는 1차 전투 반영입니다.
+아직 스킬별 전용 이펙트는 추가하지 않았습니다.
+전용 이펙트와 툴팁 설명은 다음 단계에서 분리 작업하는 것이 좋습니다.
+```
+
 ## 신화 조합 방식 변경
 
 ### 의도
@@ -294,6 +339,8 @@ apps/web/src/game-client/pixi/pixiRenderRuntime.ts
 apps/web/src/game-client/pixi/pixiHudView.ts
 apps/web/src/game-client/pixi/createPixiGame.ts
 apps/web/src/game-client/pixi/pixiWaveFlowRuntime.ts
+apps/web/src/game-client/pixi/pixiCombatRuntime.ts
+apps/web/src/game-client/pixi/pixiBaseHeroSkillRuntime.ts
 packages/game/src/data/enemies.ts
 packages/game/src/data/waves.ts
 packages/game/src/data/heroes.ts
@@ -319,6 +366,8 @@ b580ef7d90a3accd69d6202209fdc1ff88a3b7ce
 e76438e3aa915dd62bf9450b44ca28b76d2afcb2
 75148eedc670d30c591146ee760e1543e61e5b9e
 d45589fab64c9980d5e33118aba179e16511841b
+2bd1e8805a14d264229f4b83d06e24014806b140
+2c1c778ed1ca74e91dccdc39403f120f6d61defd
 ```
 
 ## 타입/빌드 점검 메모
@@ -342,6 +391,8 @@ mythicRecipes는 다시 고유 heroId 기반 조합으로 변경
 mythicCraftSystem은 heroId 재료를 영웅 이름으로 표시
 일반/희귀/영웅 유닛은 고유 skillIds 1개
 전설 유닛은 고유 skillIds 2개
+pixiBaseHeroSkillRuntime.ts에서 비신화 스킬 태그 기반 전투 효과를 처리
+pixiCombatRuntime.ts에서 비신화 스킬 피해 보정/후처리를 호출
 ```
 
 ## 확인할 항목
@@ -361,4 +412,6 @@ mythicCraftSystem은 heroId 재료를 영웅 이름으로 표시
 /play 일반/희귀/영웅 유닛이 고유 스킬 1개씩 표시되는지
 /play 전설 유닛이 고유 스킬 2개씩 표시되는지
 /play 겐지 스킬 참조 오류가 없는지
+/play 비신화 유닛 고유 스킬 텍스트가 전투 중 표시되는지
+/play 감속/광역/연쇄/경제 보너스가 과도하지 않은지
 ```
