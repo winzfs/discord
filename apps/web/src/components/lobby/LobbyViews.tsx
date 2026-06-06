@@ -9,6 +9,13 @@ import {
   type LobbyArtifact,
   type LobbyHero,
 } from "../../game-lobby/lobbyData";
+import {
+  getAccountExpRequirement,
+  getAccountProgressPercent,
+  getPassExpRequirement,
+  getPassProgressPercent,
+  type LobbyAccountProgress,
+} from "../../game-lobby/lobbyAccountProgress";
 
 type ShopViewProps = {
   onPick: (name: string, price: string) => void;
@@ -24,6 +31,7 @@ type HeroesViewProps = {
 
 type BattleViewProps = {
   difficulty: number;
+  accountProgress: LobbyAccountProgress;
 };
 
 type ArtifactsViewProps = {
@@ -80,12 +88,43 @@ export function HeroesView({ heroes, onDetail, createDetail, gradeLabel, roleLab
   );
 }
 
-export function BattleView({ difficulty }: BattleViewProps) {
+function ProgressCard({ title, level, exp, required, percent, caption }: { title: string; level: number; exp: number; required: number; percent: number; caption: string }) {
+  return (
+    <div className="progression-card">
+      <div>
+        <b>{title} Lv.{level}</b>
+        <span>{caption}</span>
+      </div>
+      <progress value={percent} max="100" />
+      <small>{exp}/{required} EXP</small>
+    </div>
+  );
+}
+
+export function BattleView({ difficulty, accountProgress }: BattleViewProps) {
   return (
     <section className="lobby-panel battle-panel">
       <h2>전투</h2>
       <div className="battle-road"><span>20</span><div className="road-monster">슬라임</div><span>10</span></div>
       <div className="battle-actions"><button type="button">친구랑 하기</button><Link to={`/play?difficulty=${difficulty}`}>빠른 시작</Link></div>
+      <div className="progression-grid">
+        <ProgressCard
+          title="계정"
+          level={accountProgress.accountLevel}
+          exp={accountProgress.accountExp}
+          required={getAccountExpRequirement(accountProgress.accountLevel)}
+          percent={getAccountProgressPercent(accountProgress)}
+          caption="플레이 누적 성장"
+        />
+        <ProgressCard
+          title="패스"
+          level={accountProgress.passLevel}
+          exp={accountProgress.passExp}
+          required={getPassExpRequirement(accountProgress.passLevel)}
+          percent={getPassProgressPercent(accountProgress)}
+          caption={accountProgress.passSeasonId}
+        />
+      </div>
       <div className="quest-mini">
         <h3>퀘스트</h3>
         {quests.map((quest) => <label key={quest.title}><span>{quest.title}</span><progress value={quest.progress} max="100" /></label>)}
