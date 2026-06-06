@@ -13,6 +13,7 @@ const EXIT_DAMAGE_INTERVAL_MS = 220;
 export type UpdateActiveEnemiesOptions = {
   getPathPoint: (layout: GameLayout, progress: number) => { x: number; y: number };
   invalidateControls: (refs: GameRefs) => void;
+  invalidateHud: (refs: GameRefs) => void;
   floatText: (refs: GameRefs, value: string, x: number, y: number, color: number) => void;
 };
 
@@ -56,12 +57,19 @@ function holdEnemyBeforeExit(layout: GameLayout, enemy: GameRefs["activeEnemies"
 function removeEnemyAtExit(refs: GameRefs, enemy: GameRefs["activeEnemies"][number], options: UpdateActiveEnemiesOptions) {
   if (enemy.leaked || !enemy.alive || !enemy.exitQueued) return;
 
+  const nextLives = Math.max(0, refs.state.lives - enemy.damageToLife);
   enemy.leaked = true;
   enemy.alive = false;
   enemy.progress = 1;
   refs.waveLostLives += enemy.damageToLife;
+  refs.state = {
+    ...refs.state,
+    lives: nextLives,
+    status: nextLives <= 0 ? "failed" : refs.state.status,
+  };
   refs.nextEnemyLeakAt = Date.now() + EXIT_DAMAGE_INTERVAL_MS;
   destroyActiveEnemy(enemy);
+  options.invalidateHud(refs);
   options.invalidateControls(refs);
   options.floatText(
     refs,
