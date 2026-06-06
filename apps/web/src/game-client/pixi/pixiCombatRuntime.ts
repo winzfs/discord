@@ -38,7 +38,7 @@ export type PixiCombatRuntimeOptions = {
   drawBoard: (refs: GameRefs, layout: ReturnType<typeof createGameLayout>) => void;
 };
 
-const SPRITE_ATTACK_HERO_IDS = new Set(["tracer", "kiriko", "dva", "zarya", "cassidy", "winston", "genji", "ana", "illari"]);
+const SPRITE_ATTACK_HERO_IDS = new Set(["spark-runner", "tracer", "kiriko", "dva", "zarya", "cassidy", "winston", "genji", "ana", "illari"]);
 const HERO_IDLE_DIRECTION_HOLD_MS = 3000;
 const ZARYA_MAX_BEAM_CHARGE = 6;
 const ZARYA_BEAM_CHAIN_WINDOW_MS = 1200;
