@@ -132,6 +132,10 @@ function getPathPoint(layout: GameLayout, progress: number) {
   return getPixiPathPoint(layout, progress);
 }
 
+function hasFieldEnemies(refs: GameRefs) {
+  return refs.activeEnemies.some((enemy) => enemy.alive && !enemy.leaked);
+}
+
 function createWaveFlowRuntimeOptions(): PixiWaveFlowRuntimeOptions {
   return {
     isFinished,
@@ -291,7 +295,7 @@ function tick(refs: GameRefs, deltaMs: number) {
     drawControls(refs, layout, controlHandlers(refs));
     updateTestControls(refs, layout);
     if (refs.combatTimer <= 0) finishAutoWave(refs, false, createWaveFlowRuntimeOptions());
-    else if (refs.activeEnemies.length > 0 && refs.activeEnemies.every((enemy) => !enemy.alive)) finishAutoWave(refs, true, createWaveFlowRuntimeOptions());
+    else if (refs.activeEnemies.length > 0 && !hasFieldEnemies(refs)) finishAutoWave(refs, true, createWaveFlowRuntimeOptions());
     return;
   }
 
@@ -343,6 +347,7 @@ export function createPixiGame(parent: HTMLElement, options: PixiGameOptions = {
     attackTimer: 0,
     activeEnemies: [],
     nextEnemyId: 1,
+    nextEnemyLeakAt: 0,
     waveKilled: 0,
     waveReward: 0,
     waveLostLives: 0,
