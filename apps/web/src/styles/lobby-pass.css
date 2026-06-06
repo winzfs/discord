@@ -58,7 +58,7 @@
 .pass-reward-card {
   position: relative;
   display: grid;
-  grid-template-columns: 52px 54px 1fr;
+  grid-template-columns: 52px 54px 1fr auto;
   align-items: center;
   gap: 10px;
   min-height: 74px;
@@ -73,6 +73,11 @@
 .pass-reward-card.unlocked {
   background: linear-gradient(180deg, #ffdc6a, #c47c29);
   color: #35231e;
+}
+
+.pass-reward-card.claimed {
+  opacity: 0.72;
+  filter: saturate(0.7);
 }
 
 .pass-reward-card.next {
@@ -131,4 +136,21 @@
   font-size: 0.75rem;
   font-weight: 900;
   opacity: 0.85;
+}
+
+.pass-claim-button {
+  min-width: 58px;
+  padding: 9px 10px;
+  border: 0;
+  border-radius: 12px;
+  background: #ffef8a;
+  color: #3a2418;
+  font-size: 0.82rem;
+  font-weight: 950;
+  box-shadow: inset 0 -4px 0 rgba(0, 0, 0, 0.18), 0 3px 0 rgba(0, 0, 0, 0.18);
+}
+
+.pass-claim-button:active {
+  transform: translateY(2px);
+  box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.18);
 }
