@@ -1,0 +1,200 @@
+# 12. 최근 구현 브리핑 및 다음 작업
+
+## 1. 기준
+
+이 문서는 최근 `/play` PixiJS 전투 화면에서 수정한 내용과 다음 작업 우선순위를 정리합니다.
+
+기준 커밋 범위는 최근 스프라이트/웨이브 안정화 작업 이후 상태입니다.
+
+## 2. 최근 반영 사항
+
+### 2.1 Illari 스프라이트 시트 적용
+
+`apps/web/public/assets/heroes/illari.png` 파일을 PixiJS 영웅 스프라이트 로더에 연결했습니다.
+
+적용 위치:
+
+```text
+apps/web/src/game-client/pixi/pixiHeroSpriteView.ts
+```
+
+반영 내용:
+
+- `illari` 텍스처 경로 추가
+- 스프라이트 렌더 가능 영웅 목록에 `illari` 추가
+- Illari 전용 스케일 값 추가
+- 사전 로딩 대상에 자동 포함
+
+### 2.2 Illari 공격 모션 활성화
+
+Illari는 이미지 경로만 연결된 상태에서는 공격 모션 트리거 목록에 포함되지 않아 idle 프레임만 표시될 수 있었습니다.
+
+적용 위치:
+
+```text
+apps/web/src/game-client/pixi/pixiCombatRuntime.ts
+```
+
+반영 내용:
+
+- `SPRITE_ATTACK_HERO_IDS`에 `illari` 추가
+- 공격 시 `attackLeft` / `attackRight` 프레임으로 전환되도록 처리
+
+### 2.3 공격 후 대기 방향 유지
+
+영웅이 공격한 뒤 바로 기본 왼쪽 대기로 돌아가면 어색해 보이기 때문에, 마지막 공격 방향을 잠시 유지하도록 변경했습니다.
+
+적용 위치:
+
+```text
+apps/web/src/game-client/pixi/pixiGameTypes.ts
+apps/web/src/game-client/pixi/pixiHeroSpriteView.ts
+apps/web/src/game-client/pixi/pixiCombatRuntime.ts
+apps/web/src/game-client/pixi/pixiGenjiDashRuntime.ts
+```
+
+반영 내용:
+
+- `HeroSpriteAttackState`에 `idleUntil` 추가
+- 공격 후 마지막 공격 방향으로 대기
+- 3초간 공격이 없으면 왼쪽 대기 모션으로 복귀
+- Genji 질풍참 전용 방향 상태에도 `idleUntil` 추가
+
+### 2.4 Illari 대기 프레임 순서 예외 처리
+
+Illari 스프라이트 시트는 대기 프레임만 `오른쪽, 왼쪽` 순서이고, 공격 프레임은 다른 영웅과 동일한 순서입니다.
+
+적용 위치:
+
+```text
+apps/web/src/game-client/pixi/pixiHeroSpriteView.ts
+```
+
+반영 내용:
+
+- `HERO_REVERSED_IDLE_IDS`에 `illari` 추가
+- Illari는 idle 프레임 선택 시에만 좌우를 반전
+- 공격 프레임은 공통 `attackLeft`, `attackRight` 순서 유지
+
+### 2.5 웨이브 클리어 후 다음 웨이브 진행 수정
+
+몬스터를 빨리 모두 처치해서 `finishAutoWave()`로 웨이브가 종료되는 경우 `currentWave`가 증가하지 않아 1웨이브가 반복될 수 있었습니다.
+
+적용 위치:
+
+```text
+apps/web/src/game-client/pixi/pixiWaveFlowRuntime.ts
+```
+
+반영 내용:
+
+- 웨이브 클리어 시 `clearedWave` 기록
+- 실패 상태가 아니고 최종 웨이브가 아니면 `currentWave + 1`
+- `clearedWaves`를 실제 클리어한 웨이브 기준으로 보정
+- 다음 카운트다운 후 증가된 웨이브 번호의 몬스터 구성 사용
+
+### 2.6 웨이브 난이도 상승 구조 확인
+
+난이도 상승 데이터는 이미 `packages/game/src/data/waves.ts`에 구현되어 있습니다.
+
+현재 구조:
+
+- 웨이브 번호가 오를수록 기본 적 수 증가
+- 웨이브 번호가 오를수록 스폰 간격 감소
+- 특정 웨이브부터 추가 적 그룹 등장
+- 보스 웨이브는 별도 구성 사용
+- 20웨이브 이후 보스 웨이브 구성 강화
+
+## 3. 현재 주의할 점
+
+### 3.1 빌드 재확인 필요
+
+최근 타입 수정 이후 Cloudflare Pages 또는 로컬에서 다시 확인해야 합니다.
+
+권장 확인 명령:
+
+```bash
+pnpm typecheck
+pnpm build:web
+```
+
+### 3.2 실제 플레이 회귀 테스트 필요
+
+특히 다음 항목은 브라우저에서 직접 확인해야 합니다.
+
+- `/play` 진입 후 1웨이브 시작 여부
+- 1웨이브 클리어 후 2웨이브로 넘어가는지
+- 2, 3, 4웨이브에서 적 수와 구성이 증가하는지
+- 보스 웨이브 진입 시 경고와 보스 생성이 정상인지
+- Illari idle 방향이 왼쪽으로 복귀하는지
+- Illari 공격 방향은 다른 영웅과 동일하게 동작하는지
+- Genji 질풍참 후 타입/방향 오류가 없는지
+
+## 4. 다음 작업 우선순위
+
+### 1순위: 빌드 안정화
+
+가장 먼저 `pnpm typecheck`, `pnpm build:web` 기준으로 깨지는 타입/빌드 오류를 모두 정리합니다.
+
+이유:
+
+- Cloudflare 배포가 막히면 실제 테스트가 불가능합니다.
+- 최근 `HeroSpriteAttackState` 타입 변경처럼 다른 런타임에서 직접 상태를 세팅하는 코드가 남아 있을 수 있습니다.
+
+### 2순위: 웨이브 회귀 테스트
+
+웨이브가 자동으로 올라가는지, 난이도가 실제 체감되는지 확인합니다.
+
+체크 항목:
+
+- 빠른 클리어 시 다음 웨이브 증가
+- 시간 만료 시 다음 웨이브 증가
+- 결과 보상 선택 후 다음 웨이브 카운트다운 복귀
+- 보스 웨이브 도달
+- 실패/클리어 상태에서 더 이상 웨이브가 진행되지 않는지
+
+### 3순위: 스프라이트 방향/모션 검수
+
+최근 여러 영웅 스프라이트가 추가되었으므로, 방향 행 순서를 영웅별로 점검합니다.
+
+체크 항목:
+
+- 기본 왼쪽 idle
+- 오른쪽 공격 후 오른쪽 idle 유지
+- 3초 무공격 후 왼쪽 idle 복귀
+- 공격 프레임 좌/우 일치
+- Illari idle만 예외 처리되는지
+
+### 4순위: 기록 저장 정확도 개선
+
+현재 `durationSeconds`는 아직 실제 플레이 시간 기반으로 완전히 신뢰할 수 있는 값이 아닙니다.
+
+다음 개선:
+
+- 전투 시작 시각 저장
+- 종료 시 실제 플레이 시간 계산
+- 서버 기록 저장 시 `durationSeconds` 반영
+- 서버에서 score/wave/kills/duration 상한 검증
+
+### 5순위: `createPixiGame.ts` 추가 분리
+
+아직 `createPixiGame.ts`가 앱 초기화, tick, 렌더, 입력, 런타임 연결을 많이 가지고 있습니다.
+
+다음 분리 후보:
+
+- tick loop 전용 런타임
+- game refs 생성 전용 팩토리
+- input/stage pointer 처리 전용 모듈
+- result submit/lobby reward 연결 모듈
+
+## 5. 다음 작업 권장 순서
+
+```text
+1. pnpm typecheck / pnpm build:web 확인
+2. 배포 로그 재확인
+3. /play-test에서 웨이브 1~5 진행 확인
+4. Illari / Genji / Ana / Winston 스프라이트 방향 확인
+5. durationSeconds 실제 측정 적용
+6. 점수/웨이브/킬 수 서버 검증 추가
+7. createPixiGame.ts tick/init 분리
+```
