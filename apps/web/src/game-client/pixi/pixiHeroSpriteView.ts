@@ -78,7 +78,8 @@ export async function preloadHeroSpriteTextures() {
 
 function pickHeroSpriteFrameRow(attackState: HeroSpriteAttackState | null | undefined, now: number) {
   const isAttacking = attackState && attackState.until > now;
-  const direction = attackState?.direction ?? "left";
+  const shouldKeepDirection = attackState && attackState.idleUntil > now;
+  const direction = shouldKeepDirection ? attackState.direction : "left";
 
   if (isAttacking) {
     return direction === "left" ? HERO_FRAME_ROWS.attackLeft : HERO_FRAME_ROWS.attackRight;
