@@ -14,10 +14,10 @@ export function mountPixiGameLayers(stage: Container, layers: PixiGameLayers) {
   stage.addChild(
     layers.world,
     layers.board,
+    layers.effects,
     layers.hud,
     layers.controls,
     layers.info,
-    layers.effects,
     layers.menuLayer,
   );
 }
