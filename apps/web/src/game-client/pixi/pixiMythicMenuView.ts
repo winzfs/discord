@@ -21,7 +21,7 @@ export type PixiMythicMenuViewOptions = {
 type IngredientProgress = ReturnType<typeof getMythicIngredientProgress>[number];
 
 const HEADER_HEIGHT = 58;
-const ROW_HEIGHT = 96;
+const ROW_HEIGHT = 144;
 const ROW_GAP = 8;
 const PANEL_MARGIN = 24;
 const MENU_TOP_RATIO = 0.11;
@@ -84,29 +84,13 @@ function summarizeIngredientProgress(progress: IngredientProgress[]) {
   return { owned, total, missing };
 }
 
-function shortenLabel(label: string) {
-  const cleaned = label
-    .replace("오버워치 ", "옵치 ")
-    .replace("헬릭스 ", "헬릭스 ")
-    .replace("눌 섹터 ", "눌 ")
-    .replace("오아시스 ", "오아시스 ")
-    .replace("정커 ", "정커 ");
-
-  return cleaned.length > 7 ? `${cleaned.slice(0, 6)}…` : cleaned;
-}
-
 function formatIngredientLabel(item: IngredientProgress) {
   const mark = item.fulfilled ? "✓" : "·";
   const grade = getIngredientGrade(item);
-  return `${mark}[${gradeLabel(grade)}] ${shortenLabel(item.label)}`;
+  return `${mark} [${gradeLabel(grade)}] ${item.label}`;
 }
 
-function fitTextToWidth(text: string, maxWidth: number) {
-  const maxChars = Math.max(12, Math.floor(maxWidth / 7.2));
-  return text.length > maxChars ? `${text.slice(0, maxChars - 1)}…` : text;
-}
-
-function drawIngredientSummary(row: Container, options: PixiMythicMenuViewOptions, recipe: ReturnType<typeof getMythicCraftAvailability>[number]["recipe"], y: number, rowWidth: number) {
+function drawIngredientSummary(row: Container, options: PixiMythicMenuViewOptions, recipe: ReturnType<typeof getMythicCraftAvailability>[number]["recipe"], y: number) {
   const progress = getMythicIngredientProgress(options.state, recipe);
   const summary = summarizeIngredientProgress(progress);
 
@@ -119,23 +103,21 @@ function drawIngredientSummary(row: Container, options: PixiMythicMenuViewOption
   summaryText.y = y;
   row.addChild(summaryText);
 
-  const firstLine = progress.slice(0, 2).map(formatIngredientLabel).join("  ");
-  const secondLine = progress.slice(2, 4).map(formatIngredientLabel).join("  ");
-  const detailWidth = rowWidth - 24;
+  progress.forEach((item, index) => {
+    const grade = getIngredientGrade(item);
+    const line = makePixiText(formatIngredientLabel(item), 11, item.fulfilled ? 0xfff2a8 : 0xd8d0c8);
+    line.x = 12;
+    line.y = y + 22 + index * 17;
+    line.alpha = item.fulfilled ? 1 : 0.9;
+    row.addChild(line);
 
-  const line1 = makePixiText(fitTextToWidth(firstLine, detailWidth), 11, 0xd8d0c8);
-  line1.x = 12;
-  line1.y = y + 21;
-  line1.alpha = 0.96;
-  row.addChild(line1);
-
-  if (secondLine) {
-    const line2 = makePixiText(fitTextToWidth(secondLine, detailWidth), 11, 0xbfb7ae);
-    line2.x = 12;
-    line2.y = y + 40;
-    line2.alpha = 0.92;
-    row.addChild(line2);
-  }
+    const marker = new Graphics();
+    marker.circle(0, 0, item.fulfilled ? 3.5 : 2.8);
+    marker.fill({ color: gradeColor(grade), alpha: item.fulfilled ? 1 : 0.55 });
+    marker.x = 318;
+    marker.y = line.y + 8;
+    row.addChild(marker);
+  });
 }
 
 function createScrollViewport(width: number, height: number) {
@@ -262,7 +244,7 @@ export function createPixiMythicMenuView(options: PixiMythicMenuViewOptions) {
       bindCraftTap(row, item.recipe.id, options.onCraft);
     }
 
-    drawIngredientSummary(row, options, item.recipe, 37, rowWidth);
+    drawIngredientSummary(row, options, item.recipe, 37);
     content.addChild(row);
   });
 
