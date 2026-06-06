@@ -4,6 +4,13 @@ import { colors } from "./gameTheme";
 import type { ActiveEnemy, GameRefs } from "./pixiGameTypes";
 import { getProgressHeroMasteryEffect } from "./pixiProgressBonuses";
 import { spawnBaseSkillFx, type BaseSkillFxKind } from "./pixiBaseSkillFxRuntime";
+import {
+  applySingleControl,
+  createAreaControlConfig,
+  createControlZone,
+  createSingleControlConfig,
+  type ControlEffectConfig,
+} from "./pixiControlEffectRuntime";
 
 export type BaseHeroSkillRuntimeOptions = {
   damageEnemy: (refs: GameRefs, enemy: ActiveEnemy, damage: number) => void;
@@ -23,8 +30,8 @@ type SkillProfile = {
   splashMultiplier: number;
   splashRadius: number;
   extraHitMultiplier: number;
-  slowMultiplier: number;
   coinBonus: number;
+  control: ControlEffectConfig | null;
   fxKind: BaseSkillFxKind | null;
   text?: string;
   color: number;
@@ -35,8 +42,8 @@ const DEFAULT_PROFILE: SkillProfile = {
   splashMultiplier: 0,
   splashRadius: 0,
   extraHitMultiplier: 0,
-  slowMultiplier: 1,
   coinBonus: 0,
+  control: null,
   fxKind: null,
   color: colors.white,
 };
@@ -70,10 +77,13 @@ function getRoleDamageScale(role: HeroRole) {
   return 0.68;
 }
 
-function getRoleControlScale(role: HeroRole) {
-  if (role === "tank") return 1.28;
-  if (role === "support") return 1.08;
-  return 0.86;
+function tuneControlByRole(config: ControlEffectConfig, role: HeroRole, gradeScale: number): ControlEffectConfig {
+  const roleBonus = role === "tank" ? 1.12 : role === "support" ? 1.04 : 0.92;
+  return {
+    ...config,
+    durationMs: Math.round(config.durationMs * roleBonus * (1 + (gradeScale - 1) * 0.18)),
+    radius: Math.round(config.radius * (1 + (gradeScale - 1) * 0.12)),
+  };
 }
 
 function buildSkillProfile(hero: BoardHero, role: HeroRole): SkillProfile {
@@ -82,7 +92,6 @@ function buildSkillProfile(hero: BoardHero, role: HeroRole): SkillProfile {
   const skillIds = getHeroSkillIds(hero);
   const gradeScale = getGradeScale(hero);
   const damageScale = getRoleDamageScale(role);
-  const controlScale = getRoleControlScale(role);
   const profile: SkillProfile = { ...DEFAULT_PROFILE };
 
   if (hasTag(skillIds, "attack")) {
@@ -122,18 +131,21 @@ function buildSkillProfile(hero: BoardHero, role: HeroRole): SkillProfile {
     profile.color = 0xbde7ff;
   }
 
-  if (hasTag(skillIds, "debuff") || hasTag(skillIds, "slow") || hasTag(skillIds, "freeze") || hasTag(skillIds, "grouping")) {
-    const baseSlow = hasTag(skillIds, "freeze") ? 0.78 : hasTag(skillIds, "grouping") ? 0.8 : 0.86;
-    profile.slowMultiplier = Math.min(profile.slowMultiplier, Math.max(0.64, 1 - (1 - baseSlow) * controlScale));
-    profile.damageMultiplier += role === "tank" ? 0.02 * gradeScale : 0;
+  if (hasTag(skillIds, "grouping")) {
+    profile.control = tuneControlByRole(createAreaControlConfig(), role, gradeScale);
     profile.fxKind = "control";
-    profile.text = hasTag(skillIds, "freeze") ? "빙결" : hasTag(skillIds, "grouping") ? "중력" : "감속";
+    profile.text = "영역제어";
+    profile.color = 0x9c83ff;
+  } else if (hasTag(skillIds, "debuff") || hasTag(skillIds, "slow") || hasTag(skillIds, "freeze")) {
+    profile.control = tuneControlByRole(createSingleControlConfig(hasTag(skillIds, "freeze")), role, gradeScale);
+    profile.fxKind = "control";
+    profile.text = hasTag(skillIds, "freeze") ? "단일빙결" : "단일제어";
     profile.color = 0x8fdcff;
   }
 
   if (hasTag(skillIds, "mark") || hasTag(skillIds, "vulnerable")) {
     profile.damageMultiplier += role === "damage" ? 0.12 * gradeScale : 0.04 * gradeScale;
-    profile.slowMultiplier = Math.min(profile.slowMultiplier, role === "damage" ? 0.94 : 0.9);
+    if (!profile.control) profile.control = tuneControlByRole(createSingleControlConfig(false), role, gradeScale);
     profile.fxKind = "mark";
     profile.text = "표식";
     profile.color = 0xff8f74;
@@ -184,16 +196,15 @@ function applyMasteryToProfile(refs: GameRefs, hero: BoardHero, profile: SkillPr
     splashMultiplier: profile.splashMultiplier * mastery.skillMultiplier,
     splashRadius: profile.splashRadius > 0 ? profile.splashRadius + Math.min(24, mastery.level * 1.4) : 0,
     extraHitMultiplier: profile.extraHitMultiplier * mastery.skillMultiplier,
-    slowMultiplier: profile.slowMultiplier < 1
-      ? Math.max(0.56, 1 - (1 - profile.slowMultiplier) * mastery.controlMultiplier)
-      : profile.slowMultiplier,
     coinBonus: profile.coinBonus + mastery.bonusCoin,
+    control: profile.control
+      ? {
+          ...profile.control,
+          durationMs: Math.round(profile.control.durationMs * mastery.controlMultiplier),
+          radius: profile.control.mode === "zone" ? profile.control.radius + Math.min(14, mastery.level) : profile.control.radius,
+        }
+      : null,
   };
-}
-
-function applySlow(target: ActiveEnemy, multiplier: number) {
-  if (multiplier >= 1) return;
-  target.speed = Math.max(0.2, target.speed * multiplier);
 }
 
 function applySplash(
@@ -231,6 +242,17 @@ function applyExtraHit(
   return extraTarget;
 }
 
+function applyControl(refs: GameRefs, target: ActiveEnemy, profile: SkillProfile) {
+  if (!profile.control) return;
+
+  if (profile.control.mode === "zone") {
+    createControlZone(refs, target, profile.control);
+    return;
+  }
+
+  applySingleControl(target, profile.control);
+}
+
 export function applyBaseHeroSkillPreDamage(hero: BoardHero, role: HeroRole, baseDamage: number) {
   const profile = buildSkillProfile(hero, role);
   return Math.max(1, Math.round(baseDamage * profile.damageMultiplier));
@@ -247,7 +269,7 @@ export function applyBaseHeroSkillPostDamage(
   const profile = applyMasteryToProfile(refs, hero, buildSkillProfile(hero, role));
   if (!isNonMythic(hero)) return;
 
-  applySlow(target, profile.slowMultiplier);
+  applyControl(refs, target, profile);
   applySplash(refs, target, damage, profile, options);
   const extraTarget = applyExtraHit(refs, target, damage, profile, options);
   spawnBaseSkillFx(refs, options.addAnimation ? { addAnimation: options.addAnimation } : undefined, profile.fxKind, target, extraTarget);
