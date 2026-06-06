@@ -27,6 +27,8 @@ export type MythicMenuRowPool = {
 const GRADE_LABEL_WIDTH = 38;
 const INGREDIENT_FONT_SIZE = 11;
 const TAP_MOVE_CANCEL_DISTANCE = 8;
+const INGREDIENT_START_Y = 66;
+const INGREDIENT_ROW_GAP = 25;
 
 type RowSlot = {
   root: Container;
@@ -100,13 +102,13 @@ function createRowSlot(rowWidth: number, rowHeight: number, rowStep: number, onC
   root.addChild(craftHint);
 
   summary.x = 12;
-  summary.y = 37;
+  summary.y = 39;
   root.addChild(summary);
 
   const columnWidth = Math.floor((rowWidth - 30) / 2);
   for (let index = 0; index < 4; index += 1) {
     const x = 12 + (index % 2) * columnWidth;
-    const y = 61 + Math.floor(index / 2) * 22;
+    const y = INGREDIENT_START_Y + Math.floor(index / 2) * INGREDIENT_ROW_GAP;
 
     const mark = createText("", INGREDIENT_FONT_SIZE, 0xd8d0c8);
     mark.x = x;
