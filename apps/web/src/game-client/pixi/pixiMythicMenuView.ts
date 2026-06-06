@@ -21,11 +21,13 @@ export type PixiMythicMenuViewOptions = {
 type IngredientProgress = ReturnType<typeof getMythicIngredientProgress>[number];
 
 const HEADER_HEIGHT = 58;
-const ROW_HEIGHT = 100;
+const ROW_HEIGHT = 104;
 const ROW_GAP = 8;
 const PANEL_MARGIN = 24;
 const MENU_TOP_RATIO = 0.11;
 const TAP_MOVE_CANCEL_DISTANCE = 8;
+const INGREDIENT_FONT_SIZE = 11;
+const GRADE_LABEL_WIDTH = 38;
 
 function createMythicMenuButton(label: string, x: number, y: number, onClick: () => void) {
   const button = new Container();
@@ -54,9 +56,17 @@ function createMythicMenuButton(label: string, x: number, y: number, onClick: ()
 function gradeColor(grade: HeroGrade | undefined) {
   if (grade === "mythic") return 0xffd447;
   if (grade === "legendary") return 0xff7a1f;
-  if (grade === "epic") return 0x6f1dff;
-  if (grade === "rare") return 0xa7efff;
+  if (grade === "epic") return 0x3a0f8f;
+  if (grade === "rare") return 0xd8fbff;
   return 0xd8d0c8;
+}
+
+function gradeLabelFill(grade: HeroGrade | undefined) {
+  if (grade === "rare") return 0x15323a;
+  if (grade === "epic") return 0xf2eaff;
+  if (grade === "legendary") return 0x2b1606;
+  if (grade === "mythic") return 0x2f2300;
+  return 0x282521;
 }
 
 function gradeLabel(grade: HeroGrade | undefined) {
@@ -84,10 +94,36 @@ function summarizeIngredientProgress(progress: IngredientProgress[]) {
   return { owned, total, missing };
 }
 
-function formatIngredientLabel(item: IngredientProgress) {
-  const mark = item.fulfilled ? "✓" : "·";
+function drawGradeLabel(row: Container, grade: HeroGrade | undefined, x: number, y: number, fulfilled: boolean) {
+  const label = gradeLabel(grade);
+  const background = new Graphics();
+  background.roundRect(x, y + 1, GRADE_LABEL_WIDTH, 15, 5);
+  background.fill({ color: gradeColor(grade), alpha: fulfilled ? 0.95 : 0.68 });
+  background.stroke({ color: 0x1f1b18, width: 1, alpha: 0.5 });
+  row.addChild(background);
+
+  const text = makePixiText(label, 9, gradeLabelFill(grade));
+  text.anchor.set(0.5, 0);
+  text.x = x + GRADE_LABEL_WIDTH / 2;
+  text.y = y + 2;
+  text.alpha = fulfilled ? 1 : 0.92;
+  row.addChild(text);
+}
+
+function drawIngredientItem(row: Container, item: IngredientProgress, x: number, y: number) {
   const grade = getIngredientGrade(item);
-  return `${mark}[${gradeLabel(grade)}] ${item.label}`;
+  const mark = makePixiText(item.fulfilled ? "✓" : "·", INGREDIENT_FONT_SIZE, item.fulfilled ? 0xfff2a8 : 0xd8d0c8);
+  mark.x = x;
+  mark.y = y;
+  row.addChild(mark);
+
+  drawGradeLabel(row, grade, x + 10, y, item.fulfilled);
+
+  const name = makePixiText(item.label, INGREDIENT_FONT_SIZE, item.fulfilled ? 0xfff2a8 : 0xf0e8dd);
+  name.x = x + 10 + GRADE_LABEL_WIDTH + 4;
+  name.y = y;
+  name.alpha = item.fulfilled ? 1 : 0.92;
+  row.addChild(name);
 }
 
 function drawIngredientSummary(
@@ -111,11 +147,12 @@ function drawIngredientSummary(
 
   const columnWidth = Math.floor((rowWidth - 30) / 2);
   progress.slice(0, 4).forEach((item, index) => {
-    const line = makePixiText(formatIngredientLabel(item), 11, item.fulfilled ? 0xfff2a8 : 0xd8d0c8);
-    line.x = 12 + (index % 2) * columnWidth;
-    line.y = y + 23 + Math.floor(index / 2) * 21;
-    line.alpha = item.fulfilled ? 1 : 0.92;
-    row.addChild(line);
+    drawIngredientItem(
+      row,
+      item,
+      12 + (index % 2) * columnWidth,
+      y + 24 + Math.floor(index / 2) * 22,
+    );
   });
 }
 
