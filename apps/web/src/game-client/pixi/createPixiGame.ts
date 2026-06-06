@@ -132,7 +132,7 @@ function getPathPoint(layout: GameLayout, progress: number) {
   return getPixiPathPoint(layout, progress);
 }
 
-function hasNoVisibleEnemies(refs: GameRefs) {
+function areAllEnemiesResolved(refs: GameRefs) {
   return refs.activeEnemies.length > 0 && refs.activeEnemies.every((enemy) => !enemy.alive || enemy.leaked);
 }
 
@@ -294,8 +294,7 @@ function tick(refs: GameRefs, deltaMs: number) {
     drawTopHud(refs, layout);
     drawControls(refs, layout, controlHandlers(refs));
     updateTestControls(refs, layout);
-    if (refs.combatTimer <= 0) finishAutoWave(refs, false, createWaveFlowRuntimeOptions());
-    else if (hasNoVisibleEnemies(refs)) finishAutoWave(refs, true, createWaveFlowRuntimeOptions());
+    if (areAllEnemiesResolved(refs)) finishAutoWave(refs, true, createWaveFlowRuntimeOptions());
     return;
   }
 
