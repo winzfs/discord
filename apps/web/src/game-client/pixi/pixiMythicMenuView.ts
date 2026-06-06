@@ -53,8 +53,8 @@ function createMythicMenuButton(label: string, x: number, y: number, onClick: ()
 function gradeColor(grade: HeroGrade | undefined) {
   if (grade === "mythic") return 0xffd447;
   if (grade === "legendary") return 0xff7a1f;
-  if (grade === "epic") return 0xf04bff;
-  if (grade === "rare") return 0x29d9ff;
+  if (grade === "epic") return 0x6f1dff;
+  if (grade === "rare") return 0xa7efff;
   return 0xd8d0c8;
 }
 
