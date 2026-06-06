@@ -125,6 +125,19 @@ export function updateEnemyViewPosition(view: EnemyView, x: number, y: number, p
   view.root.rotation = Math.sin(progress * 16) * (view.boss ? 0.025 : 0.035);
 }
 
+export function updateEnemyControlTint(view: EnemyView, color: number | null) {
+  if (color === null) {
+    view.body.tint = 0xffffff;
+    view.eyes.tint = 0xffffff;
+    view.shadow.alpha = view.boss ? 0.28 : 0.16;
+    return;
+  }
+
+  view.body.tint = color;
+  view.eyes.tint = color;
+  view.shadow.alpha = view.boss ? 0.38 : 0.24;
+}
+
 export function updateEnemyViewHp(view: EnemyView, hp: number, maxHp: number) {
   const ratio = Math.max(0, Math.min(1, hp / maxHp));
   const height = view.boss ? 5 : 2;
