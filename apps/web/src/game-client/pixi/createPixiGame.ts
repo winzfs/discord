@@ -137,7 +137,14 @@ function getAliveEnemyCount(refs: GameRefs) {
 }
 
 function checkEnemyCountLimit(refs: GameRefs) {
-  if (getAliveEnemyCount(refs) < ACTIVE_ENEMY_LIMIT) return false;
+  const aliveEnemyCount = getAliveEnemyCount(refs);
+  if (aliveEnemyCount < ACTIVE_ENEMY_LIMIT) return false;
+  refs.gameOverReason = {
+    type: "enemy_limit",
+    enemyCount: aliveEnemyCount,
+    enemyLimit: ACTIVE_ENEMY_LIMIT,
+    wave: refs.state.currentWave,
+  };
   refs.state = { ...refs.state, status: "failed" };
   refs.activeEnemies.forEach((enemy) => {
     enemy.alive = false;
@@ -373,6 +380,7 @@ export function createPixiGame(parent: HTMLElement, options: PixiGameOptions = {
     waveReward: 0,
     waveLostLives: 0,
     lastWaveSummary: null,
+    gameOverReason: null,
     resultSubmitted: false,
     lobbyRewardGranted: false,
     isTestMode: options.testMode ?? false,
@@ -428,14 +436,8 @@ export function createPixiGame(parent: HTMLElement, options: PixiGameOptions = {
       effects: refs.effects,
       menuLayer: refs.menuLayer,
     });
+
     render(refs);
-    app.renderer.on("resize", () => {
-      stage.hitArea = new Rectangle(0, 0, app.renderer.width, app.renderer.height);
-      if (!isFinished(refs.state)) clearMenuAndUnitInfo(refs, { clearMenu });
-      invalidateHud(refs);
-      invalidateControls(refs);
-      render(refs);
-    });
     app.ticker.add((ticker) => tick(refs, ticker.deltaMS));
   }
 
@@ -444,16 +446,10 @@ export function createPixiGame(parent: HTMLElement, options: PixiGameOptions = {
   return {
     cleanup: () => {
       destroyed = true;
-      clearMenuAndUnitInfo(refs, { clearMenu });
-      clearDrag(refs);
-      if (refs.isTestMode) {
-        testControlsView?.root.destroy({ children: true });
-        testControlsView = null;
-      }
-      refs.activeEnemies.forEach(destroyActiveEnemy);
-      refs.controlZones.forEach((zone) => zone.root.destroy());
-      refs.controlZones = [];
       destroyFxGraphicsPool(refs);
+      refs.menu?.destroy({ children: true });
+      refs.rangePreview?.destroy({ children: true });
+      refs.activeEnemies.forEach((enemy) => destroyActiveEnemy(enemy));
       app.destroy({ removeView: true }, { children: true });
     },
   };
