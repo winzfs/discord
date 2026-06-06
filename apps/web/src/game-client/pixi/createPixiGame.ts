@@ -367,6 +367,8 @@ export function createPixiGame(parent: HTMLElement, options: PixiGameOptions = {
     resultTimer: 0,
     attackTimer: 0,
     activeEnemies: [],
+    controlZones: [],
+    nextControlZoneId: 1,
     nextEnemyId: 1,
     nextEnemyLeakAt: 0,
     waveKilled: 0,
@@ -388,71 +390,19 @@ export function createPixiGame(parent: HTMLElement, options: PixiGameOptions = {
       background: colors.sky,
       resizeTo: parent,
       antialias: true,
-      resolution: Math.min(window.devicePixelRatio || 1, 2),
-      autoDensity: true,
     });
 
     if (destroyed) {
-      destroyFxGraphicsPool(refs);
-      app.destroy({ removeView: true }, { children: true });
+      app.destroy(true);
       return;
     }
 
     await preloadHeroSpriteTextures();
-
-    if (destroyed) {
-      destroyFxGraphicsPool(refs);
-      app.destroy({ removeView: true }, { children: true });
-      return;
-    }
-
-    parent.appendChild(app.canvas);
     app.stage.addChild(stage);
-    stage.eventMode = "static";
-    stage.hitArea = new Rectangle(0, 0, app.renderer.width, app.renderer.height);
-    stage.on("pointerdown", (event: any) => {
-      if (isFinished(refs.state)) return;
-      const cellIndex = getCellIndexAtPoint(refs, event.global.x, event.global.y);
-      const cell = cellIndex === null ? null : refs.state.board[cellIndex];
-      if (!cell || cell.units.length === 0) clearMenuAndUnitInfo(refs, { clearMenu });
-    });
-    stage.on("pointermove", (event: any) => moveDragGhost(refs, event.global.x, event.global.y));
-    stage.on("pointerup", (event: any) => finishCellDrag(refs, event.global.x, event.global.y, createDragRuntimeOptions()));
-    stage.on("pointerupoutside", (event: any) => finishCellDrag(refs, event.global.x, event.global.y, createDragRuntimeOptions()));
-    mountPixiGameLayers(stage, {
-      world: refs.world,
-      board: refs.board,
-      hud: refs.hud,
-      controls: refs.controls,
-      info: refs.info,
-      effects: refs.effects,
-      menuLayer: refs.menuLayer,
-    });
-    render(refs);
-    app.renderer.on("resize", () => {
-      stage.hitArea = new Rectangle(0, 0, app.renderer.width, app.renderer.height);
-      if (!isFinished(refs.state)) clearMenuAndUnitInfo(refs, { clearMenu });
-      invalidateHud(refs);
-      invalidateControls(refs);
-      render(refs);
-    });
-    app.ticker.add((ticker) => tick(refs, ticker.deltaMS));
-  }
+    mountPixiGameLayers(stage, refs);
 
-  void init();
-
-  return {
-    cleanup: () => {
-      destroyed = true;
-      clearMenuAndUnitInfo(refs, { clearMenu });
-      clearDrag(refs);
-      if (refs.isTestMode) {
-        testControlsView?.root.destroy({ children: true });
-        testControlsView = null;
-      }
-      refs.activeEnemies.forEach(destroyActiveEnemy);
-      destroyFxGraphicsPool(refs);
-      app.destroy({ removeView: true }, { children: true });
-    },
-  };
-}
+    parent.replaceChildren(app.canvas);
+    app.canvas.style.width = "100%";
+    app.canvas.style.height = "100%";
+    app.canvas.style.display = "block";
+    app.canvas.style.touchAction = "none";
