@@ -21,6 +21,8 @@ const HERO_FRAME_ROWS = {
   attackRight: 3,
 } as const;
 
+const HERO_REVERSED_DIRECTION_IDS = new Set(["illari"]);
+
 const HERO_FRAME_ROW_COUNT = 4;
 
 const SPRITE_HERO_IDS = new Set(["tracer", "kiriko", "dva", "zarya", "cassidy", "winston", "genji", "ana", "illari"]);
@@ -76,10 +78,15 @@ export async function preloadHeroSpriteTextures() {
   await Promise.all(Object.keys(HERO_TEXTURE_PATHS).map((heroId) => loadHeroTexture(heroId).catch(() => undefined)));
 }
 
-function pickHeroSpriteFrameRow(attackState: HeroSpriteAttackState | null | undefined, now: number) {
+function normalizeHeroSpriteDirection(heroId: string, direction: "left" | "right") {
+  if (!HERO_REVERSED_DIRECTION_IDS.has(heroId)) return direction;
+  return direction === "left" ? "right" : "left";
+}
+
+function pickHeroSpriteFrameRow(heroId: string, attackState: HeroSpriteAttackState | null | undefined, now: number) {
   const isAttacking = attackState && attackState.until > now;
   const shouldKeepDirection = attackState && attackState.idleUntil > now;
-  const direction = shouldKeepDirection ? attackState.direction : "left";
+  const direction = normalizeHeroSpriteDirection(heroId, shouldKeepDirection ? attackState.direction : "left");
 
   if (isAttacking) {
     return direction === "left" ? HERO_FRAME_ROWS.attackLeft : HERO_FRAME_ROWS.attackRight;
@@ -108,7 +115,7 @@ export function drawHeroSprite(
   }
 
   if (SPRITE_HERO_IDS.has(hero.heroId)) {
-    const frameRow = pickHeroSpriteFrameRow(attackState, now);
+    const frameRow = pickHeroSpriteFrameRow(hero.heroId, attackState, now);
     const frameTexture = frameTextureCache.get(hero.heroId)?.[frameRow];
     if (!frameTexture) return false;
 
