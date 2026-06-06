@@ -66,6 +66,7 @@ function createHeroDetail(hero: LobbyHero): Detail {
     title: hero.displayName,
     subtitle: `${gradeLabel(hero.grade)} · ${roleLabel(hero.role)} · ${hero.attackType}`,
     stats: [
+      hero.description,
       `전투력 ${power}`,
       `공격속도 ${hero.attackSpeed}`,
       `사거리 ${hero.range}`,
