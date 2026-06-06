@@ -36,22 +36,27 @@ function createMythicMenuButton(label: string, x: number, y: number, onClick: ()
   return button;
 }
 
+function getIngredientTextColor(item: ReturnType<typeof getMythicIngredientProgress>[number]) {
+  if (item.fulfilled) return 0xfff2a8;
+  if (item.owned > 0) return 0xffe16b;
+  return 0xb7afa8;
+}
+
 function drawIngredientProgress(row: Container, options: PixiMythicMenuViewOptions, recipe: ReturnType<typeof getMythicCraftAvailability>[number]["recipe"], y: number) {
   const progress = getMythicIngredientProgress(options.state, recipe);
-  const line = progress
-    .map((item) => {
-      const mark = item.fulfilled ? "✓" : "부족";
-      return `${mark} ${item.label} ${Math.min(item.owned, item.required)}/${item.required}`;
-    })
-    .join("   ");
+  let x = 12;
 
-  const hasAnyOwned = progress.some((item) => item.owned > 0);
-  const fulfilled = progress.every((item) => item.fulfilled);
-  const textColor = fulfilled ? colors.yellow : hasAnyOwned ? 0x7dffb2 : 0xb7afa8;
-  const ingredients = makePixiText(line, 9, textColor);
-  ingredients.x = 12;
-  ingredients.y = y;
-  row.addChild(ingredients);
+  progress.forEach((item) => {
+    const mark = item.fulfilled ? "✓" : item.owned > 0 ? "보유" : "부족";
+    const value = `${mark} ${item.label} ${Math.min(item.owned, item.required)}/${item.required}`;
+    const ingredient = makePixiText(value, 9, getIngredientTextColor(item));
+
+    ingredient.x = x;
+    ingredient.y = y;
+    row.addChild(ingredient);
+
+    x += ingredient.width + 14;
+  });
 }
 
 export function createPixiMythicMenuView(options: PixiMythicMenuViewOptions) {
