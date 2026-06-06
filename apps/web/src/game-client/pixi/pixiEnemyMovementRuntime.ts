@@ -6,6 +6,8 @@ import { WAVE_COMBAT_SECONDS } from "./pixiGameTypes";
 import { destroyActiveEnemy } from "./pixiEnemyRuntime";
 import { updateEnemyViewPosition } from "./pixiEnemyView";
 
+const EXIT_HOLD_PROGRESS = 0.998;
+
 export type UpdateActiveEnemiesOptions = {
   getPathPoint: (layout: GameLayout, progress: number) => { x: number; y: number };
   invalidateControls: (refs: GameRefs) => void;
@@ -46,6 +48,14 @@ function leakEnemy(refs: GameRefs, enemy: GameRefs["activeEnemies"][number], opt
   );
 }
 
+function holdEnemyAtExit(layout: GameLayout, enemy: GameRefs["activeEnemies"][number], options: UpdateActiveEnemiesOptions) {
+  enemy.progress = EXIT_HOLD_PROGRESS;
+  const point = options.getPathPoint(layout, enemy.progress);
+  enemy.x = point.x;
+  enemy.y = point.y;
+  updateEnemyViewPosition(enemy.view, point.x, point.y, enemy.progress);
+}
+
 export function updateActiveEnemies(
   refs: GameRefs,
   deltaSeconds: number,
@@ -53,15 +63,22 @@ export function updateActiveEnemies(
 ) {
   const layout = createGameLayout(refs.app.renderer.width, refs.app.renderer.height);
   const now = Date.now();
+  let leakedThisFrame = false;
 
   for (const enemy of refs.activeEnemies) {
     if (!enemy.alive || enemy.leaked) continue;
 
     if (updateControlledEnemyPosition(enemy, now)) continue;
 
-    enemy.progress = Math.min(1, enemy.progress + (deltaSeconds * enemy.speed) / WAVE_COMBAT_SECONDS);
+    enemy.progress += (deltaSeconds * enemy.speed) / WAVE_COMBAT_SECONDS;
 
     if (enemy.progress >= 1) {
+      if (leakedThisFrame) {
+        holdEnemyAtExit(layout, enemy, options);
+        continue;
+      }
+
+      leakedThisFrame = true;
       leakEnemy(refs, enemy, options);
       continue;
     }
