@@ -14,7 +14,9 @@ import {
   getAccountProgressPercent,
   getPassExpRequirement,
   getPassProgressPercent,
+  lobbyPassRewards,
   type LobbyAccountProgress,
+  type LobbyPassReward,
 } from "../../game-lobby/lobbyAccountProgress";
 
 type ShopViewProps = {
@@ -101,30 +103,64 @@ function ProgressCard({ title, level, exp, required, percent, caption }: { title
   );
 }
 
+function passRewardIcon(kind: LobbyPassReward["kind"]) {
+  if (kind === "crystals") return "💎";
+  if (kind === "hero-shards") return "🧩";
+  if (kind === "artifact-pieces") return "🏺";
+  return "🪙";
+}
+
+function PassRewardCard({ reward, passLevel }: { reward: LobbyPassReward; passLevel: number }) {
+  const unlocked = passLevel >= reward.level;
+  const isNext = !unlocked && reward.level === passLevel + 1;
+  const stateLabel = unlocked ? "획득 가능" : isNext ? "다음 보상" : "잠김";
+
+  return (
+    <article className={`pass-reward-card${unlocked ? " unlocked" : ""}${isNext ? " next" : ""}${reward.featured ? " featured" : ""}`}>
+      <span className="pass-reward-level">Lv.{reward.level}</span>
+      <div className="pass-reward-icon">{passRewardIcon(reward.kind)}</div>
+      <div>
+        <b>{reward.label}</b>
+        <small>{stateLabel}</small>
+      </div>
+    </article>
+  );
+}
+
 export function BattleView({ difficulty, accountProgress }: BattleViewProps) {
   return (
     <section className="lobby-panel battle-panel">
-      <h2>전투</h2>
-      <div className="battle-road"><span>20</span><div className="road-monster">슬라임</div><span>10</span></div>
-      <div className="battle-actions"><button type="button">친구랑 하기</button><Link to={`/play?difficulty=${difficulty}`}>빠른 시작</Link></div>
-      <div className="progression-grid">
-        <ProgressCard
-          title="계정"
-          level={accountProgress.accountLevel}
-          exp={accountProgress.accountExp}
-          required={getAccountExpRequirement(accountProgress.accountLevel)}
-          percent={getAccountProgressPercent(accountProgress)}
-          caption="플레이 누적 성장"
-        />
-        <ProgressCard
-          title="패스"
-          level={accountProgress.passLevel}
-          exp={accountProgress.passExp}
-          required={getPassExpRequirement(accountProgress.passLevel)}
-          percent={getPassProgressPercent(accountProgress)}
-          caption={accountProgress.passSeasonId}
-        />
+      <h2>보상</h2>
+      <div className="reward-screen-box">
+        <div className="reward-screen-header">
+          <strong>패스 보상</strong>
+          <span>{accountProgress.passSeasonId}</span>
+        </div>
+        <div className="progression-grid">
+          <ProgressCard
+            title="계정"
+            level={accountProgress.accountLevel}
+            exp={accountProgress.accountExp}
+            required={getAccountExpRequirement(accountProgress.accountLevel)}
+            percent={getAccountProgressPercent(accountProgress)}
+            caption="플레이 누적 성장"
+          />
+          <ProgressCard
+            title="패스"
+            level={accountProgress.passLevel}
+            exp={accountProgress.passExp}
+            required={getPassExpRequirement(accountProgress.passLevel)}
+            percent={getPassProgressPercent(accountProgress)}
+            caption="다음 보상까지"
+          />
+        </div>
+        <div className="pass-reward-scroll" aria-label="패스 보상 목록">
+          {lobbyPassRewards.map((reward) => (
+            <PassRewardCard key={reward.level} reward={reward} passLevel={accountProgress.passLevel} />
+          ))}
+        </div>
       </div>
+      <div className="battle-actions"><button type="button">친구랑 하기</button><Link to={`/play?difficulty=${difficulty}`}>빠른 시작</Link></div>
       <div className="quest-mini">
         <h3>퀘스트</h3>
         {quests.map((quest) => <label key={quest.title}><span>{quest.title}</span><progress value={quest.progress} max="100" /></label>)}
