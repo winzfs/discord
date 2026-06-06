@@ -43,8 +43,8 @@ export const colors: Record<GameColorName, number> = {
   orange: 0xff9f1c,
   green: 0x45b85f,
   purple: 0x9b5de5,
-  rareGrade: 0xc9fbff,
-  epicGrade: 0x1f005c,
+  rareGrade: 0x9eefff,
+  epicGrade: 0x4b1aa8,
 };
 
 export function gradeColor(grade?: string): number {
