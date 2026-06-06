@@ -20,9 +20,10 @@ import {
   type LobbyHero,
   type LobbyTabId,
 } from "../game-lobby/lobbyData";
+import { claimLobbyPassReward } from "../game-lobby/lobbyPassRewardClaim";
 import { recruitCosts, recruitHeroes, type RecruitPullMode, type RecruitResult } from "../game-lobby/lobbyRecruit";
 import { defaultLobbyLineupSize, loadLobbyProgress, saveLobbyProgress } from "../game-lobby/lobbyProgressStorage";
-import type { LobbyAccountProgress } from "../game-lobby/lobbyAccountProgress";
+import type { LobbyAccountProgress, LobbyPassReward } from "../game-lobby/lobbyAccountProgress";
 import "../styles/lobby.css";
 import "../styles/lobby-polish.css";
 import "../styles/lobby-pass.css";
@@ -124,7 +125,7 @@ export function LobbyPage() {
   const [heroes, setHeroes] = useState(savedProgress.heroes);
   const [artifacts, setArtifacts] = useState(savedProgress.artifacts);
   const [lineupHeroIds, setLineupHeroIds] = useState(savedProgress.lineupHeroIds);
-  const [accountProgress] = useState<LobbyAccountProgress>(savedProgress.accountProgress);
+  const [accountProgress, setAccountProgress] = useState<LobbyAccountProgress>(savedProgress.accountProgress);
   const [lastRecruitResults, setLastRecruitResults] = useState<RecruitResult[]>([]);
   const [revealResults, setRevealResults] = useState<RecruitResult[]>([]);
   const [detail, setDetail] = useState<Detail | null>(null);
@@ -165,6 +166,29 @@ export function LobbyPage() {
     setGold(nextGold);
     persistProgress(heroes, artifacts, nextGold, crystals);
     setNotice(name + " 구매 완료");
+  };
+
+  const claimPassReward = (reward: LobbyPassReward) => {
+    const result = claimLobbyPassReward(reward, {
+      gold,
+      crystals,
+      heroes,
+      artifacts,
+      accountProgress,
+    });
+
+    if (!result) {
+      setNotice("아직 수령할 수 없는 보상입니다.");
+      return;
+    }
+
+    setGold(result.gold);
+    setCrystals(result.crystals);
+    setHeroes(result.heroes);
+    setArtifacts(result.artifacts);
+    setAccountProgress(result.accountProgress);
+    persistProgress(result.heroes, result.artifacts, result.gold, result.crystals, lineupHeroIds, result.accountProgress);
+    setNotice(result.message);
   };
 
   const refreshDetail = (kind: Detail["kind"], id: string, nextHeroes: LobbyHero[], nextArtifacts: LobbyArtifact[]) => {
@@ -261,7 +285,7 @@ export function LobbyPage() {
           />
         </>
       )}
-      {activeTab === "battle" && <BattleView difficulty={difficulty} accountProgress={accountProgress} />}
+      {activeTab === "battle" && <BattleView difficulty={difficulty} accountProgress={accountProgress} onClaimPassReward={claimPassReward} />}
       {activeTab === "artifacts" && (
         <ArtifactsView
           artifacts={artifacts}
