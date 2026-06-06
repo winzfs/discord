@@ -53,79 +53,95 @@ function getGradeScale(hero: BoardHero) {
   return 1;
 }
 
+function getRoleDamageScale(role: HeroRole) {
+  if (role === "damage") return 1.18;
+  if (role === "tank") return 0.82;
+  return 0.68;
+}
+
+function getRoleControlScale(role: HeroRole) {
+  if (role === "tank") return 1.28;
+  if (role === "support") return 1.08;
+  return 0.86;
+}
+
 function buildSkillProfile(hero: BoardHero, role: HeroRole): SkillProfile {
   if (!isNonMythic(hero)) return DEFAULT_PROFILE;
 
   const skillIds = getHeroSkillIds(hero);
   const gradeScale = getGradeScale(hero);
+  const damageScale = getRoleDamageScale(role);
+  const controlScale = getRoleControlScale(role);
   const profile: SkillProfile = { ...DEFAULT_PROFILE };
 
   if (hasTag(skillIds, "attack")) {
-    profile.damageMultiplier += 0.08 * gradeScale;
+    profile.damageMultiplier += 0.1 * gradeScale * damageScale;
     profile.text = "공격";
     profile.color = colors.yellow;
   }
 
   if (hasTag(skillIds, "boss-killer")) {
-    profile.damageMultiplier += 0.08 * gradeScale;
+    profile.damageMultiplier += 0.13 * gradeScale * damageScale;
     profile.text = "약점";
     profile.color = colors.orange;
   }
 
   if (hasTag(skillIds, "area-damage") || hasTag(skillIds, "burst")) {
-    profile.splashMultiplier = Math.max(profile.splashMultiplier, 0.22 + 0.04 * gradeScale);
-    profile.splashRadius = Math.max(profile.splashRadius, 62 + 10 * gradeScale);
+    profile.splashMultiplier = Math.max(profile.splashMultiplier, (0.3 + 0.06 * gradeScale) * damageScale);
+    profile.splashRadius = Math.max(profile.splashRadius, 64 + 12 * gradeScale);
     profile.text = "폭발";
     profile.color = colors.orange;
   }
 
   if (hasTag(skillIds, "chain") || hasTag(skillIds, "multi-hit") || hasTag(skillIds, "extra-hit")) {
-    profile.extraHitMultiplier = Math.max(profile.extraHitMultiplier, 0.22 + 0.05 * gradeScale);
+    profile.extraHitMultiplier = Math.max(profile.extraHitMultiplier, (0.28 + 0.06 * gradeScale) * damageScale);
     profile.text = "연쇄";
     profile.color = 0x88e9ff;
   }
 
   if (hasTag(skillIds, "pierce") || hasTag(skillIds, "beam")) {
-    profile.splashMultiplier = Math.max(profile.splashMultiplier, 0.3 + 0.04 * gradeScale);
-    profile.splashRadius = Math.max(profile.splashRadius, 84 + 12 * gradeScale);
+    profile.splashMultiplier = Math.max(profile.splashMultiplier, (0.36 + 0.05 * gradeScale) * damageScale);
+    profile.splashRadius = Math.max(profile.splashRadius, 86 + 14 * gradeScale);
     profile.text = "관통";
     profile.color = 0xbde7ff;
   }
 
   if (hasTag(skillIds, "debuff") || hasTag(skillIds, "slow") || hasTag(skillIds, "freeze") || hasTag(skillIds, "grouping")) {
-    profile.slowMultiplier = Math.min(profile.slowMultiplier, hasTag(skillIds, "freeze") ? 0.82 : 0.9);
-    profile.text = hasTag(skillIds, "freeze") ? "빙결" : "감속";
+    const baseSlow = hasTag(skillIds, "freeze") ? 0.78 : hasTag(skillIds, "grouping") ? 0.8 : 0.86;
+    profile.slowMultiplier = Math.min(profile.slowMultiplier, Math.max(0.64, 1 - (1 - baseSlow) * controlScale));
+    profile.damageMultiplier += role === "tank" ? 0.02 * gradeScale : 0;
+    profile.text = hasTag(skillIds, "freeze") ? "빙결" : hasTag(skillIds, "grouping") ? "중력" : "감속";
     profile.color = 0x8fdcff;
   }
 
   if (hasTag(skillIds, "mark") || hasTag(skillIds, "vulnerable")) {
-    profile.damageMultiplier += 0.08 * gradeScale;
-    profile.slowMultiplier = Math.min(profile.slowMultiplier, 0.94);
+    profile.damageMultiplier += role === "damage" ? 0.12 * gradeScale : 0.04 * gradeScale;
+    profile.slowMultiplier = Math.min(profile.slowMultiplier, role === "damage" ? 0.94 : 0.9);
     profile.text = "표식";
     profile.color = 0xff8f74;
   }
 
   if (hasTag(skillIds, "buff") || hasTag(skillIds, "haste") || hasTag(skillIds, "power-up") || hasTag(skillIds, "team-wide")) {
-    profile.damageMultiplier += role === "support" ? 0.1 * gradeScale : 0.05 * gradeScale;
-    profile.text = "증폭";
+    profile.damageMultiplier += role === "support" ? 0 : 0.03 * gradeScale;
+    profile.text = "지원";
     profile.color = 0x7dffb2;
   }
 
   if (hasTag(skillIds, "turret") || hasTag(skillIds, "support-fire")) {
-    profile.extraHitMultiplier = Math.max(profile.extraHitMultiplier, 0.28 + 0.04 * gradeScale);
+    profile.extraHitMultiplier = Math.max(profile.extraHitMultiplier, role === "support" ? 0.2 + 0.03 * gradeScale : 0.28 + 0.04 * gradeScale);
     profile.text = "포탑";
     profile.color = 0xd8c1ff;
   }
 
   if (hasTag(skillIds, "economy") || hasTag(skillIds, "coin-bonus") || hasTag(skillIds, "wave-reward")) {
-    profile.coinBonus = Math.round(1 + gradeScale);
-    profile.damageMultiplier += 0.03 * gradeScale;
+    profile.coinBonus = Math.round(role === "support" ? 2 + gradeScale : 1 + gradeScale);
+    profile.damageMultiplier += role === "support" ? 0 : 0.02 * gradeScale;
     profile.text = "보상";
     profile.color = colors.green;
   }
 
   if (hasTag(skillIds, "overcrowd-bonus")) {
-    profile.damageMultiplier += 0.04 * Math.min(8, Math.floor(hero.grade === "legendary" ? 5 : 2));
+    profile.damageMultiplier += 0.03 * Math.min(8, Math.floor(hero.grade === "legendary" ? 5 : 2));
     profile.text = "반격";
     profile.color = colors.red;
   }
@@ -143,7 +159,7 @@ function applyMasteryToProfile(refs: GameRefs, hero: BoardHero, profile: SkillPr
     splashRadius: profile.splashRadius > 0 ? profile.splashRadius + Math.min(24, mastery.level * 1.4) : 0,
     extraHitMultiplier: profile.extraHitMultiplier * mastery.skillMultiplier,
     slowMultiplier: profile.slowMultiplier < 1
-      ? Math.max(0.62, 1 - (1 - profile.slowMultiplier) * mastery.controlMultiplier)
+      ? Math.max(0.56, 1 - (1 - profile.slowMultiplier) * mastery.controlMultiplier)
       : profile.slowMultiplier,
     coinBonus: profile.coinBonus + mastery.bonusCoin,
   };
