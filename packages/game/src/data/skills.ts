@@ -1,19 +1,19 @@
 import type { SkillDefinition } from "../types/skill";
 
 export const skills: SkillDefinition[] = [
-  { id: "spark-runner-zap", displayName: "스파크 잽", type: "attack", assetKey: "skill.placeholder", tags: ["unique", "common", "attack", "fast", "single-target"] },
-  { id: "rookie-guard-bash", displayName: "루키 배시", type: "control", assetKey: "skill.placeholder", tags: ["unique", "common", "debuff", "slow", "frontline"] },
-  { id: "mini-mender-boost", displayName: "미니 증폭", type: "support", assetKey: "skill.placeholder", tags: ["unique", "common", "buff", "power-up"] },
-  { id: "scrap-gunner-ricochet", displayName: "고철 도탄", type: "attack", assetKey: "skill.placeholder", tags: ["unique", "common", "attack", "extra-hit"] },
-  { id: "slow-bot-oil", displayName: "감속 오일", type: "control", assetKey: "skill.placeholder", tags: ["unique", "common", "debuff", "slow"] },
-  { id: "charge-helper-tip", displayName: "충전 팁", type: "support", assetKey: "skill.placeholder", tags: ["unique", "common", "economy", "coin-bonus"] },
+  { id: "spark-runner-zap", displayName: "펄스 견제 사격", type: "attack", assetKey: "skill.placeholder", tags: ["unique", "common", "attack", "fast", "single-target"] },
+  { id: "rookie-guard-bash", displayName: "방패 밀치기", type: "control", assetKey: "skill.placeholder", tags: ["unique", "common", "debuff", "slow", "frontline"] },
+  { id: "mini-mender-boost", displayName: "응급 증폭", type: "support", assetKey: "skill.placeholder", tags: ["unique", "common", "buff", "power-up"] },
+  { id: "scrap-gunner-ricochet", displayName: "고철 도탄탄", type: "attack", assetKey: "skill.placeholder", tags: ["unique", "common", "attack", "extra-hit"] },
+  { id: "slow-bot-oil", displayName: "감속 오일 살포", type: "control", assetKey: "skill.placeholder", tags: ["unique", "common", "debuff", "slow"] },
+  { id: "charge-helper-tip", displayName: "긴급 정비 수당", type: "support", assetKey: "skill.placeholder", tags: ["unique", "common", "economy", "coin-bonus"] },
 
-  { id: "pulse-ranger-mark", displayName: "펄스 표식", type: "attack", assetKey: "skill.placeholder", tags: ["unique", "rare", "attack", "boss-killer", "mark"] },
-  { id: "barrier-guard-lock", displayName: "방벽 고정", type: "control", assetKey: "skill.placeholder", tags: ["unique", "rare", "debuff", "slow", "shield"] },
-  { id: "field-medic-rally", displayName: "전장 격려", type: "support", assetKey: "skill.placeholder", tags: ["unique", "rare", "buff", "attack-speed"] },
-  { id: "frost-warden-chill", displayName: "서리 결계", type: "control", assetKey: "skill.placeholder", tags: ["unique", "rare", "debuff", "freeze", "slow"] },
-  { id: "burst-scout-flare", displayName: "폭발 조명탄", type: "attack", assetKey: "skill.placeholder", tags: ["unique", "rare", "attack", "area-damage", "burst"] },
-  { id: "nano-aide-injector", displayName: "나노 주입", type: "support", assetKey: "skill.placeholder", tags: ["unique", "rare", "buff", "power-up"] },
+  { id: "pulse-ranger-mark", displayName: "탈론 표식탄", type: "attack", assetKey: "skill.placeholder", tags: ["unique", "rare", "attack", "boss-killer", "mark"] },
+  { id: "barrier-guard-lock", displayName: "십자군 방벽 고정", type: "control", assetKey: "skill.placeholder", tags: ["unique", "rare", "debuff", "slow", "shield"] },
+  { id: "field-medic-rally", displayName: "야전 전술 격려", type: "support", assetKey: "skill.placeholder", tags: ["unique", "rare", "buff", "attack-speed"] },
+  { id: "frost-warden-chill", displayName: "극저온 결계", type: "control", assetKey: "skill.placeholder", tags: ["unique", "rare", "debuff", "freeze", "slow"] },
+  { id: "burst-scout-flare", displayName: "로켓 조명탄", type: "attack", assetKey: "skill.placeholder", tags: ["unique", "rare", "attack", "area-damage", "burst"] },
+  { id: "nano-aide-injector", displayName: "나노 보조 주입", type: "support", assetKey: "skill.placeholder", tags: ["unique", "rare", "buff", "power-up"] },
 
   { id: "plasma-mage-orb", displayName: "플라즈마 오브", type: "attack", assetKey: "skill.placeholder", tags: ["unique", "epic", "attack", "area-damage", "wave-clear"] },
   { id: "core-knight-anchor", displayName: "코어 앵커", type: "control", assetKey: "skill.placeholder", tags: ["unique", "epic", "debuff", "slow", "shield"] },
@@ -90,7 +90,7 @@ export const skills: SkillDefinition[] = [
   { id: "kiriko-protection-suzu", displayName: "정화의 방울", type: "support", assetKey: "skill.placeholder", tags: ["kiriko", "cleanse", "attack-speed"] },
   { id: "kiriko-kitsune-rush", displayName: "여우길", type: "ultimate", assetKey: "skill.placeholder", tags: ["kiriko", "team-buff", "haste"] },
 
-  { id: "illari-solar-rifle", displayName: "태양 소총", type: "attack", assetKey: "skill.placeholder", tags: ["illari", "charged-shot", "burst"] },
-  { id: "illari-healing-pylon", displayName: "치유 파일론", type: "support", assetKey: "skill.placeholder", tags: ["illari", "pylon", "damage-boost"] },
+  { id: "illari-solar-rifle", displayName: "태양 소총", type: "attack", assetKey: "skill.placeholder", tags: ["illari", "charge-shot", "single-target"] },
+  { id: "illari-healing-pylon", displayName: "치유의 태양석", type: "support", assetKey: "skill.placeholder", tags: ["illari", "pylon", "support-fire"] },
   { id: "illari-captive-sun", displayName: "태양 작렬", type: "ultimate", assetKey: "skill.placeholder", tags: ["illari", "mark", "area-explosion"] },
 ];
