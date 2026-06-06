@@ -28,6 +28,24 @@ function updateControlledEnemyPosition(enemy: GameRefs["activeEnemies"][number],
   return false;
 }
 
+function leakEnemy(refs: GameRefs, enemy: GameRefs["activeEnemies"][number], options: UpdateActiveEnemiesOptions) {
+  if (enemy.leaked || !enemy.alive) return;
+
+  enemy.leaked = true;
+  enemy.alive = false;
+  enemy.progress = 1;
+  refs.waveLostLives += enemy.damageToLife;
+  destroyActiveEnemy(enemy);
+  options.invalidateControls(refs);
+  options.floatText(
+    refs,
+    `누수 -${enemy.damageToLife}`,
+    refs.app.renderer.width / 2,
+    refs.app.renderer.height * 0.35,
+    colors.red,
+  );
+}
+
 export function updateActiveEnemies(
   refs: GameRefs,
   deltaSeconds: number,
@@ -37,28 +55,18 @@ export function updateActiveEnemies(
   const now = Date.now();
 
   for (const enemy of refs.activeEnemies) {
-    if (!enemy.alive) continue;
+    if (!enemy.alive || enemy.leaked) continue;
 
     if (updateControlledEnemyPosition(enemy, now)) continue;
 
-    enemy.progress += (deltaSeconds * enemy.speed) / WAVE_COMBAT_SECONDS;
+    enemy.progress = Math.min(1, enemy.progress + (deltaSeconds * enemy.speed) / WAVE_COMBAT_SECONDS);
 
     if (enemy.progress >= 1) {
-      enemy.alive = false;
-      refs.waveLostLives += enemy.damageToLife;
-      destroyActiveEnemy(enemy);
-      options.invalidateControls(refs);
-      options.floatText(
-        refs,
-        `누수 -${enemy.damageToLife}`,
-        refs.app.renderer.width / 2,
-        refs.app.renderer.height * 0.35,
-        colors.red,
-      );
+      leakEnemy(refs, enemy, options);
       continue;
     }
 
-    const point = options.getPathPoint(layout, Math.max(0, enemy.progress));
+    const point = options.getPathPoint(layout, enemy.progress);
     enemy.x = point.x;
     enemy.y = point.y;
     updateEnemyViewPosition(enemy.view, point.x, point.y, enemy.progress);
