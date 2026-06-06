@@ -17,7 +17,7 @@ function getHeroTags(heroId: string) {
   return new Set([...(definition?.tags ?? []), ...skillTags]);
 }
 
-function isAdjacent(source: BoardHero, target: BoardHero) {
+export function isAdjacentToHero(source: BoardHero, target: BoardHero) {
   const rowDistance = Math.abs(source.position.row - target.position.row);
   const columnDistance = Math.abs(source.position.column - target.position.column);
 
@@ -28,7 +28,7 @@ function getAllBoardHeroes(refs: GameRefs) {
   return refs.state.board.flatMap((cell) => cell.units);
 }
 
-function isBuffSupport(hero: BoardHero) {
+export function isBuffSupportHero(hero: BoardHero) {
   const definition = getHeroById(hero.heroId);
   if (definition?.role !== "support") return false;
 
@@ -46,9 +46,9 @@ export function getHeroSynergyAttackMultiplier(refs: GameRefs, hero: BoardHero) 
   let bonus = 0;
 
   for (const ally of heroes) {
-    if (!isBuffSupport(ally)) continue;
+    if (!isBuffSupportHero(ally)) continue;
 
-    if (isAdjacent(hero, ally)) {
+    if (isAdjacentToHero(hero, ally)) {
       bonus += ADJACENT_BUFF_PER_SUPPORT;
     }
 
