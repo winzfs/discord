@@ -7,6 +7,7 @@ import { destroyActiveEnemy } from "./pixiEnemyRuntime";
 import { updateEnemyViewPosition } from "./pixiEnemyView";
 
 const EXIT_HOLD_PROGRESS = 0.998;
+const EXIT_WAIT_PROGRESS = 0.986;
 const EXIT_DAMAGE_INTERVAL_MS = 220;
 
 export type UpdateActiveEnemiesOptions = {
@@ -31,13 +32,25 @@ function updateControlledEnemyPosition(enemy: GameRefs["activeEnemies"][number],
   return false;
 }
 
-function queueEnemyAtExit(layout: GameLayout, enemy: GameRefs["activeEnemies"][number], options: UpdateActiveEnemiesOptions) {
-  enemy.exitQueued = true;
-  enemy.progress = EXIT_HOLD_PROGRESS;
-  const point = options.getPathPoint(layout, EXIT_HOLD_PROGRESS);
+function hasExitQueue(refs: GameRefs) {
+  return refs.activeEnemies.some((enemy) => enemy.alive && !enemy.leaked && enemy.exitQueued);
+}
+
+function setEnemyProgress(layout: GameLayout, enemy: GameRefs["activeEnemies"][number], progress: number, options: UpdateActiveEnemiesOptions) {
+  enemy.progress = progress;
+  const point = options.getPathPoint(layout, progress);
   enemy.x = point.x;
   enemy.y = point.y;
   updateEnemyViewPosition(enemy.view, point.x, point.y, enemy.progress);
+}
+
+function queueEnemyAtExit(layout: GameLayout, enemy: GameRefs["activeEnemies"][number], options: UpdateActiveEnemiesOptions) {
+  enemy.exitQueued = true;
+  setEnemyProgress(layout, enemy, EXIT_HOLD_PROGRESS, options);
+}
+
+function holdEnemyBeforeExit(layout: GameLayout, enemy: GameRefs["activeEnemies"][number], options: UpdateActiveEnemiesOptions) {
+  setEnemyProgress(layout, enemy, EXIT_WAIT_PROGRESS, options);
 }
 
 function removeEnemyAtExit(refs: GameRefs, enemy: GameRefs["activeEnemies"][number], options: UpdateActiveEnemiesOptions) {
@@ -80,17 +93,18 @@ export function updateActiveEnemies(
 
     if (updateControlledEnemyPosition(enemy, now)) continue;
 
-    enemy.progress += (deltaSeconds * enemy.speed) / WAVE_COMBAT_SECONDS;
+    const nextProgress = enemy.progress + (deltaSeconds * enemy.speed) / WAVE_COMBAT_SECONDS;
 
-    if (enemy.progress >= 1) {
-      queueEnemyAtExit(layout, enemy, options);
+    if (nextProgress >= 1) {
+      if (hasExitQueue(refs) || now < refs.nextEnemyLeakAt) {
+        holdEnemyBeforeExit(layout, enemy, options);
+      } else {
+        queueEnemyAtExit(layout, enemy, options);
+      }
       continue;
     }
 
-    const point = options.getPathPoint(layout, enemy.progress);
-    enemy.x = point.x;
-    enemy.y = point.y;
-    updateEnemyViewPosition(enemy.view, point.x, point.y, enemy.progress);
+    setEnemyProgress(layout, enemy, nextProgress, options);
   }
 
   if (now < refs.nextEnemyLeakAt) return;
