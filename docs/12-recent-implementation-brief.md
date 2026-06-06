@@ -4,7 +4,7 @@
 
 이 문서는 최근 `/play` PixiJS 전투 화면에서 수정한 내용과 다음 작업 우선순위를 정리합니다.
 
-기준 커밋 범위는 최근 스프라이트/웨이브 안정화 작업 이후 상태입니다.
+기준 커밋 범위는 최근 스프라이트/웨이브/영웅 성장 안정화 작업 이후 상태입니다.
 
 ## 2. 최근 반영 사항
 
@@ -105,6 +105,43 @@ apps/web/src/game-client/pixi/pixiWaveFlowRuntime.ts
 - 보스 웨이브는 별도 구성 사용
 - 20웨이브 이후 보스 웨이브 구성 강화
 
+### 2.7 영웅별 개성 1차 강화
+
+일반~전설 영웅의 태그 기반 개성을 더 체감할 수 있도록 전투 시너지 런타임을 추가했습니다.
+
+적용 위치:
+
+```text
+apps/web/src/game-client/pixi/pixiHeroSynergyRuntime.ts
+apps/web/src/game-client/pixi/pixiCombatRuntime.ts
+```
+
+반영 내용:
+
+- 주변 8칸 안의 지원형 영웅이 공격 보너스를 제공합니다.
+- `buff`, `haste`, `power-up`, `attack-speed`, `team-wide` 계열 지원 영웅이 연계 보너스 대상입니다.
+- `commander`, `team-wide` 계열 영웅은 전역 지휘 보너스를 제공합니다.
+- 보너스는 최대 35%까지 누적됩니다.
+- 전투 중 첫 공격자 기준으로 `연계 +N%` 플로팅 텍스트를 표시합니다.
+
+### 2.8 장기 성장 1차 강화
+
+로비 영웅 레벨이 단순 공격력 상승 외에도 스킬 효과에 영향을 주도록 확장했습니다.
+
+적용 위치:
+
+```text
+apps/web/src/game-client/pixi/pixiProgressBonuses.ts
+apps/web/src/game-client/pixi/pixiBaseHeroSkillRuntime.ts
+```
+
+반영 내용:
+
+- `getProgressHeroMasteryEffect()` 추가
+- 영웅 레벨이 오를수록 일반~전설 스킬 효과가 강화됩니다.
+- 범위 피해, 연쇄 피해, 감속/제어 효과, 경제 보너스가 레벨에 따라 상승합니다.
+- 5레벨 이상 영웅은 경제형 스킬 보너스 코인을 추가로 얻습니다.
+
 ## 3. 현재 주의할 점
 
 ### 3.1 빌드 재확인 필요
@@ -129,6 +166,8 @@ pnpm build:web
 - Illari idle 방향이 왼쪽으로 복귀하는지
 - Illari 공격 방향은 다른 영웅과 동일하게 동작하는지
 - Genji 질풍참 후 타입/방향 오류가 없는지
+- 지원형 영웅 주변 배치 시 `연계 +N%`가 표시되는지
+- 레벨이 높은 일반~전설 영웅의 스킬 효과가 체감되는지
 
 ## 4. 다음 작업 우선순위
 
@@ -165,7 +204,18 @@ pnpm build:web
 - 공격 프레임 좌/우 일치
 - Illari idle만 예외 처리되는지
 
-### 4순위: 기록 저장 정확도 개선
+### 4순위: 영웅 개성 2차 강화
+
+1차는 태그 기반 패시브와 주변 지원 연계를 강화했습니다.
+
+다음 개선:
+
+- 영웅 정보 패널에 연계/숙련 효과 설명 추가
+- 합성 가능 영웅과 신화 재료 영웅 강조
+- 특정 영웅별 고유 타겟팅 추가: 최고 체력 우선, 낮은 체력 우선, 선두 적 우선
+- 탱커 오라형 감속, 지원형 주변 버프 범위 표시
+
+### 5순위: 기록 저장 정확도 개선
 
 현재 `durationSeconds`는 아직 실제 플레이 시간 기반으로 완전히 신뢰할 수 있는 값이 아닙니다.
 
@@ -176,7 +226,7 @@ pnpm build:web
 - 서버 기록 저장 시 `durationSeconds` 반영
 - 서버에서 score/wave/kills/duration 상한 검증
 
-### 5순위: `createPixiGame.ts` 추가 분리
+### 6순위: `createPixiGame.ts` 추가 분리
 
 아직 `createPixiGame.ts`가 앱 초기화, tick, 렌더, 입력, 런타임 연결을 많이 가지고 있습니다.
 
@@ -194,7 +244,10 @@ pnpm build:web
 2. 배포 로그 재확인
 3. /play-test에서 웨이브 1~5 진행 확인
 4. Illari / Genji / Ana / Winston 스프라이트 방향 확인
-5. durationSeconds 실제 측정 적용
-6. 점수/웨이브/킬 수 서버 검증 추가
-7. createPixiGame.ts tick/init 분리
+5. 지원형 주변 배치 연계 보너스 확인
+6. 로비 영웅 레벨에 따른 스킬 강화 체감 확인
+7. 영웅 정보 패널에 연계/숙련 효과 설명 추가
+8. durationSeconds 실제 측정 적용
+9. 점수/웨이브/킬 수 서버 검증 추가
+10. createPixiGame.ts tick/init 분리
 ```
