@@ -10,10 +10,12 @@ import {
   type LobbyHero,
 } from "../../game-lobby/lobbyData";
 import {
+  canClaimPassReward,
   getAccountExpRequirement,
   getAccountProgressPercent,
   getPassExpRequirement,
   getPassProgressPercent,
+  isPassRewardClaimed,
   lobbyPassRewards,
   type LobbyAccountProgress,
   type LobbyPassReward,
@@ -34,6 +36,7 @@ type HeroesViewProps = {
 type BattleViewProps = {
   difficulty: number;
   accountProgress: LobbyAccountProgress;
+  onClaimPassReward: (reward: LobbyPassReward) => void;
 };
 
 type ArtifactsViewProps = {
@@ -110,24 +113,39 @@ function passRewardIcon(kind: LobbyPassReward["kind"]) {
   return "🪙";
 }
 
-function PassRewardCard({ reward, passLevel }: { reward: LobbyPassReward; passLevel: number }) {
-  const unlocked = passLevel >= reward.level;
-  const isNext = !unlocked && reward.level === passLevel + 1;
-  const stateLabel = unlocked ? "획득 가능" : isNext ? "다음 보상" : "잠김";
+function PassRewardCard({
+  reward,
+  accountProgress,
+  onClaim,
+}: {
+  reward: LobbyPassReward;
+  accountProgress: LobbyAccountProgress;
+  onClaim: (reward: LobbyPassReward) => void;
+}) {
+  const claimed = isPassRewardClaimed(accountProgress, reward.level);
+  const claimable = canClaimPassReward(accountProgress, reward);
+  const unlocked = accountProgress.passLevel >= reward.level;
+  const isNext = !unlocked && reward.level === accountProgress.passLevel + 1;
+  const stateLabel = claimed ? "수령 완료" : claimable ? "수령 가능" : isNext ? "다음 보상" : "잠김";
 
   return (
-    <article className={`pass-reward-card${unlocked ? " unlocked" : ""}${isNext ? " next" : ""}${reward.featured ? " featured" : ""}`}>
+    <article className={`pass-reward-card${unlocked ? " unlocked" : ""}${isNext ? " next" : ""}${reward.featured ? " featured" : ""}${claimed ? " claimed" : ""}`}>
       <span className="pass-reward-level">Lv.{reward.level}</span>
       <div className="pass-reward-icon">{passRewardIcon(reward.kind)}</div>
       <div>
         <b>{reward.label}</b>
         <small>{stateLabel}</small>
       </div>
+      {claimable && (
+        <button className="pass-claim-button" type="button" onClick={() => onClaim(reward)}>
+          수령
+        </button>
+      )}
     </article>
   );
 }
 
-export function BattleView({ difficulty, accountProgress }: BattleViewProps) {
+export function BattleView({ difficulty, accountProgress, onClaimPassReward }: BattleViewProps) {
   return (
     <section className="lobby-panel battle-panel">
       <h2>보상</h2>
@@ -156,7 +174,7 @@ export function BattleView({ difficulty, accountProgress }: BattleViewProps) {
         </div>
         <div className="pass-reward-scroll" aria-label="패스 보상 목록">
           {lobbyPassRewards.map((reward) => (
-            <PassRewardCard key={reward.level} reward={reward} passLevel={accountProgress.passLevel} />
+            <PassRewardCard key={reward.level} reward={reward} accountProgress={accountProgress} onClaim={onClaimPassReward} />
           ))}
         </div>
       </div>
