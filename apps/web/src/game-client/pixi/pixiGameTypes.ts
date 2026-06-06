@@ -100,6 +100,7 @@ export type GameRefs = {
   attackTimer: number;
   activeEnemies: ActiveEnemy[];
   nextEnemyId: number;
+  nextEnemyLeakAt: number;
   waveKilled: number;
   waveReward: number;
   waveLostLives: number;
