@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { LobbyBottomNav } from "../components/lobby/LobbyBottomNav";
 import { LobbyDetailPanel } from "../components/lobby/LobbyDetailPanel";
+import { LobbyRecruitPanel } from "../components/lobby/LobbyRecruitPanel";
 import { LobbyStage } from "../components/lobby/LobbyStage";
 import { LobbyTopBar } from "../components/lobby/LobbyTopBar";
 import { ArtifactsView, BattleView, HeroesView, ShopView } from "../components/lobby/LobbyViews";
@@ -18,6 +19,7 @@ import {
   type LobbyHero,
   type LobbyTabId,
 } from "../game-lobby/lobbyData";
+import { recruitCosts, recruitHeroes, type RecruitPullMode, type RecruitResult } from "../game-lobby/lobbyRecruit";
 import { loadLobbyProgress, saveLobbyProgress } from "../game-lobby/lobbyProgressStorage";
 import "../styles/lobby.css";
 import "../styles/lobby-polish.css";
@@ -104,6 +106,7 @@ export function LobbyPage() {
   const [crystals, setCrystals] = useState(4550);
   const [heroes, setHeroes] = useState(savedProgress.heroes);
   const [artifacts, setArtifacts] = useState(savedProgress.artifacts);
+  const [lastRecruitResults, setLastRecruitResults] = useState<RecruitResult[]>([]);
   const [detail, setDetail] = useState<Detail | null>(null);
   const [notice, setNotice] = useState("상점, 영웅, 전투, 유물을 확인해보세요.");
 
@@ -134,6 +137,22 @@ export function LobbyPage() {
 
   const persistProgress = (nextHeroes: LobbyHero[], nextArtifacts: LobbyArtifact[]) => {
     saveLobbyProgress({ heroes: nextHeroes, artifacts: nextArtifacts });
+  };
+
+  const recruit = (mode: RecruitPullMode) => {
+    const cost = mode === "ten" ? recruitCosts.tenCrystal : recruitCosts.singleCrystal;
+    if (crystals < cost) {
+      setNotice("보석이 부족합니다.");
+      return;
+    }
+    const summary = recruitHeroes(heroes, mode);
+    setCrystals((value) => value - cost);
+    setHeroes(summary.nextHeroes);
+    setLastRecruitResults(summary.results);
+    persistProgress(summary.nextHeroes, artifacts);
+    setActiveTab("heroes");
+    setDetail(null);
+    setNotice(`영웅 모집 완료 · 신규 ${summary.newHeroCount}명 · 조각 ${summary.totalShards}개 획득`);
   };
 
   const upgradeSelected = () => {
@@ -181,13 +200,21 @@ export function LobbyPage() {
       <p className="lobby-notice">{notice}</p>
       {activeTab === "shop" && <ShopView onPick={buyShopItem} />}
       {activeTab === "heroes" && (
-        <HeroesView
-          heroes={heroes}
-          onDetail={setDetail}
-          createDetail={createHeroDetail}
-          gradeLabel={gradeLabel}
-          roleLabel={roleLabel}
-        />
+        <>
+          <LobbyRecruitPanel
+            crystals={crystals}
+            lastResults={lastRecruitResults}
+            onRecruitSingle={() => recruit("single")}
+            onRecruitTen={() => recruit("ten")}
+          />
+          <HeroesView
+            heroes={heroes}
+            onDetail={setDetail}
+            createDetail={createHeroDetail}
+            gradeLabel={gradeLabel}
+            roleLabel={roleLabel}
+          />
+        </>
       )}
       {activeTab === "battle" && <BattleView difficulty={difficulty} />}
       {activeTab === "artifacts" && (
