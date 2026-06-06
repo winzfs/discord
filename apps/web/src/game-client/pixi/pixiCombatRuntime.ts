@@ -158,21 +158,6 @@ function applyTankSlow(enemy: ActiveEnemy) {
   enemy.speed = Math.max(0.22, enemy.speed * 0.92);
 }
 
-function applySupportSplash(
-  refs: GameRefs,
-  target: ActiveEnemy,
-  damage: number,
-  options: PixiCombatRuntimeOptions,
-) {
-  for (const enemy of refs.activeEnemies) {
-    if (!enemy.alive || enemy.id === target.id) continue;
-
-    if (Math.hypot(enemy.x - target.x, enemy.y - target.y) <= 72) {
-      damageEnemy(refs, enemy, Math.max(1, Math.floor(damage * 0.35)), options);
-    }
-  }
-}
-
 function triggerHeroSpriteAttack(refs: GameRefs, hero: BoardHero, from: { x: number; y: number }, target: ActiveEnemy, options: PixiCombatRuntimeOptions) {
   if (!SPRITE_ATTACK_HERO_IDS.has(hero.heroId)) return;
 
@@ -225,10 +210,6 @@ function applyAttackDamage(refs: GameRefs, hero: BoardHero, role: HeroRole, targ
 
   damageEnemy(refs, target, damage, options);
   applyBaseHeroPostDamage(refs, hero, role, target, damage, options);
-
-  if (role === "support") {
-    applySupportSplash(refs, target, damage, options);
-  }
 }
 
 function updateZaryaBeamCharge(refs: GameRefs, hero: BoardHero, target: ActiveEnemy) {
