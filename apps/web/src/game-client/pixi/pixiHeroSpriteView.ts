@@ -3,6 +3,7 @@ import type { BoardHero } from "@discord-random-defense/game";
 import type { HeroSpriteAttackState } from "./pixiGameTypes";
 
 const HERO_TEXTURE_PATHS: Record<string, string> = {
+  "spark-runner": "/assets/heroes/private.png?v=20260607-private1",
   tracer: "/assets/heroes/tracer.png?v=20260605-tracer1",
   kiriko: "/assets/heroes/kiriko.png?v=20260605-kiriko1",
   dva: "/assets/heroes/d.va.png?v=20260605-dva1",
@@ -25,9 +26,10 @@ const HERO_REVERSED_IDLE_IDS = new Set(["illari"]);
 
 const HERO_FRAME_ROW_COUNT = 4;
 
-const SPRITE_HERO_IDS = new Set(["tracer", "kiriko", "dva", "zarya", "cassidy", "winston", "genji", "ana", "illari"]);
+const SPRITE_HERO_IDS = new Set(["spark-runner", "tracer", "kiriko", "dva", "zarya", "cassidy", "winston", "genji", "ana", "illari"]);
 
 const HERO_SPRITE_SCALE: Record<string, number> = {
+  "spark-runner": 1.16,
   tracer: 1.1,
   kiriko: 1.31,
   dva: 1.47,
