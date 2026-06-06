@@ -5,8 +5,9 @@ import {
   WAVE_COUNTDOWN_SECONDS,
   WAVE_RESULT_SECONDS,
 } from "./pixiGameTypes";
+import { colors } from "./gameTheme";
 import { getPerfectWaveLuckStoneReward } from "./pixiProgressBonuses";
-import { applyCoinInterest } from "./pixiCoinInterestRuntime";
+import { applyCoinInterest, formatCoinInterestRate } from "./pixiCoinInterestRuntime";
 import { spawnWaveMonsters } from "./pixiWaveRuntime";
 import { showWaveRewardMenu } from "./pixiWaveRewardRuntime";
 import { showFinalResultPanel } from "./pixiFinalResultView";
@@ -29,6 +30,23 @@ function spawnCurrentWave(refs: GameRefs, options: PixiWaveFlowRuntimeOptions) {
     showBossWarning: options.showBossWarning,
     invalidateControls: options.invalidateControls,
   });
+}
+
+function applyWaveTransitionInterest(refs: GameRefs, options: PixiWaveFlowRuntimeOptions) {
+  if (refs.state.status === "failed") return;
+
+  const interest = applyCoinInterest(refs.state);
+  refs.state = interest.state;
+
+  if (interest.result.interest <= 0) return;
+
+  options.floatText(
+    refs,
+    `코인 이자 +${interest.result.interest} (${formatCoinInterestRate(interest.result.rate)}${interest.result.capped ? " 한도" : ""})`,
+    refs.app.renderer.width / 2,
+    refs.app.renderer.height * 0.48,
+    colors.yellow,
+  );
 }
 
 export function waveButtonAction(refs: GameRefs, options: PixiWaveFlowRuntimeOptions) {
@@ -57,6 +75,8 @@ export function startAutoWave(refs: GameRefs, options: PixiWaveFlowRuntimeOption
 export function startNextTimedWave(refs: GameRefs, options: PixiWaveFlowRuntimeOptions) {
   if (options.isFinished(refs.state)) return;
   if (refs.state.currentWave >= initialBalance.maxWave) return;
+
+  applyWaveTransitionInterest(refs, options);
 
   refs.state = {
     ...refs.state,
