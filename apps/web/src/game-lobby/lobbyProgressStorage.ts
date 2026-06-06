@@ -2,20 +2,33 @@ import { initialArtifacts, initialHeroes, type LobbyArtifact, type LobbyHero } f
 
 const STORAGE_KEY = "discord-random-defense:lobby-progress:v1";
 
+export const defaultLobbyCurrencies = {
+  gold: 13580,
+  crystals: 4550,
+} as const;
+
 export type LobbyProgressSnapshot = {
   heroes: LobbyHero[];
   artifacts: LobbyArtifact[];
+  gold: number;
+  crystals: number;
 };
 
 function cloneDefaultProgress(): LobbyProgressSnapshot {
   return {
     heroes: initialHeroes.map((hero) => ({ ...hero })),
     artifacts: initialArtifacts.map((artifact) => ({ ...artifact })),
+    gold: defaultLobbyCurrencies.gold,
+    crystals: defaultLobbyCurrencies.crystals,
   };
 }
 
 function canUseLocalStorage() {
   return typeof window !== "undefined" && typeof window.localStorage !== "undefined";
+}
+
+function mergeCurrency(value: unknown, fallback: number) {
+  return typeof value === "number" && Number.isFinite(value) ? value : fallback;
 }
 
 function mergeHeroes(savedHeroes: Partial<LobbyHero>[] | undefined): LobbyHero[] {
@@ -57,6 +70,8 @@ export function loadLobbyProgress(): LobbyProgressSnapshot {
     return {
       heroes: mergeHeroes(parsed.heroes),
       artifacts: mergeArtifacts(parsed.artifacts),
+      gold: mergeCurrency(parsed.gold, defaultLobbyCurrencies.gold),
+      crystals: mergeCurrency(parsed.crystals, defaultLobbyCurrencies.crystals),
     };
   } catch {
     return cloneDefaultProgress();
@@ -68,6 +83,8 @@ export function saveLobbyProgress(snapshot: LobbyProgressSnapshot) {
   window.localStorage.setItem(
     STORAGE_KEY,
     JSON.stringify({
+      gold: snapshot.gold,
+      crystals: snapshot.crystals,
       heroes: snapshot.heroes.map(({ id, level, shards, owned }) => ({ id, level, shards, owned })),
       artifacts: snapshot.artifacts.map(({ id, level, pieces, owned }) => ({ id, level, pieces, owned })),
     }),
