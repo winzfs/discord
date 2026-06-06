@@ -15,12 +15,12 @@ export const skills: SkillDefinition[] = [
   { id: "burst-scout-flare", displayName: "로켓 조명탄", type: "attack", assetKey: "skill.placeholder", tags: ["unique", "rare", "attack", "area-damage", "burst"] },
   { id: "nano-aide-injector", displayName: "나노 보조 주입", type: "support", assetKey: "skill.placeholder", tags: ["unique", "rare", "buff", "power-up"] },
 
-  { id: "plasma-mage-orb", displayName: "플라즈마 오브", type: "attack", assetKey: "skill.placeholder", tags: ["unique", "epic", "attack", "area-damage", "wave-clear"] },
-  { id: "core-knight-anchor", displayName: "코어 앵커", type: "control", assetKey: "skill.placeholder", tags: ["unique", "epic", "debuff", "slow", "shield"] },
-  { id: "overclock-tech-haste", displayName: "가속 회로", type: "support", assetKey: "skill.placeholder", tags: ["unique", "epic", "buff", "haste", "ultimate-charge"] },
-  { id: "arc-captain-current", displayName: "아크 전류", type: "attack", assetKey: "skill.placeholder", tags: ["unique", "epic", "attack", "chain", "multi-hit"] },
-  { id: "gravity-jailer-field", displayName: "중력 감옥", type: "control", assetKey: "skill.placeholder", tags: ["unique", "epic", "debuff", "grouping", "slow"] },
-  { id: "combat-engineer-turret", displayName: "지원 포탑", type: "attack", assetKey: "skill.placeholder", tags: ["unique", "epic", "attack", "turret", "support-fire"] },
+  { id: "plasma-mage-orb", displayName: "하드라이트 광자구", type: "attack", assetKey: "skill.placeholder", tags: ["unique", "epic", "attack", "area-damage", "wave-clear"] },
+  { id: "core-knight-anchor", displayName: "전술 방패 앵커", type: "control", assetKey: "skill.placeholder", tags: ["unique", "epic", "debuff", "slow", "shield"] },
+  { id: "overclock-tech-haste", displayName: "오아시스 가속 회로", type: "support", assetKey: "skill.placeholder", tags: ["unique", "epic", "buff", "haste", "ultimate-charge"] },
+  { id: "arc-captain-current", displayName: "눌 섹터 전류망", type: "attack", assetKey: "skill.placeholder", tags: ["unique", "epic", "attack", "chain", "multi-hit"] },
+  { id: "gravity-jailer-field", displayName: "달 기지 중력장", type: "control", assetKey: "skill.placeholder", tags: ["unique", "epic", "debuff", "grouping", "slow"] },
+  { id: "combat-engineer-turret", displayName: "스크랩 임시 포탑", type: "attack", assetKey: "skill.placeholder", tags: ["unique", "epic", "attack", "turret", "support-fire"] },
 
   { id: "credit-hacker-bounty", displayName: "현상금 해킹", type: "support", assetKey: "skill.placeholder", tags: ["unique", "legendary", "economy", "coin-bonus"] },
   { id: "credit-hacker-network", displayName: "네트워크 증폭", type: "support", assetKey: "skill.placeholder", tags: ["unique", "legendary", "buff", "team-wide", "attack-speed"] },
