@@ -3,6 +3,7 @@ import { getHeroById, skills, type BoardHero, type SkillDefinition } from "@disc
 import { colors } from "./gameTheme";
 import { clearPixiContainer, makePixiPanel, makePixiText } from "./pixiSharedView";
 import { makePixiTouchBoundary } from "./pixiPointerGuards";
+import { getHeroSkillDetails } from "../../components/lobby/lobbyHeroSkillDetails";
 
 function gradeLabel(grade: string | undefined) {
   if (grade === "mythic") return "신화";
@@ -33,34 +34,18 @@ function skillTypeLabel(type: SkillDefinition["type"]) {
 }
 
 function getHeroSkills(heroId: string) {
-  return skills.filter((skill) => skill.tags.includes(heroId));
+  const definition = getHeroById(heroId);
+  if (!definition) return [];
+  return definition.skillIds
+    .map((skillId) => skills.find((skill) => skill.id === skillId))
+    .filter((skill): skill is SkillDefinition => Boolean(skill));
 }
 
 function getHeroSkillEffectLines(heroId: string, skill: SkillDefinition) {
+  const detail = getHeroSkillDetails(heroId).find((candidate) => candidate.id === skill.id);
+  if (detail) return detail.lines;
   if (skill.type === "ultimate") return getHeroUltimateEffectLines(heroId);
-
-  const descriptions: Record<string, string[]> = {
-    "dva-fusion-cannons": ["42%: 주변 4명 24% 피해", "주 대상 104%"],
-    "dva-defense-matrix": ["30%: 보스/선두 억제", "이속 62%로 감소"],
-    "zarya-particle-cannon": ["항상: 지속 빔", "94%→174% 강화"],
-    "zarya-projected-barrier": ["24%: 차지 3+ 조건", "감속 + 피해 108%"],
-    "winston-tesla-cannon": ["기본: 좁은 전기 광선", "최대 4명 72%/46%"],
-    "winston-jump-pack": ["30%: 선두 충격", "42% 피해 + 감속"],
-    "tracer-pulse-pistols": ["42%: 18% 추가타", "주 대상 96%"],
-    "tracer-blink": ["42%: 선두 적 48%", "누수 방지"],
-    "cassidy-peacekeeper": ["42%: 치명타", "피해 155%"],
-    "cassidy-magnetic-grenade": ["30%: 감속/표식", "일반114%, 보스124%"],
-    "genji-shuriken": ["42%: 선두 2명", "각 32% 추가"],
-    "genji-swift-strike": ["22%: 저체력 3명", "1초 간격 참격"],
-    "ana-biotic-rifle": ["24%: 취약 사격", "일반122%, 보스138%"],
-    "ana-sleep-dart": ["30%: 3초 수면", "보스도 적용"],
-    "kiriko-kunai": ["42%: 급소 판정", "일반102%, 급소168%"],
-    "kiriko-protection-suzu": ["24%: 정화의 방울", "공격 배율 소량 증가"],
-    "illari-solar-rifle": ["42%: 충전 사격", "일반134%, 보스152%"],
-    "illari-healing-pylon": ["24%: 주변 2명", "각 26% 보조 피해"],
-  };
-
-  return descriptions[skill.id] ?? ["확률 발동", "영웅 공격력 기반"];
+  return ["확률 발동", "영웅 공격력 기반"];
 }
 
 function getHeroUltimateEffectLines(heroId: string) {
@@ -78,11 +63,9 @@ function getHeroUltimateEffectLines(heroId: string) {
 }
 
 function getSkillConditionText(heroId: string, skill: SkillDefinition) {
-  if (heroId === "zarya" && skill.id === "zarya-particle-cannon") return "항상";
+  const detail = getHeroSkillDetails(heroId).find((candidate) => candidate.id === skill.id);
+  if (detail) return detail.condition;
   if (skill.type === "ultimate") return "게이지 100%";
-  if (skill.id === "zarya-projected-barrier") return "24%, 차지 3+";
-  if (skill.id === "ana-sleep-dart") return "30%, 보스 가능";
-  if (skill.id === "genji-swift-strike") return "22%";
   if (skill.type === "attack") return "42%";
   if (skill.type === "control") return "30%";
   return "24%";
@@ -90,6 +73,7 @@ function getSkillConditionText(heroId: string, skill: SkillDefinition) {
 
 function getSkillStatusText(skill: SkillDefinition) {
   if (skill.type === "ultimate") return "게이지";
+  if (skill.tags.includes("unique")) return "고유";
   return "확률";
 }
 
@@ -144,7 +128,7 @@ export function drawPixiUnitInfoView(target: Container, options: PixiUnitInfoVie
   const normalSkills = heroSkills.filter((skill) => skill.type !== "ultimate");
   const ultimateSkills = heroSkills.filter((skill) => skill.type === "ultimate");
   const width = Math.min(360, options.rendererWidth - 24);
-  const height = Math.min(232, options.rendererHeight - 120);
+  const height = Math.min(244, options.rendererHeight - 120);
   const view = new Container();
   view.x = Math.max(12, options.rendererWidth / 2 - width / 2);
   view.y = Math.max(62, options.rendererHeight - height - 118);
@@ -176,7 +160,7 @@ export function drawPixiUnitInfoView(target: Container, options: PixiUnitInfoVie
   if (normalSkills[0]) drawSkillCard(view, normalSkills[0], options.hero.heroId, 14, 116, cardWidth);
   if (normalSkills[1]) drawSkillCard(view, normalSkills[1], options.hero.heroId, 24 + cardWidth, 116, cardWidth);
 
-  const ultimateY = 172;
+  const ultimateY = normalSkills.length > 1 ? 176 : 164;
   const ultimateTitle = makePixiText("궁극기", 12, 0xffc46b);
   ultimateTitle.x = 14;
   ultimateTitle.y = ultimateY;
@@ -186,7 +170,7 @@ export function drawPixiUnitInfoView(target: Container, options: PixiUnitInfoVie
   if (ultimate) {
     view.addChild(makeInfoLine(`${ultimate.displayName} [${getSkillStatusText(ultimate)}]`, 14, ultimateY + 18, colors.white, 10));
     view.addChild(makeInfoLine(`조건: ${getSkillConditionText(options.hero.heroId, ultimate)}`, 14, ultimateY + 32, 0xb7afa8, 8));
-    getHeroUltimateEffectLines(options.hero.heroId).slice(0, 2).forEach((line, index) => {
+    getHeroSkillEffectLines(options.hero.heroId, ultimate).slice(0, 2).forEach((line, index) => {
       view.addChild(makeInfoLine(`- ${line}`, 14 + index * (cardWidth + 10), ultimateY + 44, 0xd8d0c8, 8));
     });
   } else {
