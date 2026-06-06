@@ -56,17 +56,9 @@ function createMythicMenuButton(label: string, x: number, y: number, onClick: ()
 function gradeColor(grade: HeroGrade | undefined) {
   if (grade === "mythic") return 0xffd447;
   if (grade === "legendary") return 0xff7a1f;
-  if (grade === "epic") return 0x3a0f8f;
-  if (grade === "rare") return 0xd8fbff;
-  return 0xd8d0c8;
-}
-
-function gradeLabelFill(grade: HeroGrade | undefined) {
-  if (grade === "rare") return 0x15323a;
-  if (grade === "epic") return 0xf2eaff;
-  if (grade === "legendary") return 0x2b1606;
-  if (grade === "mythic") return 0x2f2300;
-  return 0x282521;
+  if (grade === "epic") return 0x26006f;
+  if (grade === "rare") return 0x7ff7ff;
+  return 0x7f786f;
 }
 
 function gradeLabel(grade: HeroGrade | undefined) {
@@ -98,15 +90,22 @@ function drawGradeLabel(row: Container, grade: HeroGrade | undefined, x: number,
   const label = gradeLabel(grade);
   const background = new Graphics();
   background.roundRect(x, y + 1, GRADE_LABEL_WIDTH, 15, 5);
-  background.fill({ color: gradeColor(grade), alpha: fulfilled ? 0.95 : 0.68 });
-  background.stroke({ color: 0x1f1b18, width: 1, alpha: 0.5 });
+  background.fill({ color: gradeColor(grade), alpha: fulfilled ? 1 : 0.86 });
+  background.stroke({ color: 0x211812, width: 1.4, alpha: 0.82 });
   row.addChild(background);
 
-  const text = makePixiText(label, 9, gradeLabelFill(grade));
+  const shadow = makePixiText(label, 9, 0x17110f);
+  shadow.anchor.set(0.5, 0);
+  shadow.x = x + GRADE_LABEL_WIDTH / 2 + 1;
+  shadow.y = y + 3;
+  shadow.alpha = 0.68;
+  row.addChild(shadow);
+
+  const text = makePixiText(label, 9, colors.white);
   text.anchor.set(0.5, 0);
   text.x = x + GRADE_LABEL_WIDTH / 2;
   text.y = y + 2;
-  text.alpha = fulfilled ? 1 : 0.92;
+  text.alpha = fulfilled ? 1 : 0.96;
   row.addChild(text);
 }
 
