@@ -2,6 +2,7 @@ import { useState } from "react";
 import { LobbyBottomNav } from "../components/lobby/LobbyBottomNav";
 import { LobbyDetailPanel } from "../components/lobby/LobbyDetailPanel";
 import { LobbyRecruitPanel } from "../components/lobby/LobbyRecruitPanel";
+import { LobbyRecruitReveal } from "../components/lobby/LobbyRecruitReveal";
 import { LobbyStage } from "../components/lobby/LobbyStage";
 import { LobbyTopBar } from "../components/lobby/LobbyTopBar";
 import { ArtifactsView, BattleView, HeroesView, ShopView } from "../components/lobby/LobbyViews";
@@ -107,6 +108,7 @@ export function LobbyPage() {
   const [heroes, setHeroes] = useState(savedProgress.heroes);
   const [artifacts, setArtifacts] = useState(savedProgress.artifacts);
   const [lastRecruitResults, setLastRecruitResults] = useState<RecruitResult[]>([]);
+  const [revealResults, setRevealResults] = useState<RecruitResult[]>([]);
   const [detail, setDetail] = useState<Detail | null>(null);
   const [notice, setNotice] = useState("상점, 영웅, 전투, 유물을 확인해보세요.");
 
@@ -149,6 +151,7 @@ export function LobbyPage() {
     setCrystals((value) => value - cost);
     setHeroes(summary.nextHeroes);
     setLastRecruitResults(summary.results);
+    setRevealResults(summary.results);
     persistProgress(summary.nextHeroes, artifacts);
     setActiveTab("heroes");
     setDetail(null);
@@ -226,6 +229,7 @@ export function LobbyPage() {
         />
       )}
       {detail && <LobbyDetailPanel detail={detail} gold={gold} onClose={() => setDetail(null)} onUpgrade={upgradeSelected} />}
+      {revealResults.length > 0 && <LobbyRecruitReveal results={revealResults} onClose={() => setRevealResults([])} />}
       <LobbyBottomNav
         activeTab={activeTab}
         tabs={tabs}
