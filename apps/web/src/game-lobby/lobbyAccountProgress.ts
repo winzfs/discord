@@ -1,5 +1,15 @@
 import type { GameState } from "@discord-random-defense/game";
 
+export type LobbyPassRewardKind = "gold" | "crystals" | "hero-shards" | "artifact-pieces";
+
+export type LobbyPassReward = {
+  level: number;
+  kind: LobbyPassRewardKind;
+  amount: number;
+  label: string;
+  featured?: boolean;
+};
+
 export type LobbyAccountProgress = {
   accountLevel: number;
   accountExp: number;
@@ -26,6 +36,19 @@ export const defaultLobbyAccountProgress: LobbyAccountProgress = {
   passExp: 0,
   passSeasonId: "season-1",
 };
+
+export const lobbyPassRewards: LobbyPassReward[] = [
+  { level: 1, kind: "gold", amount: 500, label: "골드 500" },
+  { level: 2, kind: "crystals", amount: 80, label: "보석 80" },
+  { level: 3, kind: "hero-shards", amount: 12, label: "영웅 조각 12" },
+  { level: 4, kind: "gold", amount: 900, label: "골드 900" },
+  { level: 5, kind: "artifact-pieces", amount: 8, label: "유물 조각 8", featured: true },
+  { level: 6, kind: "crystals", amount: 120, label: "보석 120" },
+  { level: 7, kind: "hero-shards", amount: 18, label: "영웅 조각 18" },
+  { level: 8, kind: "gold", amount: 1400, label: "골드 1400" },
+  { level: 9, kind: "crystals", amount: 160, label: "보석 160" },
+  { level: 10, kind: "hero-shards", amount: 30, label: "신화 조각 상자", featured: true },
+];
 
 const ACCOUNT_MAX_LEVEL = 100;
 const PASS_MAX_LEVEL = 50;
