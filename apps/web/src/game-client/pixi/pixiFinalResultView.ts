@@ -78,15 +78,15 @@ function createRewardCard(label: string, value: string, x: number, y: number, wi
 
 function getResultGrade(refs: GameRefs) {
   if (refs.state.status !== "cleared") return { label: "C", color: 0xff8d9b, message: "다음엔 더 멀리 갈 수 있어!" };
-  if (refs.state.lives >= refs.state.maxLives) return { label: "S", color: colors.yellow, message: "완벽 방어! 최고의 전투였어" };
+  if (refs.state.lives >= initialBalance.startingLives) return { label: "S", color: colors.yellow, message: "완벽 방어! 최고의 전투였어" };
   if (refs.state.clearedWaves >= initialBalance.maxWave) return { label: "A", color: 0x8dffbf, message: "작전 성공! 모든 웨이브 클리어" };
   return { label: "B", color: 0x9ed8ff, message: "좋은 전투였어" };
 }
 
 function getStars(refs: GameRefs) {
   if (refs.state.status === "failed") return "★☆☆";
-  if (refs.state.lives >= refs.state.maxLives) return "★★★";
-  return refs.state.lives >= Math.ceil(refs.state.maxLives * 0.5) ? "★★☆" : "★☆☆";
+  if (refs.state.lives >= initialBalance.startingLives) return "★★★";
+  return refs.state.lives >= Math.ceil(initialBalance.startingLives * 0.5) ? "★★☆" : "★☆☆";
 }
 
 export function showFinalResultPanel(refs: GameRefs) {
