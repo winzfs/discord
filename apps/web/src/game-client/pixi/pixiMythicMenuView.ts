@@ -9,6 +9,7 @@ import {
 import { colors, gradeColor as themeGradeColor } from "./gameTheme";
 import { makePixiPanel, makePixiText } from "./pixiSharedView";
 import { makePixiTouchBoundary, stopPixiPropagation } from "./pixiPointerGuards";
+import { createVirtualScrollScheduler } from "./pixiVirtualScrollScheduler";
 
 export type PixiMythicMenuViewOptions = {
   state: GameState;
@@ -20,6 +21,11 @@ export type PixiMythicMenuViewOptions = {
 
 type IngredientProgress = ReturnType<typeof getMythicIngredientProgress>[number];
 type MythicCraftItem = ReturnType<typeof getMythicCraftAvailability>[number];
+
+type MythicMenuRenderContext = {
+  options: PixiMythicMenuViewOptions;
+  progressCache: Map<string, IngredientProgress[]>;
+};
 
 const HEADER_HEIGHT = 58;
 const ROW_HEIGHT = 104;
@@ -78,6 +84,15 @@ function getIngredientGrade(item: IngredientProgress): HeroGrade | undefined {
   return undefined;
 }
 
+function getCachedIngredientProgress(context: MythicMenuRenderContext, recipe: MythicCraftItem["recipe"]) {
+  const cached = context.progressCache.get(recipe.id);
+  if (cached) return cached;
+
+  const progress = getMythicIngredientProgress(context.options.state, recipe);
+  context.progressCache.set(recipe.id, progress);
+  return progress;
+}
+
 function summarizeIngredientProgress(progress: IngredientProgress[]) {
   const owned = progress.filter((item) => item.fulfilled).length;
   const total = progress.length;
@@ -90,14 +105,14 @@ function drawGradeLabel(row: Container, grade: HeroGrade | undefined, x: number,
   const background = new Graphics();
   background.roundRect(x, y + 1, GRADE_LABEL_WIDTH, 15, 5);
   background.fill({ color: gradeColor(grade), alpha: fulfilled ? 1 : 0.86 });
-  background.stroke({ color: 0x211812, width: 1.4, alpha: 0.82 });
+  background.stroke({ color: 0x211812, width: 1.2, alpha: 0.72 });
   row.addChild(background);
 
   const shadow = makePixiText(label, 9, 0x17110f);
   shadow.anchor.set(0.5, 0);
   shadow.x = x + GRADE_LABEL_WIDTH / 2 + 1;
   shadow.y = y + 3;
-  shadow.alpha = 0.68;
+  shadow.alpha = 0.62;
   row.addChild(shadow);
 
   const text = makePixiText(label, 9, colors.white);
@@ -126,12 +141,12 @@ function drawIngredientItem(row: Container, item: IngredientProgress, x: number,
 
 function drawIngredientSummary(
   row: Container,
-  options: PixiMythicMenuViewOptions,
+  context: MythicMenuRenderContext,
   recipe: MythicCraftItem["recipe"],
   y: number,
   rowWidth: number,
 ) {
-  const progress = getMythicIngredientProgress(options.state, recipe);
+  const progress = getCachedIngredientProgress(context, recipe);
   const summary = summarizeIngredientProgress(progress);
 
   const summaryText = makePixiText(
@@ -208,7 +223,7 @@ function createRecipeRow(
   item: MythicCraftItem,
   index: number,
   rowWidth: number,
-  options: PixiMythicMenuViewOptions,
+  context: MythicMenuRenderContext,
 ) {
   const row = new Container();
   row.y = index * ROW_STEP;
@@ -227,10 +242,10 @@ function createRecipeRow(
     craftHint.x = rowWidth - 12;
     craftHint.y = 10;
     row.addChild(craftHint);
-    bindCraftTap(row, item.recipe.id, options.onCraft);
+    bindCraftTap(row, item.recipe.id, context.options.onCraft);
   }
 
-  drawIngredientSummary(row, options, item.recipe, 37, rowWidth);
+  drawIngredientSummary(row, context, item.recipe, 37, rowWidth);
   return row;
 }
 
@@ -239,7 +254,7 @@ function createVirtualRowRenderer(
   content: Container,
   rowWidth: number,
   viewportHeight: number,
-  options: PixiMythicMenuViewOptions,
+  context: MythicMenuRenderContext,
 ) {
   let renderedStart = -1;
   let renderedEnd = -1;
@@ -258,7 +273,7 @@ function createVirtualRowRenderer(
 
     clearRows(content);
     for (let index = start; index <= end; index += 1) {
-      content.addChild(createRecipeRow(list[index], index, rowWidth, options));
+      content.addChild(createRecipeRow(list[index], index, rowWidth, context));
     }
   };
 }
@@ -273,6 +288,7 @@ function bindVerticalDragScroll(
   const maxScroll = Math.max(0, contentHeight - viewportHeight);
   if (maxScroll <= 0) return;
 
+  const scheduler = createVirtualScrollScheduler(renderVisibleRows);
   let dragging = false;
   let startY = 0;
   let startContentY = 0;
@@ -289,19 +305,20 @@ function bindVerticalDragScroll(
     if (!dragging) return;
     event.stopPropagation();
     clampScroll(content, maxScroll, startContentY + event.global.y - startY);
-    renderVisibleRows();
   });
   viewport.on("pointerup", (event: any) => {
     event.stopPropagation();
     dragging = false;
+    scheduler.request();
   });
   viewport.on("pointerupoutside", () => {
     dragging = false;
+    scheduler.request();
   });
   viewport.on("wheel", (event: any) => {
     event.stopPropagation();
     clampScroll(content, maxScroll, content.y - event.deltaY * 0.45);
-    renderVisibleRows();
+    scheduler.request();
   });
 }
 
@@ -313,6 +330,11 @@ export function createPixiMythicMenuView(options: PixiMythicMenuViewOptions) {
   const viewportHeight = Math.min(maxHeight - HEADER_HEIGHT - PANEL_MARGIN, contentHeight);
   const height = HEADER_HEIGHT + viewportHeight + PANEL_MARGIN;
   const menu = new Container();
+  const context: MythicMenuRenderContext = {
+    options,
+    progressCache: new Map(),
+  };
+
   menu.x = options.rendererWidth / 2 - width / 2;
   menu.y = Math.max(12, options.rendererHeight * MENU_TOP_RATIO);
   makePixiTouchBoundary(menu, width, height);
@@ -333,7 +355,7 @@ export function createPixiMythicMenuView(options: PixiMythicMenuViewOptions) {
   spacer.fill({ color: 0x000000, alpha: 0.001 });
   menu.addChild(viewport);
 
-  const renderVisibleRows = createVirtualRowRenderer(list, content, rowWidth, viewportHeight, options);
+  const renderVisibleRows = createVirtualRowRenderer(list, content, rowWidth, viewportHeight, context);
   renderVisibleRows();
   bindVerticalDragScroll(viewport, content, viewportHeight, contentHeight, renderVisibleRows);
 
