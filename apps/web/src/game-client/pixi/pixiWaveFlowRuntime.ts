@@ -6,6 +6,7 @@ import {
   WAVE_RESULT_SECONDS,
 } from "./pixiGameTypes";
 import { getPerfectWaveLuckStoneReward } from "./pixiProgressBonuses";
+import { applyCoinInterest } from "./pixiCoinInterestRuntime";
 import { spawnWaveMonsters } from "./pixiWaveRuntime";
 import { showWaveRewardMenu } from "./pixiWaveRewardRuntime";
 import { showFinalResultPanel } from "./pixiFinalResultView";
@@ -96,6 +97,14 @@ export function finishAutoWave(
   const finalWave = refs.state.currentWave >= initialBalance.maxWave;
   const nextStatus = refs.state.status === "failed" ? "failed" : finalWave ? "cleared" : "playing";
   const shouldAdvanceWave = nextStatus === "playing" && refs.state.currentWave < initialBalance.maxWave;
+  const interest = refs.state.status === "failed" ? null : applyCoinInterest(refs.state);
+  const interestResult = interest?.result ?? {
+    baseCoins: refs.state.resources,
+    interest: 0,
+    rate: 0.08,
+    capped: false,
+  };
+  const stateAfterInterest = interest?.state ?? refs.state;
 
   refs.activeEnemies = [];
   refs.lastWaveSummary = {
@@ -103,16 +112,20 @@ export function finishAutoWave(
     leaked: leakedEnemies,
     lostLives,
     reward: refs.waveReward,
+    interestReward: interestResult.interest,
+    interestBaseCoins: interestResult.baseCoins,
+    interestRate: interestResult.rate,
+    interestCapped: interestResult.capped,
     luckStoneReward,
     perfect,
   };
   refs.state = {
-    ...refs.state,
+    ...stateAfterInterest,
     currentWave: shouldAdvanceWave ? refs.state.currentWave + 1 : refs.state.currentWave,
     clearedWaves: refs.state.status === "failed" ? refs.state.clearedWaves : Math.max(refs.state.clearedWaves, clearedWave),
     luckStones: refs.state.luckStones + luckStoneReward,
     status: nextStatus,
-    score: refs.state.score + refs.waveKilled * 10 + (perfect ? 50 : 0),
+    score: stateAfterInterest.score + refs.waveKilled * 10 + (perfect ? 50 : 0),
   };
   refs.wavePhase = "result";
   refs.resultTimer = readyImmediately ? 0.35 : WAVE_RESULT_SECONDS;
