@@ -2,6 +2,7 @@ import { getHeroById, skills } from "@discord-random-defense/game";
 import type { BoardHero, HeroRole } from "@discord-random-defense/game";
 import { colors } from "./gameTheme";
 import type { ActiveEnemy, GameRefs } from "./pixiGameTypes";
+import { getProgressHeroMasteryEffect } from "./pixiProgressBonuses";
 
 export type BaseHeroSkillRuntimeOptions = {
   damageEnemy: (refs: GameRefs, enemy: ActiveEnemy, damage: number) => void;
@@ -132,6 +133,22 @@ function buildSkillProfile(hero: BoardHero, role: HeroRole): SkillProfile {
   return profile;
 }
 
+function applyMasteryToProfile(refs: GameRefs, hero: BoardHero, profile: SkillProfile) {
+  const mastery = getProgressHeroMasteryEffect(refs.progressBonuses, hero.heroId);
+  if (mastery.level <= 1) return profile;
+
+  return {
+    ...profile,
+    splashMultiplier: profile.splashMultiplier * mastery.skillMultiplier,
+    splashRadius: profile.splashRadius > 0 ? profile.splashRadius + Math.min(24, mastery.level * 1.4) : 0,
+    extraHitMultiplier: profile.extraHitMultiplier * mastery.skillMultiplier,
+    slowMultiplier: profile.slowMultiplier < 1
+      ? Math.max(0.62, 1 - (1 - profile.slowMultiplier) * mastery.controlMultiplier)
+      : profile.slowMultiplier,
+    coinBonus: profile.coinBonus + mastery.bonusCoin,
+  };
+}
+
 function applySlow(target: ActiveEnemy, multiplier: number) {
   if (multiplier >= 1) return;
   target.speed = Math.max(0.2, target.speed * multiplier);
@@ -184,7 +201,7 @@ export function applyBaseHeroSkillPostDamage(
   target: ActiveEnemy,
   damage: number,
 ) {
-  const profile = buildSkillProfile(hero, role);
+  const profile = applyMasteryToProfile(refs, hero, buildSkillProfile(hero, role));
   if (!isNonMythic(hero)) return;
 
   applySlow(target, profile.slowMultiplier);
