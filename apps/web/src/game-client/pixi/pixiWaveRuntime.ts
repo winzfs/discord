@@ -7,9 +7,14 @@ export type SpawnWaveMonstersOptions = {
   invalidateControls: (refs: GameRefs) => void;
 };
 
+function getSpawnProgressGap(spawnIntervalMs: number) {
+  return Math.max(0.038, (spawnIntervalMs / 1000) * 0.16);
+}
+
 export function spawnWaveMonsters(refs: GameRefs, options: SpawnWaveMonstersOptions) {
   refs.activeEnemies.forEach(destroyActiveEnemy);
   refs.activeEnemies = [];
+  refs.nextEnemyLeakAt = 0;
   refs.waveKilled = 0;
   refs.waveReward = 0;
   refs.waveLostLives = 0;
@@ -21,7 +26,11 @@ export function spawnWaveMonsters(refs: GameRefs, options: SpawnWaveMonstersOpti
     options.showBossWarning(refs);
   }
 
+  let spawnIndex = 0;
+
   for (const group of wave.enemyGroups) {
+    const progressGap = getSpawnProgressGap(group.spawnIntervalMs);
+
     for (let index = 0; index < group.count; index += 1) {
       const enemy = createActiveEnemy(
         refs,
@@ -31,8 +40,9 @@ export function spawnWaveMonsters(refs: GameRefs, options: SpawnWaveMonstersOpti
 
       if (!enemy) continue;
 
-      enemy.progress = -((group.spawnIntervalMs / 1000) * index * 0.075);
+      enemy.progress = -(spawnIndex * progressGap);
       refs.activeEnemies.push(enemy);
+      spawnIndex += 1;
     }
   }
 
