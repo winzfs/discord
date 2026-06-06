@@ -24,7 +24,11 @@ function createButton(label: string, x: number, y: number, width: number, fill: 
   root.y = y;
   root.eventMode = "static";
   root.cursor = "pointer";
-  root.on("pointertap", onTap);
+  root.on("pointerdown", (event) => event.stopPropagation());
+  root.on("pointertap", (event) => {
+    event.stopPropagation();
+    onTap();
+  });
   return root;
 }
 
@@ -168,6 +172,8 @@ export function showFinalResultPanel(refs: GameRefs) {
 
   panel.x = x;
   panel.y = y;
+  panel.eventMode = "static";
+  panel.on("pointerdown", (event) => event.stopPropagation());
   panel.addChild(
     bg,
     glow,
@@ -187,6 +193,8 @@ export function showFinalResultPanel(refs: GameRefs) {
   );
 
   const root = new Container();
+  root.eventMode = "static";
+  root.on("pointerdown", (event) => event.stopPropagation());
   root.addChild(dim, panel);
   refs.menuLayer.addChild(root);
   refs.menu = root;
