@@ -31,8 +31,8 @@ export function LobbyHeroPortrait({ hero }: LobbyHeroPortraitProps) {
   }
 
   return (
-    <div className="hero-portrait mythic-hero-portrait" aria-label={`${hero.displayName} 대기 이미지`}>
-      <img className="mythic-hero-idle-sprite" src={spriteUrl} alt="" loading="lazy" draggable={false} />
+    <div className="hero-portrait hero-sprite-portrait" aria-label={`${hero.displayName} 대기 이미지`}>
+      <img className="hero-idle-sprite" src={spriteUrl} alt="" loading="lazy" draggable={false} />
     </div>
   );
 }
