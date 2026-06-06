@@ -20,6 +20,7 @@ export type WavePhase = "countdown" | "combat" | "result";
 export type HeroSpriteAttackState = {
   direction: "left" | "right";
   until: number;
+  idleUntil: number;
 };
 
 export type HeroSpriteOffsetState = {
