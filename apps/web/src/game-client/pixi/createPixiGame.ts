@@ -79,6 +79,7 @@ import { formatLobbyBattleReward, grantLobbyBattleReward } from "./pixiLobbyBatt
 export type PixiGameHandle = { cleanup: () => void };
 export type PixiGameOptions = { testMode?: boolean };
 
+const ACTIVE_ENEMY_LIMIT = 100;
 let testControlsView: PixiTestControlsView | null = null;
 
 function makeText(value: string, size = 18, fill: number = colors.white) {
@@ -133,8 +134,19 @@ function getPathPoint(layout: GameLayout, progress: number) {
   return getPixiPathPoint(layout, progress);
 }
 
+function getAliveEnemyCount(refs: GameRefs) {
+  return refs.activeEnemies.filter((enemy) => enemy.alive).length;
+}
+
+function checkEnemyCountLimit(refs: GameRefs) {
+  if (getAliveEnemyCount(refs) < ACTIVE_ENEMY_LIMIT) return false;
+  refs.state = { ...refs.state, status: "failed" };
+  finishAutoWave(refs, true, createWaveFlowRuntimeOptions());
+  return true;
+}
+
 function areAllEnemiesResolved(refs: GameRefs) {
-  return refs.activeEnemies.length > 0 && refs.activeEnemies.every((enemy) => !enemy.alive || enemy.leaked);
+  return refs.activeEnemies.length > 0 && refs.activeEnemies.every((enemy) => !enemy.alive);
 }
 
 function createWaveFlowRuntimeOptions(): PixiWaveFlowRuntimeOptions {
@@ -275,7 +287,8 @@ function tick(refs: GameRefs, deltaMs: number) {
   if (refs.wavePhase === "combat") {
     refs.combatTimer -= deltaSeconds;
     refs.attackTimer -= deltaSeconds;
-    updateActiveEnemies(refs, deltaSeconds, { getPathPoint, invalidateControls, invalidateHud, floatText });
+    updateActiveEnemies(refs, deltaSeconds, { getPathPoint });
+    if (checkEnemyCountLimit(refs)) return;
     if (chargeMythicUltimatesOverTime(refs, deltaSeconds)) {
       drawBoard(refs, layout, createDragRuntimeOptions);
     }
