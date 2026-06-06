@@ -1,5 +1,5 @@
 import { moveOneHeroToCell } from "@discord-random-defense/game";
-import type { GameState } from "@discord-random-defense/game";
+import type { BoardHero, GameState } from "@discord-random-defense/game";
 import { colors } from "./gameTheme";
 import type { GameRefs } from "./pixiGameTypes";
 import { createUnitGhost, getCellCenter, getCellIndexAtPoint } from "./pixiBoardRuntime";
@@ -22,6 +22,15 @@ export type PixiDragRuntimeOptions = {
   showUnitMenu: (refs: GameRefs, cellIndex: number) => void;
 };
 
+function createStackGhost(units: BoardHero[], cell: number) {
+  const ghost = createUnitGhost(units[0], cell, 0);
+  if (units.length > 1) {
+    const countText = new (createUnitGhost(units[0], cell, 0).constructor as any)();
+    countText.destroy?.({ children: true });
+  }
+  return ghost;
+}
+
 export function beginCellDrag(
   refs: GameRefs,
   sourceIndex: number,
@@ -33,14 +42,14 @@ export function beginCellDrag(
   if (options.isFinished(refs.state) || refs.movementLocked) return;
 
   const sourceCell = refs.state.board[sourceIndex];
-  const movingHero = sourceCell?.units[sourceCell.units.length - 1];
+  const movingHero = sourceCell?.units[0];
   if (!movingHero) return;
 
   options.clearMenu(refs);
   options.clearUnitSelection(refs);
   options.clearDrag(refs);
 
-  const ghost = createUnitGhost(movingHero, cell, 0);
+  const ghost = createStackGhost(sourceCell.units, cell);
   ghost.x = globalX;
   ghost.y = globalY;
   refs.effects.addChild(ghost);
@@ -72,6 +81,10 @@ export function moveDragGhost(refs: GameRefs, globalX: number, globalY: number) 
   }
 }
 
+function getRepresentativeHero(previousState: GameState, cellIndex: number) {
+  return previousState.board[cellIndex]?.units[0] ?? null;
+}
+
 function animateWalk(
   refs: GameRefs,
   sourceIndex: number,
@@ -81,7 +94,7 @@ function animateWalk(
   options: PixiDragRuntimeOptions,
 ) {
   const sourceCell = previousState.board[sourceIndex];
-  const movingHero = sourceCell?.units[sourceCell.units.length - 1];
+  const movingHero = sourceCell?.units[0];
   if (!movingHero) {
     done();
     return;
@@ -89,7 +102,7 @@ function animateWalk(
 
   const from = getCellCenter(refs, sourceIndex);
   const to = getCellCenter(refs, targetIndex);
-  const ghost = createUnitGhost(movingHero, from.cell, 0.95);
+  const ghost = createStackGhost(sourceCell.units, from.cell);
   ghost.x = from.x;
   ghost.y = from.y;
   refs.effects.addChild(ghost);
@@ -119,16 +132,16 @@ function animateSwapWalk(
   options: PixiDragRuntimeOptions,
 ) {
   const targetCell = previousState.board[targetIndex];
-  const swapHero = targetCell?.units[0];
+  const swapHero = getRepresentativeHero(previousState, targetIndex);
 
-  if (!swapHero) {
+  if (!swapHero || !targetCell) {
     done();
     return;
   }
 
   const from = getCellCenter(refs, targetIndex);
   const to = getCellCenter(refs, sourceIndex);
-  const ghost = createUnitGhost(swapHero, from.cell, 0.95);
+  const ghost = createStackGhost(targetCell.units, from.cell);
   ghost.x = from.x;
   ghost.y = from.y;
   refs.effects.addChild(ghost);
@@ -223,15 +236,19 @@ export function finishCellDrag(
   const result = moveOneHeroToCell(refs.state, sourceIndex, targetIndex);
 
   if (!result.movedHero || !result.action) {
-    if (result.reason === "target_full") {
-      options.floatText(
-        refs,
-        "칸이 가득 찼어",
-        refs.app.renderer.width / 2,
-        refs.app.renderer.height * 0.52,
-        colors.red,
-      );
-    }
+    const message =
+      result.reason === "target_full"
+        ? "칸이 가득 찼어"
+        : result.reason === "mythic_stack_blocked"
+          ? "신화는 중첩 불가"
+          : "이동 불가";
+    options.floatText(
+      refs,
+      message,
+      refs.app.renderer.width / 2,
+      refs.app.renderer.height * 0.52,
+      colors.red,
+    );
     return;
   }
 
