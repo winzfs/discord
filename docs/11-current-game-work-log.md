@@ -114,6 +114,8 @@ apps/web/src/game-client/pixi/pixiLobbyBattleRewards.ts
 몬스터가 오른쪽 아래 도착 지점에 들어오면 HP가 줄고 그 몬스터만 사라져야 하는데,
 여러 몬스터가 한꺼번에 사라지거나 도착 지점 이후로 더 이동하는 문제가 있었습니다.
 
+몬스터가 겹쳐 있을 때 한 마리가 들어가도 여러 몬스터가 같은 프레임에 한꺼번에 사라지는 문제가 있었습니다.
+
 결과창은 버튼을 누르지 않았는데도 클릭 즉시 사라지는 문제가 있었습니다.
 ```
 
@@ -122,6 +124,9 @@ apps/web/src/game-client/pixi/pixiLobbyBattleRewards.ts
 ```text
 경로를 오른쪽 아래에서 끝나는 열린 경로로 바꿨지만,
 실제 화면에서는 아래쪽 가로 이동 구간이 빠져 오른쪽 중간 부근에서 종료 판정처럼 보이는 문제가 생겼습니다.
+
+프레임 단위로 progress >= 1인 몬스터를 처리하면,
+몬스터가 겹쳐 있거나 같은 프레임에 출구에 도달했을 때 여러 마리가 동시에 제거될 수 있었습니다.
 
 결과창은 refs.menu에 올라가는데, 전역 stage pointerdown에서 빈칸 클릭 시 메뉴를 정리하는 로직이 결과창 클릭까지 처리할 수 있었습니다.
 ```
@@ -141,9 +146,11 @@ apps/web/src/game-client/pixi/pixiFinalResultView.ts
 
 ```text
 ActiveEnemy에 leaked 플래그 추가
+GameRefs에 nextEnemyLeakAt 추가
 적 이동 경로를 외곽 한 바퀴 전체 경로로 복구
 오른쪽 하단과 아래쪽 가로 구간을 지나 시작점 쪽 출구에 도달할 때 progress 1 처리
-progress가 1에 도달하면 해당 몬스터 1마리만 누수 처리
+출구에 도달한 몬스터는 EXIT_HOLD_PROGRESS 위치에서 대기
+0.22초 간격으로 대기 중인 몬스터를 id 순서대로 1마리씩 누수 처리
 누수 처리된 몬스터는 다시 처리하지 않도록 방어
 웨이브 종료 시 누수 몬스터 수와 생명 피해량 계산 분리
 최종 결과 상태에서는 stage 클릭으로 메뉴를 닫지 않도록 방어
@@ -165,6 +172,7 @@ pixiWaveFlowRuntime.ts는 최종 상태에서만 showFinalResultPanel 호출
 GameState.maxLives 사용 제거 완료
 결과 등급/별점은 initialBalance.startingLives 기준으로 수정
 ActiveEnemy.leaked는 optional boolean으로 추가
+GameRefs.nextEnemyLeakAt 초기화 완료
 ```
 
 다음 로컬 확인 명령:
@@ -181,7 +189,7 @@ pnpm dev:web
 /lobby 영웅 탭이 기존 카드 목록으로 정상 표시되는지
 /play 몬스터가 오른쪽 중간에서 사라지지 않는지
 /play 몬스터가 오른쪽 하단과 아래쪽 가로 구간까지 이동하는지
-/play 몬스터가 최종 출구에서 1마리씩 누수 처리되는지
+/play 몬스터가 겹쳐도 출구에서 0.22초 간격으로 1마리씩 누수 처리되는지
 /play 누수 시 HP가 해당 몬스터 damageToLife만큼 줄어드는지
 /play 전투 종료 시 결과 패널이 뜨는지
 결과창을 클릭해도 닫히지 않는지
