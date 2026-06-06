@@ -4,12 +4,13 @@
 
 모바일 화면에서 신화 조합 메뉴가 아래로 드래그되지 않고, 재료 라벨이 너무 산만하게 보이는 문제를 정리했습니다.
 
-추가로 메뉴를 열 때와 드래그할 때 렉이 걸리는 문제를 줄이기 위해 조합 목록을 가상 스크롤 + 지연 렌더 방식으로 변경했습니다.
+추가로 메뉴를 열 때와 드래그할 때 렉이 걸리는 문제를 줄이기 위해 조합 목록을 **row pool 재사용 방식**으로 변경했습니다.
 
 ## 2. 적용 파일
 
 ```text
 apps/web/src/game-client/pixi/pixiMythicMenuView.ts
+apps/web/src/game-client/pixi/pixiMythicMenuRowPool.ts
 apps/web/src/game-client/pixi/pixiVirtualScrollScheduler.ts
 apps/web/src/game-client/pixi/gameTheme.ts
 ```
@@ -28,9 +29,7 @@ apps/web/src/game-client/pixi/gameTheme.ts
 
 ## 4. 렉 개선
 
-기존에는 신화 메뉴를 열 때 모든 조합 행을 한 번에 생성했습니다.
-
-문제점:
+기존 문제점:
 
 ```text
 전체 조합 행 생성
@@ -40,24 +39,26 @@ apps/web/src/game-client/pixi/gameTheme.ts
 드래그 중에도 행 제거/재생성 반복
 ```
 
+이 방식은 `Graphics`, `Text`, `destroy()`가 짧은 시간에 반복되어 모바일에서 렉이 심해질 수 있습니다.
+
 변경 후:
 
 ```text
-현재 보이는 행 + 위아래 여유 행만 생성
+고정된 수의 row slot만 생성
+스크롤 시 slot 위치와 텍스트 내용만 갱신
+행 제거/파괴/destroy 반복 제거
 드래그 중에는 목록 위치만 이동
-드래그 종료 후 보이는 범위만 다시 생성
-휠 스크롤은 requestAnimationFrame으로 갱신 묶기
-재료 진행도는 recipeId 기준으로 캐시
+필요할 때만 row slot 데이터 교체
 ```
 
 핵심 구현:
 
-- `createVirtualRowRenderer()` 추가
-- `VISIBLE_ROW_BUFFER = 2` 적용
-- `pixiVirtualScrollScheduler.ts` 추가
-- `pointermove` 중 `renderVisibleRows()` 직접 호출 제거
-- `pointerup`, `pointerupoutside`, `wheel`에서만 렌더 갱신 요청
-- `progressCache`로 `getMythicIngredientProgress()` 반복 호출 감소
+- `pixiMythicMenuRowPool.ts` 추가
+- `createMythicMenuRowPool()`에서 보이는 개수만큼 row slot 생성
+- 각 row slot은 패널, 제목, 재료 텍스트, 등급 라벨 그래픽을 재사용
+- `pixiMythicMenuView.ts`는 view model 생성과 스크롤 연결만 담당
+- `createVirtualScrollScheduler()`로 렌더 갱신을 프레임 단위로 묶음
+- `getMythicIngredientProgress()`는 view model 생성 시 1회만 계산
 - `spacer` 그래픽으로 전체 스크롤 높이 유지
 
 ## 5. 레이아웃 정리
@@ -101,7 +102,8 @@ apps/web/src/game-client/pixi/gameTheme.ts
 - 신화 메뉴를 눌렀을 때 멈춤이 줄었는지 확인
 - 신화 메뉴 목록을 아래로 드래그할 수 있는지 확인
 - 드래그 중 프레임 드랍이 줄었는지 확인
-- 드래그가 끝난 후 행이 정상적으로 교체되는지 확인
+- 드래그 중 row가 계속 destroy/create 되지 않는지 확인
+- 드래그가 끝난 후 행 내용이 정상적으로 교체되는지 확인
 - 휠 스크롤 시 행이 정상적으로 교체되는지 확인
 - 조합 가능 행을 짧게 터치하면 조합되는지 확인
 - 드래그 중 실수로 조합되지 않는지 확인
