@@ -4,7 +4,7 @@
 
 모바일 화면에서 신화 조합 메뉴가 아래로 드래그되지 않고, 재료 라벨이 너무 산만하게 보이는 문제를 정리했습니다.
 
-추가로 메뉴를 열 때와 드래그할 때 렉이 걸리는 문제를 줄이기 위해 조합 목록을 **row pool 재사용 방식**으로 변경했습니다.
+추가로 메뉴를 열 때와 드래그할 때 렉이 걸리는 문제를 줄이기 위해 조합 목록을 **row pool 재사용 + lazy row 계산 방식**으로 변경했습니다.
 
 ## 2. 적용 파일
 
@@ -32,20 +32,24 @@ apps/web/src/game-client/pixi/gameTheme.ts
 기존 문제점:
 
 ```text
-전체 조합 행 생성
+메뉴 열 때 전체 조합 row view model 생성
+전체 조합의 재료 진행도 계산
 각 행 패널 생성
 각 행 재료 텍스트 생성
 각 행 등급 라벨 그래픽 생성
 드래그 중에도 행 제거/재생성 반복
 ```
 
-이 방식은 `Graphics`, `Text`, `destroy()`가 짧은 시간에 반복되어 모바일에서 렉이 심해질 수 있습니다.
+이 방식은 `getMythicIngredientProgress()`, `Graphics`, `Text`, `destroy()`가 짧은 시간에 반복되어 모바일에서 렉이 심해질 수 있습니다.
 
 변경 후:
 
 ```text
 고정된 수의 row slot만 생성
 행 제거/파괴/destroy 반복 제거
+메뉴 열 때 전체 row view model 생성 제거
+보이는 row가 필요할 때만 lazy 계산
+계산된 row는 index 기준으로 캐시
 드래그 중에는 목록 위치만 이동
 드래그 중에는 row slot 텍스트/그래픽 갱신도 하지 않음
 손을 떼거나 휠 스크롤이 끝난 뒤에만 row slot 데이터 교체
@@ -56,11 +60,12 @@ apps/web/src/game-client/pixi/gameTheme.ts
 - `pixiMythicMenuRowPool.ts` 추가
 - `createMythicMenuRowPool()`에서 보이는 개수만큼 row slot 생성
 - 각 row slot은 패널, 제목, 재료 텍스트, 등급 라벨 그래픽을 재사용
-- `pixiMythicMenuView.ts`는 view model 생성과 스크롤 연결만 담당
+- `pixiMythicMenuView.ts`는 lazy row provider와 스크롤 연결만 담당
+- 기존 `rows = list.map(...)` 전체 계산 제거
+- `createLazyRowProvider()`로 필요한 index만 `createRowViewModel()` 실행
 - `pointermove`에서는 `content.y`만 변경
 - `pointerup`, `pointerupoutside`, `wheel`에서만 row pool render 요청
 - `createVirtualScrollScheduler()`로 렌더 갱신을 프레임 단위로 묶음
-- `getMythicIngredientProgress()`는 view model 생성 시 1회만 계산
 - `spacer` 그래픽으로 전체 스크롤 높이 유지
 
 ## 5. 레이아웃 정리
@@ -102,6 +107,7 @@ apps/web/src/game-client/pixi/gameTheme.ts
 ## 7. 테스트 체크리스트
 
 - 신화 메뉴를 눌렀을 때 멈춤이 줄었는지 확인
+- 메뉴 열 때 전체 row view model을 만들지 않는지 확인
 - 신화 메뉴 목록을 아래로 드래그할 수 있는지 확인
 - 드래그 중 프레임 드랍이 줄었는지 확인
 - 드래그 중 row 텍스트/그래픽이 계속 갱신되지 않는지 확인
