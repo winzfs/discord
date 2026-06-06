@@ -16,6 +16,7 @@ export type LobbyAccountProgress = {
   passLevel: number;
   passExp: number;
   passSeasonId: string;
+  claimedPassRewardLevels: number[];
 };
 
 export type LobbyProgressReward = {
@@ -35,6 +36,7 @@ export const defaultLobbyAccountProgress: LobbyAccountProgress = {
   passLevel: 1,
   passExp: 0,
   passSeasonId: "season-1",
+  claimedPassRewardLevels: [],
 };
 
 export const lobbyPassRewards: LobbyPassReward[] = [
@@ -71,6 +73,16 @@ function normalizeExp(value: unknown) {
   return Math.max(0, Math.floor(value));
 }
 
+function normalizeClaimedLevels(value: unknown) {
+  if (!Array.isArray(value)) return [];
+
+  return value
+    .filter((level): level is number => typeof level === "number" && Number.isFinite(level))
+    .map((level) => Math.floor(level))
+    .filter((level, index, levels) => level > 0 && levels.indexOf(level) === index)
+    .sort((a, b) => a - b);
+}
+
 export function mergeLobbyAccountProgress(value: Partial<LobbyAccountProgress> | undefined): LobbyAccountProgress {
   return {
     accountLevel: normalizeLevel(value?.accountLevel, defaultLobbyAccountProgress.accountLevel, ACCOUNT_MAX_LEVEL),
@@ -78,6 +90,24 @@ export function mergeLobbyAccountProgress(value: Partial<LobbyAccountProgress> |
     passLevel: normalizeLevel(value?.passLevel, defaultLobbyAccountProgress.passLevel, PASS_MAX_LEVEL),
     passExp: normalizeExp(value?.passExp),
     passSeasonId: typeof value?.passSeasonId === "string" ? value.passSeasonId : defaultLobbyAccountProgress.passSeasonId,
+    claimedPassRewardLevels: normalizeClaimedLevels(value?.claimedPassRewardLevels),
+  };
+}
+
+export function isPassRewardClaimed(progress: LobbyAccountProgress, level: number) {
+  return progress.claimedPassRewardLevels.includes(level);
+}
+
+export function canClaimPassReward(progress: LobbyAccountProgress, reward: LobbyPassReward) {
+  return progress.passLevel >= reward.level && !isPassRewardClaimed(progress, reward.level);
+}
+
+export function markPassRewardClaimed(progress: LobbyAccountProgress, level: number): LobbyAccountProgress {
+  if (isPassRewardClaimed(progress, level)) return progress;
+
+  return {
+    ...progress,
+    claimedPassRewardLevels: [...progress.claimedPassRewardLevels, level].sort((a, b) => a - b),
   };
 }
 
