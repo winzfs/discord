@@ -8,7 +8,7 @@ export type SpawnWaveMonstersOptions = {
 };
 
 function getSpawnProgressGap(spawnIntervalMs: number) {
-  return Math.max(0.04, (spawnIntervalMs / 1000) * 0.18);
+  return Math.max(0.018, (spawnIntervalMs / 1000) * 0.09);
 }
 
 export function spawnWaveMonsters(refs: GameRefs, options: SpawnWaveMonstersOptions) {
