@@ -171,6 +171,10 @@ function buildSkillProfile(hero: BoardHero, role: HeroRole): SkillProfile {
   return profile;
 }
 
+export function getBaseHeroSkillFxKind(hero: BoardHero, role: HeroRole) {
+  return buildSkillProfile(hero, role).fxKind;
+}
+
 function applyMasteryToProfile(refs: GameRefs, hero: BoardHero, profile: SkillProfile) {
   const mastery = getProgressHeroMasteryEffect(refs.progressBonuses, hero.heroId);
   if (mastery.level <= 1) return profile;
