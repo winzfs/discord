@@ -58,7 +58,7 @@ export function createPixiHudView(parent: Container): PixiHudView {
     timerText: makeGameText("NEXT 8s", { size: 19, strokeWidth: 3 }),
     hpBackground: new Graphics(),
     hpFill: new Graphics(),
-    hpText: makeGameText("100 / 100", { size: 16, strokeWidth: 3 }),
+    hpText: makeGameText("ENEMY 0 / 100", { size: 16, strokeWidth: 3 }),
     firepowerChip: new Graphics(),
     unitsChip: new Graphics(),
     coinChip: new Graphics(),
@@ -133,7 +133,7 @@ export function updatePixiHudView(view: PixiHudView, layout: GameLayout, snapsho
   drawSegmentedBar(view.hpBackground, hpX, hpY, hpWidth, 28, hpRatio, boss ? 0xff5353 : colors.red, 0x52282e);
   view.hpFill.clear();
 
-  view.hpText.text = `${snapshot.lives} / ${snapshot.maxLives}`;
+  view.hpText.text = `ENEMY ${snapshot.lives} / ${snapshot.maxLives}`;
   view.hpText.x = layout.width / 2;
   view.hpText.y = hpY + 4;
 
