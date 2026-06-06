@@ -54,17 +54,15 @@ packages/game
 - 영웅별 기본공격 연출
 - 적 HP 감소, 처치, 보상 지급
 - 딜러/탱커/지원 역할군별 전투 효과
-- 탱커 감속 효과
-- 지원형 스플래시 보조 피해
 - 보스 우선 타겟팅
-- 보스 웨이브 경고 연출
 - 웨이브 결과 표시
 - 완벽 방어 시 행운석 보상
 - 랜덤 유닛 소환
 - 소환 비용 증가 및 할인 보정
-- 로비 보유 영웅 풀 기반 전투 소환
+- 로비 편성/보유 영웅 풀 기반 전투 소환
+- 도박 소환도 로비 편성/보유 영웅 풀 우선 사용
 - 로비 영웅 레벨 기반 전투 데미지 배율 적용
-- 행운석 도박 소환
+- 전투 종료 보상 로비 골드/보석 저장
 - 유닛 드래그 이동, 자리 교환, 같은 유닛 중첩
 - 셀 3스택 기반 합성
 - 전역 등급 합성 로직
@@ -77,8 +75,6 @@ packages/game
 - 신화 영웅 스킬 확률 발동
 - 신화 영웅 궁극기 발동
 - Tracer, Kiriko, D.Va, Zarya, Cassidy, Winston, Genji 스프라이트 시트 적용
-- 영웅별 기본공격 고유 FX
-- 영웅별 궁극기 고유 FX
 - Genji 질풍참 이동형 공격 연출
 - Genji 용검 베기형 이펙트
 - 적 렌더링을 이모티콘형 도형에서 슬라임/드론형 실루엣으로 개선
@@ -110,6 +106,8 @@ packages/game
 - 중복 영웅 획득 시 조각 누적
 - 골드/보석 localStorage 저장
 - 상점 구매/무료 보석/뽑기/업그레이드 후 재화 저장
+- 전투 편성 ID 저장 구조
+- 신규 획득 영웅 자동 편성 보정
 
 현재 로비 진행 저장은 `localStorage` 기반입니다.
 
@@ -118,6 +116,7 @@ packages/game
 ```text
 gold
 crystals
+lineupHeroIds
 heroes: id, level, shards, owned
 artifacts: id, level, pieces, owned
 ```
@@ -212,6 +211,7 @@ apps/web/src/game-client/pixi/pixiMythicMenuView.ts
 apps/web/src/game-client/pixi/pixiRunBoostRuntime.ts
 apps/web/src/game-client/pixi/pixiProgressBonuses.ts
 apps/web/src/game-client/pixi/pixiLobbyHeroPool.ts
+apps/web/src/game-client/pixi/pixiLobbyBattleRewards.ts
 apps/web/src/game-client/pixi/pixiFloatingTextView.ts
 apps/web/src/game-client/pixi/pixiPathRuntime.ts
 apps/web/src/game-client/pixi/pixiUnitRange.ts
@@ -219,9 +219,9 @@ apps/web/src/game-client/pixi/pixiSharedView.ts
 apps/web/src/game-client/pixi/animation/animationManager.ts
 ```
 
-`createPixiGame.ts`는 Pixi Application 초기화, refs 구성, ticker phase 연결, 이벤트 바인딩, runtime options 조립, cleanup을 담당합니다.
+`pixiLobbyHeroPool.ts`는 로비 저장 진행도에서 편성/보유 영웅과 영웅 레벨을 읽어 전투 소환 풀과 데미지 배율에 제공하는 어댑터입니다.
 
-`pixiLobbyHeroPool.ts`는 로비 저장 진행도에서 보유 영웅과 영웅 레벨을 읽어 전투 소환 풀과 데미지 배율에 제공하는 어댑터입니다.
+`pixiLobbyBattleRewards.ts`는 전투 종료 시 로비 골드/보석 보상을 계산하고 저장합니다.
 
 ### 5.2 로비/모집/성장 파일
 
@@ -257,11 +257,12 @@ apps/web/src/styles/lobby-recruit-reveal.css
 ```text
 gold
 crystals
+lineupHeroIds
 heroes: id, level, shards, owned
 artifacts: id, level, pieces, owned
 ```
 
-기존 저장 데이터에 `gold`와 `crystals`가 없어도 기본값으로 병합합니다.
+기존 저장 데이터에 `gold`, `crystals`, `lineupHeroIds`가 없어도 기본값으로 병합합니다.
 
 기본 재화:
 
@@ -270,21 +271,31 @@ gold: 13580
 crystals: 4550
 ```
 
+기본 편성:
+
+```text
+owned = true인 영웅을 최대 10명까지 자동 편성
+```
+
 ### 6.2 전투 소환 풀
 
 전투 시작 시 `createPixiGame.ts`에서 `loadPixiLobbyHeroPool()`을 호출합니다.
 
 처리 방식:
 
-- 로비 저장 진행도에서 `owned = true`인 영웅만 전투 소환 풀에 포함합니다.
-- 보유 영웅이 하나도 없으면 안전 장치로 전체 영웅 풀을 사용합니다.
+- `lineupHeroIds`가 있으면 편성 영웅을 전투 소환 풀로 사용합니다.
+- 편성 영웅이 없으면 보유 영웅 전체를 사용합니다.
+- 보유 영웅도 하나도 없으면 안전 장치로 전체 영웅 풀을 사용합니다.
 - 전투 소환 버튼은 `summonHeroFromPool()`을 사용합니다.
-- 기존 `summonHero()`는 전체 영웅 풀 기반 함수로 유지합니다.
+- 도박 소환 버튼은 `gambleSummonFromPool()`을 사용합니다.
+- 도박 소환에서 해당 등급의 편성/보유 영웅이 없으면 전체 영웅 풀에서 해당 등급을 fallback으로 뽑습니다.
+- 기존 `summonHero()`와 `gambleSummon()`은 전체 영웅 풀 기반 함수로 유지합니다.
 
 관련 파일:
 
 ```text
 packages/game/src/systems/summonSystem.ts
+packages/game/src/systems/gambleSystem.ts
 apps/web/src/game-client/pixi/pixiLobbyHeroPool.ts
 apps/web/src/game-client/pixi/createPixiGame.ts
 apps/web/src/game-client/pixi/pixiControlActionRuntime.ts
@@ -309,15 +320,31 @@ x 공격력 강화 배율
 1 + (level - 1) * 0.12
 ```
 
+### 6.4 전투 종료 보상
+
+전투 종료 시 `submitFinalResultOnce()`에서 로비 보상을 1회 저장합니다.
+
+테스트 모드에서는 보상을 지급하지 않습니다.
+
+현재 보상 공식:
+
+```text
+골드 = defeatedEnemies * 8 + clearedWaves * 50
+보석 = defeatedBosses * 20
+30웨이브 클리어 시 보석 +200
+```
+
+보상은 `lobbyProgressStorage.ts`의 `gold`, `crystals`에 누적됩니다.
+
 ## 7. 분리 원칙
 
 - `createPixiGame.ts`는 초기화, 조립, cleanup 중심으로 유지합니다.
 - 화면 배치는 `gameLayout.ts`에서 계산합니다.
 - 보드, HUD, 컨트롤, 적, 전투, 스킬, 궁극기, 이펙트, 웨이브, 드래그, 선택 UI는 별도 파일에서 관리합니다.
-- 소환/합성/도박/신화 조합 등 핵심 규칙은 `packages/game`에서 가져옵니다.
+- 소환/도박/합성/신화 조합 등 핵심 규칙은 `packages/game`에서 가져옵니다.
 - PixiJS 내부에서 게임 규칙을 중복 구현하지 않습니다.
 - 로비 수집/모집/연출은 `LobbyPage.tsx`에 몰아넣지 않고 `game-lobby`와 `components/lobby`로 분리합니다.
-- 긴 CSS는 기능별로 분리합니다. 예: `lobby-recruit-reveal.css`.
+- 긴 CSS는 기능별로 분리합니다.
 
 ## 8. 신화 영웅 전투 구현 요약
 
@@ -366,7 +393,7 @@ D.Va: 영웅 위치 기준 자폭 광역 폭발
 - 미보유 영웅은 해금됩니다.
 - 이미 보유한 영웅은 조각이 누적됩니다.
 - 조각은 영웅 레벨업에 사용됩니다.
-- 보유 영웅과 레벨은 전투 소환 풀과 데미지에 반영됩니다.
+- 보유/편성 영웅과 레벨은 전투 소환 풀과 데미지에 반영됩니다.
 
 ### 9.2 현재 모집 비용
 
@@ -429,9 +456,10 @@ newHeroCount: number
 
 - 뽑힌 영웅이 미보유 상태면 `owned = true`, `level = 1`로 해금합니다.
 - 뽑힌 영웅이 이미 보유 상태면 조각을 누적합니다.
+- 신규 보유 영웅은 편성칸이 남아 있으면 자동 편성됩니다.
 - 결과는 `lastRecruitResults`에 저장되어 영웅 탭 패널에 표시됩니다.
 - 결과는 `revealResults`에 저장되어 전체 화면 연출 모달로 표시됩니다.
-- 영웅/유물/골드/보석 진행도는 `saveLobbyProgress()`로 저장됩니다.
+- 영웅/유물/골드/보석/편성 진행도는 `saveLobbyProgress()`로 저장됩니다.
 
 ### 9.6 모집 연출
 
@@ -475,19 +503,19 @@ apps/web/src/styles/lobby-recruit-reveal.css
 
 ## 11. 다음 개선 우선순위
 
-1. `pnpm build:web`와 `pnpm typecheck`로 최근 로비 저장/전투 풀 연결 코드 검증
-2. `/lobby`에서 골드/보석 저장 유지 확인
-3. `/lobby`에서 뽑기 후 새로고침해도 보석/영웅/조각이 유지되는지 확인
-4. `/play`에서 로비 미보유 영웅이 소환되지 않는지 확인
-5. `/play`에서 로비 영웅 레벨에 따라 데미지가 증가하는지 확인
-6. 도박 소환과 신화 조합도 보유 영웅 정책을 적용할지 결정
-7. 모집 티켓 재화 연결
-8. `/play`, `/play-test`에서 공격/궁극기 이펙트 회귀 테스트
-9. `createPixiGame.ts`의 ticker/refs/options 조립 책임 추가 분리
-10. 점수/보상 계산 기준을 `packages/game` 쪽으로 이동
-11. `durationSeconds` 실제 측정 후 기록 저장
-12. 랭킹 저장 전 score/wave/kills 상한 검증 추가
-13. `game_runs.suspicious`, `hidden` 컬럼을 활용한 비정상 기록 처리
+1. `pnpm build:web`와 `pnpm typecheck`로 최근 변경 검증
+2. `/lobby`에서 골드/보석/편성 저장 유지 확인
+3. `/lobby`에서 뽑기 후 새로고침해도 보석/영웅/조각/편성이 유지되는지 확인
+4. `/play`에서 편성 영웅이 우선 소환되는지 확인
+5. `/play`에서 도박 소환도 편성/보유 영웅 풀을 우선 사용하는지 확인
+6. `/play`에서 전투 종료 후 로비 골드/보석이 증가하는지 확인
+7. `/lobby`에 편성 직접 변경 UI 추가
+8. 모집 티켓 재화 연결
+9. `/play`, `/play-test`에서 공격/궁극기 이펙트 회귀 테스트
+10. `createPixiGame.ts`의 ticker/refs/options 조립 책임 추가 분리
+11. 점수/보상 계산 기준을 `packages/game` 쪽으로 이동
+12. `durationSeconds` 실제 측정 후 기록 저장
+13. 랭킹 저장 전 score/wave/kills 상한 검증 추가
 14. 모바일 터치 UX 회귀 테스트
 
 ## 12. 확인 체크리스트
@@ -508,16 +536,16 @@ pnpm dev:web
 - 10회 모집 시 보석 2700 차감
 - 보석 부족 시 모집 차단
 - 모집 후 2단계 연출 표시
-- 연출 후 결과 카드 표시
 - 미보유 영웅 신규 해금 정상
 - 중복 영웅 조각 누적 정상
-- 모집 결과가 영웅 목록/상세 패널에 반영
-- 영웅 조각 조건 충족 시 업그레이드 가능
+- 신규 보유 영웅 자동 편성 정상
 - 새로고침 후 골드/보석 유지
-- 새로고침 후 영웅/유물 진행도 유지
+- 새로고침 후 영웅/유물/편성 진행도 유지
 - `/play` 진입 시 캔버스 정상 표시
-- `/play`에서 보유 영웅 중심으로 소환
+- `/play`에서 편성 영웅 중심으로 소환
 - `/play`에서 영웅 레벨 데미지 배율 반영
+- `/play`에서 도박 소환도 편성/보유 영웅 풀 우선 사용
+- `/play` 전투 종료 후 로비 골드/보석 보상 저장
 - `/play-test` 테스트 컨트롤 정상 표시
 - 4x5 보드 표시 정상
 - 소환/스택/이동/스왑 정상
