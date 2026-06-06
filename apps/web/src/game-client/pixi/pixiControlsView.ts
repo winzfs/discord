@@ -172,18 +172,14 @@ export function updatePixiControlsView(view: PixiControlsView, layout: GameLayou
   view.upgrade.root.y = layout.height - 145;
   updateButton(view.upgrade, snapshot.upgradeDisabled ? "강화 불가" : "공격력 강화", `비용 ${snapshot.upgradeCost}`, snapshot.upgradeDisabled);
 
-  const showWaveAction = snapshot.wavePhase === "result" && !snapshot.waveDisabled;
-  view.wave.root.visible = showWaveAction;
-  view.waveBacking.visible = showWaveAction;
-  if (!showWaveAction) return;
+  const shouldAutoStartWave = snapshot.wavePhase === "result" && !snapshot.waveDisabled;
+  view.wave.root.visible = false;
+  view.waveBacking.visible = false;
+  if (!shouldAutoStartWave) return;
 
-  view.wave.color = 0xffc42a;
-  view.wave.width = 96;
-  view.wave.height = 34;
-  view.wave.root.x = (layout.width - view.wave.width) / 2;
-  view.wave.root.y = layout.topHudY + 114;
-  drawWaveBacking(view.waveBacking, view.wave.root.x - 4, view.wave.root.y - 4, view.wave.width + 8, view.wave.height + 8);
-  updateButton(view.wave, "웨이브", "", false);
+  window.setTimeout(() => {
+    view.wave.onTap();
+  }, 0);
 }
 
 export function invalidatePixiControlsView(view: PixiControlsView | null) {
