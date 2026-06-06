@@ -9,6 +9,7 @@ import type { BoardHero, GameState } from "@discord-random-defense/game";
 import { colors } from "./gameTheme";
 import type { GameRefs } from "./pixiGameTypes";
 import { createPixiMythicMenuView } from "./pixiMythicMenuView";
+import { createPixiGambleMenuView } from "./pixiGambleMenuView";
 import { showRunBoostMenu } from "./pixiRunBoostRuntime";
 
 export type SummonButtonState = {
@@ -71,12 +72,12 @@ export function summonAction(refs: GameRefs, options: PixiControlActionRuntimeOp
   );
 }
 
-export function gambleAction(refs: GameRefs, options: PixiControlActionRuntimeOptions) {
-  options.clearMenuAndUnitInfo(refs);
+function runGambleAction(refs: GameRefs, tierId: "epic-gamble" | "legendary-gamble", options: PixiControlActionRuntimeOptions) {
+  options.clearMenu(refs);
 
   if (refs.movementLocked) return;
 
-  const result = gambleSummonFromPool(refs.state, "epic-gamble", refs.random, refs.heroPool);
+  const result = gambleSummonFromPool(refs.state, tierId, refs.random, refs.heroPool);
 
   if (!result.summonedHero) {
     const message =
@@ -102,11 +103,29 @@ export function gambleAction(refs: GameRefs, options: PixiControlActionRuntimeOp
   options.render(refs);
   options.floatText(
     refs,
-    result.success ? "도박 성공!" : "보정 소환",
+    result.success ? (tierId === "legendary-gamble" ? "전설 도박 성공!" : "도박 성공!") : "보정 소환",
     refs.app.renderer.width / 2,
     refs.app.renderer.height - 140,
     result.success ? colors.yellow : colors.blue,
   );
+}
+
+export function gambleAction(refs: GameRefs, options: PixiControlActionRuntimeOptions) {
+  options.clearMenuAndUnitInfo(refs);
+
+  if (refs.movementLocked) return;
+
+  const menu = createPixiGambleMenuView({
+    rendererWidth: refs.app.renderer.width,
+    rendererHeight: refs.app.renderer.height,
+    luckStones: refs.state.luckStones,
+    onClose: () => options.clearMenu(refs),
+    onCoinGamble: () => runGambleAction(refs, "epic-gamble", options),
+    onLegendaryGamble: () => runGambleAction(refs, "legendary-gamble", options),
+  });
+
+  refs.menuLayer.addChild(menu);
+  refs.menu = menu;
 }
 
 export function attackUpgradeAction(refs: GameRefs, options: PixiControlActionRuntimeOptions) {
