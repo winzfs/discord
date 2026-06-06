@@ -23,6 +23,7 @@ import {
 import {
   finishAutoWave,
   startAutoWave,
+  startNextTimedWave,
   waveButtonAction,
   type PixiWaveFlowRuntimeOptions,
 } from "./pixiWaveFlowRuntime";
@@ -290,6 +291,9 @@ function tick(refs: GameRefs, deltaMs: number) {
         drawControls: (refs, layout) => drawControls(refs, layout, controlHandlers(refs)),
         drawBoard: (refs, layout) => drawBoard(refs, layout, createDragRuntimeOptions),
       });
+    }
+    if (refs.combatTimer <= 0 && refs.state.currentWave < initialBalance.maxWave) {
+      startNextTimedWave(refs, createWaveFlowRuntimeOptions());
     }
     drawTopHud(refs, layout);
     drawControls(refs, layout, controlHandlers(refs));
