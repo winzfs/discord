@@ -23,20 +23,20 @@ export function pickSummonGrade(random: SeededRandom): HeroGrade {
   return summonGradeRates[summonGradeRates.length - 1]?.grade ?? "common";
 }
 
-export function pickHeroByGrade(grade: HeroGrade, random: SeededRandom): HeroDefinition | null {
-  const candidates = heroes.filter((hero) => hero.grade === grade);
+export function pickHeroByGrade(grade: HeroGrade, random: SeededRandom, heroPool: HeroDefinition[] = heroes): HeroDefinition | null {
+  const candidates = heroPool.filter((hero) => hero.grade === grade);
   if (candidates.length === 0) return null;
   return candidates[Math.floor(random() * candidates.length)] ?? candidates[0] ?? null;
 }
 
-export function summonHero(state: GameState, random: SeededRandom): SummonResult {
+function summonHeroWithPool(state: GameState, random: SeededRandom, heroPool: HeroDefinition[]): SummonResult {
   const summonCost = getSummonCost(state.summonCount);
   if (state.resources < summonCost) {
     return { state, summonedHero: null, reason: "not_enough_resources" };
   }
 
   const grade = pickSummonGrade(random);
-  const hero = pickHeroByGrade(grade, random);
+  const hero = pickHeroByGrade(grade, random, heroPool);
   if (!hero) {
     return { state, summonedHero: null, reason: "no_hero_for_grade" };
   }
@@ -60,4 +60,12 @@ export function summonHero(state: GameState, random: SeededRandom): SummonResult
     },
     summonedHero: placement.placedHero,
   };
+}
+
+export function summonHero(state: GameState, random: SeededRandom): SummonResult {
+  return summonHeroWithPool(state, random, heroes);
+}
+
+export function summonHeroFromPool(state: GameState, random: SeededRandom, heroPool: HeroDefinition[]): SummonResult {
+  return summonHeroWithPool(state, random, heroPool.length > 0 ? heroPool : heroes);
 }
