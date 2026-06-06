@@ -7,19 +7,28 @@ export const defaultLobbyCurrencies = {
   crystals: 4550,
 } as const;
 
+export const defaultLobbyLineupSize = 10;
+
 export type LobbyProgressSnapshot = {
   heroes: LobbyHero[];
   artifacts: LobbyArtifact[];
   gold: number;
   crystals: number;
+  lineupHeroIds: string[];
 };
 
+function getDefaultLineupHeroIds(heroes = initialHeroes) {
+  return heroes.filter((hero) => hero.owned).slice(0, defaultLobbyLineupSize).map((hero) => hero.id);
+}
+
 function cloneDefaultProgress(): LobbyProgressSnapshot {
+  const heroes = initialHeroes.map((hero) => ({ ...hero }));
   return {
-    heroes: initialHeroes.map((hero) => ({ ...hero })),
+    heroes,
     artifacts: initialArtifacts.map((artifact) => ({ ...artifact })),
     gold: defaultLobbyCurrencies.gold,
     crystals: defaultLobbyCurrencies.crystals,
+    lineupHeroIds: getDefaultLineupHeroIds(heroes),
   };
 }
 
@@ -59,6 +68,18 @@ function mergeArtifacts(savedArtifacts: Partial<LobbyArtifact>[] | undefined): L
   });
 }
 
+function mergeLineupHeroIds(value: unknown, heroes: LobbyHero[]) {
+  const ownedIds = new Set(heroes.filter((hero) => hero.owned).map((hero) => hero.id));
+  if (!Array.isArray(value)) return getDefaultLineupHeroIds(heroes);
+
+  const lineup = value
+    .filter((id): id is string => typeof id === "string" && ownedIds.has(id))
+    .filter((id, index, ids) => ids.indexOf(id) === index)
+    .slice(0, defaultLobbyLineupSize);
+
+  return lineup.length > 0 ? lineup : getDefaultLineupHeroIds(heroes);
+}
+
 export function loadLobbyProgress(): LobbyProgressSnapshot {
   if (!canUseLocalStorage()) return cloneDefaultProgress();
 
@@ -67,11 +88,13 @@ export function loadLobbyProgress(): LobbyProgressSnapshot {
 
   try {
     const parsed = JSON.parse(raw) as Partial<LobbyProgressSnapshot>;
+    const heroes = mergeHeroes(parsed.heroes);
     return {
-      heroes: mergeHeroes(parsed.heroes),
+      heroes,
       artifacts: mergeArtifacts(parsed.artifacts),
       gold: mergeCurrency(parsed.gold, defaultLobbyCurrencies.gold),
       crystals: mergeCurrency(parsed.crystals, defaultLobbyCurrencies.crystals),
+      lineupHeroIds: mergeLineupHeroIds(parsed.lineupHeroIds, heroes),
     };
   } catch {
     return cloneDefaultProgress();
@@ -85,6 +108,7 @@ export function saveLobbyProgress(snapshot: LobbyProgressSnapshot) {
     JSON.stringify({
       gold: snapshot.gold,
       crystals: snapshot.crystals,
+      lineupHeroIds: snapshot.lineupHeroIds,
       heroes: snapshot.heroes.map(({ id, level, shards, owned }) => ({ id, level, shards, owned })),
       artifacts: snapshot.artifacts.map(({ id, level, pieces, owned }) => ({ id, level, pieces, owned })),
     }),
