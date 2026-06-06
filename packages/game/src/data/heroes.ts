@@ -11,7 +11,7 @@ export const heroes: HeroDefinition[] = [
     power: 76,
     attackSpeed: 1.12,
     range: 3.6,
-    skillIds: ["basic-shot"],
+    skillIds: ["spark-runner-zap"],
     tags: ["single-target", "fast"],
   },
   {
@@ -24,7 +24,7 @@ export const heroes: HeroDefinition[] = [
     power: 68,
     attackSpeed: 0.82,
     range: 2.8,
-    skillIds: ["shield-pulse"],
+    skillIds: ["rookie-guard-bash"],
     tags: ["delay", "frontline"],
   },
   {
@@ -37,7 +37,7 @@ export const heroes: HeroDefinition[] = [
     power: 58,
     attackSpeed: 1.18,
     range: 3.4,
-    skillIds: ["boost-field"],
+    skillIds: ["mini-mender-boost"],
     tags: ["buff", "resource"],
   },
   {
@@ -50,7 +50,7 @@ export const heroes: HeroDefinition[] = [
     power: 82,
     attackSpeed: 0.98,
     range: 3.7,
-    skillIds: ["basic-shot"],
+    skillIds: ["scrap-gunner-ricochet"],
     tags: ["single-target", "starter"],
   },
   {
@@ -63,7 +63,7 @@ export const heroes: HeroDefinition[] = [
     power: 62,
     attackSpeed: 0.78,
     range: 3,
-    skillIds: ["shield-pulse"],
+    skillIds: ["slow-bot-oil"],
     tags: ["slow", "delay"],
   },
   {
@@ -76,7 +76,7 @@ export const heroes: HeroDefinition[] = [
     power: 54,
     attackSpeed: 1.22,
     range: 3.5,
-    skillIds: ["boost-field"],
+    skillIds: ["charge-helper-tip"],
     tags: ["buff", "starter"],
   },
   {
@@ -89,7 +89,7 @@ export const heroes: HeroDefinition[] = [
     power: 135,
     attackSpeed: 1.05,
     range: 4.6,
-    skillIds: ["focus-shot"],
+    skillIds: ["pulse-ranger-mark"],
     tags: ["single-target", "boss-killer"],
   },
   {
@@ -102,7 +102,7 @@ export const heroes: HeroDefinition[] = [
     power: 118,
     attackSpeed: 0.86,
     range: 3,
-    skillIds: ["barrier-guard"],
+    skillIds: ["barrier-guard-lock"],
     tags: ["delay", "shield"],
   },
   {
@@ -115,7 +115,7 @@ export const heroes: HeroDefinition[] = [
     power: 104,
     attackSpeed: 1.24,
     range: 3.8,
-    skillIds: ["team-boost"],
+    skillIds: ["field-medic-rally"],
     tags: ["buff", "attack-speed"],
   },
   {
@@ -128,7 +128,7 @@ export const heroes: HeroDefinition[] = [
     power: 112,
     attackSpeed: 0.9,
     range: 3.4,
-    skillIds: ["freeze-trap"],
+    skillIds: ["frost-warden-chill"],
     tags: ["freeze", "slow"],
   },
   {
@@ -141,7 +141,7 @@ export const heroes: HeroDefinition[] = [
     power: 126,
     attackSpeed: 0.96,
     range: 4.1,
-    skillIds: ["burst-rocket"],
+    skillIds: ["burst-scout-flare"],
     tags: ["area-damage", "burst"],
   },
   {
@@ -154,7 +154,7 @@ export const heroes: HeroDefinition[] = [
     power: 96,
     attackSpeed: 1.3,
     range: 4,
-    skillIds: ["nano-pack"],
+    skillIds: ["nano-aide-injector"],
     tags: ["buff", "power-up"],
   },
   {
@@ -167,7 +167,7 @@ export const heroes: HeroDefinition[] = [
     power: 220,
     attackSpeed: 0.95,
     range: 4.2,
-    skillIds: ["area-burst"],
+    skillIds: ["plasma-mage-orb"],
     tags: ["area-damage", "wave-clear"],
   },
   {
@@ -180,7 +180,7 @@ export const heroes: HeroDefinition[] = [
     power: 190,
     attackSpeed: 0.88,
     range: 3.2,
-    skillIds: ["core-guard"],
+    skillIds: ["core-knight-anchor"],
     tags: ["shield", "core-protection"],
   },
   {
@@ -193,7 +193,7 @@ export const heroes: HeroDefinition[] = [
     power: 170,
     attackSpeed: 1.28,
     range: 4,
-    skillIds: ["overclock"],
+    skillIds: ["overclock-tech-haste"],
     tags: ["buff", "ultimate-charge"],
   },
   {
@@ -206,7 +206,7 @@ export const heroes: HeroDefinition[] = [
     power: 235,
     attackSpeed: 1.02,
     range: 4.3,
-    skillIds: ["chain-spark"],
+    skillIds: ["arc-captain-current"],
     tags: ["chain", "multi-hit"],
   },
   {
@@ -219,7 +219,7 @@ export const heroes: HeroDefinition[] = [
     power: 205,
     attackSpeed: 0.82,
     range: 3.6,
-    skillIds: ["gravity-mine"],
+    skillIds: ["gravity-jailer-field"],
     tags: ["grouping", "slow"],
   },
   {
@@ -232,7 +232,7 @@ export const heroes: HeroDefinition[] = [
     power: 178,
     attackSpeed: 1.18,
     range: 4.1,
-    skillIds: ["scrap-turret"],
+    skillIds: ["combat-engineer-turret"],
     tags: ["turret", "support-fire"],
   },
   {
@@ -245,7 +245,7 @@ export const heroes: HeroDefinition[] = [
     power: 320,
     attackSpeed: 1.35,
     range: 4.4,
-    skillIds: ["team-highlight"],
+    skillIds: ["credit-hacker-bounty", "credit-hacker-network"],
     tags: ["buff", "team-wide", "economy"],
   },
   {
@@ -258,7 +258,7 @@ export const heroes: HeroDefinition[] = [
     power: 430,
     attackSpeed: 1.02,
     range: 4.8,
-    skillIds: ["highlight-barrage"],
+    skillIds: ["railgun-ace-piercer", "railgun-ace-weakpoint"],
     tags: ["area-damage", "boss-killer", "highlight"],
   },
   {
@@ -271,7 +271,7 @@ export const heroes: HeroDefinition[] = [
     power: 360,
     attackSpeed: 0.92,
     range: 3.8,
-    skillIds: ["last-stand"],
+    skillIds: ["last-bastion-fortress", "last-bastion-retaliate"],
     tags: ["shield", "last-stand"],
   },
   {
@@ -284,7 +284,7 @@ export const heroes: HeroDefinition[] = [
     power: 455,
     attackSpeed: 0.9,
     range: 5,
-    skillIds: ["orbital-laser"],
+    skillIds: ["orbital-sniper-laser", "orbital-sniper-lockon"],
     tags: ["beam", "area-damage", "boss-killer"],
   },
   {
@@ -297,7 +297,7 @@ export const heroes: HeroDefinition[] = [
     power: 385,
     attackSpeed: 0.86,
     range: 3.9,
-    skillIds: ["last-stand"],
+    skillIds: ["aegis-commander-order", "aegis-commander-suppression"],
     tags: ["shield", "commander"],
   },
   {
@@ -310,7 +310,7 @@ export const heroes: HeroDefinition[] = [
     power: 340,
     attackSpeed: 1.18,
     range: 4.5,
-    skillIds: ["team-highlight"],
+    skillIds: ["chrono-oracle-accelerate", "chrono-oracle-foresight"],
     tags: ["haste", "team-wide", "support"],
   },
   {
@@ -388,7 +388,7 @@ export const heroes: HeroDefinition[] = [
     power: 610,
     attackSpeed: 1.35,
     range: 3.8,
-    skillIds: ["genji-shuriken", "genji-deflect", "genji-dragonblade"],
+    skillIds: ["genji-shuriken", "genji-swift-strike", "genji-dragonblade"],
     tags: ["mythic", "overwatch", "damage", "chain-kill", "multi-hit", "execute"],
   },
   {
