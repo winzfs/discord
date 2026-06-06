@@ -40,8 +40,8 @@ export function drawTopHud(refs: GameRefs, layout: GameLayout) {
   updatePixiHudView(refs.hudView, layout, {
     currentWave: refs.state.currentWave,
     wavePhase: refs.wavePhase,
-    countdownSeconds: refs.nextWaveTimer,
-    combatSeconds: refs.combatTimer,
+    countdownSeconds: Math.max(0, refs.nextWaveTimer),
+    combatSeconds: Math.max(0, refs.combatTimer),
     lives: refs.state.lives,
     maxLives: initialBalance.startingLives,
     firepower: calculatePixiFirepower(refs),
