@@ -104,6 +104,7 @@ export type GameRefs = {
   waveLostLives: number;
   lastWaveSummary: WaveSummary | null;
   resultSubmitted: boolean;
+  lobbyRewardGranted: boolean;
   isTestMode: boolean;
   testEnemyHpMultiplier: number;
   heroSpriteAttacks: Record<string, HeroSpriteAttackState>;
