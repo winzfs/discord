@@ -104,8 +104,8 @@ export function LobbyPage() {
   const savedProgress = loadLobbyProgress();
   const [activeTab, setActiveTab] = useState<LobbyTabId>("battle");
   const [difficulty, setDifficulty] = useState(3);
-  const [gold, setGold] = useState(13580);
-  const [crystals, setCrystals] = useState(4550);
+  const [gold, setGold] = useState(savedProgress.gold);
+  const [crystals, setCrystals] = useState(savedProgress.crystals);
   const [heroes, setHeroes] = useState(savedProgress.heroes);
   const [artifacts, setArtifacts] = useState(savedProgress.artifacts);
   const [lastRecruitResults, setLastRecruitResults] = useState<RecruitResult[]>([]);
@@ -113,10 +113,21 @@ export function LobbyPage() {
   const [detail, setDetail] = useState<Detail | null>(null);
   const [notice, setNotice] = useState("상점, 영웅, 전투, 유물을 확인해보세요.");
 
+  const persistProgress = (
+    nextHeroes: LobbyHero[],
+    nextArtifacts: LobbyArtifact[],
+    nextGold = gold,
+    nextCrystals = crystals,
+  ) => {
+    saveLobbyProgress({ heroes: nextHeroes, artifacts: nextArtifacts, gold: nextGold, crystals: nextCrystals });
+  };
+
   const buyShopItem = (name: string, price: string) => {
     const cost = Number(price);
     if (Number.isNaN(cost)) {
-      setCrystals((value) => value + 30);
+      const nextCrystals = crystals + 30;
+      setCrystals(nextCrystals);
+      persistProgress(heroes, artifacts, gold, nextCrystals);
       setNotice(name + " 수령 완료");
       return;
     }
@@ -124,7 +135,9 @@ export function LobbyPage() {
       setNotice("골드 부족");
       return;
     }
-    setGold((value) => value - cost);
+    const nextGold = gold - cost;
+    setGold(nextGold);
+    persistProgress(heroes, artifacts, nextGold, crystals);
     setNotice(name + " 구매 완료");
   };
 
@@ -138,10 +151,6 @@ export function LobbyPage() {
     if (nextArtifact) setDetail(createArtifactDetail(nextArtifact));
   };
 
-  const persistProgress = (nextHeroes: LobbyHero[], nextArtifacts: LobbyArtifact[]) => {
-    saveLobbyProgress({ heroes: nextHeroes, artifacts: nextArtifacts });
-  };
-
   const recruit = (mode: RecruitPullMode) => {
     const cost = mode === "ten" ? recruitCosts.tenCrystal : recruitCosts.singleCrystal;
     if (crystals < cost) {
@@ -149,11 +158,12 @@ export function LobbyPage() {
       return;
     }
     const summary = recruitHeroes(heroes, mode);
-    setCrystals((value) => value - cost);
+    const nextCrystals = crystals - cost;
+    setCrystals(nextCrystals);
     setHeroes(summary.nextHeroes);
     setLastRecruitResults(summary.results);
     setRevealResults(summary.results);
-    persistProgress(summary.nextHeroes, artifacts);
+    persistProgress(summary.nextHeroes, artifacts, gold, nextCrystals);
     setActiveTab("heroes");
     setDetail(null);
     setNotice(`영웅 모집 완료 · 신규 ${summary.newHeroCount}명 · 조각 ${summary.totalShards}개 획득`);
@@ -174,7 +184,8 @@ export function LobbyPage() {
       return;
     }
 
-    setGold((value) => value - detail.upgradeCost);
+    const nextGold = gold - detail.upgradeCost;
+    setGold(nextGold);
     if (detail.kind === "hero") {
       const nextHeroes = heroes.map((hero) => {
         if (hero.id !== detail.id) return hero;
@@ -182,7 +193,7 @@ export function LobbyPage() {
         return { ...hero, level: hero.level + 1, shards: Math.max(0, hero.shards - required) };
       });
       setHeroes(nextHeroes);
-      persistProgress(nextHeroes, artifacts);
+      persistProgress(nextHeroes, artifacts, nextGold, crystals);
       refreshDetail(detail.kind, detail.id, nextHeroes, artifacts);
     } else {
       const nextArtifacts = artifacts.map((artifact) => {
@@ -191,7 +202,7 @@ export function LobbyPage() {
         return { ...artifact, level: Math.min(artifact.maxLevel, artifact.level + 1), pieces: Math.max(0, artifact.pieces - required) };
       });
       setArtifacts(nextArtifacts);
-      persistProgress(heroes, nextArtifacts);
+      persistProgress(heroes, nextArtifacts, nextGold, crystals);
       refreshDetail(detail.kind, detail.id, heroes, nextArtifacts);
     }
     setNotice(detail.title + " 업그레이드 완료");
