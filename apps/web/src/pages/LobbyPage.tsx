@@ -21,7 +21,7 @@ import {
   type LobbyTabId,
 } from "../game-lobby/lobbyData";
 import { recruitCosts, recruitHeroes, type RecruitPullMode, type RecruitResult } from "../game-lobby/lobbyRecruit";
-import { loadLobbyProgress, saveLobbyProgress } from "../game-lobby/lobbyProgressStorage";
+import { defaultLobbyLineupSize, loadLobbyProgress, saveLobbyProgress } from "../game-lobby/lobbyProgressStorage";
 import "../styles/lobby.css";
 import "../styles/lobby-polish.css";
 import "../styles/lobby-recruit-reveal.css";
@@ -100,6 +100,19 @@ function createArtifactDetail(artifact: LobbyArtifact): Detail {
   };
 }
 
+function syncLineupWithHeroes(lineupHeroIds: string[], heroes: LobbyHero[]) {
+  const ownedIds = new Set(heroes.filter((hero) => hero.owned).map((hero) => hero.id));
+  const nextLineup = lineupHeroIds.filter((id) => ownedIds.has(id));
+
+  for (const hero of heroes) {
+    if (nextLineup.length >= defaultLobbyLineupSize) break;
+    if (!hero.owned || nextLineup.includes(hero.id)) continue;
+    nextLineup.push(hero.id);
+  }
+
+  return nextLineup;
+}
+
 export function LobbyPage() {
   const savedProgress = loadLobbyProgress();
   const [activeTab, setActiveTab] = useState<LobbyTabId>("battle");
@@ -108,6 +121,7 @@ export function LobbyPage() {
   const [crystals, setCrystals] = useState(savedProgress.crystals);
   const [heroes, setHeroes] = useState(savedProgress.heroes);
   const [artifacts, setArtifacts] = useState(savedProgress.artifacts);
+  const [lineupHeroIds, setLineupHeroIds] = useState(savedProgress.lineupHeroIds);
   const [lastRecruitResults, setLastRecruitResults] = useState<RecruitResult[]>([]);
   const [revealResults, setRevealResults] = useState<RecruitResult[]>([]);
   const [detail, setDetail] = useState<Detail | null>(null);
@@ -118,8 +132,15 @@ export function LobbyPage() {
     nextArtifacts: LobbyArtifact[],
     nextGold = gold,
     nextCrystals = crystals,
+    nextLineupHeroIds = lineupHeroIds,
   ) => {
-    saveLobbyProgress({ heroes: nextHeroes, artifacts: nextArtifacts, gold: nextGold, crystals: nextCrystals });
+    saveLobbyProgress({
+      heroes: nextHeroes,
+      artifacts: nextArtifacts,
+      gold: nextGold,
+      crystals: nextCrystals,
+      lineupHeroIds: nextLineupHeroIds,
+    });
   };
 
   const buyShopItem = (name: string, price: string) => {
@@ -159,11 +180,13 @@ export function LobbyPage() {
     }
     const summary = recruitHeroes(heroes, mode);
     const nextCrystals = crystals - cost;
+    const nextLineupHeroIds = syncLineupWithHeroes(lineupHeroIds, summary.nextHeroes);
     setCrystals(nextCrystals);
     setHeroes(summary.nextHeroes);
+    setLineupHeroIds(nextLineupHeroIds);
     setLastRecruitResults(summary.results);
     setRevealResults(summary.results);
-    persistProgress(summary.nextHeroes, artifacts, gold, nextCrystals);
+    persistProgress(summary.nextHeroes, artifacts, gold, nextCrystals, nextLineupHeroIds);
     setActiveTab("heroes");
     setDetail(null);
     setNotice(`영웅 모집 완료 · 신규 ${summary.newHeroCount}명 · 조각 ${summary.totalShards}개 획득`);
@@ -192,8 +215,10 @@ export function LobbyPage() {
         const required = getHeroUpgradeRequirement(Math.max(1, hero.level));
         return { ...hero, level: hero.level + 1, shards: Math.max(0, hero.shards - required) };
       });
+      const nextLineupHeroIds = syncLineupWithHeroes(lineupHeroIds, nextHeroes);
       setHeroes(nextHeroes);
-      persistProgress(nextHeroes, artifacts, nextGold, crystals);
+      setLineupHeroIds(nextLineupHeroIds);
+      persistProgress(nextHeroes, artifacts, nextGold, crystals, nextLineupHeroIds);
       refreshDetail(detail.kind, detail.id, nextHeroes, artifacts);
     } else {
       const nextArtifacts = artifacts.map((artifact) => {
