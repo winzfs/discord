@@ -169,15 +169,71 @@ function bindVerticalDragScroll(
   });
 }
 
+function isContainerDestroyed(container: Container) {
+  return Boolean((container as any).destroyed);
+}
+
+function mountMythicMenuList(args: {
+  menu: Container;
+  listLayer: Container;
+  loadingText: ReturnType<typeof makePixiText>;
+  options: PixiMythicMenuViewOptions;
+  rowWidth: number;
+  viewportHeight: number;
+}) {
+  if (isContainerDestroyed(args.menu)) return;
+
+  const list = getMythicCraftAvailability(args.options.state);
+  if (isContainerDestroyed(args.menu)) return;
+
+  args.loadingText.visible = false;
+
+  const contentHeight = list.length * ROW_STEP;
+  const { viewport, spacer, mask } = createScrollViewport(args.rowWidth, args.viewportHeight);
+  viewport.x = 12;
+  viewport.y = HEADER_HEIGHT;
+  spacer.rect(0, 0, args.rowWidth, contentHeight);
+  spacer.fill({ color: 0x000000, alpha: 0.001 });
+
+  const getRow = createLazyRowProvider(list, args.options.state);
+  const rowPool = createMythicMenuRowPool({
+    rowCount: list.length,
+    getRow,
+    rowWidth: args.rowWidth,
+    rowHeight: ROW_HEIGHT,
+    rowStep: ROW_STEP,
+    viewportHeight: args.viewportHeight,
+    onCraft: args.options.onCraft,
+  });
+  rowPool.root.mask = mask;
+  viewport.addChild(rowPool.root);
+  args.listLayer.addChild(viewport);
+
+  bindVerticalDragScroll(viewport, rowPool.root, args.viewportHeight, contentHeight, rowPool.render);
+
+  if (contentHeight > args.viewportHeight && !isContainerDestroyed(args.menu)) {
+    const hintBackground = new Graphics();
+    const width = Math.min(360, args.options.rendererWidth - 24);
+    const height = HEADER_HEIGHT + args.viewportHeight + PANEL_MARGIN;
+    hintBackground.rect(12, height - 26, width - 24, 20);
+    hintBackground.fill({ color: 0x1f1b18, alpha: 0.82 });
+    args.menu.addChild(hintBackground);
+
+    const hint = makePixiText("목록을 위아래로 드래그", 10, 0xd8d0c8);
+    hint.anchor.set(0.5, 1);
+    hint.x = width / 2;
+    hint.y = height - 9;
+    args.menu.addChild(hint);
+  }
+}
+
 export function createPixiMythicMenuView(options: PixiMythicMenuViewOptions) {
-  const list = getMythicCraftAvailability(options.state);
-  const getRow = createLazyRowProvider(list, options.state);
   const width = Math.min(360, options.rendererWidth - 24);
   const maxHeight = Math.max(320, options.rendererHeight - 190);
-  const contentHeight = list.length * ROW_STEP;
-  const viewportHeight = Math.min(maxHeight - HEADER_HEIGHT - PANEL_MARGIN, contentHeight);
+  const viewportHeight = maxHeight - HEADER_HEIGHT - PANEL_MARGIN;
   const height = HEADER_HEIGHT + viewportHeight + PANEL_MARGIN;
   const menu = new Container();
+  const listLayer = new Container();
 
   menu.x = options.rendererWidth / 2 - width / 2;
   menu.y = Math.max(12, options.rendererHeight * MENU_TOP_RATIO);
@@ -191,40 +247,26 @@ export function createPixiMythicMenuView(options: PixiMythicMenuViewOptions) {
   menu.addChild(title);
   menu.addChild(createMythicMenuButton("닫기", width - 70, 12, options.onClose));
 
-  const rowWidth = width - 24;
-  const { viewport, spacer, mask } = createScrollViewport(rowWidth, viewportHeight);
-  viewport.x = 12;
-  viewport.y = HEADER_HEIGHT;
-  spacer.rect(0, 0, rowWidth, contentHeight);
-  spacer.fill({ color: 0x000000, alpha: 0.001 });
+  const loadingText = makePixiText("조합표 불러오는 중...", 13, 0xd8d0c8);
+  loadingText.anchor.set(0.5, 0.5);
+  loadingText.x = width / 2;
+  loadingText.y = HEADER_HEIGHT + viewportHeight / 2;
+  menu.addChild(loadingText);
 
-  const rowPool = createMythicMenuRowPool({
-    rowCount: list.length,
-    getRow,
-    rowWidth,
-    rowHeight: ROW_HEIGHT,
-    rowStep: ROW_STEP,
-    viewportHeight,
-    onCraft: options.onCraft,
+  menu.addChild(listLayer);
+
+  window.requestAnimationFrame(() => {
+    window.requestAnimationFrame(() => {
+      mountMythicMenuList({
+        menu,
+        listLayer,
+        loadingText,
+        options,
+        rowWidth: width - 24,
+        viewportHeight,
+      });
+    });
   });
-  rowPool.root.mask = mask;
-  viewport.addChild(rowPool.root);
-  menu.addChild(viewport);
-
-  bindVerticalDragScroll(viewport, rowPool.root, viewportHeight, contentHeight, rowPool.render);
-
-  if (contentHeight > viewportHeight) {
-    const hintBackground = new Graphics();
-    hintBackground.rect(12, height - 26, width - 24, 20);
-    hintBackground.fill({ color: 0x1f1b18, alpha: 0.82 });
-    menu.addChild(hintBackground);
-
-    const hint = makePixiText("목록을 위아래로 드래그", 10, 0xd8d0c8);
-    hint.anchor.set(0.5, 1);
-    hint.x = width / 2;
-    hint.y = height - 9;
-    menu.addChild(hint);
-  }
 
   return menu;
 }
