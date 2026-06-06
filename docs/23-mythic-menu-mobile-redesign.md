@@ -45,10 +45,10 @@ apps/web/src/game-client/pixi/gameTheme.ts
 
 ```text
 고정된 수의 row slot만 생성
-스크롤 시 slot 위치와 텍스트 내용만 갱신
 행 제거/파괴/destroy 반복 제거
 드래그 중에는 목록 위치만 이동
-필요할 때만 row slot 데이터 교체
+드래그 중에는 row slot 텍스트/그래픽 갱신도 하지 않음
+손을 떼거나 휠 스크롤이 끝난 뒤에만 row slot 데이터 교체
 ```
 
 핵심 구현:
@@ -57,6 +57,8 @@ apps/web/src/game-client/pixi/gameTheme.ts
 - `createMythicMenuRowPool()`에서 보이는 개수만큼 row slot 생성
 - 각 row slot은 패널, 제목, 재료 텍스트, 등급 라벨 그래픽을 재사용
 - `pixiMythicMenuView.ts`는 view model 생성과 스크롤 연결만 담당
+- `pointermove`에서는 `content.y`만 변경
+- `pointerup`, `pointerupoutside`, `wheel`에서만 row pool render 요청
 - `createVirtualScrollScheduler()`로 렌더 갱신을 프레임 단위로 묶음
 - `getMythicIngredientProgress()`는 view model 생성 시 1회만 계산
 - `spacer` 그래픽으로 전체 스크롤 높이 유지
@@ -102,7 +104,7 @@ apps/web/src/game-client/pixi/gameTheme.ts
 - 신화 메뉴를 눌렀을 때 멈춤이 줄었는지 확인
 - 신화 메뉴 목록을 아래로 드래그할 수 있는지 확인
 - 드래그 중 프레임 드랍이 줄었는지 확인
-- 드래그 중 row가 계속 destroy/create 되지 않는지 확인
+- 드래그 중 row 텍스트/그래픽이 계속 갱신되지 않는지 확인
 - 드래그가 끝난 후 행 내용이 정상적으로 교체되는지 확인
 - 휠 스크롤 시 행이 정상적으로 교체되는지 확인
 - 조합 가능 행을 짧게 터치하면 조합되는지 확인
