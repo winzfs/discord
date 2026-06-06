@@ -31,8 +31,17 @@ function updateControlledEnemyPosition(enemy: GameRefs["activeEnemies"][number],
   return false;
 }
 
+function queueEnemyAtExit(layout: GameLayout, enemy: GameRefs["activeEnemies"][number], options: UpdateActiveEnemiesOptions) {
+  enemy.exitQueued = true;
+  enemy.progress = EXIT_HOLD_PROGRESS;
+  const point = options.getPathPoint(layout, EXIT_HOLD_PROGRESS);
+  enemy.x = point.x;
+  enemy.y = point.y;
+  updateEnemyViewPosition(enemy.view, point.x, point.y, enemy.progress);
+}
+
 function removeEnemyAtExit(refs: GameRefs, enemy: GameRefs["activeEnemies"][number], options: UpdateActiveEnemiesOptions) {
-  if (enemy.leaked || !enemy.alive) return;
+  if (enemy.leaked || !enemy.alive || !enemy.exitQueued) return;
 
   enemy.leaked = true;
   enemy.alive = false;
@@ -50,17 +59,9 @@ function removeEnemyAtExit(refs: GameRefs, enemy: GameRefs["activeEnemies"][numb
   );
 }
 
-function holdEnemyAtExit(layout: GameLayout, enemy: GameRefs["activeEnemies"][number], options: UpdateActiveEnemiesOptions) {
-  enemy.progress = EXIT_HOLD_PROGRESS;
-  const point = options.getPathPoint(layout, enemy.progress);
-  enemy.x = point.x;
-  enemy.y = point.y;
-  updateEnemyViewPosition(enemy.view, point.x, point.y, enemy.progress);
-}
-
 function getExitTarget(enemies: GameRefs["activeEnemies"]) {
   return enemies
-    .filter((enemy) => enemy.alive && !enemy.leaked && enemy.progress >= EXIT_HOLD_PROGRESS)
+    .filter((enemy) => enemy.alive && !enemy.leaked && enemy.exitQueued)
     .sort((a, b) => a.id - b.id)[0] ?? null;
 }
 
@@ -75,17 +76,14 @@ export function updateActiveEnemies(
   for (const enemy of refs.activeEnemies) {
     if (!enemy.alive || enemy.leaked) continue;
 
-    if (enemy.progress >= EXIT_HOLD_PROGRESS) {
-      holdEnemyAtExit(layout, enemy, options);
-      continue;
-    }
+    if (enemy.exitQueued) continue;
 
     if (updateControlledEnemyPosition(enemy, now)) continue;
 
     enemy.progress += (deltaSeconds * enemy.speed) / WAVE_COMBAT_SECONDS;
 
     if (enemy.progress >= 1) {
-      holdEnemyAtExit(layout, enemy, options);
+      queueEnemyAtExit(layout, enemy, options);
       continue;
     }
 
