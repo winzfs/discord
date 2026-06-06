@@ -8,7 +8,9 @@ const FIELD_PATH_POINTS = [
   { x: 0.802, y: 0.218 },
   { x: 0.847, y: 0.245 },
   { x: 0.847, y: 0.775 },
-  { x: 0.847, y: 0.835 },
+  { x: 0.802, y: 0.800 },
+  { x: 0.198, y: 0.800 },
+  { x: 0.153, y: 0.775 },
 ];
 
 function toScreenPoint(layout: GameLayout, point: { x: number; y: number }) {
