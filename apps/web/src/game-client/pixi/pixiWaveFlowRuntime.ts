@@ -77,6 +77,7 @@ export function finishAutoWave(
   const unresolvedEnemies = refs.activeEnemies.filter((enemy) => enemy.alive && !enemy.leaked);
   if (refs.state.status !== "failed" && unresolvedEnemies.length > 0) return;
 
+  const clearedWave = refs.state.currentWave;
   const leakedEnemies = refs.activeEnemies.filter((enemy) => enemy.leaked).length;
   const lostLives = refs.waveLostLives;
   const perfect = lostLives <= 0;
@@ -94,6 +95,7 @@ export function finishAutoWave(
   );
   const finalWave = refs.state.currentWave >= initialBalance.maxWave;
   const nextStatus = refs.state.status === "failed" ? "failed" : finalWave ? "cleared" : "playing";
+  const shouldAdvanceWave = nextStatus === "playing" && refs.state.currentWave < initialBalance.maxWave;
 
   refs.activeEnemies = [];
   refs.lastWaveSummary = {
@@ -106,6 +108,8 @@ export function finishAutoWave(
   };
   refs.state = {
     ...refs.state,
+    currentWave: shouldAdvanceWave ? refs.state.currentWave + 1 : refs.state.currentWave,
+    clearedWaves: refs.state.status === "failed" ? refs.state.clearedWaves : Math.max(refs.state.clearedWaves, clearedWave),
     luckStones: refs.state.luckStones + luckStoneReward,
     status: nextStatus,
     score: refs.state.score + refs.waveKilled * 10 + (perfect ? 50 : 0),
