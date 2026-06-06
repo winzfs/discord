@@ -1,4 +1,4 @@
-import type { Application, Container } from "pixi.js";
+import type { Application, Container, Graphics } from "pixi.js";
 import type { BoardHero, GameState, HeroDefinition } from "@discord-random-defense/game";
 import type { PixiHudView } from "./pixiHudView";
 import type { PixiControlsView } from "./pixiControlsView";
@@ -40,6 +40,17 @@ export type MythicUltimateChargeState = {
   lastUltimateAt: number;
 };
 
+export type PixiControlZone = {
+  id: number;
+  x: number;
+  y: number;
+  radius: number;
+  until: number;
+  slowMultiplier: number;
+  tintColor: number;
+  root: Graphics;
+};
+
 export type ActiveEnemy = {
   id: number;
   enemyId: string;
@@ -60,6 +71,10 @@ export type ActiveEnemy = {
   controlX?: number;
   controlY?: number;
   sleepUntil?: number;
+  controlSlowUntil?: number;
+  controlSlowMultiplier?: number;
+  controlTintUntil?: number;
+  controlTintColor?: number;
 };
 
 export type WaveSummary = {
@@ -105,6 +120,8 @@ export type GameRefs = {
   resultTimer: number;
   attackTimer: number;
   activeEnemies: ActiveEnemy[];
+  controlZones: PixiControlZone[];
+  nextControlZoneId: number;
   nextEnemyId: number;
   nextEnemyLeakAt: number;
   waveKilled: number;
