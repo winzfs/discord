@@ -67,6 +67,10 @@ export type WaveSummary = {
   leaked: number;
   lostLives: number;
   reward: number;
+  interestReward: number;
+  interestBaseCoins: number;
+  interestRate: number;
+  interestCapped: boolean;
   luckStoneReward: number;
   perfect: boolean;
 };
