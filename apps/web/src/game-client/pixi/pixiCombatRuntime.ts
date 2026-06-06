@@ -15,9 +15,11 @@ import { applyMythicHeroSkillEffects } from "./pixiSkillRuntime";
 import { spawnDistinctHeroAttackFx } from "./pixiHeroAttackFxRuntime";
 import { pickWinstonBeamTargets, spawnWinstonElectricBeam } from "./pixiWinstonBeamRuntime";
 import { acquireFxGraphics, releaseFxGraphics } from "./pixiFxPoolRuntime";
+import { spawnBaseSkillFx } from "./pixiBaseSkillFxRuntime";
 import {
   applyBaseHeroSkillPostDamage,
   applyBaseHeroSkillPreDamage,
+  getBaseHeroSkillFxKind,
 } from "./pixiBaseHeroSkillRuntime";
 
 export type PixiCombatRuntimeOptions = {
@@ -182,6 +184,18 @@ function triggerHeroSpriteAttack(refs: GameRefs, hero: BoardHero, from: { x: num
   }, HERO_IDLE_DIRECTION_HOLD_MS + 20);
 }
 
+function showBaseSkillStartupFx(refs: GameRefs, hero: BoardHero, role: HeroRole, target: ActiveEnemy, options: PixiCombatRuntimeOptions) {
+  const fxKind = getBaseHeroSkillFxKind(hero, role);
+  if (!fxKind) return;
+
+  spawnBaseSkillFx(
+    refs,
+    { addAnimation: options.addAnimation },
+    fxKind,
+    target,
+  );
+}
+
 function applyBaseHeroPostDamage(
   refs: GameRefs,
   hero: BoardHero,
@@ -344,6 +358,7 @@ export function spawnAttackEffects(refs: GameRefs, options: PixiCombatRuntimeOpt
 
     damage = applyBaseHeroSkillPreDamage(hero, role, damage);
     triggerHeroSpriteAttack(refs, hero, from, target, options);
+    showBaseSkillStartupFx(refs, hero, role, target, options);
     damage = applySkillEffects(refs, options, hero, role, target, damage, from);
     if (!target.alive) return;
 
