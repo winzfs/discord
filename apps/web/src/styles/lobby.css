@@ -172,12 +172,14 @@ button.artifact-card {
   margin: 18px auto 10px;
 }
 
+.hero-sprite-portrait,
 .mythic-hero-portrait {
   position: relative;
   overflow: hidden;
   background: radial-gradient(circle at 50% 18%, rgba(255, 255, 255, 0.24), rgba(54, 31, 36, 0.72) 58%, #211816 100%);
 }
 
+.hero-idle-sprite,
 .mythic-hero-idle-sprite {
   position: absolute;
   left: 50%;
@@ -259,281 +261,47 @@ button.artifact-card {
   font-weight: 800;
 }
 
-.artifact-card.locked {
-  border-color: #29211f;
-  background: linear-gradient(180deg, #837b73, #514b46);
-  color: rgba(255, 255, 255, 0.68);
+.locked {
   filter: grayscale(0.7);
-  opacity: 0.72;
-  cursor: not-allowed;
-  box-shadow: inset 0 -14px 0 rgba(0, 0, 0, 0.28), 0 5px 0 rgba(0, 0, 0, 0.12);
+  opacity: 0.62;
 }
 
-.hero-card.locked .hero-portrait,
-.artifact-card.locked .artifact-icon {
-  background: #3b3734;
-  border-color: #27211f;
-  color: #bfb7ad;
+.artifact-card {
+  background: linear-gradient(180deg, #e8d4a2, #c08b4e);
+  color: #4c372e;
 }
 
-.grade-common { background: linear-gradient(180deg, #8ca06e, #526d40); }
-.grade-rare { background: linear-gradient(180deg, #449ed4, #23648f); }
-.grade-epic { background: linear-gradient(180deg, #a96dea, #6f36a8); }
-.grade-legendary { background: linear-gradient(180deg, #ffb13d, #b66a15); }
-.grade-mythic { background: linear-gradient(180deg, #ff6868, #85253d); }
-
-.battle-road {
+.quest-mini label {
   display: grid;
-  min-height: 280px;
-  place-items: center;
-  border-radius: 18px;
-  background: #d9a979;
-  color: rgba(120, 62, 36, 0.55);
-  font-size: 3rem;
-  font-weight: 900;
+  gap: 6px;
+  margin: 12px 0;
+  font-weight: 800;
 }
 
-.road-monster {
-  padding: 18px 28px;
-  border-radius: 20px;
-  background: #9d5eb7;
-  color: white;
-  font-size: 1.1rem;
+.quest-mini progress,
+.progression-card progress {
+  width: 100%;
+  height: 14px;
+  accent-color: #19a030;
 }
 
 .battle-actions {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12px;
-  margin-top: 14px;
+  margin: 12px 0;
 }
 
-.battle-actions button,
-.battle-actions a {
-  padding: 16px;
+.battle-actions a,
+.battle-actions button {
+  display: grid;
+  min-height: 54px;
+  place-items: center;
   border: 0;
   border-radius: 14px;
-  background: #ffd02f;
+  background: #ffd031;
   color: #3a2418;
-  text-align: center;
   text-decoration: none;
   font-weight: 900;
-}
-
-.progression-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-  margin-top: 14px;
-}
-
-.progression-card {
-  display: grid;
-  gap: 8px;
-  padding: 12px;
-  border: 4px solid #3a2a25;
-  border-radius: 16px;
-  background: linear-gradient(180deg, #ffdc6a, #c47c29);
-  color: #35231e;
-  box-shadow: inset 0 -9px 0 rgba(0, 0, 0, 0.14), 0 4px 0 rgba(0, 0, 0, 0.15);
-}
-
-.progression-card div {
-  display: grid;
-  gap: 2px;
-}
-
-.progression-card b {
-  font-size: 1rem;
-  font-weight: 950;
-}
-
-.progression-card span,
-.progression-card small {
-  font-size: 0.75rem;
-  font-weight: 900;
-}
-
-.progression-card progress {
-  width: 100%;
-  height: 13px;
-  accent-color: #3bd476;
-}
-
-.quest-mini {
-  margin-top: 18px;
-  padding: 14px;
-  border-radius: 14px;
-  background: rgba(44, 31, 27, 0.45);
-}
-
-.quest-mini label {
-  display: grid;
-  gap: 5px;
-  margin: 9px 0;
-  font-weight: 800;
-}
-
-.quest-mini progress { width: 100%; height: 12px; }
-
-.detail-drawer {
-  position: fixed;
-  left: 14px;
-  right: 14px;
-  bottom: 84px;
-  z-index: 20;
-  display: grid;
-  grid-template-rows: auto minmax(0, 1fr) auto;
-  gap: 10px;
-  max-height: min(78dvh, 720px);
-  padding: 14px;
-  border: 5px solid #35231e;
-  border-radius: 20px;
-  background: #f4e7bd;
-  color: #3a2a25;
-  text-align: left;
-  box-shadow: 0 12px 0 rgba(0, 0, 0, 0.28);
-}
-
-.detail-drawer > button:first-child {
-  justify-self: end;
-  border: 0;
-  border-radius: 10px;
-  padding: 8px 12px;
-  background: #3f302a;
-  color: #fff8e6;
-  font-weight: 900;
-}
-
-.detail-scroll-area {
-  min-height: 0;
-  overflow-y: auto;
-  padding: 0 4px 4px;
-  overscroll-behavior: contain;
-}
-
-.detail-hero-header {
-  display: grid;
-  grid-template-columns: 74px 1fr;
-  align-items: center;
-  gap: 12px;
-  text-align: left;
-}
-
-.detail-hero-header .hero-portrait {
-  width: 64px;
-  height: 58px;
-  margin: 0;
-}
-
-.detail-hero-header h2 {
-  margin: 0 0 5px;
-  font-size: 2rem;
-  color: #3a2a25;
-}
-
-.detail-hero-header p {
-  margin: 0;
-  font-size: 0.95rem;
-  font-weight: 800;
-}
-
-.detail-badges,
-.detail-stat-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
-  margin-top: 10px;
-}
-
-.detail-drawer strong,
-.detail-drawer b {
-  padding: 9px;
-  border-radius: 10px;
-  background: #3f302a;
-  color: white;
-  text-align: center;
-  line-height: 1.22;
-}
-
-.detail-stat-grid strong:last-child {
-  grid-column: 1 / -1;
-  font-size: 0.88rem;
-}
-
-.detail-drawer .owned-badge { background: #257044; }
-.detail-drawer .locked-badge { background: #6d5550; }
-
-.detail-skill-section {
-  margin-top: 14px;
-}
-
-.detail-skill-section h3 {
-  margin: 0 0 8px;
-  text-align: left;
-  font-size: 1.05rem;
-}
-
-.detail-skill-list {
-  display: grid;
-  gap: 8px;
-}
-
-.detail-skill-card {
-  padding: 10px;
-  border: 3px solid rgba(63, 48, 42, 0.32);
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.36);
-}
-
-.detail-skill-card.ultimate {
-  border-color: rgba(255, 189, 58, 0.85);
-  background: linear-gradient(180deg, rgba(255, 216, 84, 0.5), rgba(255, 255, 255, 0.28));
-}
-
-.detail-skill-card header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
-
-.detail-skill-card header b {
-  padding: 6px 8px;
-  font-size: 0.9rem;
-}
-
-.detail-skill-card header span {
-  flex: 0 0 auto;
-  padding: 5px 7px;
-  border-radius: 999px;
-  background: #7b584a;
-  color: #fff8e6;
-  font-size: 0.72rem;
-  font-weight: 900;
-}
-
-.detail-skill-card p {
-  margin: 8px 0 6px;
-  font-weight: 900;
-  line-height: 1.25;
-}
-
-.detail-skill-card ul {
-  margin: 0;
-  padding-left: 18px;
-  color: #4d3a31;
-  font-size: 0.86rem;
-  font-weight: 800;
-  line-height: 1.38;
-}
-
-.lobby-upgrade {
-  margin-top: 0;
-  padding: 14px;
-  border: 0;
-  border-radius: 14px;
-  background: #ffd02f;
-  color: #3a2418;
-  font-weight: 900;
+  box-shadow: inset 0 -6px 0 rgba(0, 0, 0, 0.18);
 }
