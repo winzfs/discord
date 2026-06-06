@@ -142,6 +142,26 @@ apps/web/src/game-client/pixi/pixiBaseHeroSkillRuntime.ts
 - 범위 피해, 연쇄 피해, 감속/제어 효과, 경제 보너스가 레벨에 따라 상승합니다.
 - 5레벨 이상 영웅은 경제형 스킬 보너스 코인을 추가로 얻습니다.
 
+### 2.9 영웅 개성/성장 표시 1차 개선
+
+영웅 개성과 장기 성장 효과가 적용되어도 유저가 알기 어려웠기 때문에, 선택 정보 패널과 범위 표시를 개선했습니다.
+
+적용 위치:
+
+```text
+apps/web/src/game-client/pixi/pixiSelectionRuntime.ts
+apps/web/src/game-client/pixi/pixiUnitInfoView.ts
+apps/web/src/game-client/pixi/pixiUnitRangeView.ts
+apps/web/src/game-client/pixi/pixiHeroSynergyRuntime.ts
+```
+
+반영 내용:
+
+- 선택한 영웅 정보 패널에 `연계 효과` 문구를 표시합니다.
+- 선택한 영웅 정보 패널에 `숙련 Lv.N` 문구를 표시합니다.
+- 지원형 버프 영웅을 선택하면 주변 8칸 버프 범위를 초록색 셀로 표시합니다.
+- 시너지 판정 헬퍼를 export하여 정보 패널/범위 표시에서 재사용합니다.
+
 ## 3. 현재 주의할 점
 
 ### 3.1 빌드 재확인 필요
@@ -168,6 +188,8 @@ pnpm build:web
 - Genji 질풍참 후 타입/방향 오류가 없는지
 - 지원형 영웅 주변 배치 시 `연계 +N%`가 표시되는지
 - 레벨이 높은 일반~전설 영웅의 스킬 효과가 체감되는지
+- 영웅 선택 패널에 연계/숙련 문구가 표시되는지
+- 지원형 영웅 선택 시 주변 8칸 버프 범위가 표시되는지
 
 ## 4. 다음 작업 우선순위
 
@@ -210,10 +232,10 @@ pnpm build:web
 
 다음 개선:
 
-- 영웅 정보 패널에 연계/숙련 효과 설명 추가
 - 합성 가능 영웅과 신화 재료 영웅 강조
 - 특정 영웅별 고유 타겟팅 추가: 최고 체력 우선, 낮은 체력 우선, 선두 적 우선
-- 탱커 오라형 감속, 지원형 주변 버프 범위 표시
+- 탱커 오라형 감속 범위 표시
+- 지원형 버프 범위에 실제 적용 대상 표시
 
 ### 5순위: 기록 저장 정확도 개선
 
@@ -246,8 +268,9 @@ pnpm build:web
 4. Illari / Genji / Ana / Winston 스프라이트 방향 확인
 5. 지원형 주변 배치 연계 보너스 확인
 6. 로비 영웅 레벨에 따른 스킬 강화 체감 확인
-7. 영웅 정보 패널에 연계/숙련 효과 설명 추가
-8. durationSeconds 실제 측정 적용
-9. 점수/웨이브/킬 수 서버 검증 추가
-10. createPixiGame.ts tick/init 분리
+7. 영웅 정보 패널에 연계/숙련 효과 설명 표시 확인
+8. 지원형 영웅 선택 시 주변 8칸 버프 범위 확인
+9. durationSeconds 실제 측정 적용
+10. 점수/웨이브/킬 수 서버 검증 추가
+11. createPixiGame.ts tick/init 분리
 ```
