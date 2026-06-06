@@ -23,12 +23,7 @@ export type PixiDragRuntimeOptions = {
 };
 
 function createStackGhost(units: BoardHero[], cell: number) {
-  const ghost = createUnitGhost(units[0], cell, 0);
-  if (units.length > 1) {
-    const countText = new (createUnitGhost(units[0], cell, 0).constructor as any)();
-    countText.destroy?.({ children: true });
-  }
-  return ghost;
+  return createUnitGhost(units[0], cell, 0);
 }
 
 export function beginCellDrag(
