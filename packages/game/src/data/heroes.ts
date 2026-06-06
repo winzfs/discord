@@ -32,7 +32,7 @@ export const heroes: HeroDefinition[] = [
   {
     id: "mini-mender",
     displayName: "오버워치 의무요원",
-    description: "구조 작전에 투입되는 오버워치 의무요원. 응급 증폭 장비로 주변 아군의 화력을 안정적으로 끌어올린다.",
+    description: "구조 작전에 투입되는 오버워치 의무요원. 버프형 지원 유닛으로, 주변 8칸 아군에게 연계 공격력 버프를 제공한다.",
     role: "support",
     grade: "common",
     attackType: "support",
@@ -74,7 +74,7 @@ export const heroes: HeroDefinition[] = [
   {
     id: "charge-helper",
     displayName: "볼스카야 정비공",
-    description: "볼스카야 공업권에서 온 현장 정비공. 장비 수리와 부품 회수에 능해 전투 후 추가 자원을 확보한다.",
+    description: "볼스카야 공업권에서 온 현장 정비공. 버프형 지원 유닛으로, 주변 8칸 아군에게 연계 공격력 버프를 주고 부품 회수로 경제를 보조한다.",
     role: "support",
     grade: "common",
     attackType: "support",
@@ -116,7 +116,7 @@ export const heroes: HeroDefinition[] = [
   {
     id: "field-medic",
     displayName: "오버워치 야전 의무관",
-    description: "재난 지역과 전장을 오가는 야전 의무관. 치료보다 전투 지속력을 높이는 전술 격려와 보급에 강하다.",
+    description: "재난 지역과 전장을 오가는 버프형 지원 유닛. 주변 8칸 아군에게 연계 공격력 버프를 제공하며, 공격속도 보조 계열과 잘 어울린다.",
     role: "support",
     grade: "rare",
     attackType: "support",
@@ -158,7 +158,7 @@ export const heroes: HeroDefinition[] = [
   {
     id: "nano-aide",
     displayName: "카이로 나노 보조병",
-    description: "카이로 의료 연구 라인에서 파견된 나노 보조병. 불안정한 증폭 약제를 다루며 아군 한 명의 화력을 크게 끌어올린다.",
+    description: "카이로 의료 연구 라인에서 파견된 버프형 지원 유닛. 주변 8칸 아군에게 연계 공격력 버프를 제공하고, 피해 증폭 계열과 시너지가 좋다.",
     role: "support",
     grade: "rare",
     attackType: "support",
@@ -200,7 +200,7 @@ export const heroes: HeroDefinition[] = [
   {
     id: "overclock-tech",
     displayName: "오아시스 가속 기술자",
-    description: "오아시스 과학권의 전투 지원 기술자. 시간 가속 회로를 임시로 과부하시켜 주변 아군의 공격 주기를 앞당긴다.",
+    description: "오아시스 과학권의 버프형 지원 유닛. 주변 8칸 아군에게 연계 공격력 버프를 제공하고, 가속 회로로 공격 템포를 끌어올린다.",
     role: "support",
     grade: "epic",
     attackType: "support",
@@ -256,7 +256,7 @@ export const heroes: HeroDefinition[] = [
   {
     id: "credit-hacker",
     displayName: "탈론 크레딧 해커",
-    description: "탈론의 암시장 자금 흐름을 조작하는 해커. 적 처치 보상과 전역 증폭을 동시에 노리는 경제형 전설 유닛이다.",
+    description: "탈론의 암시장 자금 흐름을 조작하는 전역 버프형 지원 유닛. 팀 전체에 연계 공격력 버프를 주고 처치 보상까지 증폭한다.",
     role: "support",
     grade: "legendary",
     attackType: "support",
@@ -312,7 +312,7 @@ export const heroes: HeroDefinition[] = [
   {
     id: "aegis-commander",
     displayName: "이지스 작전지휘관",
-    description: "다국적 방어 작전의 현장 지휘관. 직접 돌파하기보다 명령과 진압 지휘로 팀 전체의 생존력을 높인다.",
+    description: "다국적 방어 작전의 전역 지휘관. 팀 전체에 연계 공격력 버프를 제공하며, 직접 돌파보다 명령과 진압 지휘로 전선을 유지한다.",
     role: "tank",
     grade: "legendary",
     attackType: "control",
@@ -326,7 +326,7 @@ export const heroes: HeroDefinition[] = [
   {
     id: "chrono-oracle",
     displayName: "오아시스 시간 예측관",
-    description: "오아시스의 실험적 시간 예측 알고리즘을 다루는 지원가. 전투 흐름을 앞당겨 팀 전체의 공격 템포를 조율한다.",
+    description: "오아시스의 전역 버프형 지원 유닛. 팀 전체에 연계 공격력 버프를 제공하고, 시간 가속으로 전투 흐름을 앞당긴다.",
     role: "support",
     grade: "legendary",
     attackType: "support",
@@ -424,7 +424,7 @@ export const heroes: HeroDefinition[] = [
   {
     id: "ana",
     displayName: "아나",
-    description: "오버워치 창설 세대의 노련한 저격 지원가. 수면과 나노 강화로 적을 억제하고 아군의 결정타를 만들어낸다.",
+    description: "오버워치 창설 세대의 버프형 저격 지원가. 주변 8칸 아군에게 연계 공격력 버프를 제공하며, 수면과 나노 강화로 결정타를 만든다.",
     role: "support",
     grade: "mythic",
     attackType: "support",
@@ -438,7 +438,7 @@ export const heroes: HeroDefinition[] = [
   {
     id: "kiriko",
     displayName: "키리코",
-    description: "카네자카를 지키는 요괴 자경단의 핵심 인물. 쿠나이와 여우길로 빠른 전투 템포와 팀 버프를 만든다.",
+    description: "카네자카를 지키는 버프형 지원가. 주변 8칸 아군에게 연계 공격력 버프를 제공하고, 여우길로 빠른 전투 템포를 만든다.",
     role: "support",
     grade: "mythic",
     attackType: "support",
