@@ -195,6 +195,7 @@ function applyBaseHeroPostDamage(
     {
       damageEnemy: (refs, enemy, damage) => damageEnemy(refs, enemy, damage, options),
       floatText: options.floatText,
+      addAnimation: options.addAnimation,
     },
     hero,
     role,
