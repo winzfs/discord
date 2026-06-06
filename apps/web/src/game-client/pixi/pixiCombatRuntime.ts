@@ -3,7 +3,6 @@ import type { BoardHero, HeroRole } from "@discord-random-defense/game";
 import { colors } from "./gameTheme";
 import { createGameLayout } from "./gameLayout";
 import type { ActiveEnemy, GameRefs } from "./pixiGameTypes";
-import { MAX_ATTACKERS_PER_TICK } from "./pixiGameTypes";
 import { updateEnemyViewHp } from "./pixiEnemyView";
 import { destroyActiveEnemy } from "./pixiEnemyRuntime";
 import { getProgressHeroPower, applyEconomyRewardBonus } from "./pixiProgressBonuses";
@@ -43,6 +42,11 @@ const SPRITE_ATTACK_HERO_IDS = new Set(["tracer", "kiriko", "dva", "zarya", "cas
 const HERO_IDLE_DIRECTION_HOLD_MS = 3000;
 const ZARYA_MAX_BEAM_CHARGE = 6;
 const ZARYA_BEAM_CHAIN_WINDOW_MS = 1200;
+const STACK_ATTACK_OFFSETS = [
+  { x: 0, y: -5 },
+  { x: -7, y: 5 },
+  { x: 7, y: 5 },
+];
 let boardDrawQueued = false;
 let hudControlsDrawQueued = false;
 
@@ -79,6 +83,26 @@ function roleAccent(role: HeroRole | undefined) {
   if (role === "tank") return 0x87b7ff;
   if (role === "support") return 0x7dffb2;
   return 0xffd166;
+}
+
+function getHeroCellIndex(refs: GameRefs, hero: BoardHero) {
+  return hero.position.row * refs.state.boardSize.columns + hero.position.column;
+}
+
+function getHeroStackIndex(refs: GameRefs, hero: BoardHero) {
+  const cell = refs.state.board[getHeroCellIndex(refs, hero)];
+  const index = cell?.units.findIndex((unit) => unit.instanceId === hero.instanceId) ?? -1;
+  return index >= 0 ? index : 0;
+}
+
+function getStackedAttackOrigin(refs: GameRefs, hero: BoardHero, center: { x: number; y: number; cell: number }) {
+  const stackIndex = getHeroStackIndex(refs, hero);
+  const offset = STACK_ATTACK_OFFSETS[stackIndex % STACK_ATTACK_OFFSETS.length] ?? STACK_ATTACK_OFFSETS[0];
+  return {
+    x: center.x + offset.x,
+    y: center.y + offset.y,
+    cell: center.cell,
+  };
 }
 
 function pickAttackTarget(refs: GameRefs, role: HeroRole | undefined, from: { x: number; y: number }, range: number): ActiveEnemy | null {
@@ -341,11 +365,12 @@ export function spawnAttackEffects(refs: GameRefs, options: PixiCombatRuntimeOpt
   const heroes = getAllBoardHeroes(refs.state.board);
   if (heroes.length === 0) return;
 
-  heroes.slice(0, Math.min(heroes.length, MAX_ATTACKERS_PER_TICK)).forEach((hero, index) => {
+  heroes.forEach((hero, index) => {
     const definition = getHeroById(hero.heroId);
     const role = definition?.role ?? "damage";
-    const fromIndex = hero.position.row * refs.state.boardSize.columns + hero.position.column;
-    const from = options.getCellCenter(refs, fromIndex);
+    const fromIndex = getHeroCellIndex(refs, hero);
+    const cellCenter = options.getCellCenter(refs, fromIndex);
+    const from = getStackedAttackOrigin(refs, hero, cellCenter);
     const range = getPixiUnitAttackRange(hero);
     const target = pickAttackTarget(refs, role, from, range);
     if (!target) return;
@@ -422,7 +447,7 @@ export function spawnAttackEffects(refs: GameRefs, options: PixiCombatRuntimeOpt
     const targetAtFire = { x: target.x, y: target.y };
 
     options.addAnimation(refs, {
-      duration: 280 + index * 18,
+      duration: 280 + index * 10,
       update: (progress) => {
         const eased = 1 - Math.pow(1 - progress, 2);
         projectile.x = from.x + (targetAtFire.x - from.x) * eased;
