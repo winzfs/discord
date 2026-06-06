@@ -219,4 +219,181 @@ function getZaryaBeamDamage(baseDamage: number, charge: number) {
   return Math.round(baseDamage * (0.78 + charge * 0.16));
 }
 
-spawnZaryaBeamEffectPLACEHOLDER
+function spawnZaryaBeamEffect(
+  refs: GameRefs,
+  options: PixiCombatRuntimeOptions,
+  from: { x: number; y: number },
+  target: ActiveEnemy,
+  charge: number,
+  done: () => void,
+) {
+  const beam = acquireFxGraphics(refs);
+  const duration = 620;
+  const baseOuterWidth = 7 + charge * 1.9;
+  const baseInnerWidth = 2.5 + charge * 0.7;
+
+  options.addAnimation(refs, {
+    duration,
+    update: (progress) => {
+      if (!target.alive) {
+        beam.alpha = Math.max(0, 1 - progress);
+        return;
+      }
+
+      const pulse = 0.72 + Math.sin(progress * Math.PI * 8) * 0.18;
+      const alpha = 0.92 - progress * 0.18;
+      const outerWidth = baseOuterWidth * pulse;
+      const innerWidth = baseInnerWidth * (0.9 + pulse * 0.12);
+
+      beam.clear();
+      beam.moveTo(from.x, from.y);
+      beam.lineTo(target.x, target.y);
+      beam.stroke({ color: 0xff4fd8, width: outerWidth, alpha: 0.28 * alpha });
+      beam.moveTo(from.x, from.y);
+      beam.lineTo(target.x, target.y);
+      beam.stroke({ color: 0xff9ff1, width: Math.max(3, outerWidth * 0.52), alpha: 0.32 * alpha });
+      beam.moveTo(from.x, from.y);
+      beam.lineTo(target.x, target.y);
+      beam.stroke({ color: 0xffffff, width: innerWidth, alpha });
+    },
+    done: () => {
+      releaseFxGraphics(refs, beam);
+      done();
+    },
+  });
+}
+
+function tryTriggerUltimateAttack(refs: GameRefs, options: PixiCombatRuntimeOptions, hero: BoardHero, from: { x: number; y: number }, target: ActiveEnemy, damage: number) {
+  chargeMythicUltimateFromAttack(refs, hero);
+
+  const triggered = tryTriggerMythicUltimate(
+    refs,
+    {
+      addAnimation: options.addAnimation,
+      floatText: options.floatText,
+      damageEnemy: (refs, enemy, damage) => damageEnemy(refs, enemy, damage, options),
+    },
+    hero,
+    from,
+    target,
+    damage,
+  );
+
+  requestBoardDraw(refs, options);
+  return triggered;
+}
+
+function drawBoardNow(refs: GameRefs, options: PixiCombatRuntimeOptions) {
+  requestBoardDraw(refs, options);
+}
+
+function applySkillEffects(refs: GameRefs, options: PixiCombatRuntimeOptions, hero: BoardHero, role: HeroRole, target: ActiveEnemy, damage: number, from: { x: number; y: number }) {
+  return applyMythicHeroSkillEffects(
+    refs,
+    {
+      addAnimation: options.addAnimation,
+      damageEnemy: (refs, enemy, damage) => damageEnemy(refs, enemy, damage, options),
+      drawBoard: (refs) => drawBoardNow(refs, options),
+      floatText: options.floatText,
+    },
+    hero,
+    role,
+    target,
+    damage,
+    from,
+  );
+}
+
+export function spawnAttackEffects(refs: GameRefs, options: PixiCombatRuntimeOptions) {
+  const heroes = getAllBoardHeroes(refs.state.board);
+  if (heroes.length === 0) return;
+
+  heroes.slice(0, Math.min(heroes.length, MAX_ATTACKERS_PER_TICK)).forEach((hero, index) => {
+    const definition = getHeroById(hero.heroId);
+    const role = definition?.role ?? "damage";
+    const fromIndex = hero.position.row * refs.state.boardSize.columns + hero.position.column;
+    const from = options.getCellCenter(refs, fromIndex);
+    const range = getPixiUnitAttackRange(hero);
+    const target = pickAttackTarget(refs, role, from, range);
+    if (!target) return;
+
+    let damage = getHeroDamage(refs, hero);
+    triggerHeroSpriteAttack(refs, hero, from, target, options);
+    damage = applySkillEffects(refs, options, hero, role, target, damage, from);
+    if (!target.alive) return;
+
+    if (tryTriggerUltimateAttack(refs, options, hero, from, target, damage)) {
+      return;
+    }
+
+    if (hero.heroId === "winston") {
+      const beamTargets = pickWinstonBeamTargets(refs, target);
+      spawnWinstonElectricBeam(
+        refs,
+        {
+          addAnimation: options.addAnimation,
+          applyDamage: (enemy, value) => damageEnemy(refs, enemy, value, options),
+        },
+        from,
+        beamTargets,
+        damage,
+        () => {
+          if (index === 0) options.floatText(refs, `${Math.round(damage * 0.72)}`, target.x, target.y - 18, 0x87b7ff);
+        },
+      );
+      return;
+    }
+
+    if (hero.heroId === "zarya") {
+      const charge = updateZaryaBeamCharge(refs, hero, target);
+      const beamDamage = getZaryaBeamDamage(damage, charge);
+      spawnZaryaBeamEffect(refs, options, from, target, charge, () => {
+        applyAttackDamage(refs, hero, role, target, beamDamage, options);
+        if (index === 0) {
+          options.floatText(refs, `${beamDamage}`, target.x, target.y - 18, charge >= 4 ? 0xff7de9 : colors.yellow);
+        }
+      });
+      return;
+    }
+
+    if (
+      spawnDistinctHeroAttackFx(
+        refs,
+        {
+          addAnimation: options.addAnimation,
+          applyDamage: (enemy, value) => damageEnemy(refs, enemy, value, options),
+          floatText: (value, x, y, color) => options.floatText(refs, value, x, y, color),
+        },
+        hero.heroId,
+        from,
+        target,
+        damage,
+      )
+    ) {
+      return;
+    }
+
+    const projectile = acquireFxGraphics(refs);
+    projectile.circle(0, 0, hero.grade === "mythic" ? 5 : 3.5);
+    projectile.fill({ color: roleAccent(role), alpha: 1 });
+    projectile.x = from.x;
+    projectile.y = from.y;
+
+    const targetAtFire = { x: target.x, y: target.y };
+
+    options.addAnimation(refs, {
+      duration: 280 + index * 18,
+      update: (progress) => {
+        const eased = 1 - Math.pow(1 - progress, 2);
+        projectile.x = from.x + (targetAtFire.x - from.x) * eased;
+        projectile.y = from.y + (targetAtFire.y - from.y) * eased;
+        projectile.alpha = Math.max(0, 1 - progress * 0.18);
+      },
+      done: () => {
+        releaseFxGraphics(refs, projectile);
+        applyAttackDamage(refs, hero, role, target, damage, options);
+        if (index === 0) options.floatText(refs, `${damage}`, target.x, target.y - 18, roleAccent(role));
+      },
+    });
+  });
+}
