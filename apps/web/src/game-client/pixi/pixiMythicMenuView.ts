@@ -6,7 +6,7 @@ import {
   type GameState,
   type HeroGrade,
 } from "@discord-random-defense/game";
-import { colors } from "./gameTheme";
+import { colors, gradeColor as themeGradeColor } from "./gameTheme";
 import { makePixiPanel, makePixiText } from "./pixiSharedView";
 import { makePixiTouchBoundary, stopPixiPropagation } from "./pixiPointerGuards";
 
@@ -54,11 +54,7 @@ function createMythicMenuButton(label: string, x: number, y: number, onClick: ()
 }
 
 function gradeColor(grade: HeroGrade | undefined) {
-  if (grade === "mythic") return 0xffd447;
-  if (grade === "legendary") return 0xff7a1f;
-  if (grade === "epic") return 0x26006f;
-  if (grade === "rare") return 0x7ff7ff;
-  return 0x7f786f;
+  return themeGradeColor(grade);
 }
 
 function gradeLabel(grade: HeroGrade | undefined) {
