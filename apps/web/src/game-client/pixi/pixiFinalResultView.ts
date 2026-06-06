@@ -93,6 +93,14 @@ function getStars(refs: GameRefs) {
   return refs.state.lives >= Math.ceil(initialBalance.startingLives * 0.5) ? "★★☆" : "★☆☆";
 }
 
+function getGameOverReasonText(refs: GameRefs) {
+  if (refs.state.status !== "failed") return "";
+  if (refs.gameOverReason?.type === "enemy_limit") {
+    return `종료 사유: 적 누적 초과 ${refs.gameOverReason.enemyCount}/${refs.gameOverReason.enemyLimit}`;
+  }
+  return "종료 사유: 방어 실패";
+}
+
 export function showFinalResultPanel(refs: GameRefs) {
   if (refs.state.status !== "failed" && refs.state.status !== "cleared") return;
 
@@ -100,6 +108,7 @@ export function showFinalResultPanel(refs: GameRefs) {
 
   const reward = calculateLobbyBattleReward(refs.state);
   const resultGrade = getResultGrade(refs);
+  const gameOverReasonText = getGameOverReasonText(refs);
   const width = Math.min(390, refs.app.renderer.width - 28);
   const height = 430;
   const x = refs.app.renderer.width / 2 - width / 2;
@@ -144,7 +153,7 @@ export function showFinalResultPanel(refs: GameRefs) {
   stars.x = width / 2;
   stars.y = 126;
 
-  const message = makePixiText(resultGrade.message, 15, 0xfff1d0);
+  const message = makePixiText(gameOverReasonText || resultGrade.message, gameOverReasonText ? 13 : 15, gameOverReasonText ? 0xffd4dc : 0xfff1d0);
   message.anchor.set(0.5, 0);
   message.x = width / 2;
   message.y = 156;
