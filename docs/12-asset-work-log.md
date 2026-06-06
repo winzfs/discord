@@ -26,6 +26,29 @@ heroId ana에 /assets/heroes/ana.png 경로 연결
 아나를 공격 모션 트리거 대상에 추가
 ```
 
+### 구현 상세
+
+```text
+pixiHeroSpriteView.ts
+- HERO_TEXTURE_PATHS에 ana 추가
+- SPRITE_HERO_IDS에 ana 추가
+- HERO_SPRITE_SCALE에 ana: 1.22 추가
+- /assets/heroes/ana.png?v=20260606-ana1 캐시 버전 적용
+
+pixiCombatRuntime.ts
+- SPRITE_ATTACK_HERO_IDS에 ana 추가
+- 아나 공격 시 idle 프레임에서 attack 프레임으로 전환 가능
+```
+
+### 관련 커밋
+
+```text
+ac643af5a7c49b19b32c62e3ebb74debfbcadd06
+aa989900ed8c4f98e93da190e71a78ef8a2fb715
+40f1efd0aa63ea6697d7374c7f5d4a961cf3d3d1
+31f7dfc153f6c5ed6a8792f8e2166f69a3bdff2a
+```
+
 ### 확인 항목
 
 ```text
