@@ -21,7 +21,7 @@ export type PixiMythicMenuViewOptions = {
 type IngredientProgress = ReturnType<typeof getMythicIngredientProgress>[number];
 
 const HEADER_HEIGHT = 58;
-const ROW_HEIGHT = 82;
+const ROW_HEIGHT = 96;
 const ROW_GAP = 8;
 const PANEL_MARGIN = 24;
 const MENU_TOP_RATIO = 0.11;
@@ -59,6 +59,14 @@ function gradeColor(grade: HeroGrade | undefined) {
   return 0xd8d0c8;
 }
 
+function gradeLabel(grade: HeroGrade | undefined) {
+  if (grade === "mythic") return "신화";
+  if (grade === "legendary") return "전설";
+  if (grade === "epic") return "영웅";
+  if (grade === "rare") return "희귀";
+  return "일반";
+}
+
 function getIngredientGrade(item: IngredientProgress): HeroGrade | undefined {
   if (item.heroId) return getHeroById(item.heroId)?.grade;
   if (item.label.includes("신화")) return "mythic";
@@ -84,7 +92,18 @@ function shortenLabel(label: string) {
     .replace("오아시스 ", "오아시스 ")
     .replace("정커 ", "정커 ");
 
-  return cleaned.length > 10 ? `${cleaned.slice(0, 9)}…` : cleaned;
+  return cleaned.length > 7 ? `${cleaned.slice(0, 6)}…` : cleaned;
+}
+
+function formatIngredientLabel(item: IngredientProgress) {
+  const mark = item.fulfilled ? "✓" : "·";
+  const grade = getIngredientGrade(item);
+  return `${mark}[${gradeLabel(grade)}] ${shortenLabel(item.label)}`;
+}
+
+function fitTextToWidth(text: string, maxWidth: number) {
+  const maxChars = Math.max(12, Math.floor(maxWidth / 7.2));
+  return text.length > maxChars ? `${text.slice(0, maxChars - 1)}…` : text;
 }
 
 function drawIngredientSummary(row: Container, options: PixiMythicMenuViewOptions, recipe: ReturnType<typeof getMythicCraftAvailability>[number]["recipe"], y: number, rowWidth: number) {
@@ -93,47 +112,30 @@ function drawIngredientSummary(row: Container, options: PixiMythicMenuViewOption
 
   const summaryText = makePixiText(
     `재료 ${summary.owned}/${summary.total}${summary.missing > 0 ? ` · 부족 ${summary.missing}` : " · 준비완료"}`,
-    11,
-    summary.missing === 0 ? 0xfff2a8 : 0xcfc6bd,
+    13,
+    summary.missing === 0 ? 0xfff2a8 : 0xf0e8dd,
   );
   summaryText.x = 12;
   summaryText.y = y;
   row.addChild(summaryText);
 
-  const details = progress
-    .slice(0, 4)
-    .map((item) => {
-      const status = item.fulfilled ? "✓" : "·";
-      return `${status}${shortenLabel(item.label)}`;
-    })
-    .join("  ");
+  const firstLine = progress.slice(0, 2).map(formatIngredientLabel).join("  ");
+  const secondLine = progress.slice(2, 4).map(formatIngredientLabel).join("  ");
+  const detailWidth = rowWidth - 24;
 
-  const detailText = makePixiText(details, 9, 0xaca39a);
-  detailText.x = 12;
-  detailText.y = y + 17;
-  detailText.alpha = 0.88;
+  const line1 = makePixiText(fitTextToWidth(firstLine, detailWidth), 11, 0xd8d0c8);
+  line1.x = 12;
+  line1.y = y + 21;
+  line1.alpha = 0.96;
+  row.addChild(line1);
 
-  if (detailText.width > rowWidth - 24) {
-    const maxChars = Math.max(18, Math.floor((rowWidth - 24) / 6.2));
-    detailText.text = `${details.slice(0, maxChars - 1)}…`;
+  if (secondLine) {
+    const line2 = makePixiText(fitTextToWidth(secondLine, detailWidth), 11, 0xbfb7ae);
+    line2.x = 12;
+    line2.y = y + 40;
+    line2.alpha = 0.92;
+    row.addChild(line2);
   }
-
-  row.addChild(detailText);
-
-  const gradeMarks = progress.slice(0, 4).map((item, index) => ({
-    color: gradeColor(getIngredientGrade(item)),
-    fulfilled: item.fulfilled,
-    x: rowWidth - 68 + index * 14,
-  }));
-
-  gradeMarks.forEach((mark) => {
-    const dot = new Graphics();
-    dot.circle(0, 0, mark.fulfilled ? 4 : 3);
-    dot.fill({ color: mark.color, alpha: mark.fulfilled ? 0.95 : 0.35 });
-    dot.x = mark.x;
-    dot.y = y + 7;
-    row.addChild(dot);
-  });
 }
 
 function createScrollViewport(width: number, height: number) {
@@ -246,13 +248,13 @@ export function createPixiMythicMenuView(options: PixiMythicMenuViewOptions) {
 
     const recipeDefinition = getHeroById(item.recipe.id);
     const namePrefix = item.canCraft ? "조합 가능 · " : "";
-    const name = makePixiText(`${namePrefix}${item.recipe.displayName}`, 15, gradeColor(recipeDefinition?.grade));
+    const name = makePixiText(`${namePrefix}${item.recipe.displayName}`, 16, gradeColor(recipeDefinition?.grade));
     name.x = 12;
     name.y = 8;
     row.addChild(name);
 
     if (item.canCraft) {
-      const craftHint = makePixiText("터치", 10, 0xfff2a8);
+      const craftHint = makePixiText("터치", 11, 0xfff2a8);
       craftHint.anchor.set(1, 0);
       craftHint.x = rowWidth - 12;
       craftHint.y = 10;
@@ -260,7 +262,7 @@ export function createPixiMythicMenuView(options: PixiMythicMenuViewOptions) {
       bindCraftTap(row, item.recipe.id, options.onCraft);
     }
 
-    drawIngredientSummary(row, options, item.recipe, 35, rowWidth);
+    drawIngredientSummary(row, options, item.recipe, 37, rowWidth);
     content.addChild(row);
   });
 
