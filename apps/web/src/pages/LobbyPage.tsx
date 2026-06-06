@@ -25,6 +25,7 @@ import { defaultLobbyLineupSize, loadLobbyProgress, saveLobbyProgress } from "..
 import type { LobbyAccountProgress } from "../game-lobby/lobbyAccountProgress";
 import "../styles/lobby.css";
 import "../styles/lobby-polish.css";
+import "../styles/lobby-pass.css";
 import "../styles/lobby-recruit-reveal.css";
 import "../styles/lobby-stage-polish.css";
 
