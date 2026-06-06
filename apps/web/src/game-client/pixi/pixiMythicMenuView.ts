@@ -24,8 +24,8 @@ type IngredientProgress = ReturnType<typeof getMythicIngredientProgress>[number]
 type MythicCraftItem = ReturnType<typeof getMythicCraftAvailability>[number];
 
 const HEADER_HEIGHT = 58;
-const ROW_HEIGHT = 104;
-const ROW_GAP = 8;
+const ROW_HEIGHT = 122;
+const ROW_GAP = 9;
 const ROW_STEP = ROW_HEIGHT + ROW_GAP;
 const PANEL_MARGIN = 24;
 const MENU_TOP_RATIO = 0.11;
