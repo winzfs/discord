@@ -24,8 +24,8 @@ type IngredientProgress = ReturnType<typeof getMythicIngredientProgress>[number]
 type MythicCraftItem = ReturnType<typeof getMythicCraftAvailability>[number];
 
 const HEADER_HEIGHT = 58;
-const ROW_HEIGHT = 122;
-const ROW_GAP = 9;
+const ROW_HEIGHT = 148;
+const ROW_GAP = 10;
 const ROW_STEP = ROW_HEIGHT + ROW_GAP;
 const PANEL_MARGIN = 24;
 const MENU_TOP_RATIO = 0.11;
@@ -83,7 +83,7 @@ function createRowViewModel(item: MythicCraftItem, index: number, state: GameSta
     titleGrade: recipeDefinition?.grade,
     canCraft: item.canCraft,
     summary: `재료 ${summary.owned}/${summary.total}${summary.missing > 0 ? ` · 부족 ${summary.missing}` : " · 준비완료"}`,
-    ingredients: progress.slice(0, 4).map((ingredient) => ({
+    ingredients: progress.map((ingredient) => ({
       label: ingredient.label,
       grade: getIngredientGrade(ingredient),
       fulfilled: ingredient.fulfilled,
