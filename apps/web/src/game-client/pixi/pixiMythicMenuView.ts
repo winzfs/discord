@@ -21,10 +21,11 @@ export type PixiMythicMenuViewOptions = {
 type IngredientProgress = ReturnType<typeof getMythicIngredientProgress>[number];
 
 const HEADER_HEIGHT = 58;
-const ROW_HEIGHT = 74;
+const ROW_HEIGHT = 82;
 const ROW_GAP = 8;
 const PANEL_MARGIN = 24;
 const MENU_TOP_RATIO = 0.11;
+const TAP_MOVE_CANCEL_DISTANCE = 8;
 
 function createMythicMenuButton(label: string, x: number, y: number, onClick: () => void) {
   const button = new Container();
@@ -68,51 +69,70 @@ function getIngredientGrade(item: IngredientProgress): HeroGrade | undefined {
   return undefined;
 }
 
-function getIngredientTextColor(item: IngredientProgress) {
-  if (item.fulfilled) return 0xfff2a8;
-  if (item.owned > 0) return 0xffe16b;
-  return 0xb7afa8;
+function summarizeIngredientProgress(progress: IngredientProgress[]) {
+  const owned = progress.filter((item) => item.fulfilled).length;
+  const total = progress.length;
+  const missing = Math.max(0, total - owned);
+  return { owned, total, missing };
 }
 
-function makeIngredientChip(item: IngredientProgress, maxWidth: number) {
-  const chip = new Container();
-  const grade = getIngredientGrade(item);
-  const border = gradeColor(grade);
-  const fill = item.fulfilled ? 0x4d452f : item.owned > 0 ? 0x514739 : 0x3c3834;
-  const mark = item.fulfilled ? "✓" : item.owned > 0 ? "보유" : "부족";
-  const value = `${mark} ${item.label} ${Math.min(item.owned, item.required)}/${item.required}`;
-  const text = makePixiText(value, 9, getIngredientTextColor(item));
-  text.x = 7;
-  text.y = 5;
+function shortenLabel(label: string) {
+  const cleaned = label
+    .replace("오버워치 ", "옵치 ")
+    .replace("헬릭스 ", "헬릭스 ")
+    .replace("눌 섹터 ", "눌 ")
+    .replace("오아시스 ", "오아시스 ")
+    .replace("정커 ", "정커 ");
 
-  const chipWidth = Math.min(maxWidth, Math.max(58, text.width + 14));
-  if (text.width > chipWidth - 14) {
-    const maxChars = Math.max(8, Math.floor((chipWidth - 14) / 7));
-    text.text = `${value.slice(0, maxChars - 1)}…`;
+  return cleaned.length > 10 ? `${cleaned.slice(0, 9)}…` : cleaned;
+}
+
+function drawIngredientSummary(row: Container, options: PixiMythicMenuViewOptions, recipe: ReturnType<typeof getMythicCraftAvailability>[number]["recipe"], y: number, rowWidth: number) {
+  const progress = getMythicIngredientProgress(options.state, recipe);
+  const summary = summarizeIngredientProgress(progress);
+
+  const summaryText = makePixiText(
+    `재료 ${summary.owned}/${summary.total}${summary.missing > 0 ? ` · 부족 ${summary.missing}` : " · 준비완료"}`,
+    11,
+    summary.missing === 0 ? 0xfff2a8 : 0xcfc6bd,
+  );
+  summaryText.x = 12;
+  summaryText.y = y;
+  row.addChild(summaryText);
+
+  const details = progress
+    .slice(0, 4)
+    .map((item) => {
+      const status = item.fulfilled ? "✓" : "·";
+      return `${status}${shortenLabel(item.label)}`;
+    })
+    .join("  ");
+
+  const detailText = makePixiText(details, 9, 0xaca39a);
+  detailText.x = 12;
+  detailText.y = y + 17;
+  detailText.alpha = 0.88;
+
+  if (detailText.width > rowWidth - 24) {
+    const maxChars = Math.max(18, Math.floor((rowWidth - 24) / 6.2));
+    detailText.text = `${details.slice(0, maxChars - 1)}…`;
   }
 
-  chip.addChild(makePixiPanel(chipWidth, 22, fill, border, 8));
-  chip.addChild(text);
-  return { chip, width: chipWidth };
-}
+  row.addChild(detailText);
 
-function drawIngredientProgress(row: Container, options: PixiMythicMenuViewOptions, recipe: ReturnType<typeof getMythicCraftAvailability>[number]["recipe"], y: number, rowWidth: number) {
-  const progress = getMythicIngredientProgress(options.state, recipe);
-  const maxChipWidth = Math.floor((rowWidth - 30) / 2);
-  let x = 10;
-  let line = 0;
+  const gradeMarks = progress.slice(0, 4).map((item, index) => ({
+    color: gradeColor(getIngredientGrade(item)),
+    fulfilled: item.fulfilled,
+    x: rowWidth - 68 + index * 14,
+  }));
 
-  progress.slice(0, 4).forEach((item) => {
-    const { chip, width } = makeIngredientChip(item, maxChipWidth);
-    if (x + width > rowWidth - 10 && x > 10) {
-      x = 10;
-      line += 1;
-    }
-
-    chip.x = x;
-    chip.y = y + line * 24;
-    row.addChild(chip);
-    x += width + 8;
+  gradeMarks.forEach((mark) => {
+    const dot = new Graphics();
+    dot.circle(0, 0, mark.fulfilled ? 4 : 3);
+    dot.fill({ color: mark.color, alpha: mark.fulfilled ? 0.95 : 0.35 });
+    dot.x = mark.x;
+    dot.y = y + 7;
+    row.addChild(dot);
   });
 }
 
@@ -120,10 +140,16 @@ function createScrollViewport(width: number, height: number) {
   const viewport = new Container();
   const content = new Container();
   const mask = new Graphics();
+  const hitArea = new Graphics();
+
   mask.rect(0, 0, width, height);
   mask.fill({ color: 0xffffff, alpha: 1 });
+
+  hitArea.rect(0, 0, width, height);
+  hitArea.fill({ color: 0x000000, alpha: 0.001 });
+
   content.mask = mask;
-  viewport.addChild(mask, content);
+  viewport.addChild(hitArea, mask, content);
   return { viewport, content };
 }
 
@@ -162,6 +188,30 @@ function bindVerticalDragScroll(viewport: Container, content: Container, viewpor
   });
 }
 
+function bindCraftTap(row: Container, recipeId: string, onCraft: (recipeId: string) => void) {
+  let downX = 0;
+  let downY = 0;
+  let moved = false;
+
+  row.eventMode = "static";
+  row.cursor = "pointer";
+  row.on("pointerdown", (event: any) => {
+    downX = event.global.x;
+    downY = event.global.y;
+    moved = false;
+  });
+  row.on("pointermove", (event: any) => {
+    if (Math.abs(event.global.x - downX) > TAP_MOVE_CANCEL_DISTANCE || Math.abs(event.global.y - downY) > TAP_MOVE_CANCEL_DISTANCE) {
+      moved = true;
+    }
+  });
+  row.on("pointerup", (event: any) => {
+    if (moved) return;
+    event.stopPropagation();
+    onCraft(recipeId);
+  });
+}
+
 export function createPixiMythicMenuView(options: PixiMythicMenuViewOptions) {
   const list = getMythicCraftAvailability(options.state);
   const width = Math.min(360, options.rendererWidth - 24);
@@ -192,38 +242,40 @@ export function createPixiMythicMenuView(options: PixiMythicMenuViewOptions) {
     const row = new Container();
     const rowWidth = width - 24;
     row.y = y;
-    row.eventMode = item.canCraft ? "static" : "none";
-    row.cursor = item.canCraft ? "pointer" : "default";
-    row.addChild(makePixiPanel(rowWidth, ROW_HEIGHT, item.canCraft ? colors.orange : 0x655e59, item.canCraft ? 0x51351e : 0x3d332e, 10));
+    row.addChild(makePixiPanel(rowWidth, ROW_HEIGHT, item.canCraft ? 0x7a5528 : 0x655e59, item.canCraft ? 0xffb347 : 0x3d332e, 10));
 
     const recipeDefinition = getHeroById(item.recipe.id);
     const namePrefix = item.canCraft ? "조합 가능 · " : "";
-    const name = makePixiText(`${namePrefix}${item.recipe.displayName}`, 14, gradeColor(recipeDefinition?.grade));
+    const name = makePixiText(`${namePrefix}${item.recipe.displayName}`, 15, gradeColor(recipeDefinition?.grade));
     name.x = 12;
-    name.y = 7;
+    name.y = 8;
     row.addChild(name);
 
-    drawIngredientProgress(row, options, item.recipe, 32, rowWidth);
-
     if (item.canCraft) {
-      row.on("pointerdown", stopPixiPropagation);
-      row.on("pointerup", stopPixiPropagation);
-      row.on("pointertap", (event: any) => {
-        event.stopPropagation();
-        options.onCraft(item.recipe.id);
-      });
+      const craftHint = makePixiText("터치", 10, 0xfff2a8);
+      craftHint.anchor.set(1, 0);
+      craftHint.x = rowWidth - 12;
+      craftHint.y = 10;
+      row.addChild(craftHint);
+      bindCraftTap(row, item.recipe.id, options.onCraft);
     }
 
+    drawIngredientSummary(row, options, item.recipe, 35, rowWidth);
     content.addChild(row);
   });
 
   bindVerticalDragScroll(viewport, content, viewportHeight, contentHeight);
 
   if (contentHeight > viewportHeight) {
-    const hint = makePixiText("위아래로 드래그해서 더 보기", 9, 0xb7afa8);
+    const hintBackground = new Graphics();
+    hintBackground.rect(12, height - 26, width - 24, 20);
+    hintBackground.fill({ color: 0x1f1b18, alpha: 0.82 });
+    menu.addChild(hintBackground);
+
+    const hint = makePixiText("목록을 위아래로 드래그", 10, 0xd8d0c8);
     hint.anchor.set(0.5, 1);
     hint.x = width / 2;
-    hint.y = height - 6;
+    hint.y = height - 9;
     menu.addChild(hint);
   }
 
