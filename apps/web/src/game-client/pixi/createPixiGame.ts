@@ -385,6 +385,7 @@ export function createPixiGame(parent: HTMLElement, options: PixiGameOptions = {
     stage.eventMode = "static";
     stage.hitArea = new Rectangle(0, 0, app.renderer.width, app.renderer.height);
     stage.on("pointerdown", (event: any) => {
+      if (isFinished(refs.state)) return;
       const cellIndex = getCellIndexAtPoint(refs, event.global.x, event.global.y);
       const cell = cellIndex === null ? null : refs.state.board[cellIndex];
       if (!cell || cell.units.length === 0) clearMenuAndUnitInfo(refs, { clearMenu });
@@ -404,7 +405,7 @@ export function createPixiGame(parent: HTMLElement, options: PixiGameOptions = {
     render(refs);
     app.renderer.on("resize", () => {
       stage.hitArea = new Rectangle(0, 0, app.renderer.width, app.renderer.height);
-      clearMenuAndUnitInfo(refs, { clearMenu });
+      if (!isFinished(refs.state)) clearMenuAndUnitInfo(refs, { clearMenu });
       invalidateHud(refs);
       invalidateControls(refs);
       render(refs);
