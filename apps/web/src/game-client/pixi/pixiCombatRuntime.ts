@@ -107,7 +107,7 @@ function getHeroDamage(refs: GameRefs, hero: BoardHero) {
           : hero.grade === "rare"
             ? 28
             : 16;
-  const roleMultiplier = role === "damage" ? 1.18 : role === "tank" ? 0.82 : 0.72;
+  const roleMultiplier = role === "damage" ? 1.35 : role === "tank" ? 0.62 : 0.48;
   const fallbackPower = Math.round(gradeBase * roleMultiplier);
   const progressPower = getProgressHeroPower(refs.progressBonuses, hero, fallbackPower);
   const lobbyLevelMultiplier = getHeroLevelMultiplier(refs.heroLevels[hero.heroId] ?? 1);
@@ -155,7 +155,7 @@ function damageEnemy(
 }
 
 function applyTankSlow(enemy: ActiveEnemy) {
-  enemy.speed = Math.max(0.22, enemy.speed * 0.92);
+  enemy.speed = Math.max(0.2, enemy.speed * 0.88);
 }
 
 function triggerHeroSpriteAttack(refs: GameRefs, hero: BoardHero, from: { x: number; y: number }, target: ActiveEnemy, options: PixiCombatRuntimeOptions) {
