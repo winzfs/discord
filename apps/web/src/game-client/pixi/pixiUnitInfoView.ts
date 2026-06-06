@@ -1,9 +1,9 @@
 import { Container } from "pixi.js";
-import { getHeroById, skills, type BoardHero, type SkillDefinition } from "@discord-random-defense/game";
+import { getHeroById, type BoardHero, type SkillDefinition } from "@discord-random-defense/game";
 import { colors } from "./gameTheme";
 import { clearPixiContainer, makePixiPanel, makePixiText } from "./pixiSharedView";
 import { makePixiTouchBoundary } from "./pixiPointerGuards";
-import { getHeroSkillDetails } from "../../components/lobby/lobbyHeroSkillDetails";
+import { getPixiHeroSkills, getPixiSkillDescription } from "./pixiSkillDescriptionRuntime";
 
 function gradeLabel(grade: string | undefined) {
   if (grade === "mythic") return "신화";
@@ -33,44 +33,6 @@ function skillTypeLabel(type: SkillDefinition["type"]) {
   return "궁극기";
 }
 
-function getHeroSkills(heroId: string) {
-  const definition = getHeroById(heroId);
-  if (!definition) return [];
-  return definition.skillIds
-    .map((skillId) => skills.find((skill) => skill.id === skillId))
-    .filter((skill): skill is SkillDefinition => Boolean(skill));
-}
-
-function getHeroSkillEffectLines(heroId: string, skill: SkillDefinition) {
-  const detail = getHeroSkillDetails(heroId).find((candidate) => candidate.id === skill.id);
-  if (detail) return detail.lines;
-  if (skill.type === "ultimate") return getHeroUltimateEffectLines(heroId);
-  return ["확률 발동", "영웅 공격력 기반"];
-}
-
-function getHeroUltimateEffectLines(heroId: string) {
-  if (heroId === "dva") return ["영웅 위치 기준 자폭", "넓은 범위 450% 피해"];
-  if (heroId === "zarya") return ["좁은 3초 중력자탄", "흡입/속박 + 240%"];
-  if (heroId === "tracer") return ["펄스폭탄 부착", "0.5초 후 520% 폭발"];
-  if (heroId === "cassidy") return ["3초 느린 락온", "진행도 비례 피해"];
-  if (heroId === "winston") return ["광역 충격파", "240% 피해 + 감속"];
-  if (heroId === "genji") return ["전방 5명 베기", "각 210% 피해"];
-  if (heroId === "ana") return ["나노 강화제", "공격 배율 +12%"];
-  if (heroId === "kiriko") return ["여우길 5초", "공격속도 200%"];
-  if (heroId === "illari") return ["태양 폭발", "범위 300% 피해"];
-
-  return ["게이지 100% 발동", "범위 260% 피해"];
-}
-
-function getSkillConditionText(heroId: string, skill: SkillDefinition) {
-  const detail = getHeroSkillDetails(heroId).find((candidate) => candidate.id === skill.id);
-  if (detail) return detail.condition;
-  if (skill.type === "ultimate") return "게이지 100%";
-  if (skill.type === "attack") return "42%";
-  if (skill.type === "control") return "30%";
-  return "24%";
-}
-
 function getSkillStatusText(skill: SkillDefinition) {
   if (skill.type === "ultimate") return "게이지";
   if (skill.tags.includes("unique")) return "고유";
@@ -92,15 +54,16 @@ function drawSkillCard(
   y: number,
   width: number,
 ) {
+  const description = getPixiSkillDescription(heroId, skill);
   const title = makePixiText(`${skill.displayName} [${skillTypeLabel(skill.type)}·${getSkillStatusText(skill)}]`, 9, colors.white);
   title.x = x;
   title.y = y;
   view.addChild(title);
 
-  const condition = makeInfoLine(`조건: ${getSkillConditionText(heroId, skill)}`, x, y + 13, 0xb7afa8, 8);
+  const condition = makeInfoLine(`조건: ${description.condition}`, x, y + 13, 0xb7afa8, 8);
   view.addChild(condition);
 
-  getHeroSkillEffectLines(heroId, skill).slice(0, 2).forEach((line, index) => {
+  description.lines.slice(0, 2).forEach((line, index) => {
     view.addChild(makeInfoLine(`- ${line}`, x, y + 25 + index * 11, 0xd8d0c8, 8));
   });
 
@@ -124,7 +87,7 @@ export function drawPixiUnitInfoView(target: Container, options: PixiUnitInfoVie
   clearPixiContainer(target);
 
   const definition = getHeroById(options.hero.heroId);
-  const heroSkills = getHeroSkills(options.hero.heroId);
+  const heroSkills = getPixiHeroSkills(options.hero.heroId);
   const normalSkills = heroSkills.filter((skill) => skill.type !== "ultimate");
   const ultimateSkills = heroSkills.filter((skill) => skill.type === "ultimate");
   const width = Math.min(360, options.rendererWidth - 24);
@@ -168,9 +131,10 @@ export function drawPixiUnitInfoView(target: Container, options: PixiUnitInfoVie
 
   const ultimate = ultimateSkills[0];
   if (ultimate) {
+    const ultimateDescription = getPixiSkillDescription(options.hero.heroId, ultimate);
     view.addChild(makeInfoLine(`${ultimate.displayName} [${getSkillStatusText(ultimate)}]`, 14, ultimateY + 18, colors.white, 10));
-    view.addChild(makeInfoLine(`조건: ${getSkillConditionText(options.hero.heroId, ultimate)}`, 14, ultimateY + 32, 0xb7afa8, 8));
-    getHeroSkillEffectLines(options.hero.heroId, ultimate).slice(0, 2).forEach((line, index) => {
+    view.addChild(makeInfoLine(`조건: ${ultimateDescription.condition}`, 14, ultimateY + 32, 0xb7afa8, 8));
+    ultimateDescription.lines.slice(0, 2).forEach((line, index) => {
       view.addChild(makeInfoLine(`- ${line}`, 14 + index * (cardWidth + 10), ultimateY + 44, 0xd8d0c8, 8));
     });
   } else {
