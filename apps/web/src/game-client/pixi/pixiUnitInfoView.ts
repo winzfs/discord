@@ -39,6 +39,10 @@ function getSkillStatusText(skill: SkillDefinition) {
   return "확률";
 }
 
+function ellipsis(value: string, maxLength: number) {
+  return value.length > maxLength ? `${value.slice(0, maxLength - 1)}…` : value;
+}
+
 function makeInfoLine(value: string, x: number, y: number, fill = 0xd8d0c8, size = 10) {
   const text = makePixiText(value, size, fill);
   text.x = x;
@@ -92,7 +96,7 @@ export function drawPixiUnitInfoView(target: Container, options: PixiUnitInfoVie
   const normalSkills = heroSkills.filter((skill) => skill.type !== "ultimate");
   const ultimateSkills = heroSkills.filter((skill) => skill.type === "ultimate");
   const width = Math.min(360, options.rendererWidth - 24);
-  const height = Math.min(266, options.rendererHeight - 120);
+  const height = Math.min(284, options.rendererHeight - 120);
   const view = new Container();
   view.x = Math.max(12, options.rendererWidth / 2 - width / 2);
   view.y = Math.max(62, options.rendererHeight - height - 118);
@@ -109,20 +113,23 @@ export function drawPixiUnitInfoView(target: Container, options: PixiUnitInfoVie
   grade.y = 36;
   view.addChild(grade);
 
+  const lore = definition?.description ? ellipsis(definition.description, 35) : "세계관 설명 없음";
+  view.addChild(makeInfoLine(lore, 14, 55, 0xbde7ff, 8));
+
   const stats = definition
     ? `전투력 ${definition.power}  속도 ${definition.attackSpeed}  사거리 ${definition.range}`
     : "영웅 정보를 찾을 수 없음";
-  view.addChild(makeInfoLine(stats, 14, 57, 0xd8d0c8, 10));
-  view.addChild(makeInfoLine(`셀 ${options.cellIndex + 1} · 중첩 ${options.stackCount}/3`, 14, 74, options.stackCount >= 3 ? colors.yellow : 0xb7afa8, 10));
+  view.addChild(makeInfoLine(stats, 14, 70, 0xd8d0c8, 10));
+  view.addChild(makeInfoLine(`셀 ${options.cellIndex + 1} · 중첩 ${options.stackCount}/3`, 14, 87, options.stackCount >= 3 ? colors.yellow : 0xb7afa8, 10));
 
   const traitLines = options.traitLines?.slice(0, 2) ?? [];
   if (traitLines.length > 0) {
     traitLines.forEach((line, index) => {
-      view.addChild(makeInfoLine(line, 14, 91 + index * 12, index === 0 ? 0x7dffb2 : 0xbde7ff, 9));
+      view.addChild(makeInfoLine(line, 14, 104 + index * 12, index === 0 ? 0x7dffb2 : 0xbde7ff, 9));
     });
   }
 
-  const skillTitleY = traitLines.length > 0 ? 118 : 96;
+  const skillTitleY = traitLines.length > 0 ? 131 : 109;
   const skillTitle = makePixiText("스킬", 12, colors.green);
   skillTitle.x = 14;
   skillTitle.y = skillTitleY;
