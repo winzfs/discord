@@ -1,7 +1,6 @@
 import { Container } from "pixi.js";
-import { getMythicCraftAvailability, type GameState } from "@discord-random-defense/game";
+import { getMythicCraftAvailability, getMythicIngredientProgress, type GameState } from "@discord-random-defense/game";
 import { colors } from "./gameTheme";
-import { formatMythicRecipeText } from "./pixiMythicRecipeText";
 import { makePixiPanel, makePixiText } from "./pixiSharedView";
 import { makePixiTouchBoundary, stopPixiPropagation } from "./pixiPointerGuards";
 
@@ -37,10 +36,29 @@ function createMythicMenuButton(label: string, x: number, y: number, onClick: ()
   return button;
 }
 
+function drawIngredientProgress(row: Container, options: PixiMythicMenuViewOptions, recipe: ReturnType<typeof getMythicCraftAvailability>[number]["recipe"], y: number) {
+  const progress = getMythicIngredientProgress(options.state, recipe);
+  const line = progress
+    .map((item) => {
+      const mark = item.fulfilled ? "✓" : "부족";
+      return `${mark} ${item.label} ${Math.min(item.owned, item.required)}/${item.required}`;
+    })
+    .join("   ");
+
+  const hasAnyOwned = progress.some((item) => item.owned > 0);
+  const fulfilled = progress.every((item) => item.fulfilled);
+  const textColor = fulfilled ? colors.yellow : hasAnyOwned ? 0x7dffb2 : 0xb7afa8;
+  const ingredients = makePixiText(line, 9, textColor);
+  ingredients.x = 12;
+  ingredients.y = y;
+  row.addChild(ingredients);
+}
+
 export function createPixiMythicMenuView(options: PixiMythicMenuViewOptions) {
   const list = getMythicCraftAvailability(options.state);
   const width = Math.min(360, options.rendererWidth - 24);
-  const height = 72 + list.length * 54;
+  const rowHeight = 58;
+  const height = 72 + list.length * rowHeight;
   const menu = new Container();
   menu.x = options.rendererWidth / 2 - width / 2;
   menu.y = Math.max(18, options.rendererHeight * 0.14);
@@ -55,23 +73,21 @@ export function createPixiMythicMenuView(options: PixiMythicMenuViewOptions) {
   menu.addChild(createMythicMenuButton("닫기", width - 70, 12, options.onClose));
 
   list.forEach((item, index) => {
-    const y = 58 + index * 54;
+    const y = 58 + index * rowHeight;
     const row = new Container();
     row.x = 12;
     row.y = y;
     row.eventMode = item.canCraft ? "static" : "none";
     row.cursor = item.canCraft ? "pointer" : "default";
-    row.addChild(makePixiPanel(width - 24, 46, item.canCraft ? colors.orange : 0x655e59, item.canCraft ? 0x51351e : 0x3d332e, 10));
+    row.addChild(makePixiPanel(width - 24, 50, item.canCraft ? colors.orange : 0x655e59, item.canCraft ? 0x51351e : 0x3d332e, 10));
 
-    const name = makePixiText(item.recipe.displayName, 14, item.canCraft ? colors.white : 0xb7afa8);
+    const namePrefix = item.canCraft ? "조합 가능 · " : "";
+    const name = makePixiText(`${namePrefix}${item.recipe.displayName}`, 14, item.canCraft ? colors.white : 0xb7afa8);
     name.x = 12;
     name.y = 5;
     row.addChild(name);
 
-    const recipe = makePixiText(formatMythicRecipeText(item.recipe.ingredients), 10, item.canCraft ? colors.yellow : 0xb7afa8);
-    recipe.x = 12;
-    recipe.y = 25;
-    row.addChild(recipe);
+    drawIngredientProgress(row, options, item.recipe, 27);
 
     if (item.canCraft) {
       row.on("pointerdown", stopPixiPropagation);
