@@ -6,21 +6,13 @@
 
 로비 화면은 React 기반으로 유지하되, 모바일 게임 로비처럼 보이도록 카드형 UI, 성장/수집/상점/모집 화면을 제공합니다.
 
-역할 분리는 다음과 같습니다.
-
 ```text
 React / Vite
-- 홈
-- 로그인
-- 대시보드
-- 랭킹
-- 프로필
-- 관리자
+- 일반 웹 페이지
 - /play에 PixiJS host 제공
 - /lobby 로비/상점/성장/영웅 모집 UI 제공
 
 PixiJS
-- 실제 게임 플레이 화면
 - /play 전용 전체화면 캔버스
 - 전장, 보드, 몬스터, 소환, 이동, 합성, 공격, 웨이브, 스킬, 궁극기, 이펙트 렌더링
 
@@ -31,8 +23,6 @@ packages/game
 ```
 
 ## 2. 현재 라우트
-
-현재 게임 관련 라우트는 다음처럼 분리합니다.
 
 ```text
 /game       일반 웹 레이아웃 안의 게임 안내/시작 페이지
@@ -49,7 +39,7 @@ packages/game
 
 ### 3.1 `/play` 전투 구현 상태
 
-현재 `/play`는 단순 placeholder가 아니라 실제 플레이 가능한 PixiJS MVP입니다.
+현재 `/play`는 실제 플레이 가능한 PixiJS MVP입니다.
 
 구현된 핵심 기능:
 
@@ -72,6 +62,8 @@ packages/game
 - 완벽 방어 시 행운석 보상
 - 랜덤 유닛 소환
 - 소환 비용 증가 및 할인 보정
+- 로비 보유 영웅 풀 기반 전투 소환
+- 로비 영웅 레벨 기반 전투 데미지 배율 적용
 - 행운석 도박 소환
 - 유닛 드래그 이동, 자리 교환, 같은 유닛 중첩
 - 셀 3스택 기반 합성
@@ -79,7 +71,6 @@ packages/game
 - 유닛 판매 메뉴
 - 신화 조합 메뉴
 - 고유 유닛 재료 기반 신화 조합
-- 신화 조합 재료 보유 수 / 필요 수 표시
 - 유닛 정보 패널에 스킬/궁극기 조건과 효과 표시
 - 신화 영웅 궁극기 게이지 바 표시
 - 공격/시간 경과 기반 궁극기 게이지 충전
@@ -117,23 +108,23 @@ packages/game
 - 모집 결과 카드 표시
 - 미보유 영웅 획득 시 즉시 해금
 - 중복 영웅 획득 시 조각 누적
+- 골드/보석 localStorage 저장
+- 상점 구매/무료 보석/뽑기/업그레이드 후 재화 저장
 
 현재 로비 진행 저장은 `localStorage` 기반입니다.
 
 저장되는 항목:
 
 ```text
+gold
+crystals
 heroes: id, level, shards, owned
 artifacts: id, level, pieces, owned
 ```
 
-현재 골드/보석은 `LobbyPage.tsx`의 React state 초기값으로 관리되며, 새로고침 시 초기값으로 돌아갈 수 있습니다. 다음 단계에서 재화도 `lobbyProgressStorage.ts`에 포함하는 것이 필요합니다.
-
 ## 4. 현재 화면 구조
 
 ### 4.1 `/play` 모바일 전투 화면 구조
-
-모바일 기준 권장 화면 구조:
 
 ```text
 ┌────────────────────────────┐
@@ -220,6 +211,7 @@ apps/web/src/game-client/pixi/pixiControlActionRuntime.ts
 apps/web/src/game-client/pixi/pixiMythicMenuView.ts
 apps/web/src/game-client/pixi/pixiRunBoostRuntime.ts
 apps/web/src/game-client/pixi/pixiProgressBonuses.ts
+apps/web/src/game-client/pixi/pixiLobbyHeroPool.ts
 apps/web/src/game-client/pixi/pixiFloatingTextView.ts
 apps/web/src/game-client/pixi/pixiPathRuntime.ts
 apps/web/src/game-client/pixi/pixiUnitRange.ts
@@ -227,9 +219,9 @@ apps/web/src/game-client/pixi/pixiSharedView.ts
 apps/web/src/game-client/pixi/animation/animationManager.ts
 ```
 
-`GamePage.tsx`는 PixiJS를 붙이는 host 역할만 담당합니다.
+`createPixiGame.ts`는 Pixi Application 초기화, refs 구성, ticker phase 연결, 이벤트 바인딩, runtime options 조립, cleanup을 담당합니다.
 
-`createPixiGame.ts`는 Pixi Application 초기화, refs 구성, ticker phase 연결, 이벤트 바인딩, runtime options 조립, cleanup을 담당합니다. 기능별 구현은 가능한 한 별도 runtime/view 파일로 분리합니다.
+`pixiLobbyHeroPool.ts`는 로비 저장 진행도에서 보유 영웅과 영웅 레벨을 읽어 전투 소환 풀과 데미지 배율에 제공하는 어댑터입니다.
 
 ### 5.2 로비/모집/성장 파일
 
@@ -256,108 +248,76 @@ apps/web/src/styles/lobby-recruit-reveal.css
 
 모집 UI는 `LobbyRecruitPanel.tsx`, 연출 모달은 `LobbyRecruitReveal.tsx`, 연출 스타일은 `lobby-recruit-reveal.css`에 둡니다.
 
-## 6. 분리 원칙
+## 6. 로비 진행도와 전투 연결
 
-현재 구조 개선 원칙:
+### 6.1 저장 구조
 
-- `createPixiGame.ts`는 최종적으로 초기화, 조립, cleanup만 담당하도록 줄입니다.
+`lobbyProgressStorage.ts`는 다음 데이터를 저장합니다.
+
+```text
+gold
+crystals
+heroes: id, level, shards, owned
+artifacts: id, level, pieces, owned
+```
+
+기존 저장 데이터에 `gold`와 `crystals`가 없어도 기본값으로 병합합니다.
+
+기본 재화:
+
+```text
+gold: 13580
+crystals: 4550
+```
+
+### 6.2 전투 소환 풀
+
+전투 시작 시 `createPixiGame.ts`에서 `loadPixiLobbyHeroPool()`을 호출합니다.
+
+처리 방식:
+
+- 로비 저장 진행도에서 `owned = true`인 영웅만 전투 소환 풀에 포함합니다.
+- 보유 영웅이 하나도 없으면 안전 장치로 전체 영웅 풀을 사용합니다.
+- 전투 소환 버튼은 `summonHeroFromPool()`을 사용합니다.
+- 기존 `summonHero()`는 전체 영웅 풀 기반 함수로 유지합니다.
+
+관련 파일:
+
+```text
+packages/game/src/systems/summonSystem.ts
+apps/web/src/game-client/pixi/pixiLobbyHeroPool.ts
+apps/web/src/game-client/pixi/createPixiGame.ts
+apps/web/src/game-client/pixi/pixiControlActionRuntime.ts
+```
+
+### 6.3 로비 영웅 레벨 전투 반영
+
+`pixiLobbyHeroPool.ts`는 영웅별 레벨 맵을 생성합니다.
+
+전투 데미지 계산은 `pixiCombatRuntime.ts`의 `getHeroDamage()`에서 다음 순서로 반영합니다.
+
+```text
+기본/진행 보정 공격력
+x 로비 영웅 레벨 배율
+x 전투 중 공격 배율
+x 공격력 강화 배율
+```
+
+현재 레벨 배율:
+
+```text
+1 + (level - 1) * 0.12
+```
+
+## 7. 분리 원칙
+
+- `createPixiGame.ts`는 초기화, 조립, cleanup 중심으로 유지합니다.
 - 화면 배치는 `gameLayout.ts`에서 계산합니다.
 - 보드, HUD, 컨트롤, 적, 전투, 스킬, 궁극기, 이펙트, 웨이브, 드래그, 선택 UI는 별도 파일에서 관리합니다.
 - 소환/합성/도박/신화 조합 등 핵심 규칙은 `packages/game`에서 가져옵니다.
 - PixiJS 내부에서 게임 규칙을 중복 구현하지 않습니다.
-- 단, 현재 실시간 전투/보상/점수/스킬 일부는 Pixi runtime에서 직접 갱신하므로 추후 `packages/game` 쪽으로 계산 기준을 모아야 합니다.
-- 이펙트 구현은 `pixiHeroAttackFxRuntime.ts`, `pixiUltimateFxRuntime.ts`, `pixiWinstonBeamRuntime.ts`처럼 별도 파일에 둡니다.
-- PixiJS `Graphics` 객체는 `pixiFxPoolRuntime.ts`를 통해 재사용합니다.
 - 로비 수집/모집/연출은 `LobbyPage.tsx`에 몰아넣지 않고 `game-lobby`와 `components/lobby`로 분리합니다.
 - 긴 CSS는 기능별로 분리합니다. 예: `lobby-recruit-reveal.css`.
-
-## 7. 렌더링 원칙
-
-### 7.1 React와 PixiJS 역할 분리
-
-React:
-
-- 라우팅
-- 로그인
-- 대시보드
-- 랭킹
-- 프로필
-- 관리자
-- `/play`에 PixiJS host 제공
-- `/lobby` 로비/상점/성장/모집 UI 제공
-
-PixiJS:
-
-- 게임 화면 렌더링
-- 전장/보드/몬스터/유닛/이펙트
-- 터치 입력
-- 소환/신화/도박/강화 버튼
-- 자동 웨이브 진행
-- 전투 연출
-- 스킬/궁극기 연출
-
-`packages/game`:
-
-- 순수 게임 규칙
-- 소환 확률
-- 보드/스택/합성 규칙
-- 도박/신화 조합 규칙
-- 웨이브 데이터
-- 영웅/스킬/적 데이터
-- 점수 계산 보조
-
-### 7.2 DOM 버튼 금지
-
-`/play` 게임 화면 안에서는 HTML 버튼을 사용하지 않습니다.
-
-게임 내 버튼은 PixiJS `Container`, `Graphics`, `Text`로 직접 그립니다.
-
-이유:
-
-- 모바일 게임 화면처럼 보이게 하기 위해
-- 캔버스 전체 렌더링 톤을 통일하기 위해
-- 터치 이펙트와 애니메이션을 붙이기 쉽게 하기 위해
-
-`/lobby`는 React DOM UI를 사용합니다. 로비는 게임 캔버스가 아니라 성장/상점 화면이므로 DOM UI 사용이 허용됩니다.
-
-### 7.3 에셋 교체 가능성 유지
-
-현재는 도형 기반 유닛/몬스터와 일부 스프라이트를 함께 사용합니다.
-
-이미지 에셋은 다음 흐름으로 교체합니다.
-
-```text
-hero.assetKey -> assetManifest -> PixiJS Texture
-enemy.assetKey -> assetManifest -> PixiJS Texture
-public/assets/heroes/*.png -> pixiHeroSpriteView.ts
-```
-
-현재 직접 등록된 영웅 스프라이트:
-
-```text
-apps/web/public/assets/heroes/tracer.png
-apps/web/public/assets/heroes/kiriko.png
-apps/web/public/assets/heroes/d.va.png
-apps/web/public/assets/heroes/zarya.png
-apps/web/public/assets/heroes/cassidy.png
-apps/web/public/assets/heroes/winston.png
-apps/web/public/assets/heroes/genji.png
-```
-
-`packages/game`은 이미지 경로를 직접 알면 안 됩니다.
-
-### 7.4 FX 최적화 원칙
-
-최근 공격/궁극기 이펙트가 늘어나면서 `Graphics` 생성/파괴 비용이 커질 수 있습니다.
-
-현재 원칙:
-
-- 이펙트 퀄리티를 낮추지 않습니다.
-- 대신 `new Graphics()` / `destroy()` 반복을 줄입니다.
-- `pixiFxPoolRuntime.ts`에서 `Graphics` 풀을 관리합니다.
-- 게임 인스턴스별 풀은 `WeakMap<GameRefs, Graphics[]>` 기반입니다.
-- 풀 최대치는 현재 96개입니다.
-- 게임 cleanup 시 `destroyFxGraphicsPool(refs)`로 명시 정리합니다.
 
 ## 8. 신화 영웅 전투 구현 요약
 
@@ -379,13 +339,6 @@ apps/web/public/assets/heroes/genji.png
 - 윈스턴 기본공격은 좁은 전기 광선형 체인 공격입니다.
 
 ### 8.2 궁극기
-
-- 궁극기 게이지 최대치는 100입니다.
-- 전투 중 시간 경과와 공격 시 게이지가 충전됩니다.
-- 게이지가 가득 차면 다음 공격 시 궁극기가 발동됩니다.
-- 궁극기 발동 후 게이지는 0으로 돌아갑니다.
-
-현재 궁극기 방향:
 
 ```text
 D.Va: 영웅 위치 기준 자폭 광역 폭발
@@ -413,6 +366,7 @@ D.Va: 영웅 위치 기준 자폭 광역 폭발
 - 미보유 영웅은 해금됩니다.
 - 이미 보유한 영웅은 조각이 누적됩니다.
 - 조각은 영웅 레벨업에 사용됩니다.
+- 보유 영웅과 레벨은 전투 소환 풀과 데미지에 반영됩니다.
 
 ### 9.2 현재 모집 비용
 
@@ -477,7 +431,7 @@ newHeroCount: number
 - 뽑힌 영웅이 이미 보유 상태면 조각을 누적합니다.
 - 결과는 `lastRecruitResults`에 저장되어 영웅 탭 패널에 표시됩니다.
 - 결과는 `revealResults`에 저장되어 전체 화면 연출 모달로 표시됩니다.
-- 영웅/유물 진행도는 `saveLobbyProgress()`로 저장됩니다.
+- 영웅/유물/골드/보석 진행도는 `saveLobbyProgress()`로 저장됩니다.
 
 ### 9.6 모집 연출
 
@@ -521,19 +475,20 @@ apps/web/src/styles/lobby-recruit-reveal.css
 
 ## 11. 다음 개선 우선순위
 
-1. `pnpm build:web`와 `pnpm typecheck`로 최근 로비 모집/연출/자동 웨이브 코드 검증
-2. `/lobby`에서 1회/10회 모집 UI와 2단계 연출 확인
-3. `/lobby`에서 모집 후 영웅 해금/조각 누적/업그레이드 연결 확인
-4. 골드/보석을 `lobbyProgressStorage.ts`에 포함해 새로고침 후에도 유지
-5. 모집 티켓 재화 연결
-6. 로비 영웅 보유 상태를 `/play` 전투 소환 풀과 연결할지 정책 결정
-7. `/play`, `/play-test`에서 공격/궁극기 이펙트 회귀 테스트
-8. `createPixiGame.ts`의 ticker/refs/options 조립 책임 추가 분리
-9. 점수/보상 계산 기준을 `packages/game` 쪽으로 이동
-10. `durationSeconds` 실제 측정 후 기록 저장
-11. 랭킹 저장 전 score/wave/kills 상한 검증 추가
-12. `game_runs.suspicious`, `hidden` 컬럼을 활용한 비정상 기록 처리
-13. 모바일 터치 UX 회귀 테스트
+1. `pnpm build:web`와 `pnpm typecheck`로 최근 로비 저장/전투 풀 연결 코드 검증
+2. `/lobby`에서 골드/보석 저장 유지 확인
+3. `/lobby`에서 뽑기 후 새로고침해도 보석/영웅/조각이 유지되는지 확인
+4. `/play`에서 로비 미보유 영웅이 소환되지 않는지 확인
+5. `/play`에서 로비 영웅 레벨에 따라 데미지가 증가하는지 확인
+6. 도박 소환과 신화 조합도 보유 영웅 정책을 적용할지 결정
+7. 모집 티켓 재화 연결
+8. `/play`, `/play-test`에서 공격/궁극기 이펙트 회귀 테스트
+9. `createPixiGame.ts`의 ticker/refs/options 조립 책임 추가 분리
+10. 점수/보상 계산 기준을 `packages/game` 쪽으로 이동
+11. `durationSeconds` 실제 측정 후 기록 저장
+12. 랭킹 저장 전 score/wave/kills 상한 검증 추가
+13. `game_runs.suspicious`, `hidden` 컬럼을 활용한 비정상 기록 처리
+14. 모바일 터치 UX 회귀 테스트
 
 ## 12. 확인 체크리스트
 
@@ -558,7 +513,11 @@ pnpm dev:web
 - 중복 영웅 조각 누적 정상
 - 모집 결과가 영웅 목록/상세 패널에 반영
 - 영웅 조각 조건 충족 시 업그레이드 가능
+- 새로고침 후 골드/보석 유지
+- 새로고침 후 영웅/유물 진행도 유지
 - `/play` 진입 시 캔버스 정상 표시
+- `/play`에서 보유 영웅 중심으로 소환
+- `/play`에서 영웅 레벨 데미지 배율 반영
 - `/play-test` 테스트 컨트롤 정상 표시
 - 4x5 보드 표시 정상
 - 소환/스택/이동/스왑 정상
