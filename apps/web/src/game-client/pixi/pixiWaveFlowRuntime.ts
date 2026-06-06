@@ -5,7 +5,7 @@ import {
   WAVE_COUNTDOWN_SECONDS,
   WAVE_RESULT_SECONDS,
 } from "./pixiGameTypes";
-import { applyLeakReduction, getPerfectWaveLuckStoneReward } from "./pixiProgressBonuses";
+import { getPerfectWaveLuckStoneReward } from "./pixiProgressBonuses";
 import { spawnWaveMonsters } from "./pixiWaveRuntime";
 import { showWaveRewardMenu } from "./pixiWaveRewardRuntime";
 import { showFinalResultPanel } from "./pixiFinalResultView";
@@ -92,23 +92,20 @@ export function finishAutoWave(
     baseLuckStoneReward,
     refs.random,
   );
-  const reducedLostLives = applyLeakReduction(refs.progressBonuses, lostLives);
-  const nextLives = Math.max(0, refs.state.lives - reducedLostLives);
   const finalWave = refs.state.currentWave >= initialBalance.maxWave;
-  const nextStatus = nextLives <= 0 ? "failed" : finalWave ? "cleared" : "playing";
+  const nextStatus = refs.state.lives <= 0 ? "failed" : finalWave ? "cleared" : "playing";
 
   refs.activeEnemies = [];
   refs.lastWaveSummary = {
     killed: refs.waveKilled,
     leaked: leakedEnemies,
-    lostLives: reducedLostLives,
+    lostLives,
     reward: refs.waveReward,
     luckStoneReward,
     perfect,
   };
   refs.state = {
     ...refs.state,
-    lives: nextLives,
     luckStones: refs.state.luckStones + luckStoneReward,
     status: nextStatus,
     score: refs.state.score + refs.waveKilled * 10 + (perfect ? 50 : 0),
