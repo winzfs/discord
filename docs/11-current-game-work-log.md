@@ -125,8 +125,7 @@ apps/web/src/game-client/pixi/pixiLobbyBattleRewards.ts
 ### 원인
 
 ```text
-경로를 오른쪽 아래에서 끝나는 열린 경로로 바꿨지만,
-실제 화면에서는 아래쪽 가로 이동 구간이 빠져 오른쪽 중간 부근에서 종료 판정처럼 보이는 문제가 생겼습니다.
+경로를 한 바퀴 루프로 복구하면서 실제 의도와 다르게 몬스터가 오른쪽 아래 출구를 지나 아래쪽 가로 구간까지 이동했습니다.
 
 프레임 단위로 progress >= 1인 몬스터를 처리하면,
 몬스터가 겹쳐 있거나 같은 프레임에 출구에 도달했을 때 여러 마리가 동시에 제거될 수 있었습니다.
@@ -134,6 +133,9 @@ apps/web/src/game-client/pixi/pixiLobbyBattleRewards.ts
 createPixiGame.ts에 combatTimer <= 0이면 finishAutoWave()를 호출하는 로직이 있었습니다.
 finishAutoWave() 내부에도 살아있는 몬스터를 강제로 destroy하는 로직이 남아 있었습니다.
 이 두 가지 때문에 한 마리 누수 직후 남은 몬스터 전체가 정리될 수 있었습니다.
+
+새 웨이브 스폰 시 spawnWaveMonsters()가 기존 activeEnemies를 전부 지우는 구조였습니다.
+이 때문에 타이머 종료/다음 웨이브 시작과 몬스터 이동 처리가 충돌했습니다.
 
 결과창은 refs.menu에 올라가는데, 전역 stage pointerdown에서 빈칸 클릭 시 메뉴를 정리하는 로직이 결과창 클릭까지 처리할 수 있었습니다.
 ```
@@ -144,8 +146,10 @@ finishAutoWave() 내부에도 살아있는 몬스터를 강제로 destroy하는 
 apps/web/src/game-client/pixi/pixiGameTypes.ts
 apps/web/src/game-client/pixi/pixiPathRuntime.ts
 apps/web/src/game-client/pixi/pixiEnemyMovementRuntime.ts
+apps/web/src/game-client/pixi/pixiWaveRuntime.ts
 apps/web/src/game-client/pixi/pixiWaveFlowRuntime.ts
 apps/web/src/game-client/pixi/createPixiGame.ts
+apps/web/src/game-client/pixi/pixiRenderRuntime.ts
 apps/web/src/game-client/pixi/pixiFinalResultView.ts
 ```
 
@@ -153,16 +157,20 @@ apps/web/src/game-client/pixi/pixiFinalResultView.ts
 
 ```text
 ActiveEnemy에 leaked 플래그 추가
+ActiveEnemy에 exitQueued 플래그 추가
 GameRefs에 nextEnemyLeakAt 추가
-적 이동 경로를 외곽 한 바퀴 전체 경로로 복구
-오른쪽 하단과 아래쪽 가로 구간을 지나 시작점 쪽 출구에 도달할 때 progress 1 처리
-출구에 도달한 몬스터는 EXIT_HOLD_PROGRESS 위치에서 대기
+적 이동 경로를 오른쪽 아래 출구에서 끝나는 열린 경로로 변경
+출구 끝점은 오른쪽 아래까지 내려간 좌표로 조정
+출구에 도달한 몬스터는 exitQueued 상태로 대기
 0.22초 간격으로 대기 중인 몬스터를 id 순서대로 1마리씩 누수 처리
 누수 처리된 몬스터는 다시 처리하지 않도록 방어
-combatTimer <= 0만으로 웨이브를 종료하지 않도록 수정
+combatTimer <= 0만으로 웨이브 결과 처리하지 않도록 수정
+타이머가 끝나면 기존 몬스터를 유지한 채 다음 웨이브를 추가 스폰
+spawnWaveMonsters()가 기존 activeEnemies를 삭제하지 않도록 수정
 finishAutoWave()가 살아있는 몬스터를 강제로 제거하지 않도록 수정
 finishAutoWave()는 모든 몬스터가 처치/누수 처리된 뒤에만 요약 처리
 웨이브 종료 시 누수 몬스터 수와 생명 피해량 계산 분리
+HUD의 countdown/combat timer는 Math.max(0, timer)로 음수 표시 방지
 최종 결과 상태에서는 stage 클릭으로 메뉴를 닫지 않도록 방어
 결과창 root/panel/button 이벤트 전파 차단
 ```
@@ -182,6 +190,7 @@ pixiWaveFlowRuntime.ts는 최종 상태에서만 showFinalResultPanel 호출
 GameState.maxLives 사용 제거 완료
 결과 등급/별점은 initialBalance.startingLives 기준으로 수정
 ActiveEnemy.leaked는 optional boolean으로 추가
+ActiveEnemy.exitQueued는 optional boolean으로 추가
 GameRefs.nextEnemyLeakAt 초기화 완료
 ```
 
@@ -198,9 +207,12 @@ pnpm dev:web
 ```text
 /lobby 영웅 탭이 기존 카드 목록으로 정상 표시되는지
 /play 몬스터가 오른쪽 중간에서 사라지지 않는지
-/play 몬스터가 오른쪽 하단과 아래쪽 가로 구간까지 이동하는지
+/play 몬스터가 오른쪽 아래 출구에서 멈추고 처리되는지
+/play 몬스터가 오른쪽 아래 출구 이후 아래쪽 가로 구간으로 이동하지 않는지
 /play 몬스터가 겹쳐도 출구에서 0.22초 간격으로 1마리씩 누수 처리되는지
-/play 전투 타이머가 0이 되어도 남은 몬스터가 강제로 사라지지 않는지
+/play 전투 타이머가 0이 되면 다음 웨이브가 기존 몬스터를 지우지 않고 추가 스폰되는지
+/play 진행 중이던 몬스터가 오른쪽 아래 출구로 들어가며 HP를 깎는지
+/play 타이머가 음수로 표시되지 않는지
 /play 누수 시 HP가 해당 몬스터 damageToLife만큼 줄어드는지
 /play 전투 종료 시 결과 패널이 뜨는지
 결과창을 클릭해도 닫히지 않는지
