@@ -1,4 +1,9 @@
 import { initialArtifacts, initialHeroes, type LobbyArtifact, type LobbyHero } from "./lobbyData";
+import {
+  defaultLobbyAccountProgress,
+  mergeLobbyAccountProgress,
+  type LobbyAccountProgress,
+} from "./lobbyAccountProgress";
 
 const STORAGE_KEY = "discord-random-defense:lobby-progress:v1";
 
@@ -15,6 +20,7 @@ export type LobbyProgressSnapshot = {
   gold: number;
   crystals: number;
   lineupHeroIds: string[];
+  accountProgress: LobbyAccountProgress;
 };
 
 function getDefaultLineupHeroIds(heroes = initialHeroes) {
@@ -29,6 +35,7 @@ function cloneDefaultProgress(): LobbyProgressSnapshot {
     gold: defaultLobbyCurrencies.gold,
     crystals: defaultLobbyCurrencies.crystals,
     lineupHeroIds: getDefaultLineupHeroIds(heroes),
+    accountProgress: { ...defaultLobbyAccountProgress },
   };
 }
 
@@ -95,6 +102,7 @@ export function loadLobbyProgress(): LobbyProgressSnapshot {
       gold: mergeCurrency(parsed.gold, defaultLobbyCurrencies.gold),
       crystals: mergeCurrency(parsed.crystals, defaultLobbyCurrencies.crystals),
       lineupHeroIds: mergeLineupHeroIds(parsed.lineupHeroIds, heroes),
+      accountProgress: mergeLobbyAccountProgress(parsed.accountProgress),
     };
   } catch {
     return cloneDefaultProgress();
@@ -109,6 +117,7 @@ export function saveLobbyProgress(snapshot: LobbyProgressSnapshot) {
       gold: snapshot.gold,
       crystals: snapshot.crystals,
       lineupHeroIds: snapshot.lineupHeroIds,
+      accountProgress: snapshot.accountProgress,
       heroes: snapshot.heroes.map(({ id, level, shards, owned }) => ({ id, level, shards, owned })),
       artifacts: snapshot.artifacts.map(({ id, level, pieces, owned }) => ({ id, level, pieces, owned })),
     }),
