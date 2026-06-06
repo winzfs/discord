@@ -125,14 +125,6 @@ function bindVerticalDragScroll(
   let dragging = false;
   let startY = 0;
   let startContentY = 0;
-  let lastRenderedScrollTop = 0;
-
-  function requestRenderIfNeeded(force = false) {
-    const scrollTop = Math.max(0, -content.y);
-    if (!force && Math.abs(scrollTop - lastRenderedScrollTop) < ROW_STEP * 0.75) return;
-    lastRenderedScrollTop = scrollTop;
-    scheduler.request();
-  }
 
   viewport.eventMode = "static";
   viewport.cursor = "grab";
@@ -146,21 +138,20 @@ function bindVerticalDragScroll(
     if (!dragging) return;
     event.stopPropagation();
     clampScroll(content, maxScroll, startContentY + event.global.y - startY);
-    requestRenderIfNeeded();
   });
   viewport.on("pointerup", (event: any) => {
     event.stopPropagation();
     dragging = false;
-    requestRenderIfNeeded(true);
+    scheduler.request();
   });
   viewport.on("pointerupoutside", () => {
     dragging = false;
-    requestRenderIfNeeded(true);
+    scheduler.request();
   });
   viewport.on("wheel", (event: any) => {
     event.stopPropagation();
     clampScroll(content, maxScroll, content.y - event.deltaY * 0.45);
-    requestRenderIfNeeded(true);
+    scheduler.request();
   });
 }
 
