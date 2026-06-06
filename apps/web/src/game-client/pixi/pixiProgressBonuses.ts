@@ -14,6 +14,13 @@ export type PixiProgressBonuses = {
   leakReduction: number;
 };
 
+export type PixiHeroMasteryEffect = {
+  level: number;
+  skillMultiplier: number;
+  controlMultiplier: number;
+  bonusCoin: number;
+};
+
 function sumOwnedArtifactEffect(progress: LobbyProgressSnapshot, categories: string[]) {
   return progress.artifacts.reduce((sum, artifact) => {
     if (!artifact.owned || artifact.level <= 0 || !categories.includes(artifact.category)) return sum;
@@ -60,6 +67,18 @@ export function getProgressHeroPower(bonuses: PixiProgressBonuses, hero: BoardHe
   const progressHero = bonuses.progress.heroes.find((item) => item.id === hero.heroId);
   if (!progressHero?.owned) return fallbackPower;
   return getHeroPowerAtLevel(progressHero, Math.max(1, progressHero.level));
+}
+
+export function getProgressHeroMasteryEffect(bonuses: PixiProgressBonuses, heroId: string): PixiHeroMasteryEffect {
+  const level = getProgressHeroLevel(bonuses, heroId);
+  const masterySteps = Math.max(0, level - 1);
+
+  return {
+    level,
+    skillMultiplier: 1 + Math.min(0.35, masterySteps * 0.035),
+    controlMultiplier: 1 + Math.min(0.28, masterySteps * 0.028),
+    bonusCoin: level >= 5 ? 1 + Math.floor((level - 5) / 3) : 0,
+  };
 }
 
 export function applyEconomyRewardBonus(bonuses: PixiProgressBonuses, reward: number) {
