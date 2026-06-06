@@ -6,7 +6,6 @@ import {
   WAVE_RESULT_SECONDS,
 } from "./pixiGameTypes";
 import { applyLeakReduction, getPerfectWaveLuckStoneReward } from "./pixiProgressBonuses";
-import { destroyActiveEnemy } from "./pixiEnemyRuntime";
 import { spawnWaveMonsters } from "./pixiWaveRuntime";
 import { showWaveRewardMenu } from "./pixiWaveRewardRuntime";
 import { showFinalResultPanel } from "./pixiFinalResultView";
@@ -52,17 +51,11 @@ export function finishAutoWave(
   readyImmediately = false,
   options: PixiWaveFlowRuntimeOptions,
 ) {
-  const alive = refs.activeEnemies.filter((enemy) => enemy.alive && !enemy.leaked);
-  const leakedDuringMovement = refs.activeEnemies.filter((enemy) => enemy.leaked).length;
-  let lostLives = refs.waveLostLives;
+  const unresolvedEnemies = refs.activeEnemies.filter((enemy) => enemy.alive && !enemy.leaked);
+  if (unresolvedEnemies.length > 0) return;
 
-  for (const enemy of alive) {
-    lostLives += enemy.damageToLife;
-    enemy.alive = false;
-    destroyActiveEnemy(enemy);
-  }
-
-  const leakedEnemies = leakedDuringMovement + alive.length;
+  const leakedEnemies = refs.activeEnemies.filter((enemy) => enemy.leaked).length;
+  const lostLives = refs.waveLostLives;
   const perfect = lostLives <= 0;
   const baseLuckStoneReward = perfect
     ? options.isBossWave(refs.state)
