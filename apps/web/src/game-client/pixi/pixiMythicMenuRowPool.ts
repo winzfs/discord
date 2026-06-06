@@ -24,6 +24,7 @@ export type MythicMenuRowPool = {
   render: (scrollTop: number) => void;
 };
 
+const MAX_VISIBLE_INGREDIENTS = 6;
 const GRADE_LABEL_WIDTH = 38;
 const INGREDIENT_FONT_SIZE = 11;
 const TAP_MOVE_CANCEL_DISTANCE = 8;
@@ -106,7 +107,7 @@ function createRowSlot(rowWidth: number, rowHeight: number, rowStep: number, onC
   root.addChild(summary);
 
   const columnWidth = Math.floor((rowWidth - 30) / 2);
-  for (let index = 0; index < 4; index += 1) {
+  for (let index = 0; index < MAX_VISIBLE_INGREDIENTS; index += 1) {
     const x = 12 + (index % 2) * columnWidth;
     const y = INGREDIENT_START_Y + Math.floor(index / 2) * INGREDIENT_ROW_GAP;
 
@@ -183,7 +184,7 @@ function createRowSlot(rowWidth: number, rowHeight: number, rowStep: number, onC
     boundRecipeId: null,
     visibleIndex: -1,
     lastCanCraft: null,
-    lastIngredientKeys: ["", "", "", ""],
+    lastIngredientKeys: Array.from({ length: MAX_VISIBLE_INGREDIENTS }, () => ""),
   };
 }
 
@@ -210,7 +211,7 @@ function updateRowSlot(slot: RowSlot, item: MythicMenuRowViewModel, rowWidth: nu
   setText(slot.summary, item.summary, item.summary.includes("준비완료") ? 0xfff2a8 : 0xf0e8dd);
   slot.craftHint.visible = item.canCraft;
 
-  for (let index = 0; index < 4; index += 1) {
+  for (let index = 0; index < MAX_VISIBLE_INGREDIENTS; index += 1) {
     const ingredient = item.ingredients[index];
     const key = ingredientKey(ingredient);
     const visible = Boolean(ingredient);
