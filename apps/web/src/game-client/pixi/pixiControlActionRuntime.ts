@@ -3,7 +3,7 @@ import {
   gambleSummon,
   getRunBoostEffect,
   getSummonCost,
-  summonHero,
+  summonHeroFromPool,
 } from "@discord-random-defense/game";
 import type { BoardHero, GameState } from "@discord-random-defense/game";
 import { colors } from "./gameTheme";
@@ -50,12 +50,13 @@ export function summonAction(refs: GameRefs, options: PixiControlActionRuntimeOp
   }
 
   const summonCredit = getSummonDiscountCredit(refs.state);
-  const result = summonHero(
+  const result = summonHeroFromPool(
     {
       ...refs.state,
       resources: refs.state.resources + summonCredit,
     },
     refs.random,
+    refs.heroPool,
   );
   refs.state = result.state;
   refs.lastSummonedIndex = options.getCellIndexFromHero(refs.state, result.summonedHero);
