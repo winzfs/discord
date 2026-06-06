@@ -138,7 +138,7 @@ function buildSkillProfile(hero: BoardHero, role: HeroRole): SkillProfile {
     profile.color = 0x9c83ff;
   } else if (hasTag(skillIds, "debuff") || hasTag(skillIds, "slow") || hasTag(skillIds, "freeze")) {
     profile.control = tuneControlByRole(createSingleControlConfig(hasTag(skillIds, "freeze")), role, gradeScale);
-    profile.fxKind = "control";
+    profile.fxKind = null;
     profile.text = hasTag(skillIds, "freeze") ? "단일빙결" : "단일제어";
     profile.color = 0x8fdcff;
   }
@@ -146,14 +146,14 @@ function buildSkillProfile(hero: BoardHero, role: HeroRole): SkillProfile {
   if (hasTag(skillIds, "mark") || hasTag(skillIds, "vulnerable")) {
     profile.damageMultiplier += role === "damage" ? 0.12 * gradeScale : 0.04 * gradeScale;
     if (!profile.control) profile.control = tuneControlByRole(createSingleControlConfig(false), role, gradeScale);
-    profile.fxKind = "mark";
+    profile.fxKind = null;
     profile.text = "표식";
     profile.color = 0xff8f74;
   }
 
   if (hasTag(skillIds, "buff") || hasTag(skillIds, "haste") || hasTag(skillIds, "power-up") || hasTag(skillIds, "team-wide")) {
     profile.damageMultiplier += role === "support" ? 0 : 0.03 * gradeScale;
-    profile.fxKind = "support";
+    profile.fxKind = null;
     profile.text = "지원";
     profile.color = 0x7dffb2;
   }
@@ -168,14 +168,14 @@ function buildSkillProfile(hero: BoardHero, role: HeroRole): SkillProfile {
   if (hasTag(skillIds, "economy") || hasTag(skillIds, "coin-bonus") || hasTag(skillIds, "wave-reward")) {
     profile.coinBonus = Math.round(role === "support" ? 2 + gradeScale : 1 + gradeScale);
     profile.damageMultiplier += role === "support" ? 0 : 0.02 * gradeScale;
-    profile.fxKind = "economy";
+    profile.fxKind = null;
     profile.text = "보상";
     profile.color = colors.green;
   }
 
   if (hasTag(skillIds, "overcrowd-bonus")) {
     profile.damageMultiplier += 0.03 * Math.min(8, Math.floor(hero.grade === "legendary" ? 5 : 2));
-    profile.fxKind = "control";
+    profile.fxKind = null;
     profile.text = "반격";
     profile.color = colors.red;
   }
