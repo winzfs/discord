@@ -172,6 +172,28 @@ export function LobbyPage() {
     if (nextArtifact) setDetail(createArtifactDetail(nextArtifact));
   };
 
+  const toggleLineupHero = (heroId: string) => {
+    const hero = heroes.find((item) => item.id === heroId);
+    if (!hero?.owned) {
+      setNotice("보유한 영웅만 편성할 수 있습니다.");
+      return;
+    }
+
+    const isInLineup = lineupHeroIds.includes(heroId);
+    if (!isInLineup && lineupHeroIds.length >= defaultLobbyLineupSize) {
+      setNotice("편성 슬롯이 가득 찼습니다.");
+      return;
+    }
+
+    const nextLineupHeroIds = isInLineup
+      ? lineupHeroIds.filter((id) => id !== heroId)
+      : [...lineupHeroIds, heroId];
+
+    setLineupHeroIds(nextLineupHeroIds);
+    persistProgress(heroes, artifacts, gold, crystals, nextLineupHeroIds);
+    setNotice(isInLineup ? `${hero.displayName} 편성 해제` : `${hero.displayName} 편성 완료`);
+  };
+
   const recruit = (mode: RecruitPullMode) => {
     const cost = mode === "ten" ? recruitCosts.tenCrystal : recruitCosts.singleCrystal;
     if (crystals < cost) {
@@ -249,6 +271,8 @@ export function LobbyPage() {
           />
           <HeroesView
             heroes={heroes}
+            lineupHeroIds={lineupHeroIds}
+            onToggleLineup={toggleLineupHero}
             onDetail={setDetail}
             createDetail={createHeroDetail}
             gradeLabel={gradeLabel}
