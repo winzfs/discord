@@ -1,6 +1,6 @@
 import {
   craftMythicHero,
-  gambleSummon,
+  gambleSummonFromPool,
   getRunBoostEffect,
   getSummonCost,
   summonHeroFromPool,
@@ -76,7 +76,7 @@ export function gambleAction(refs: GameRefs, options: PixiControlActionRuntimeOp
 
   if (refs.movementLocked) return;
 
-  const result = gambleSummon(refs.state, "epic-gamble", refs.random);
+  const result = gambleSummonFromPool(refs.state, "epic-gamble", refs.random, refs.heroPool);
 
   if (!result.summonedHero) {
     const message =
