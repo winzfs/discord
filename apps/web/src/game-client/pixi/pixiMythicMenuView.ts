@@ -19,15 +19,18 @@ export type PixiMythicMenuViewOptions = {
 };
 
 type IngredientProgress = ReturnType<typeof getMythicIngredientProgress>[number];
+type MythicCraftItem = ReturnType<typeof getMythicCraftAvailability>[number];
 
 const HEADER_HEIGHT = 58;
 const ROW_HEIGHT = 104;
 const ROW_GAP = 8;
+const ROW_STEP = ROW_HEIGHT + ROW_GAP;
 const PANEL_MARGIN = 24;
 const MENU_TOP_RATIO = 0.11;
 const TAP_MOVE_CANCEL_DISTANCE = 8;
 const INGREDIENT_FONT_SIZE = 11;
 const GRADE_LABEL_WIDTH = 38;
+const VISIBLE_ROW_BUFFER = 2;
 
 function createMythicMenuButton(label: string, x: number, y: number, onClick: () => void) {
   const button = new Container();
@@ -124,7 +127,7 @@ function drawIngredientItem(row: Container, item: IngredientProgress, x: number,
 function drawIngredientSummary(
   row: Container,
   options: PixiMythicMenuViewOptions,
-  recipe: ReturnType<typeof getMythicCraftAvailability>[number]["recipe"],
+  recipe: MythicCraftItem["recipe"],
   y: number,
   rowWidth: number,
 ) {
@@ -154,6 +157,7 @@ function drawIngredientSummary(
 function createScrollViewport(width: number, height: number) {
   const viewport = new Container();
   const content = new Container();
+  const spacer = new Graphics();
   const mask = new Graphics();
   const hitArea = new Graphics();
 
@@ -164,43 +168,16 @@ function createScrollViewport(width: number, height: number) {
   hitArea.fill({ color: 0x000000, alpha: 0.001 });
 
   content.mask = mask;
-  viewport.addChild(hitArea, mask, content);
-  return { viewport, content };
+  viewport.addChild(hitArea, mask, spacer, content);
+  return { viewport, content, spacer };
 }
 
-function bindVerticalDragScroll(viewport: Container, content: Container, viewportHeight: number, contentHeight: number) {
-  const maxScroll = Math.max(0, contentHeight - viewportHeight);
-  if (maxScroll <= 0) return;
+function clampScroll(content: Container, maxScroll: number, nextY: number) {
+  content.y = Math.max(-maxScroll, Math.min(0, nextY));
+}
 
-  let dragging = false;
-  let startY = 0;
-  let startContentY = 0;
-
-  viewport.eventMode = "static";
-  viewport.cursor = "grab";
-  viewport.on("pointerdown", (event: any) => {
-    event.stopPropagation();
-    dragging = true;
-    startY = event.global.y;
-    startContentY = content.y;
-  });
-  viewport.on("pointermove", (event: any) => {
-    if (!dragging) return;
-    event.stopPropagation();
-    const nextY = startContentY + event.global.y - startY;
-    content.y = Math.max(-maxScroll, Math.min(0, nextY));
-  });
-  viewport.on("pointerup", (event: any) => {
-    event.stopPropagation();
-    dragging = false;
-  });
-  viewport.on("pointerupoutside", () => {
-    dragging = false;
-  });
-  viewport.on("wheel", (event: any) => {
-    event.stopPropagation();
-    content.y = Math.max(-maxScroll, Math.min(0, content.y - event.deltaY * 0.45));
-  });
+function clearRows(content: Container) {
+  content.removeChildren().forEach((child) => child.destroy({ children: true }));
 }
 
 function bindCraftTap(row: Container, recipeId: string, onCraft: (recipeId: string) => void) {
@@ -227,11 +204,112 @@ function bindCraftTap(row: Container, recipeId: string, onCraft: (recipeId: stri
   });
 }
 
+function createRecipeRow(
+  item: MythicCraftItem,
+  index: number,
+  rowWidth: number,
+  options: PixiMythicMenuViewOptions,
+) {
+  const row = new Container();
+  row.y = index * ROW_STEP;
+  row.addChild(makePixiPanel(rowWidth, ROW_HEIGHT, item.canCraft ? 0x7a5528 : 0x655e59, item.canCraft ? 0xffb347 : 0x3d332e, 10));
+
+  const recipeDefinition = getHeroById(item.recipe.id);
+  const namePrefix = item.canCraft ? "조합 가능 · " : "";
+  const name = makePixiText(`${namePrefix}${item.recipe.displayName}`, 16, gradeColor(recipeDefinition?.grade));
+  name.x = 12;
+  name.y = 8;
+  row.addChild(name);
+
+  if (item.canCraft) {
+    const craftHint = makePixiText("터치", 11, 0xfff2a8);
+    craftHint.anchor.set(1, 0);
+    craftHint.x = rowWidth - 12;
+    craftHint.y = 10;
+    row.addChild(craftHint);
+    bindCraftTap(row, item.recipe.id, options.onCraft);
+  }
+
+  drawIngredientSummary(row, options, item.recipe, 37, rowWidth);
+  return row;
+}
+
+function createVirtualRowRenderer(
+  list: MythicCraftItem[],
+  content: Container,
+  rowWidth: number,
+  viewportHeight: number,
+  options: PixiMythicMenuViewOptions,
+) {
+  let renderedStart = -1;
+  let renderedEnd = -1;
+
+  return () => {
+    const scrollTop = Math.max(0, -content.y);
+    const start = Math.max(0, Math.floor(scrollTop / ROW_STEP) - VISIBLE_ROW_BUFFER);
+    const end = Math.min(
+      list.length - 1,
+      Math.ceil((scrollTop + viewportHeight) / ROW_STEP) + VISIBLE_ROW_BUFFER,
+    );
+
+    if (start === renderedStart && end === renderedEnd) return;
+    renderedStart = start;
+    renderedEnd = end;
+
+    clearRows(content);
+    for (let index = start; index <= end; index += 1) {
+      content.addChild(createRecipeRow(list[index], index, rowWidth, options));
+    }
+  };
+}
+
+function bindVerticalDragScroll(
+  viewport: Container,
+  content: Container,
+  viewportHeight: number,
+  contentHeight: number,
+  renderVisibleRows: () => void,
+) {
+  const maxScroll = Math.max(0, contentHeight - viewportHeight);
+  if (maxScroll <= 0) return;
+
+  let dragging = false;
+  let startY = 0;
+  let startContentY = 0;
+
+  viewport.eventMode = "static";
+  viewport.cursor = "grab";
+  viewport.on("pointerdown", (event: any) => {
+    event.stopPropagation();
+    dragging = true;
+    startY = event.global.y;
+    startContentY = content.y;
+  });
+  viewport.on("pointermove", (event: any) => {
+    if (!dragging) return;
+    event.stopPropagation();
+    clampScroll(content, maxScroll, startContentY + event.global.y - startY);
+    renderVisibleRows();
+  });
+  viewport.on("pointerup", (event: any) => {
+    event.stopPropagation();
+    dragging = false;
+  });
+  viewport.on("pointerupoutside", () => {
+    dragging = false;
+  });
+  viewport.on("wheel", (event: any) => {
+    event.stopPropagation();
+    clampScroll(content, maxScroll, content.y - event.deltaY * 0.45);
+    renderVisibleRows();
+  });
+}
+
 export function createPixiMythicMenuView(options: PixiMythicMenuViewOptions) {
   const list = getMythicCraftAvailability(options.state);
   const width = Math.min(360, options.rendererWidth - 24);
   const maxHeight = Math.max(320, options.rendererHeight - 190);
-  const contentHeight = list.length * (ROW_HEIGHT + ROW_GAP);
+  const contentHeight = list.length * ROW_STEP;
   const viewportHeight = Math.min(maxHeight - HEADER_HEIGHT - PANEL_MARGIN, contentHeight);
   const height = HEADER_HEIGHT + viewportHeight + PANEL_MARGIN;
   const menu = new Container();
@@ -247,39 +325,17 @@ export function createPixiMythicMenuView(options: PixiMythicMenuViewOptions) {
   menu.addChild(title);
   menu.addChild(createMythicMenuButton("닫기", width - 70, 12, options.onClose));
 
-  const { viewport, content } = createScrollViewport(width - 24, viewportHeight);
+  const rowWidth = width - 24;
+  const { viewport, content, spacer } = createScrollViewport(rowWidth, viewportHeight);
   viewport.x = 12;
   viewport.y = HEADER_HEIGHT;
+  spacer.rect(0, 0, rowWidth, contentHeight);
+  spacer.fill({ color: 0x000000, alpha: 0.001 });
   menu.addChild(viewport);
 
-  list.forEach((item, index) => {
-    const y = index * (ROW_HEIGHT + ROW_GAP);
-    const row = new Container();
-    const rowWidth = width - 24;
-    row.y = y;
-    row.addChild(makePixiPanel(rowWidth, ROW_HEIGHT, item.canCraft ? 0x7a5528 : 0x655e59, item.canCraft ? 0xffb347 : 0x3d332e, 10));
-
-    const recipeDefinition = getHeroById(item.recipe.id);
-    const namePrefix = item.canCraft ? "조합 가능 · " : "";
-    const name = makePixiText(`${namePrefix}${item.recipe.displayName}`, 16, gradeColor(recipeDefinition?.grade));
-    name.x = 12;
-    name.y = 8;
-    row.addChild(name);
-
-    if (item.canCraft) {
-      const craftHint = makePixiText("터치", 11, 0xfff2a8);
-      craftHint.anchor.set(1, 0);
-      craftHint.x = rowWidth - 12;
-      craftHint.y = 10;
-      row.addChild(craftHint);
-      bindCraftTap(row, item.recipe.id, options.onCraft);
-    }
-
-    drawIngredientSummary(row, options, item.recipe, 37, rowWidth);
-    content.addChild(row);
-  });
-
-  bindVerticalDragScroll(viewport, content, viewportHeight, contentHeight);
+  const renderVisibleRows = createVirtualRowRenderer(list, content, rowWidth, viewportHeight, options);
+  renderVisibleRows();
+  bindVerticalDragScroll(viewport, content, viewportHeight, contentHeight, renderVisibleRows);
 
   if (contentHeight > viewportHeight) {
     const hintBackground = new Graphics();
