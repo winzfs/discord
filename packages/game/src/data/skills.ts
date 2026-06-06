@@ -1,6 +1,40 @@
 import type { SkillDefinition } from "../types/skill";
 
 export const skills: SkillDefinition[] = [
+  { id: "spark-runner-zap", displayName: "스파크 잽", type: "attack", assetKey: "skill.placeholder", tags: ["unique", "common", "attack", "fast", "single-target"] },
+  { id: "rookie-guard-bash", displayName: "루키 배시", type: "control", assetKey: "skill.placeholder", tags: ["unique", "common", "debuff", "slow", "frontline"] },
+  { id: "mini-mender-boost", displayName: "미니 증폭", type: "support", assetKey: "skill.placeholder", tags: ["unique", "common", "buff", "power-up"] },
+  { id: "scrap-gunner-ricochet", displayName: "고철 도탄", type: "attack", assetKey: "skill.placeholder", tags: ["unique", "common", "attack", "extra-hit"] },
+  { id: "slow-bot-oil", displayName: "감속 오일", type: "control", assetKey: "skill.placeholder", tags: ["unique", "common", "debuff", "slow"] },
+  { id: "charge-helper-tip", displayName: "충전 팁", type: "support", assetKey: "skill.placeholder", tags: ["unique", "common", "economy", "coin-bonus"] },
+
+  { id: "pulse-ranger-mark", displayName: "펄스 표식", type: "attack", assetKey: "skill.placeholder", tags: ["unique", "rare", "attack", "boss-killer", "mark"] },
+  { id: "barrier-guard-lock", displayName: "방벽 고정", type: "control", assetKey: "skill.placeholder", tags: ["unique", "rare", "debuff", "slow", "shield"] },
+  { id: "field-medic-rally", displayName: "전장 격려", type: "support", assetKey: "skill.placeholder", tags: ["unique", "rare", "buff", "attack-speed"] },
+  { id: "frost-warden-chill", displayName: "서리 결계", type: "control", assetKey: "skill.placeholder", tags: ["unique", "rare", "debuff", "freeze", "slow"] },
+  { id: "burst-scout-flare", displayName: "폭발 조명탄", type: "attack", assetKey: "skill.placeholder", tags: ["unique", "rare", "attack", "area-damage", "burst"] },
+  { id: "nano-aide-injector", displayName: "나노 주입", type: "support", assetKey: "skill.placeholder", tags: ["unique", "rare", "buff", "power-up"] },
+
+  { id: "plasma-mage-orb", displayName: "플라즈마 오브", type: "attack", assetKey: "skill.placeholder", tags: ["unique", "epic", "attack", "area-damage", "wave-clear"] },
+  { id: "core-knight-anchor", displayName: "코어 앵커", type: "control", assetKey: "skill.placeholder", tags: ["unique", "epic", "debuff", "slow", "shield"] },
+  { id: "overclock-tech-haste", displayName: "가속 회로", type: "support", assetKey: "skill.placeholder", tags: ["unique", "epic", "buff", "haste", "ultimate-charge"] },
+  { id: "arc-captain-current", displayName: "아크 전류", type: "attack", assetKey: "skill.placeholder", tags: ["unique", "epic", "attack", "chain", "multi-hit"] },
+  { id: "gravity-jailer-field", displayName: "중력 감옥", type: "control", assetKey: "skill.placeholder", tags: ["unique", "epic", "debuff", "grouping", "slow"] },
+  { id: "combat-engineer-turret", displayName: "지원 포탑", type: "attack", assetKey: "skill.placeholder", tags: ["unique", "epic", "attack", "turret", "support-fire"] },
+
+  { id: "credit-hacker-bounty", displayName: "현상금 해킹", type: "support", assetKey: "skill.placeholder", tags: ["unique", "legendary", "economy", "coin-bonus"] },
+  { id: "credit-hacker-network", displayName: "네트워크 증폭", type: "support", assetKey: "skill.placeholder", tags: ["unique", "legendary", "buff", "team-wide", "attack-speed"] },
+  { id: "railgun-ace-piercer", displayName: "레일 관통탄", type: "attack", assetKey: "skill.placeholder", tags: ["unique", "legendary", "attack", "pierce", "boss-killer"] },
+  { id: "railgun-ace-weakpoint", displayName: "약점 조준", type: "control", assetKey: "skill.placeholder", tags: ["unique", "legendary", "debuff", "mark", "vulnerable"] },
+  { id: "last-bastion-fortress", displayName: "요새 모드", type: "control", assetKey: "skill.placeholder", tags: ["unique", "legendary", "debuff", "slow", "last-stand"] },
+  { id: "last-bastion-retaliate", displayName: "최후 반격", type: "attack", assetKey: "skill.placeholder", tags: ["unique", "legendary", "attack", "overcrowd-bonus"] },
+  { id: "orbital-sniper-laser", displayName: "궤도 레이저", type: "attack", assetKey: "skill.placeholder", tags: ["unique", "legendary", "attack", "beam", "area-damage"] },
+  { id: "orbital-sniper-lockon", displayName: "궤도 락온", type: "attack", assetKey: "skill.placeholder", tags: ["unique", "legendary", "attack", "highest-hp", "boss-killer"] },
+  { id: "aegis-commander-order", displayName: "이지스 명령", type: "support", assetKey: "skill.placeholder", tags: ["unique", "legendary", "buff", "team-wide", "shield"] },
+  { id: "aegis-commander-suppression", displayName: "진압 지휘", type: "control", assetKey: "skill.placeholder", tags: ["unique", "legendary", "debuff", "slow", "commander"] },
+  { id: "chrono-oracle-accelerate", displayName: "시간 가속", type: "support", assetKey: "skill.placeholder", tags: ["unique", "legendary", "buff", "haste", "team-wide"] },
+  { id: "chrono-oracle-foresight", displayName: "예지 보상", type: "support", assetKey: "skill.placeholder", tags: ["unique", "legendary", "economy", "wave-reward", "ultimate-charge"] },
+
   { id: "basic-shot", displayName: "기본 사격", type: "attack", assetKey: "skill.placeholder", tags: ["single-target"] },
   { id: "focus-shot", displayName: "집중 사격", type: "attack", assetKey: "skill.placeholder", tags: ["single-target", "boss-killer"] },
   { id: "area-burst", displayName: "범위 폭발", type: "attack", assetKey: "skill.placeholder", tags: ["area-damage"] },
