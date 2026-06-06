@@ -106,6 +106,49 @@ apps/web/src/game-client/pixi/pixiLobbyBattleRewards.ts
 
 테스트 모드에서는 로비 보상 저장을 하지 않습니다.
 
+## 몬스터 누수/결과창 버그 수정
+
+### 문제
+
+```text
+몬스터가 오른쪽 아래 도착 지점에 들어오면 HP가 줄고 그 몬스터만 사라져야 하는데,
+여러 몬스터가 한꺼번에 사라지거나 도착 지점 이후로 더 이동하는 문제가 있었습니다.
+
+결과창은 버튼을 누르지 않았는데도 클릭 즉시 사라지는 문제가 있었습니다.
+```
+
+### 원인
+
+```text
+기존 적 이동 경로가 시작점으로 다시 돌아오는 닫힌 루프였습니다.
+그래서 오른쪽 아래 지점이 종료점이 아니라 중간 경로처럼 처리될 수 있었습니다.
+
+결과창은 refs.menu에 올라가는데, 전역 stage pointerdown에서 빈칸 클릭 시 메뉴를 정리하는 로직이 결과창 클릭까지 처리할 수 있었습니다.
+```
+
+### 수정 파일
+
+```text
+apps/web/src/game-client/pixi/pixiGameTypes.ts
+apps/web/src/game-client/pixi/pixiPathRuntime.ts
+apps/web/src/game-client/pixi/pixiEnemyMovementRuntime.ts
+apps/web/src/game-client/pixi/pixiWaveFlowRuntime.ts
+apps/web/src/game-client/pixi/createPixiGame.ts
+apps/web/src/game-client/pixi/pixiFinalResultView.ts
+```
+
+### 수정 내용
+
+```text
+ActiveEnemy에 leaked 플래그 추가
+적 이동 경로를 오른쪽 아래 도착 지점에서 끝나는 열린 경로로 변경
+progress가 1에 도달하면 해당 몬스터 1마리만 누수 처리
+누수 처리된 몬스터는 다시 처리하지 않도록 방어
+웨이브 종료 시 누수 몬스터 수와 생명 피해량 계산 분리
+최종 결과 상태에서는 stage 클릭으로 메뉴를 닫지 않도록 방어
+결과창 root/panel/button 이벤트 전파 차단
+```
+
 ## 타입/빌드 점검 메모
 
 이 환경에서는 `pnpm typecheck`, `pnpm build:web` 명령을 직접 실행하지 못했습니다.
@@ -120,6 +163,7 @@ pixiFinalResultView.ts는 Pixi Container/Graphics/Text 기반
 pixiWaveFlowRuntime.ts는 최종 상태에서만 showFinalResultPanel 호출
 GameState.maxLives 사용 제거 완료
 결과 등급/별점은 initialBalance.startingLives 기준으로 수정
+ActiveEnemy.leaked는 optional boolean으로 추가
 ```
 
 다음 로컬 확인 명령:
@@ -134,7 +178,11 @@ pnpm dev:web
 
 ```text
 /lobby 영웅 탭이 기존 카드 목록으로 정상 표시되는지
+/play 몬스터가 오른쪽 아래 도착점에서 1마리씩 누수 처리되는지
+/play 몬스터가 도착점 이후로 더 이동하지 않는지
+/play 누수 시 HP가 해당 몬스터 damageToLife만큼 줄어드는지
 /play 전투 종료 시 결과 패널이 뜨는지
+결과창을 클릭해도 닫히지 않는지
 결과 등급/별점/보상 카드가 잘 보이는지
 다시 도전 버튼이 동작하는지
 로비로 버튼이 /lobby로 이동하는지
