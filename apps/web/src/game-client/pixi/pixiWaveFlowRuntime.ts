@@ -23,6 +23,13 @@ export type PixiWaveFlowRuntimeOptions = {
   floatText: (refs: GameRefs, value: string, x: number, y: number, color: number) => void;
 };
 
+function spawnCurrentWave(refs: GameRefs, options: PixiWaveFlowRuntimeOptions) {
+  spawnWaveMonsters(refs, {
+    showBossWarning: options.showBossWarning,
+    invalidateControls: options.invalidateControls,
+  });
+}
+
 export function waveButtonAction(refs: GameRefs, options: PixiWaveFlowRuntimeOptions) {
   if (refs.wavePhase === "combat") return;
 
@@ -37,13 +44,29 @@ export function startAutoWave(refs: GameRefs, options: PixiWaveFlowRuntimeOption
   refs.wavePhase = "combat";
   refs.combatTimer = WAVE_COMBAT_SECONDS;
   refs.attackTimer = 0.25;
+  refs.waveKilled = 0;
+  refs.waveReward = 0;
+  refs.waveLostLives = 0;
   refs.state = startWave(refs.state);
 
   options.render(refs);
-  spawnWaveMonsters(refs, {
-    showBossWarning: options.showBossWarning,
-    invalidateControls: options.invalidateControls,
-  });
+  spawnCurrentWave(refs, options);
+}
+
+export function startNextTimedWave(refs: GameRefs, options: PixiWaveFlowRuntimeOptions) {
+  if (options.isFinished(refs.state)) return;
+  if (refs.state.currentWave >= initialBalance.maxWave) return;
+
+  refs.state = {
+    ...refs.state,
+    currentWave: refs.state.currentWave + 1,
+    clearedWaves: refs.state.clearedWaves + 1,
+    status: "playing",
+  };
+  refs.combatTimer = WAVE_COMBAT_SECONDS;
+  refs.attackTimer = Math.min(refs.attackTimer, 0.25);
+  spawnCurrentWave(refs, options);
+  options.render(refs);
 }
 
 export function finishAutoWave(
@@ -73,7 +96,6 @@ export function finishAutoWave(
   const nextLives = Math.max(0, refs.state.lives - reducedLostLives);
   const finalWave = refs.state.currentWave >= initialBalance.maxWave;
   const nextStatus = nextLives <= 0 ? "failed" : finalWave ? "cleared" : "playing";
-  const nextWave = nextStatus === "playing" ? refs.state.currentWave + 1 : refs.state.currentWave;
 
   refs.activeEnemies = [];
   refs.lastWaveSummary = {
@@ -88,8 +110,6 @@ export function finishAutoWave(
     ...refs.state,
     lives: nextLives,
     luckStones: refs.state.luckStones + luckStoneReward,
-    currentWave: nextWave,
-    clearedWaves: refs.state.clearedWaves + (nextLives > 0 ? 1 : 0),
     status: nextStatus,
     score: refs.state.score + refs.waveKilled * 10 + (perfect ? 50 : 0),
   };
