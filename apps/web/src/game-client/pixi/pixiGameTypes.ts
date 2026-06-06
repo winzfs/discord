@@ -40,6 +40,13 @@ export type MythicUltimateChargeState = {
   lastUltimateAt: number;
 };
 
+export type GameOverReason = {
+  type: "enemy_limit";
+  enemyCount: number;
+  enemyLimit: number;
+  wave: number;
+} | null;
+
 export type PixiControlZone = {
   id: number;
   x: number;
@@ -128,6 +135,7 @@ export type GameRefs = {
   waveReward: number;
   waveLostLives: number;
   lastWaveSummary: WaveSummary | null;
+  gameOverReason: GameOverReason;
   resultSubmitted: boolean;
   lobbyRewardGranted: boolean;
   isTestMode: boolean;
