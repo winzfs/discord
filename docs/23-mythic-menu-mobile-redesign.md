@@ -4,7 +4,7 @@
 
 모바일 화면에서 신화 조합 메뉴가 아래로 드래그되지 않고, 재료 라벨이 너무 산만하게 보이는 문제를 정리했습니다.
 
-추가로 메뉴를 열 때와 드래그할 때 렉이 걸리는 문제를 줄이기 위해 조합 목록을 **row pool 재사용 + lazy row 계산 방식**으로 변경했습니다.
+추가로 메뉴를 열 때와 드래그할 때 렉이 걸리는 문제를 줄이기 위해 조합 목록을 **즉시 패널 표시 + 지연 목록 계산 + row pool 재사용 + lazy row 계산 방식**으로 변경했습니다.
 
 ## 2. 적용 파일
 
@@ -32,6 +32,7 @@ apps/web/src/game-client/pixi/gameTheme.ts
 기존 문제점:
 
 ```text
+메뉴 패널을 보여주기 전에 getMythicCraftAvailability() 실행
 메뉴 열 때 전체 조합 row view model 생성
 전체 조합의 재료 진행도 계산
 각 행 패널 생성
@@ -40,11 +41,14 @@ apps/web/src/game-client/pixi/gameTheme.ts
 드래그 중에도 행 제거/재생성 반복
 ```
 
-이 방식은 `getMythicIngredientProgress()`, `Graphics`, `Text`, `destroy()`가 짧은 시간에 반복되어 모바일에서 렉이 심해질 수 있습니다.
+이 방식은 `getMythicCraftAvailability()`, `getMythicIngredientProgress()`, `Graphics`, `Text`, `destroy()`가 짧은 시간에 반복되어 모바일에서 렉이 심해질 수 있습니다.
 
 변경 후:
 
 ```text
+신화 버튼 클릭 즉시 빈 패널/제목/닫기 버튼 표시
+목록 영역에는 먼저 "조합표 불러오는 중..." 표시
+requestAnimationFrame 2프레임 뒤 조합 목록 계산
 고정된 수의 row slot만 생성
 행 제거/파괴/destroy 반복 제거
 메뉴 열 때 전체 row view model 생성 제거
@@ -57,10 +61,12 @@ apps/web/src/game-client/pixi/gameTheme.ts
 
 핵심 구현:
 
+- `pixiMythicMenuView.ts`에서 패널을 먼저 반환
+- `mountMythicMenuList()`로 목록 마운트 분리
+- `getMythicCraftAvailability()`를 메뉴 생성 직후가 아니라 2프레임 뒤 실행
 - `pixiMythicMenuRowPool.ts` 추가
 - `createMythicMenuRowPool()`에서 보이는 개수만큼 row slot 생성
 - 각 row slot은 패널, 제목, 재료 텍스트, 등급 라벨 그래픽을 재사용
-- `pixiMythicMenuView.ts`는 lazy row provider와 스크롤 연결만 담당
 - 기존 `rows = list.map(...)` 전체 계산 제거
 - `createLazyRowProvider()`로 필요한 index만 `createRowViewModel()` 실행
 - `pointermove`에서는 `content.y`만 변경
@@ -106,7 +112,8 @@ apps/web/src/game-client/pixi/gameTheme.ts
 
 ## 7. 테스트 체크리스트
 
-- 신화 메뉴를 눌렀을 때 멈춤이 줄었는지 확인
+- 신화 메뉴를 눌렀을 때 패널이 즉시 보이는지 확인
+- 목록 계산 전 "조합표 불러오는 중..."이 먼저 보이는지 확인
 - 메뉴 열 때 전체 row view model을 만들지 않는지 확인
 - 신화 메뉴 목록을 아래로 드래그할 수 있는지 확인
 - 드래그 중 프레임 드랍이 줄었는지 확인
