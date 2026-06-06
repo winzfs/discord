@@ -1,9 +1,28 @@
 import type { SkillDefinition } from "../types/skill";
 
 export const skills: SkillDefinition[] = [
+  { id: "basic-shot", displayName: "기본 사격", type: "attack", assetKey: "skill.placeholder", tags: ["single-target"] },
+  { id: "focus-shot", displayName: "집중 사격", type: "attack", assetKey: "skill.placeholder", tags: ["single-target", "boss-killer"] },
+  { id: "area-burst", displayName: "범위 폭발", type: "attack", assetKey: "skill.placeholder", tags: ["area-damage"] },
+  { id: "piercing-shot", displayName: "관통 사격", type: "attack", assetKey: "skill.placeholder", tags: ["line", "pierce"] },
+  { id: "chain-spark", displayName: "연쇄 전류", type: "attack", assetKey: "skill.placeholder", tags: ["chain", "multi-hit"] },
+  { id: "burst-rocket", displayName: "로켓 폭발", type: "attack", assetKey: "skill.placeholder", tags: ["burst", "area-damage"] },
+
   { id: "deadeye", displayName: "집중 사격", type: "ultimate", assetKey: "skill.placeholder", tags: ["single-target"] },
   { id: "shield-pulse", displayName: "방어 파동", type: "control", assetKey: "skill.placeholder", tags: ["slow"] },
   { id: "boost-field", displayName: "증폭 지대", type: "support", assetKey: "skill.placeholder", tags: ["buff"] },
+  { id: "barrier-guard", displayName: "방벽 수호", type: "control", assetKey: "skill.placeholder", tags: ["shield", "delay"] },
+  { id: "team-boost", displayName: "전술 지원", type: "support", assetKey: "skill.placeholder", tags: ["buff", "attack-speed"] },
+  { id: "core-guard", displayName: "코어 수호", type: "control", assetKey: "skill.placeholder", tags: ["shield", "slow"] },
+  { id: "overclock", displayName: "오버클럭", type: "support", assetKey: "skill.placeholder", tags: ["buff", "haste"] },
+  { id: "team-highlight", displayName: "팀 하이라이트", type: "support", assetKey: "skill.placeholder", tags: ["team-wide", "economy"] },
+  { id: "highlight-barrage", displayName: "하이라이트 포화", type: "attack", assetKey: "skill.placeholder", tags: ["area-damage", "boss-killer"] },
+  { id: "last-stand", displayName: "최후의 저항", type: "control", assetKey: "skill.placeholder", tags: ["shield", "last-stand"] },
+  { id: "freeze-trap", displayName: "빙결 함정", type: "control", assetKey: "skill.placeholder", tags: ["slow", "freeze"] },
+  { id: "scrap-turret", displayName: "고철 포탑", type: "attack", assetKey: "skill.placeholder", tags: ["turret", "steady"] },
+  { id: "nano-pack", displayName: "나노 팩", type: "support", assetKey: "skill.placeholder", tags: ["buff", "power-up"] },
+  { id: "gravity-mine", displayName: "중력 지뢰", type: "control", assetKey: "skill.placeholder", tags: ["grouping", "slow"] },
+  { id: "orbital-laser", displayName: "궤도 레이저", type: "attack", assetKey: "skill.placeholder", tags: ["area-damage", "beam"] },
 
   { id: "dva-fusion-cannons", displayName: "융합포", type: "attack", assetKey: "skill.placeholder", tags: ["dva", "area-damage", "close-range"] },
   { id: "dva-defense-matrix", displayName: "방어 매트릭스", type: "control", assetKey: "skill.placeholder", tags: ["dva", "slow", "damage-reduction"] },
