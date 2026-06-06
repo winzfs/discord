@@ -1,6 +1,7 @@
 import type { LobbyHero } from "../../game-lobby/lobbyData";
 
-const MYTHIC_HERO_IDLE_SPRITES: Record<string, string> = {
+const HERO_IDLE_SPRITES: Record<string, string> = {
+  "spark-runner": "/assets/heroes/private.png?v=20260607-private1",
   tracer: "/assets/heroes/tracer.png?v=20260605-tracer1",
   kiriko: "/assets/heroes/kiriko.png?v=20260605-kiriko1",
   dva: "/assets/heroes/d.va.png?v=20260605-dva1",
@@ -8,14 +9,18 @@ const MYTHIC_HERO_IDLE_SPRITES: Record<string, string> = {
   cassidy: "/assets/heroes/cassidy.png?v=20260605-cassidy1",
   winston: "/assets/heroes/winston.png?v=20260606-winston1",
   genji: "/assets/heroes/genji.png?v=20260606-genji1",
+  ana: "/assets/heroes/ana.png?v=20260606-ana1",
+  illari: "/assets/heroes/illari.png?v=20260606-illari1",
 };
+
+const SPRITE_PORTRAIT_IDS = new Set(["spark-runner", "tracer", "kiriko", "dva", "zarya", "cassidy", "winston", "genji", "ana", "illari"]);
 
 type LobbyHeroPortraitProps = {
   hero: LobbyHero;
 };
 
 export function LobbyHeroPortrait({ hero }: LobbyHeroPortraitProps) {
-  const spriteUrl = hero.grade === "mythic" ? MYTHIC_HERO_IDLE_SPRITES[hero.id] : undefined;
+  const spriteUrl = SPRITE_PORTRAIT_IDS.has(hero.id) ? HERO_IDLE_SPRITES[hero.id] : undefined;
 
   if (!hero.owned) {
     return <div className="hero-portrait">?</div>;
