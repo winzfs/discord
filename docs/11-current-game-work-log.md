@@ -262,12 +262,36 @@ turret, support-fire: 보조 추가타
 economy, coin-bonus, wave-reward: 처치 시 소량 코인/점수 보너스
 ```
 
-### 주의 사항
+## 로비/인게임 스킬 설명 추가
+
+### 목적
+
+스킬 효과가 실제 전투에 반영되었으므로, 로비와 인게임에서도 유닛이 가진 스킬을 읽고 이해할 수 있게 설명 UI를 보강했습니다.
+
+### 수정 파일
 
 ```text
-이번 단계는 1차 전투 반영입니다.
-아직 스킬별 전용 이펙트는 추가하지 않았습니다.
-전용 이펙트와 툴팁 설명은 다음 단계에서 분리 작업하는 것이 좋습니다.
+apps/web/src/components/lobby/lobbyHeroSkillDetails.ts
+apps/web/src/game-client/pixi/pixiUnitInfoView.ts
+```
+
+### 로비 변경
+
+```text
+기존에는 신화 영웅만 수동 스킬 설명이 있었습니다.
+이제 모든 영웅이 hero.skillIds 기준으로 스킬 설명을 생성합니다.
+신화 영웅은 기존 수동 상세 설명을 유지합니다.
+일반/희귀/영웅/전설 유닛은 스킬 태그 기반으로 설명, 조건, 효과 줄을 자동 생성합니다.
+```
+
+### 인게임 변경
+
+```text
+기존 인게임 정보창은 skill.tags에 heroId가 들어간 신화 스킬 위주로만 표시했습니다.
+이제 getHeroById(heroId).skillIds 기준으로 스킬을 찾습니다.
+일반/희귀/영웅/전설 유닛도 선택 시 고유 스킬 설명이 표시됩니다.
+전설 유닛은 일반 스킬 카드 2개가 표시됩니다.
+신화 유닛은 일반 스킬과 궁극기를 계속 분리 표시합니다.
 ```
 
 ## 신화 조합 방식 변경
@@ -341,6 +365,8 @@ apps/web/src/game-client/pixi/createPixiGame.ts
 apps/web/src/game-client/pixi/pixiWaveFlowRuntime.ts
 apps/web/src/game-client/pixi/pixiCombatRuntime.ts
 apps/web/src/game-client/pixi/pixiBaseHeroSkillRuntime.ts
+apps/web/src/game-client/pixi/pixiUnitInfoView.ts
+apps/web/src/components/lobby/lobbyHeroSkillDetails.ts
 packages/game/src/data/enemies.ts
 packages/game/src/data/waves.ts
 packages/game/src/data/heroes.ts
@@ -368,6 +394,8 @@ e76438e3aa915dd62bf9450b44ca28b76d2afcb2
 d45589fab64c9980d5e33118aba179e16511841b
 2bd1e8805a14d264229f4b83d06e24014806b140
 2c1c778ed1ca74e91dccdc39403f120f6d61defd
+0b07b2c3225733e31dccd62a7b3957bf6265da51
+c2a5934ab50e2947d0bbd13a24017a097ded3635
 ```
 
 ## 타입/빌드 점검 메모
@@ -393,6 +421,8 @@ mythicCraftSystem은 heroId 재료를 영웅 이름으로 표시
 전설 유닛은 고유 skillIds 2개
 pixiBaseHeroSkillRuntime.ts에서 비신화 스킬 태그 기반 전투 효과를 처리
 pixiCombatRuntime.ts에서 비신화 스킬 피해 보정/후처리를 호출
+lobbyHeroSkillDetails.ts에서 비신화 스킬 설명을 자동 생성
+pixiUnitInfoView.ts에서 hero.skillIds 기준으로 인게임 스킬 설명 표시
 ```
 
 ## 확인할 항목
@@ -403,15 +433,13 @@ pixiCombatRuntime.ts에서 비신화 스킬 피해 보정/후처리를 호출
 /play 상단 게이지가 ENEMY n / 100으로 보이는지
 /play 몬스터를 처치하면 게이지 숫자가 줄어드는지
 /play 몬스터가 100마리 이상이 되면 게임 오버 결과창이 뜨는지
-/play 기존 HP 감소/출구 제거 문구가 더 이상 뜨지 않는지
 /play 초반 웨이브가 너무 쉽지 않은지
 /play 중후반에 100마리 제한 압박이 생기는지
-/lobby 또는 /play 신화 조합 UI에서 새 고유 재료 조건이 정상 표시되는지
-/play 새 고유 신화 조합 재료가 정상 소모되는지
-/play 새로 추가된 일반/희귀/영웅/전설 유닛이 소환 풀에 포함되는지
-/play 일반/희귀/영웅 유닛이 고유 스킬 1개씩 표시되는지
-/play 전설 유닛이 고유 스킬 2개씩 표시되는지
-/play 겐지 스킬 참조 오류가 없는지
+/lobby 영웅 상세 패널에 일반/희귀/영웅/전설 스킬 설명이 표시되는지
+/lobby 신화 영웅 상세 패널은 기존 상세 설명이 유지되는지
+/play 유닛 선택 시 일반/희귀/영웅 유닛 고유 스킬 1개가 표시되는지
+/play 유닛 선택 시 전설 유닛 고유 스킬 2개가 표시되는지
+/play 신화 유닛 선택 시 일반 스킬과 궁극기가 분리 표시되는지
 /play 비신화 유닛 고유 스킬 텍스트가 전투 중 표시되는지
 /play 감속/광역/연쇄/경제 보너스가 과도하지 않은지
 ```
