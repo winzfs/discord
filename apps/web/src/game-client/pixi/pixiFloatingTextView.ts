@@ -9,7 +9,48 @@ export type FloatingTextAnimation = {
 };
 
 const MAX_FLOATING_TEXT_POOL_SIZE = 48;
+const DAMAGE_TEXT_COLOR = 0xff4b4b;
+const CRITICAL_TEXT_COLOR = 0xffd166;
+const REWARD_TEXT_COLOR = 0x5ee27a;
 const floatingTextPool: Text[] = [];
+
+const HIDDEN_BASE_SKILL_TEXTS = new Set([
+  "공격",
+  "약점",
+  "폭발",
+  "연쇄",
+  "관통",
+  "영역제어",
+  "단일빙결",
+  "단일제어",
+  "표식",
+  "지원",
+  "포탑",
+  "보상",
+  "반격",
+]);
+
+function isDamageText(value: string) {
+  return /^\d+$/.test(value.trim());
+}
+
+function isRewardText(value: string) {
+  return /^\+\d+$/.test(value.trim()) || value.includes("보상") || value.includes("행운석 +");
+}
+
+function isCriticalColor(color: number) {
+  return color === 0xffd166 || color === 0xfff06a || color === 0xffe066 || color === 0xffff66;
+}
+
+function shouldHideFloatingText(value: string) {
+  return HIDDEN_BASE_SKILL_TEXTS.has(value.trim());
+}
+
+function normalizeFloatingTextColor(value: string, color: number) {
+  if (isRewardText(value)) return REWARD_TEXT_COLOR;
+  if (isDamageText(value)) return isCriticalColor(color) ? CRITICAL_TEXT_COLOR : DAMAGE_TEXT_COLOR;
+  return color;
+}
 
 function acquireFloatingText(value: string, color: number) {
   const text = floatingTextPool.pop() ?? makePixiText(value, 22, color);
@@ -60,7 +101,21 @@ export function createFloatingText(
   y: number,
   color: number,
 ): { text: Text; animation: FloatingTextAnimation } {
-  const floatingText = acquireFloatingText(value, color);
+  if (shouldHideFloatingText(value)) {
+    const hiddenText = makePixiText("", 1, 0x000000);
+    hiddenText.visible = false;
+    return {
+      text: hiddenText,
+      animation: {
+        duration: 0,
+        update: () => {},
+        done: () => hiddenText.destroy({ children: true }),
+      },
+    };
+  }
+
+  const normalizedColor = normalizeFloatingTextColor(value, color);
+  const floatingText = acquireFloatingText(value, normalizedColor);
   floatingText.x = x;
   floatingText.y = y;
   effects.addChild(floatingText);
