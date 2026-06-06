@@ -1,8 +1,8 @@
 import { heroes } from "../data/heroes";
 import { initialBalance } from "../data/balance";
-import { getAllBoardHeroes, getCellIndex, placeHeroOnBoard } from "./boardSystem";
+import { getAllBoardHeroes, getCellIndex, MAX_STACK_PER_CELL, placeHeroOnBoard } from "./boardSystem";
 import type { GameState } from "../types/gameState";
-import type { BoardHero, HeroDefinition, HeroGrade } from "../types/hero";
+import type { BoardCell, BoardHero, HeroDefinition, HeroGrade } from "../types/hero";
 import type { SeededRandom } from "../utils/random";
 
 export type MergeResult = {
@@ -52,20 +52,62 @@ function createMergedHeroId(targets: BoardHero[], nextHeroId: string): string {
   return `merged:${nextHeroId}:${consumedIds}`;
 }
 
+function createCellWithUnits(cell: BoardCell, units: BoardHero[]): BoardCell {
+  return {
+    ...cell,
+    heroId: units[0]?.heroId ?? null,
+    units: units.map((unit) => ({ ...unit, position: cell.position })),
+  };
+}
+
 function removeBoardHeroes(state: GameState, targets: BoardHero[]): GameState {
   const targetIds = new Set(targets.map((target) => target.instanceId));
   const nextBoard = state.board.map((cell) => {
     const nextUnits = cell.units.filter((unit) => !targetIds.has(unit.instanceId));
-    return {
-      ...cell,
-      heroId: nextUnits.length > 0 ? cell.heroId : null,
-      units: nextUnits,
-    };
+    return createCellWithUnits(cell, nextUnits);
   });
 
   return {
     ...state,
     board: nextBoard,
+  };
+}
+
+function findFirstExistingStackIndex(board: BoardCell[], heroId: string, grade: HeroGrade) {
+  if (grade === "mythic") return -1;
+  return board.findIndex(
+    (cell) =>
+      cell.heroId === heroId &&
+      cell.units.length > 0 &&
+      cell.units.length < MAX_STACK_PER_CELL &&
+      cell.units.every((unit) => unit.heroId === heroId && unit.grade !== "mythic"),
+  );
+}
+
+function placeMergedHeroPreferExistingStack(
+  state: GameState,
+  hero: Omit<BoardHero, "position">,
+): { state: GameState; placedHero: BoardHero | null; reason?: "board_full" } {
+  const existingStackIndex = findFirstExistingStackIndex(state.board, hero.heroId, hero.grade);
+  if (existingStackIndex < 0) return placeHeroOnBoard(state, hero);
+
+  const targetCell = state.board[existingStackIndex];
+  const placedHero: BoardHero = {
+    ...hero,
+    position: targetCell.position,
+  };
+
+  const nextBoard = state.board.map((cell, index) => {
+    if (index !== existingStackIndex) return cell;
+    return createCellWithUnits(cell, [...cell.units, placedHero]);
+  });
+
+  return {
+    state: {
+      ...state,
+      board: nextBoard,
+    },
+    placedHero,
   };
 }
 
@@ -114,7 +156,7 @@ export function mergeHeroes(state: GameState, grade: HeroGrade, random: SeededRa
       }
     : removedState;
 
-  const placement = placeHeroOnBoard(preferredState, {
+  const placement = placeMergedHeroPreferExistingStack(preferredState, {
     instanceId: createMergedHeroId(mergeTargets, nextHeroDefinition.id),
     heroId: nextHeroDefinition.id,
     grade: nextHeroDefinition.grade,
