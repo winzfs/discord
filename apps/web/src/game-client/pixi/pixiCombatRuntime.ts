@@ -42,6 +42,7 @@ const SPRITE_ATTACK_HERO_IDS = new Set(["tracer", "kiriko", "dva", "zarya", "cas
 const HERO_IDLE_DIRECTION_HOLD_MS = 3000;
 const ZARYA_MAX_BEAM_CHARGE = 6;
 const ZARYA_BEAM_CHAIN_WINDOW_MS = 1200;
+const BOSS_LUCK_STONE_REWARD = 1;
 const STACK_ATTACK_OFFSETS = [
   { x: 0, y: -5 },
   { x: -7, y: 5 },
@@ -164,17 +165,22 @@ function damageEnemy(
   enemy.alive = false;
 
   const reward = applyEconomyRewardBonus(refs.progressBonuses, enemy.reward);
+  const luckStoneReward = enemy.boss ? BOSS_LUCK_STONE_REWARD : 0;
   refs.waveKilled += 1;
   refs.waveReward += reward;
   refs.state = {
     ...refs.state,
     resources: refs.state.resources + reward,
+    luckStones: refs.state.luckStones + luckStoneReward,
     defeatedEnemies: refs.state.defeatedEnemies + (enemy.boss ? 0 : 1),
     defeatedBosses: refs.state.defeatedBosses + (enemy.boss ? 1 : 0),
     score: refs.state.score + reward * 3 + (enemy.boss ? 250 : 20),
   };
 
   options.floatText(refs, `+${reward}`, enemy.x, enemy.y - 26, colors.green);
+  if (luckStoneReward > 0) {
+    options.floatText(refs, `행운석 +${luckStoneReward}`, enemy.x, enemy.y - 46, colors.blue);
+  }
   destroyActiveEnemy(enemy);
   options.invalidateControls(refs);
   requestHudControlsDraw(refs, options);
