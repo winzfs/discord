@@ -8,6 +8,7 @@ import { updateEnemyViewHp } from "./pixiEnemyView";
 import { destroyActiveEnemy } from "./pixiEnemyRuntime";
 import { getProgressHeroPower, applyEconomyRewardBonus } from "./pixiProgressBonuses";
 import { getHeroLevelMultiplier } from "./pixiLobbyHeroPool";
+import { getHeroSynergyAttackMultiplier, getHeroSynergyLabel } from "./pixiHeroSynergyRuntime";
 import { getPixiUnitAttackRange, isPointInPixiUnitRange } from "./pixiUnitRange";
 import { chargeMythicUltimateFromAttack, tryTriggerMythicUltimate } from "./pixiUltimateRuntime";
 import { applyMythicHeroSkillEffects } from "./pixiSkillRuntime";
@@ -110,11 +111,13 @@ function getHeroDamage(refs: GameRefs, hero: BoardHero) {
   const fallbackPower = Math.round(gradeBase * roleMultiplier);
   const progressPower = getProgressHeroPower(refs.progressBonuses, hero, fallbackPower);
   const lobbyLevelMultiplier = getHeroLevelMultiplier(refs.heroLevels[hero.heroId] ?? 1);
+  const synergyMultiplier = getHeroSynergyAttackMultiplier(refs, hero);
 
   return Math.round(
     progressPower *
       lobbyLevelMultiplier *
       refs.progressBonuses.attackMultiplier *
+      synergyMultiplier *
       (1 + refs.state.powerUpgradeLevel * 0.16),
   );
 }
@@ -352,6 +355,11 @@ export function spawnAttackEffects(refs: GameRefs, options: PixiCombatRuntimeOpt
     if (!target) return;
 
     let damage = getHeroDamage(refs, hero);
+    const synergyLabel = getHeroSynergyLabel(refs, hero);
+    if (synergyLabel && index === 0) {
+      options.floatText(refs, synergyLabel, from.x, from.y - 34, 0x7dffb2);
+    }
+
     damage = applyBaseHeroSkillPreDamage(hero, role, damage);
     triggerHeroSpriteAttack(refs, hero, from, target, options);
     damage = applySkillEffects(refs, options, hero, role, target, damage, from);
