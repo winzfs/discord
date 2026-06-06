@@ -24,6 +24,7 @@ import { recruitCosts, recruitHeroes, type RecruitPullMode, type RecruitResult }
 import { loadLobbyProgress, saveLobbyProgress } from "../game-lobby/lobbyProgressStorage";
 import "../styles/lobby.css";
 import "../styles/lobby-polish.css";
+import "../styles/lobby-recruit-reveal.css";
 import "../styles/lobby-stage-polish.css";
 
 function roleLabel(role: string) {
