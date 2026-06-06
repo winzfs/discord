@@ -1,6 +1,7 @@
 import { colors } from "./gameTheme";
 import type { GameRefs, WaveSummary } from "./pixiGameTypes";
 import { makePixiText } from "./pixiSharedView";
+import { formatCoinInterestRate } from "./pixiCoinInterestRuntime";
 
 export type PixiWaveFeedbackRuntimeOptions = {
   addAnimation: (
@@ -51,6 +52,11 @@ export function showWaveResult(
         ? colors.orange
         : colors.green;
 
+  const interestText =
+    summary.interestReward > 0
+      ? `  이자 +${summary.interestReward}(${formatCoinInterestRate(summary.interestRate)}${summary.interestCapped ? " 한도" : ""})`
+      : "";
+
   options.floatText(refs, label, refs.app.renderer.width / 2, refs.app.renderer.height * 0.38, color);
   options.floatText(
     refs,
@@ -61,7 +67,7 @@ export function showWaveResult(
   );
   options.floatText(
     refs,
-    `처치 보상 +${summary.reward}${summary.luckStoneReward > 0 ? `  행운석 +${summary.luckStoneReward}` : ""}`,
+    `처치 보상 +${summary.reward}${interestText}${summary.luckStoneReward > 0 ? `  행운석 +${summary.luckStoneReward}` : ""}`,
     refs.app.renderer.width / 2,
     refs.app.renderer.height - 132,
     colors.green,
