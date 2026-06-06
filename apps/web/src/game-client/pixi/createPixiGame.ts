@@ -62,9 +62,7 @@ import { createFloatingText } from "./pixiFloatingTextView";
 import { mountPixiGameLayers } from "./pixiGameLayerOrder";
 import { clearPixiContainer, makePixiPanel, makePixiText } from "./pixiSharedView";
 import { getPixiPathPoint } from "./pixiPathRuntime";
-import {
-  createPixiProgressBonuses,
-} from "./pixiProgressBonuses";
+import { createPixiProgressBonuses } from "./pixiProgressBonuses";
 import {
   createPixiTestControlsView,
   updatePixiTestControlsView,
@@ -390,19 +388,73 @@ export function createPixiGame(parent: HTMLElement, options: PixiGameOptions = {
       background: colors.sky,
       resizeTo: parent,
       antialias: true,
+      resolution: Math.min(window.devicePixelRatio || 1, 2),
+      autoDensity: true,
     });
 
     if (destroyed) {
-      app.destroy(true);
+      destroyFxGraphicsPool(refs);
+      app.destroy({ removeView: true }, { children: true });
       return;
     }
 
     await preloadHeroSpriteTextures();
-    app.stage.addChild(stage);
-    mountPixiGameLayers(stage, refs);
 
-    parent.replaceChildren(app.canvas);
-    app.canvas.style.width = "100%";
-    app.canvas.style.height = "100%";
-    app.canvas.style.display = "block";
-    app.canvas.style.touchAction = "none";
+    if (destroyed) {
+      destroyFxGraphicsPool(refs);
+      app.destroy({ removeView: true }, { children: true });
+      return;
+    }
+
+    parent.appendChild(app.canvas);
+    app.stage.addChild(stage);
+    stage.eventMode = "static";
+    stage.hitArea = new Rectangle(0, 0, app.renderer.width, app.renderer.height);
+    stage.on("pointerdown", (event: any) => {
+      if (isFinished(refs.state)) return;
+      const cellIndex = getCellIndexAtPoint(refs, event.global.x, event.global.y);
+      const cell = cellIndex === null ? null : refs.state.board[cellIndex];
+      if (!cell || cell.units.length === 0) clearMenuAndUnitInfo(refs, { clearMenu });
+    });
+    stage.on("pointermove", (event: any) => moveDragGhost(refs, event.global.x, event.global.y));
+    stage.on("pointerup", (event: any) => finishCellDrag(refs, event.global.x, event.global.y, createDragRuntimeOptions()));
+    stage.on("pointerupoutside", (event: any) => finishCellDrag(refs, event.global.x, event.global.y, createDragRuntimeOptions()));
+    mountPixiGameLayers(stage, {
+      world: refs.world,
+      board: refs.board,
+      hud: refs.hud,
+      controls: refs.controls,
+      info: refs.info,
+      effects: refs.effects,
+      menuLayer: refs.menuLayer,
+    });
+    render(refs);
+    app.renderer.on("resize", () => {
+      stage.hitArea = new Rectangle(0, 0, app.renderer.width, app.renderer.height);
+      if (!isFinished(refs.state)) clearMenuAndUnitInfo(refs, { clearMenu });
+      invalidateHud(refs);
+      invalidateControls(refs);
+      render(refs);
+    });
+    app.ticker.add((ticker) => tick(refs, ticker.deltaMS));
+  }
+
+  void init();
+
+  return {
+    cleanup: () => {
+      destroyed = true;
+      clearMenuAndUnitInfo(refs, { clearMenu });
+      clearDrag(refs);
+      if (refs.isTestMode) {
+        testControlsView?.root.destroy({ children: true });
+        testControlsView = null;
+      }
+      refs.activeEnemies.forEach(destroyActiveEnemy);
+      refs.controlZones.forEach((zone) => zone.root.destroy());
+      refs.controlZones = [];
+      destroyFxGraphicsPool(refs);
+      app.destroy({ removeView: true }, { children: true });
+    },
+  };
+}
