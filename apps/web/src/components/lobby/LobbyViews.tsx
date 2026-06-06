@@ -10,16 +10,12 @@ import {
   type LobbyHero,
 } from "../../game-lobby/lobbyData";
 
-const MAX_LINEUP_SIZE = 10;
-
 type ShopViewProps = {
   onPick: (name: string, price: string) => void;
 };
 
 type HeroesViewProps = {
   heroes: LobbyHero[];
-  lineupHeroIds: string[];
-  onToggleLineup: (heroId: string) => void;
   onDetail: (detail: Detail) => void;
   createDetail: (hero: LobbyHero) => Detail;
   gradeLabel: (grade: string) => string;
@@ -55,75 +51,28 @@ export function ShopView({ onPick }: ShopViewProps) {
   );
 }
 
-export function HeroesView({ heroes, lineupHeroIds, onToggleLineup, onDetail, createDetail, gradeLabel, roleLabel }: HeroesViewProps) {
-  const lineupHeroes = lineupHeroIds
-    .map((heroId) => heroes.find((hero) => hero.id === heroId))
-    .filter((hero): hero is LobbyHero => Boolean(hero));
-
+export function HeroesView({ heroes, onDetail, createDetail, gradeLabel, roleLabel }: HeroesViewProps) {
   return (
     <section className="lobby-panel">
-      <div className="panel-tabs"><b>영웅</b><span>편성 {lineupHeroes.length}/{MAX_LINEUP_SIZE}</span><span>전체 {heroes.length}</span></div>
-      <div className="lineup-panel" aria-label="전투 편성">
-        <div className="lineup-header">
-          <strong>전투 편성</strong>
-          <span>편성된 영웅만 전투 소환 풀에 우선 등장</span>
-        </div>
-        <div className="lineup-slots">
-          {Array.from({ length: MAX_LINEUP_SIZE }).map((_, index) => {
-            const hero = lineupHeroes[index];
-            return (
-              <button
-                key={hero?.id ?? `empty-${index}`}
-                className={`lineup-slot${hero ? ` grade-${hero.grade}` : " empty"}`}
-                type="button"
-                disabled={!hero}
-                onClick={() => hero && onToggleLineup(hero.id)}
-              >
-                {hero ? (
-                  <>
-                    <LobbyHeroPortrait hero={hero} />
-                    <span>{hero.displayName}</span>
-                  </>
-                ) : (
-                  <span>빈칸</span>
-                )}
-              </button>
-            );
-          })}
-        </div>
-      </div>
+      <div className="panel-tabs"><b>영웅</b><span>전체 {heroes.length}</span></div>
       <div className="hero-grid collection-grid">
         {heroes.map((hero) => {
           const detail = createDetail(hero);
           const required = getHeroUpgradeRequirement(Math.max(1, hero.level));
-          const isInLineup = lineupHeroIds.includes(hero.id);
-          const lineupFull = lineupHeroIds.length >= MAX_LINEUP_SIZE;
           return (
-            <article
-              className={`hero-card collection-card grade-${hero.grade}${hero.owned ? "" : " locked"}${isInLineup ? " in-lineup" : ""}`}
+            <button
+              className={`hero-card collection-card grade-${hero.grade}${hero.owned ? "" : " locked"}`}
               key={hero.id}
+              type="button"
+              disabled={!hero.owned}
+              onClick={() => onDetail(detail)}
             >
-              <button
-                className="collection-main-button"
-                type="button"
-                disabled={!hero.owned}
-                onClick={() => onDetail(detail)}
-              >
-                <em>{isInLineup ? "편성" : gradeLabel(hero.grade)}</em>
-                <LobbyHeroPortrait hero={hero} />
-                <strong>{hero.displayName}</strong>
-                <small>{hero.owned ? `Lv.${hero.level} · ${roleLabel(hero.role)}` : "미보유"}</small>
-                <span>{hero.owned ? `${hero.shards}/${required}` : "비활성"}</span>
-              </button>
-              <button
-                className="lineup-toggle"
-                type="button"
-                disabled={!hero.owned || (!isInLineup && lineupFull)}
-                onClick={() => onToggleLineup(hero.id)}
-              >
-                {isInLineup ? "편성 해제" : lineupFull ? "편성 가득" : "편성"}
-              </button>
-            </article>
+              <em>{gradeLabel(hero.grade)}</em>
+              <LobbyHeroPortrait hero={hero} />
+              <strong>{hero.displayName}</strong>
+              <small>{hero.owned ? `Lv.${hero.level} · ${roleLabel(hero.role)}` : "미보유"}</small>
+              <span>{hero.owned ? `${hero.shards}/${required}` : "비활성"}</span>
+            </button>
           );
         })}
       </div>
