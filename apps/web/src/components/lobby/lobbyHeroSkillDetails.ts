@@ -1,3 +1,5 @@
+import { getHeroById, skills, type SkillDefinition } from "@discord-random-defense/game";
+
 export type LobbyHeroSkillDetail = {
   id: string;
   name: string;
@@ -7,10 +9,60 @@ export type LobbyHeroSkillDetail = {
   lines: string[];
 };
 
-const heroSkillDetails: Record<string, LobbyHeroSkillDetail[]> = {
+function skillTypeLabel(type: SkillDefinition["type"]): LobbyHeroSkillDetail["type"] {
+  if (type === "attack") return "공격";
+  if (type === "control") return "제어";
+  if (type === "support") return "지원";
+  return "궁극기";
+}
+
+function getSkillConditionText(skill: SkillDefinition) {
+  if (skill.type === "ultimate") return "게이지 100%";
+  if (skill.tags.includes("unique")) return "공격 시 적용";
+  if (skill.type === "attack") return "42%";
+  if (skill.type === "control") return "30%";
+  return "24%";
+}
+
+function getTagSummary(skill: SkillDefinition) {
+  const tags = skill.tags;
+  if (tags.includes("economy")) return "처치 보상과 전투 흐름을 보조합니다.";
+  if (tags.includes("buff") || tags.includes("haste") || tags.includes("team-wide")) return "아군 화력이나 공격 흐름을 강화합니다.";
+  if (tags.includes("slow") || tags.includes("freeze") || tags.includes("grouping")) return "몬스터 이동을 늦추고 전선을 안정화합니다.";
+  if (tags.includes("mark") || tags.includes("vulnerable")) return "강한 적에게 표식을 남겨 피해 효율을 높입니다.";
+  if (tags.includes("area-damage") || tags.includes("burst")) return "주 대상 주변에 약한 광역 피해를 줍니다.";
+  if (tags.includes("chain") || tags.includes("multi-hit") || tags.includes("extra-hit")) return "추가타로 앞쪽 몬스터를 함께 견제합니다.";
+  if (tags.includes("pierce") || tags.includes("beam")) return "관통형 공격으로 여러 몬스터를 압박합니다.";
+  if (tags.includes("boss-killer")) return "보스와 고체력 몬스터 처리에 강합니다.";
+  return "유닛의 역할에 맞는 고유 전투 효과를 제공합니다.";
+}
+
+function getTagLines(skill: SkillDefinition) {
+  const tags = skill.tags;
+  const lines: string[] = [];
+
+  if (tags.includes("attack")) lines.push("피해량이 소폭 증가합니다.");
+  if (tags.includes("boss-killer")) lines.push("보스/고체력 대상 대응력이 증가합니다.");
+  if (tags.includes("area-damage") || tags.includes("burst")) lines.push("주변 몬스터에게 약한 광역 피해를 줍니다.");
+  if (tags.includes("chain") || tags.includes("multi-hit") || tags.includes("extra-hit")) lines.push("다른 전방 몬스터에게 약한 추가타를 줍니다.");
+  if (tags.includes("pierce") || tags.includes("beam")) lines.push("넓은 범위에 관통형 보조 피해를 줍니다.");
+  if (tags.includes("slow")) lines.push("대상 이동속도를 낮춥니다.");
+  if (tags.includes("freeze")) lines.push("대상을 더 강하게 둔화합니다.");
+  if (tags.includes("grouping")) lines.push("몰린 몬스터를 제어하는 데 유리합니다.");
+  if (tags.includes("mark") || tags.includes("vulnerable")) lines.push("표식/취약 효과로 피해 효율을 높입니다.");
+  if (tags.includes("buff") || tags.includes("power-up")) lines.push("전투 피해 보정이 소폭 증가합니다.");
+  if (tags.includes("haste") || tags.includes("team-wide")) lines.push("팀 전투 템포를 끌어올리는 보조 효과입니다.");
+  if (tags.includes("turret") || tags.includes("support-fire")) lines.push("보조 포격으로 추가 피해를 줍니다.");
+  if (tags.includes("economy") || tags.includes("coin-bonus") || tags.includes("wave-reward")) lines.push("처치 시 소량의 보상 보너스를 제공합니다.");
+
+  if (lines.length === 0) lines.push("영웅 공격력 기반으로 발동합니다.");
+  return lines.slice(0, 3);
+}
+
+const manualSkillDetails: Record<string, LobbyHeroSkillDetail[]> = {
   dva: [
     { id: "dva-fusion-cannons", name: "융합포", type: "공격", condition: "42%", summary: "가까운 적을 함께 갈아버리는 산탄 공격", lines: ["주 대상에게 104% 피해", "주변 최대 4명에게 24% 추가 피해", "근거리 다수 정리에 강함"] },
-    { id: "dva-defense-matrix", name: "방어 매트릭스", type: "제어", condition: "30%", summary: "선두나 보스의 움직임을 억제", lines: ["보스 우선, 없으면 선두 대상", "이동속도를 62% 수준으로 감소", "위험한 누수 상황을 늦춤"] },
+    { id: "dva-defense-matrix", name: "방어 매트릭스", type: "제어", condition: "30%", summary: "선두나 보스의 움직임을 억제", lines: ["보스 우선, 없으면 선두 대상", "이동속도를 62% 수준으로 감소", "위험한 몬스터 누적을 늦춤"] },
     { id: "dva-self-destruct", name: "자폭", type: "궁극기", condition: "게이지 100%", summary: "영웅 위치 기준 넓은 범위 폭발", lines: ["넓은 범위에 공격력 450% 피해", "적이 많이 모였을 때 효율 극대화", "탱커지만 강력한 광역 마무리 가능"] },
   ],
   zarya: [
@@ -25,7 +77,7 @@ const heroSkillDetails: Record<string, LobbyHeroSkillDetail[]> = {
   ],
   tracer: [
     { id: "tracer-pulse-pistols", name: "펄스 쌍권총", type: "공격", condition: "42%", summary: "빠른 연사로 추가타를 넣는 기본 공격", lines: ["18% 추가타 발생", "주 대상 피해는 96%로 빠르게 누적", "공격속도가 높아 발동 기회가 많음"] },
-    { id: "tracer-blink", name: "점멸", type: "공격", condition: "42%", summary: "선두 적을 추가로 찌르는 누수 방지기", lines: ["선두 적에게 48% 피해", "현재 대상과 별개로 앞라인 견제", "빠른 적을 놓치지 않게 보조"] },
+    { id: "tracer-blink", name: "점멸", type: "공격", condition: "42%", summary: "선두 적을 추가로 찌르는 누적 방지기", lines: ["선두 적에게 48% 피해", "현재 대상과 별개로 앞라인 견제", "빠른 적을 놓치지 않게 보조"] },
     { id: "tracer-pulse-bomb", name: "펄스 폭탄", type: "궁극기", condition: "게이지 100%", summary: "대상에게 폭탄을 붙이고 짧은 뒤 폭발", lines: ["부착 후 0.5초 뒤 폭발", "공격력 520% 광역 피해", "단일 강적과 주변 적을 동시에 처리"] },
   ],
   cassidy: [
@@ -55,6 +107,26 @@ const heroSkillDetails: Record<string, LobbyHeroSkillDetail[]> = {
   ],
 };
 
+export function getSkillDetailFromDefinition(skill: SkillDefinition): LobbyHeroSkillDetail {
+  return {
+    id: skill.id,
+    name: skill.displayName,
+    type: skillTypeLabel(skill.type),
+    condition: getSkillConditionText(skill),
+    summary: getTagSummary(skill),
+    lines: getTagLines(skill),
+  };
+}
+
+export function getHeroSkillDetails(heroId: string): LobbyHeroSkillDetail[] {
+  const hero = getHeroById(heroId);
+  if (!hero) return [];
+  return hero.skillIds
+    .map((skillId) => skills.find((skill) => skill.id === skillId))
+    .filter((skill): skill is SkillDefinition => Boolean(skill))
+    .map(getSkillDetailFromDefinition);
+}
+
 export function getLobbyHeroSkillDetails(heroId: string) {
-  return heroSkillDetails[heroId] ?? [];
+  return manualSkillDetails[heroId] ?? getHeroSkillDetails(heroId);
 }
