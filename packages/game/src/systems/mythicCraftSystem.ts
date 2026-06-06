@@ -2,7 +2,7 @@ import { getHeroById } from "../data/heroes";
 import { mythicRecipes, type MythicRecipeDefinition } from "../data/mythicRecipes";
 import { getAllBoardHeroes, getCellIndex } from "./boardSystem";
 import type { GameState } from "../types/gameState";
-import type { BoardHero } from "../types/hero";
+import type { BoardHero, HeroGrade } from "../types/hero";
 
 export type MythicCraftAvailability = {
   recipe: MythicRecipeDefinition;
@@ -25,12 +25,23 @@ export type MythicCraftResult = {
   reason?: "missing_recipe" | "missing_ingredients";
 };
 
+const gradeLabels: Record<HeroGrade, string> = {
+  common: "일반",
+  rare: "희귀",
+  epic: "영웅",
+  legendary: "전설",
+  mythic: "신화",
+};
+
 function ingredientLabel(ingredient: MythicRecipeDefinition["ingredients"][number]) {
   if (ingredient.heroId) {
     const hero = getHeroById(ingredient.heroId);
     return hero?.displayName ?? ingredient.heroId;
   }
-  return `${ingredient.grade ?? "any"}:${ingredient.role ?? "any"}`;
+
+  const gradeLabel = ingredient.grade ? gradeLabels[ingredient.grade] : "무작위";
+  if (!ingredient.role) return gradeLabel;
+  return `${gradeLabel}:${ingredient.role}`;
 }
 
 function matchesIngredient(hero: BoardHero, ingredient: MythicRecipeDefinition["ingredients"][number]): boolean {
