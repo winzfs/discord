@@ -141,6 +141,11 @@ function getAliveEnemyCount(refs: GameRefs) {
 function checkEnemyCountLimit(refs: GameRefs) {
   if (getAliveEnemyCount(refs) < ACTIVE_ENEMY_LIMIT) return false;
   refs.state = { ...refs.state, status: "failed" };
+  refs.activeEnemies.forEach((enemy) => {
+    enemy.alive = false;
+    destroyActiveEnemy(enemy);
+  });
+  refs.activeEnemies = [];
   finishAutoWave(refs, true, createWaveFlowRuntimeOptions());
   return true;
 }
