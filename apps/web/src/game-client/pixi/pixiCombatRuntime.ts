@@ -37,6 +37,7 @@ export type PixiCombatRuntimeOptions = {
 };
 
 const SPRITE_ATTACK_HERO_IDS = new Set(["tracer", "kiriko", "dva", "zarya", "cassidy", "winston", "genji", "ana", "illari"]);
+const HERO_IDLE_DIRECTION_HOLD_MS = 3000;
 const ZARYA_MAX_BEAM_CHARGE = 6;
 const ZARYA_BEAM_CHAIN_WINDOW_MS = 1200;
 let boardDrawQueued = false;
@@ -172,11 +173,14 @@ function applySupportSplash(
 function triggerHeroSpriteAttack(refs: GameRefs, hero: BoardHero, from: { x: number; y: number }, target: ActiveEnemy, options: PixiCombatRuntimeOptions) {
   if (!SPRITE_ATTACK_HERO_IDS.has(hero.heroId)) return;
 
+  const now = Date.now();
+  const direction = target.x < from.x ? "left" : "right";
   const duration = getHeroSpriteAttackDuration(hero.heroId);
 
   refs.heroSpriteAttacks[hero.instanceId] = {
-    direction: target.x < from.x ? "left" : "right",
-    until: Date.now() + duration,
+    direction,
+    until: now + duration,
+    idleUntil: now + HERO_IDLE_DIRECTION_HOLD_MS,
   };
 
   requestBoardDraw(refs, options);
@@ -184,6 +188,10 @@ function triggerHeroSpriteAttack(refs: GameRefs, hero: BoardHero, from: { x: num
   window.setTimeout(() => {
     requestBoardDraw(refs, options);
   }, duration + 20);
+
+  window.setTimeout(() => {
+    requestBoardDraw(refs, options);
+  }, HERO_IDLE_DIRECTION_HOLD_MS + 20);
 }
 
 function applyBaseHeroPostDamage(
