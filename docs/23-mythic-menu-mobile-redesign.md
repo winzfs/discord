@@ -4,12 +4,13 @@
 
 모바일 화면에서 신화 조합 메뉴가 아래로 드래그되지 않고, 재료 라벨이 너무 산만하게 보이는 문제를 정리했습니다.
 
-추가로 메뉴를 열 때 렉이 걸리는 문제를 줄이기 위해 조합 목록을 가상 스크롤 방식으로 변경했습니다.
+추가로 메뉴를 열 때와 드래그할 때 렉이 걸리는 문제를 줄이기 위해 조합 목록을 가상 스크롤 + 지연 렌더 방식으로 변경했습니다.
 
 ## 2. 적용 파일
 
 ```text
 apps/web/src/game-client/pixi/pixiMythicMenuView.ts
+apps/web/src/game-client/pixi/pixiVirtualScrollScheduler.ts
 apps/web/src/game-client/pixi/gameTheme.ts
 ```
 
@@ -36,21 +37,27 @@ apps/web/src/game-client/pixi/gameTheme.ts
 각 행 패널 생성
 각 행 재료 텍스트 생성
 각 행 등급 라벨 그래픽 생성
+드래그 중에도 행 제거/재생성 반복
 ```
 
 변경 후:
 
 ```text
 현재 보이는 행 + 위아래 여유 행만 생성
-스크롤 위치가 바뀌면 보이는 범위만 다시 생성
-화면 밖 행은 제거
+드래그 중에는 목록 위치만 이동
+드래그 종료 후 보이는 범위만 다시 생성
+휠 스크롤은 requestAnimationFrame으로 갱신 묶기
+재료 진행도는 recipeId 기준으로 캐시
 ```
 
 핵심 구현:
 
 - `createVirtualRowRenderer()` 추가
 - `VISIBLE_ROW_BUFFER = 2` 적용
-- `content.removeChildren()` 후 보이는 행만 재생성
+- `pixiVirtualScrollScheduler.ts` 추가
+- `pointermove` 중 `renderVisibleRows()` 직접 호출 제거
+- `pointerup`, `pointerupoutside`, `wheel`에서만 렌더 갱신 요청
+- `progressCache`로 `getMythicIngredientProgress()` 반복 호출 감소
 - `spacer` 그래픽으로 전체 스크롤 높이 유지
 
 ## 5. 레이아웃 정리
@@ -93,7 +100,9 @@ apps/web/src/game-client/pixi/gameTheme.ts
 
 - 신화 메뉴를 눌렀을 때 멈춤이 줄었는지 확인
 - 신화 메뉴 목록을 아래로 드래그할 수 있는지 확인
-- 스크롤할 때 행이 정상적으로 교체되는지 확인
+- 드래그 중 프레임 드랍이 줄었는지 확인
+- 드래그가 끝난 후 행이 정상적으로 교체되는지 확인
+- 휠 스크롤 시 행이 정상적으로 교체되는지 확인
 - 조합 가능 행을 짧게 터치하면 조합되는지 확인
 - 드래그 중 실수로 조합되지 않는지 확인
 - 재료 라벨이 한 줄에 2개씩 보이는지 확인
