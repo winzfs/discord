@@ -12,8 +12,8 @@ export type ControlEffectConfig = {
   tintColor: number;
 };
 
-const SINGLE_CONTROL_COLOR = 0x9be8ff;
-const FREEZE_CONTROL_COLOR = 0xbdefff;
+const SINGLE_CONTROL_COLOR = 0x45cfff;
+const FREEZE_CONTROL_COLOR = 0x7df4ff;
 const AREA_CONTROL_COLOR = 0x8f75ff;
 
 export function createSingleControlConfig(frozen = false): ControlEffectConfig {
