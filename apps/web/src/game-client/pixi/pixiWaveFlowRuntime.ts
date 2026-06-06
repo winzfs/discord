@@ -75,7 +75,7 @@ export function finishAutoWave(
   options: PixiWaveFlowRuntimeOptions,
 ) {
   const unresolvedEnemies = refs.activeEnemies.filter((enemy) => enemy.alive && !enemy.leaked);
-  if (unresolvedEnemies.length > 0) return;
+  if (refs.state.status !== "failed" && unresolvedEnemies.length > 0) return;
 
   const leakedEnemies = refs.activeEnemies.filter((enemy) => enemy.leaked).length;
   const lostLives = refs.waveLostLives;
@@ -93,7 +93,7 @@ export function finishAutoWave(
     refs.random,
   );
   const finalWave = refs.state.currentWave >= initialBalance.maxWave;
-  const nextStatus = refs.state.lives <= 0 ? "failed" : finalWave ? "cleared" : "playing";
+  const nextStatus = refs.state.status === "failed" ? "failed" : finalWave ? "cleared" : "playing";
 
   refs.activeEnemies = [];
   refs.lastWaveSummary = {
