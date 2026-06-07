@@ -8,11 +8,15 @@ function DetailSkillSection({ detail }: { detail: Detail }) {
       <h3>스킬 / 궁극기</h3>
       <div className="detail-skill-list">
         {detail.skills.map((skill) => (
-          <article className={`detail-skill-card ${skill.type === "궁극기" ? "ultimate" : ""}`} key={skill.id}>
+          <article className={`detail-skill-card ${skill.type === "궁극기" ? "ultimate" : ""} effect-${skill.effectType}`} key={skill.id}>
             <header>
               <b>{skill.name}</b>
               <span>{skill.type} · {skill.condition}</span>
             </header>
+            <div className="detail-skill-meta">
+              <span>{skill.effectLabel}</span>
+              <small>{skill.effectSummary}</small>
+            </div>
             <p>{skill.summary}</p>
             <ul>
               {skill.lines.map((line) => <li key={line}>{line}</li>)}
