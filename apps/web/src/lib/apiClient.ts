@@ -20,6 +20,11 @@ function createApiUrl(path: string) {
   return `${API_BASE_URL}${normalizedPath}`;
 }
 
+function assertApiBaseUrl(path: string) {
+  if (API_BASE_URL || !path.startsWith("/api/")) return;
+  throw new Error("VITE_API_BASE_URL 미설정: Pages 주소가 아니라 API Worker 주소를 설정해야 합니다.");
+}
+
 function trimBodyPreview(value: string) {
   const normalized = value.replace(/\s+/g, " ").trim();
   return normalized.length > 90 ? `${normalized.slice(0, 90)}...` : normalized;
@@ -48,6 +53,7 @@ async function readApiResponse<T>(response: Response): Promise<T> {
 }
 
 export async function apiGet<T>(path: string): Promise<T> {
+  assertApiBaseUrl(path);
   const response = await fetch(createApiUrl(path), {
     credentials: "include",
   });
@@ -55,6 +61,7 @@ export async function apiGet<T>(path: string): Promise<T> {
 }
 
 export async function apiPost<T>(path: string, body: unknown): Promise<T> {
+  assertApiBaseUrl(path);
   const response = await fetch(createApiUrl(path), {
     method: "POST",
     credentials: "include",
@@ -65,6 +72,7 @@ export async function apiPost<T>(path: string, body: unknown): Promise<T> {
 }
 
 export async function apiDelete<T>(path: string): Promise<T> {
+  assertApiBaseUrl(path);
   const response = await fetch(createApiUrl(path), {
     method: "DELETE",
     credentials: "include",
