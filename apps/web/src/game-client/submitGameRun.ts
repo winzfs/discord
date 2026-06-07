@@ -13,7 +13,7 @@ type SaveGameRunResponse = {
   };
 };
 
-export async function submitGameRun(state: GameState) {
+export async function submitGameRun(state: GameState, durationSeconds = 0) {
   if (state.status !== "failed" && state.status !== "cleared") return null;
 
   return apiPost<SaveGameRunResponse>("/api/game/runs", {
@@ -22,7 +22,7 @@ export async function submitGameRun(state: GameState) {
     wave: state.clearedWaves,
     kills: state.defeatedEnemies,
     bossKills: state.defeatedBosses,
-    durationSeconds: 0,
+    durationSeconds: Math.max(0, Math.floor(durationSeconds)),
     clientVersion: "web-pixi-v1",
     resultPayload: {
       status: state.status,
