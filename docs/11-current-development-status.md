@@ -42,7 +42,7 @@ apps/api/migrations/0001_initial.sql
 - `leaderboard_entries`
 - `admin_logs`
 
-`game_runs`에는 `suspicious`, `hidden` 컬럼이 있어 추후 비정상 기록 숨김/검증에 사용할 수 있습니다.
+`game_runs`에는 `suspicious`, `hidden` 컬럼이 있으며, 현재 기록 검증/랭킹 필터에서 사용합니다.
 
 ### 2.2 Cloudflare Workers API
 
@@ -90,11 +90,11 @@ apps/api/migrations/0001_initial.sql
 - `SESSION_SECRET`
 - `PUBLIC_APP_URL`
 
-주의:
+현재 cookie 처리:
 
-- session cookie는 기본적으로 `secure: true`입니다.
-- Cloudflare 배포 환경에서는 적절하지만, 로컬 HTTP OAuth 테스트 시 쿠키가 저장되지 않을 수 있습니다.
-- 로컬 테스트는 HTTPS 터널 또는 개발용 secure 옵션 분기가 필요할 수 있습니다.
+- 배포/HTTPS 환경에서는 session/state cookie를 `secure: true`로 발급합니다.
+- `PUBLIC_APP_URL` 또는 `DISCORD_REDIRECT_URI`가 `http://localhost`, `http://127.0.0.1`, `http://0.0.0.0`이면 로컬 OAuth 테스트를 위해 `secure: false`로 발급합니다.
+- 운영 배포 환경에서는 HTTPS 주소를 사용해야 합니다.
 
 ### 2.4 기록 저장 / 랭킹
 
@@ -110,16 +110,22 @@ apps/api/migrations/0001_initial.sql
 - durationSeconds
 - clientVersion
 - resultPayload
+- suspicious
+- hidden
 
-API는 `game_runs`에 기록을 저장하고, 최고 점수일 경우 `leaderboard_entries`를 갱신합니다.
+현재 반영 상태:
 
-랭킹 화면은 `/api/leaderboard`를 호출해 `leaderboard_entries`와 `users`를 join한 결과를 표시합니다.
+- `apps/web/src/game-client/submitGameRun.ts`에서 `durationSeconds`가 0으로 고정되지 않도록 보정했습니다.
+- 명시 duration 값이 없거나 유효하지 않으면 클라이언트 기준 경과 시간으로 최소 1초 이상 저장합니다.
+- `apps/api/src/services/gameRunService.ts`에서 mode, wave, duration, bossKills, kills, score 기준의 1차 suspicious 검증을 수행합니다.
+- suspicious 기록은 `game_runs`에는 저장하지만 `leaderboard_entries`에는 반영하지 않습니다.
+- `apps/api/src/services/leaderboardService.ts`에서 랭킹 조회 시 `game_runs.hidden = 0`, `game_runs.suspicious = 0` 조건을 적용합니다.
 
 남은 주의점:
 
-- 현재 `durationSeconds`는 프론트에서 0으로 제출됩니다.
-- 클라이언트 결과를 서버가 아직 강하게 재검증하지 않습니다.
-- 랭킹 경쟁을 강화하려면 score/wave/kills/duration 상한 검증과 suspicious 처리가 필요합니다.
+- 현재 기록 검증은 넉넉한 1차 방어선이며, 서버 전투 재시뮬레이션은 아직 하지 않습니다.
+- `durationSeconds`는 클라이언트 기준 경과 시간 보정입니다. 더 정확한 런 단위 시간 측정을 위해 추후 `createPixiGame.ts`의 run start timestamp를 명시 전달하는 방식으로 고도화할 수 있습니다.
+- 점수/보상 계산 기준은 장기적으로 `packages/game` 쪽으로 더 모아야 합니다.
 
 ## 3. 현재 게임 구현 상태
 
@@ -190,6 +196,7 @@ API는 `game_runs`에 기록을 저장하고, 최고 점수일 경우 `leaderboa
 - Tracer, Kiriko, D.Va, Zarya, Cassidy, Winston 스프라이트 시트 적용
 - 테스트 모드 컨트롤
 - 테스트 모드 몬스터 체력 50배/100배 옵션
+- `/play-test` 테스트 컨트롤 상태를 Pixi 게임 인스턴스별 `GameRefs`에서 관리
 - 게임 종료 시 기록 저장 API 호출
 
 ### 3.3 신화 영웅 스킬/궁극기 상태
@@ -269,6 +276,7 @@ apps/web/src/game-client/pixi/pixiFloatingTextView.ts
 apps/web/src/game-client/pixi/pixiPathRuntime.ts
 apps/web/src/game-client/pixi/pixiUnitRange.ts
 apps/web/src/game-client/pixi/pixiSharedView.ts
+apps/web/src/game-client/pixi/pixiTestControlsView.ts
 apps/web/src/game-client/pixi/animation/animationManager.ts
 ```
 
@@ -428,9 +436,15 @@ mythic
 
 - API placeholder 표현 제거 상태 유지
 - Discord OAuth 실제 구현 상태 반영 상태 유지
+- 로컬 HTTP OAuth 테스트용 cookie secure 분기 반영
 - 게임 기록 저장 / 랭킹 API 연결 상태 반영 상태 유지
+- `durationSeconds` 0 고정 문제 수정 반영
+- 서버 기록 suspicious 1차 검증 추가 반영
+- suspicious 기록 랭킹 갱신 차단 반영
+- 랭킹 조회에서 hidden/suspicious 기록 제외 반영
 - 4x5 보드 표현으로 통일
 - `/play-test`, `/lobby` 라우트 반영
+- `/play-test` 테스트 컨트롤 전역 상태 제거 반영
 - 실제 PixiJS runtime 파일 목록 최신화
 - 신화 유닛 목록을 현재 코드 기준으로 유지
 - 적 이동/공격/웨이브가 실제 구현된 상태로 유지
@@ -441,12 +455,12 @@ mythic
 
 ## 8. 현재 주요 리스크
 
-1. `pnpm build:web`, `pnpm typecheck`를 최근 FX/최적화 변경 이후 아직 실행 확인해야 합니다.
-2. `createPixiGame.ts`에 아직 조립 책임이 많습니다.
-3. 점수/보상 계산이 `packages/game`과 Pixi runtime에 나뉘어 있습니다.
-4. `durationSeconds`가 현재 0으로 저장됩니다.
-5. 클라이언트 결과를 서버가 아직 강하게 재검증하지 않습니다.
-6. 로컬 OAuth 테스트 시 `secure: true` cookie 때문에 HTTP 환경에서 세션 저장이 안 될 수 있습니다.
+1. `pnpm build:web`, `pnpm typecheck`를 최근 API/Pixi 타입 변경 이후 아직 실행 확인해야 합니다.
+2. `apps/api/src/services/gameRunService.ts`에서 `@discord-random-defense/game` import가 API 빌드에서 정상 해석되는지 확인해야 합니다.
+3. `GameRefs.testControlsView`와 `/play-test` 테스트 컨트롤이 실제 브라우저 재진입 상황에서 정상 동작하는지 확인해야 합니다.
+4. `createPixiGame.ts`에 아직 조립 책임이 많습니다.
+5. 점수/보상 계산이 `packages/game`과 Pixi runtime에 나뉘어 있습니다.
+6. suspicious 검증은 1차 방어선이며, 서버 전투 재시뮬레이션은 아직 없습니다.
 7. 이펙트가 화려해진 만큼 모바일 실기기 프레임 확인이 필요합니다.
 8. 궁극기/스킬/FX가 늘어났으므로 `/play-test`에서 신화 영웅별 회귀 테스트가 필요합니다.
 
@@ -456,8 +470,8 @@ mythic
 
 ### 9.1 최우선
 
-1. `pnpm build:web` 실행
-2. `pnpm typecheck` 실행
+1. `pnpm typecheck` 실행
+2. `pnpm build:web` 실행
 3. `/play` 실제 실행 확인
 4. `/play-test` 테스트 컨트롤 확인
 5. 소환/드래그/스택/합성/판매 회귀 테스트
@@ -466,13 +480,16 @@ mythic
 8. 신화 영웅 스킬 1/2 확률 발동 확인
 9. 신화 영웅 궁극기 게이지/발동/FX 확인
 10. 게임 종료 후 로그인 상태 기록 저장 확인
-11. 랭킹 화면 기록 반영 확인
+11. `durationSeconds`가 0이 아닌 값으로 저장되는지 확인
+12. suspicious 기록이 랭킹에 반영되지 않는지 확인
+13. 랭킹 화면 정상 기록 반영 확인
+14. 로컬 HTTP OAuth 테스트에서 session/state cookie 저장 확인
 
 ### 9.2 다음 개발
 
-1. `durationSeconds` 실제 측정 추가
-2. 서버 기록 저장 검증 추가
-3. suspicious/hidden 기록 처리 추가
+1. 빌드/타입체크 결과에 따른 깨진 타입 정리
+2. `durationSeconds`를 Pixi run start timestamp 기준으로 더 정확히 전달
+3. 서버 기록 검증 기준을 `packages/game` 점수/웨이브 데이터와 더 강하게 연결
 4. 점수/보상 계산 기준을 `packages/game` 쪽으로 정리
 5. `createPixiGame.ts` 추가 분리
 6. 보드 전체 리렌더 감소와 게이지 레이어 분리
