@@ -31,6 +31,12 @@ import "../styles/lobby-pass.css";
 import "../styles/lobby-recruit-reveal.css";
 import "../styles/lobby-stage-polish.css";
 
+type RewardPopupData = {
+  title: string;
+  detail: string;
+  icon: string;
+};
+
 function roleLabel(role: string) {
   if (role === "tank") return "탱커";
   if (role === "support") return "지원";
@@ -56,6 +62,29 @@ function categoryLabel(category: string) {
     gamble: "도박",
   };
   return labels[category] ?? category;
+}
+
+function rewardIcon(kind: LobbyPassReward["kind"]) {
+  if (kind === "gold") return "🪙";
+  if (kind === "crystals") return "💎";
+  if (kind === "hero-shards") return "🧩";
+  if (kind === "mythic-shards") return "🌟";
+  if (kind === "artifact-pieces") return "🏺";
+  return "🎁";
+}
+
+function RewardPopup({ reward, onClose }: { reward: RewardPopupData; onClose: () => void }) {
+  return (
+    <div className="reward-popup-backdrop" onClick={onClose}>
+      <section className="reward-popup-card" onClick={(event) => event.stopPropagation()}>
+        <span className="reward-popup-badge">보상 획득</span>
+        <div className="reward-popup-icon">{reward.icon}</div>
+        <h2>{reward.title}</h2>
+        <p>{reward.detail}</p>
+        <button type="button" onClick={onClose}>확인</button>
+      </section>
+    </div>
+  );
 }
 
 function createHeroDetail(hero: LobbyHero): Detail {
@@ -131,6 +160,7 @@ export function LobbyPage() {
   const [revealResults, setRevealResults] = useState<RecruitResult[]>([]);
   const [detail, setDetail] = useState<Detail | null>(null);
   const [notice, setNotice] = useState("상점, 영웅, 전투, 유물을 확인해보세요.");
+  const [rewardPopup, setRewardPopup] = useState<RewardPopupData | null>(null);
 
   const openLobbyTab = (tabId: LobbyTabId, nextNotice: string) => {
     setActiveTab(tabId);
@@ -196,6 +226,11 @@ export function LobbyPage() {
     setAccountProgress(result.accountProgress);
     persistProgress(result.heroes, result.artifacts, result.gold, result.crystals, lineupHeroIds, result.accountProgress);
     setNotice(result.message);
+    setRewardPopup({
+      title: `패스 Lv.${reward.level} 보상`,
+      detail: result.message.replace(`패스 Lv.${reward.level} 보상 수령: `, ""),
+      icon: rewardIcon(reward.kind),
+    });
   };
 
   const refreshDetail = (kind: Detail["kind"], id: string, nextHeroes: LobbyHero[], nextArtifacts: LobbyArtifact[]) => {
@@ -307,6 +342,7 @@ export function LobbyPage() {
       )}
       {detail && <LobbyDetailPanel detail={detail} gold={gold} onClose={() => setDetail(null)} onUpgrade={upgradeSelected} />}
       {revealResults.length > 0 && <LobbyRecruitReveal results={revealResults} onClose={() => setRevealResults([])} />}
+      {rewardPopup && <RewardPopup reward={rewardPopup} onClose={() => setRewardPopup(null)} />}
       <LobbyBottomNav
         activeTab={activeTab}
         tabs={tabs}
