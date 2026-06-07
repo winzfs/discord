@@ -13,7 +13,16 @@ type SaveGameRunResponse = {
   };
 };
 
-export async function submitGameRun(state: GameState, durationSeconds = 0) {
+const runStartedAt = Date.now();
+
+function getDurationSeconds(durationSeconds?: number) {
+  if (typeof durationSeconds === "number" && Number.isFinite(durationSeconds) && durationSeconds > 0) {
+    return Math.floor(durationSeconds);
+  }
+  return Math.max(1, Math.floor((Date.now() - runStartedAt) / 1000));
+}
+
+export async function submitGameRun(state: GameState, durationSeconds?: number) {
   if (state.status !== "failed" && state.status !== "cleared") return null;
 
   return apiPost<SaveGameRunResponse>("/api/game/runs", {
@@ -22,7 +31,7 @@ export async function submitGameRun(state: GameState, durationSeconds = 0) {
     wave: state.clearedWaves,
     kills: state.defeatedEnemies,
     bossKills: state.defeatedBosses,
-    durationSeconds: Math.max(0, Math.floor(durationSeconds)),
+    durationSeconds: getDurationSeconds(durationSeconds),
     clientVersion: "web-pixi-v1",
     resultPayload: {
       status: state.status,
