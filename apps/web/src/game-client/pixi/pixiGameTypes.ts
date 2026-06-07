@@ -64,6 +64,8 @@ export type PixiTestControlsView = {
   collapsed: boolean;
   scrollRow: number;
   scaleHeroId: string | null;
+  scaleSaveStatus: "idle" | "saving" | "saved" | "error";
+  scaleSaveMessage: string;
 };
 
 export type ActiveEnemy = {
