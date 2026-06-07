@@ -33,6 +33,9 @@ const HERO_FRAME_ROWS = {
 const HERO_REVERSED_IDLE_IDS = new Set(["illari"]);
 
 const HERO_FRAME_ROW_COUNT = 4;
+const HERO_SPRITE_SCALE_STORAGE_KEY = "owrd.heroSpriteScaleOverrides.v1";
+const HERO_MIN_SPRITE_SCALE = 0.7;
+const HERO_MAX_SPRITE_SCALE = 2.2;
 
 const SPRITE_HERO_IDS = new Set([
   "spark-runner",
@@ -79,6 +82,61 @@ const HERO_SPRITE_SCALE: Record<string, number> = {
 let textureCache = new Map<string, Texture>();
 let frameTextureCache = new Map<string, Texture[]>();
 let loadingCache = new Set<string>();
+let spriteScaleOverrides: Record<string, number> | null = null;
+
+function clampSpriteScale(value: number) {
+  return Math.max(HERO_MIN_SPRITE_SCALE, Math.min(HERO_MAX_SPRITE_SCALE, Number(value.toFixed(2))));
+}
+
+function readSpriteScaleOverrides() {
+  if (spriteScaleOverrides) return spriteScaleOverrides;
+  spriteScaleOverrides = {};
+  if (typeof window === "undefined") return spriteScaleOverrides;
+
+  try {
+    const rawValue = window.localStorage.getItem(HERO_SPRITE_SCALE_STORAGE_KEY);
+    if (!rawValue) return spriteScaleOverrides;
+    const parsed = JSON.parse(rawValue) as Record<string, number>;
+    Object.entries(parsed).forEach(([heroId, value]) => {
+      if (typeof value === "number" && Number.isFinite(value)) {
+        spriteScaleOverrides![heroId] = clampSpriteScale(value);
+      }
+    });
+  } catch {
+    spriteScaleOverrides = {};
+  }
+
+  return spriteScaleOverrides;
+}
+
+function writeSpriteScaleOverrides() {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(HERO_SPRITE_SCALE_STORAGE_KEY, JSON.stringify(readSpriteScaleOverrides()));
+  } catch {
+    // localStorage may be unavailable in restricted browser modes.
+  }
+}
+
+export function getHeroSpriteDefaultScale(heroId: string) {
+  return HERO_SPRITE_SCALE[heroId] ?? 1;
+}
+
+export function getHeroSpriteScale(heroId: string) {
+  return readSpriteScaleOverrides()[heroId] ?? getHeroSpriteDefaultScale(heroId);
+}
+
+export function setHeroSpriteScaleOverride(heroId: string, scale: number) {
+  readSpriteScaleOverrides()[heroId] = clampSpriteScale(scale);
+  writeSpriteScaleOverrides();
+  return getHeroSpriteScale(heroId);
+}
+
+export function resetHeroSpriteScaleOverride(heroId: string) {
+  delete readSpriteScaleOverrides()[heroId];
+  writeSpriteScaleOverrides();
+  return getHeroSpriteScale(heroId);
+}
 
 function createHeroFrameTextures(texture: Texture) {
   const frameWidth = texture.width;
@@ -157,7 +215,7 @@ export function drawHeroSprite(
     if (!frameTexture) return false;
 
     const sprite = new Sprite(frameTexture);
-    const heroScale = HERO_SPRITE_SCALE[hero.heroId] ?? 1;
+    const heroScale = getHeroSpriteScale(hero.heroId);
     const maxWidth = cell * 1.23 * scale * heroScale;
     const maxHeight = cell * 1.47 * scale * heroScale;
     const ratio = Math.min(maxWidth / frameTexture.width, maxHeight / frameTexture.height);
