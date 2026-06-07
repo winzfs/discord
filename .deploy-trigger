@@ -1,2 +1,2 @@
-deploy trigger: 2026-06-08T00:34:00Z
-reason: improve mobile-visible API error diagnostics for sprite scale persistence
+deploy trigger: 2026-06-08T00:42:00Z
+reason: prevent Pages domain API calls when VITE_API_BASE_URL is missing
