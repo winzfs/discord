@@ -114,13 +114,13 @@ export type GameRefs = {
   menuLayer: Container;
   hudView: PixiHudView | null;
   controlsView: PixiControlsView | null;
-  testControlsView: PixiTestControlsView | null;
+  testControlsView?: PixiTestControlsView | null;
   state: GameState;
   progressBonuses: PixiProgressBonuses;
   heroPool: HeroDefinition[];
   heroLevels: PixiHeroLevelMap;
   random: ReturnType<typeof import("@discord-random-defense/game").createSeededRandom>;
-  runStartedAt: number;
+  runStartedAt?: number;
   animations: PixiAnimation[];
   lastSummonedIndex: number | null;
   dragging: DragState | null;
