@@ -20,8 +20,24 @@ function createApiUrl(path: string) {
   return `${API_BASE_URL}${normalizedPath}`;
 }
 
+function trimBodyPreview(value: string) {
+  const normalized = value.replace(/\s+/g, " ").trim();
+  return normalized.length > 90 ? `${normalized.slice(0, 90)}...` : normalized;
+}
+
 async function readApiResponse<T>(response: Response): Promise<T> {
-  const payload = (await response.json()) as ApiResponse<T>;
+  const rawText = await response.text();
+
+  if (!rawText.trim()) {
+    throw new Error(`API 응답이 비어있습니다. HTTP ${response.status} ${response.url}`);
+  }
+
+  let payload: ApiResponse<T>;
+  try {
+    payload = JSON.parse(rawText) as ApiResponse<T>;
+  } catch {
+    throw new Error(`API JSON 파싱 실패. HTTP ${response.status} ${response.url} 응답: ${trimBodyPreview(rawText)}`);
+  }
 
   if (!response.ok || !payload.ok) {
     const message = payload.ok ? `API 요청 실패: ${response.status}` : payload.error.message;
