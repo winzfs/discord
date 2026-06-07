@@ -384,7 +384,39 @@
 .grade-rare { background: linear-gradient(180deg, #50b7ed, #2676a6); }
 .grade-epic { background: linear-gradient(180deg, #bd74f2, #743ab0); }
 .grade-legendary { background: linear-gradient(180deg, #ffc65d, #b96b18); }
-.grade-mythic { background: linear-gradient(180deg, #ff6670 0%, #cf405b 58%, #831b3a 100%); }
+.grade-mythic {
+  background:
+    radial-gradient(circle at 50% 0%, rgba(255, 231, 137, 0.44), transparent 38%),
+    linear-gradient(180deg, #c53d78 0%, #841d58 52%, #3e0f33 100%);
+  border-color: rgba(255, 215, 92, 0.82);
+  box-shadow:
+    inset 0 5px 0 rgba(255, 255, 255, 0.18),
+    inset 0 -18px 0 rgba(0, 0, 0, 0.18),
+    0 0 0 2px rgba(255, 205, 83, 0.18),
+    0 0 22px rgba(255, 201, 74, 0.42),
+    0 8px 0 rgba(0, 0, 0, 0.22);
+}
+
+.grade-mythic em {
+  border-color: rgba(255, 236, 147, 0.82);
+  background:
+    radial-gradient(circle at 35% 22%, #fff4b8, #ffbf35 38%, #a84a00 78%);
+  color: #3b1709;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.34);
+  box-shadow:
+    0 0 0 2px rgba(255, 222, 111, 0.2),
+    0 0 16px rgba(255, 218, 92, 0.72),
+    0 4px 0 rgba(0, 0, 0, 0.2);
+}
+
+.grade-mythic .hero-portrait {
+  border-color: rgba(255, 220, 89, 0.86);
+  box-shadow:
+    inset 0 8px 20px rgba(0, 0, 0, 0.25),
+    0 0 0 3px rgba(255, 218, 92, 0.18),
+    0 0 22px rgba(255, 207, 75, 0.54),
+    0 5px 0 rgba(0, 0, 0, 0.18);
+}
 
 .battle-panel {
   margin-top: 18px;
@@ -518,22 +550,5 @@
     min-width: 50px;
     padding: 7px 8px;
     font-size: 0.92rem;
-  }
-
-  .lobby-panel,
-  .lobby-recruit-panel {
-    margin-left: 14px;
-    margin-right: 14px;
-    padding: 14px;
-  }
-
-  .shop-grid,
-  .hero-grid,
-  .artifact-grid {
-    gap: 12px;
-  }
-
-  .collection-card {
-    min-height: 224px;
   }
 }
