@@ -7,6 +7,7 @@ import {
   getPowerUpgradeCost,
   getRunBoostEffect,
   getSummonCost,
+  getWaveByNumber,
   initialBalance,
   isBoardFull,
 } from "@discord-random-defense/game";
@@ -43,8 +44,13 @@ function getAliveMonsterCount(refs: GameRefs) {
 export function drawTopHud(refs: GameRefs, layout: GameLayout) {
   if (!refs.hudView) refs.hudView = createPixiHudView(refs.hud);
 
+  const wave = getWaveByNumber(refs.state.currentWave);
+
   updatePixiHudView(refs.hudView, layout, {
     currentWave: refs.state.currentWave,
+    waveTitle: wave?.title ?? `W${refs.state.currentWave}`,
+    waveTheme: wave?.tacticalTheme ?? "swarm",
+    recommendedEffects: wave?.recommendedEffects ?? ["splash", "chain"],
     wavePhase: refs.wavePhase,
     countdownSeconds: Math.max(0, refs.nextWaveTimer),
     combatSeconds: Math.max(0, refs.combatTimer),
