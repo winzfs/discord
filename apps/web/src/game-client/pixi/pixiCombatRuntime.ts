@@ -181,7 +181,7 @@ function cleanupHeroAttackCooldowns(refs: GameRefs, heroes: BoardHero[]) {
   });
 }
 
-function canHeroAttackNow(refs: GameRefs, hero: BoardHero, deltaSeconds: number) {
+function tickHeroAttackCooldown(refs: GameRefs, hero: BoardHero, deltaSeconds: number) {
   const nextCooldown = Math.max(0, (refs.heroAttackCooldowns[hero.instanceId] ?? 0) - deltaSeconds);
   refs.heroAttackCooldowns[hero.instanceId] = nextCooldown;
   return nextCooldown <= 0;
@@ -417,8 +417,8 @@ export function spawnAttackEffects(refs: GameRefs, options: PixiCombatRuntimeOpt
   let attackersThisTick = 0;
 
   heroes.forEach((hero, index) => {
-    if (attackersThisTick >= 10) return;
-    if (!canHeroAttackNow(refs, hero, deltaSeconds)) return;
+    const isReady = tickHeroAttackCooldown(refs, hero, deltaSeconds);
+    if (!isReady || attackersThisTick >= 10) return;
 
     const definition = getHeroById(hero.heroId);
     const role = definition?.role ?? "damage";
