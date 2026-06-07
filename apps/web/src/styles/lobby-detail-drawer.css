@@ -150,6 +150,69 @@
   text-align: right;
 }
 
+.detail-skill-meta {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 7px;
+  margin: 8px 0 6px;
+}
+
+.detail-skill-meta span {
+  display: inline-grid;
+  min-width: 42px;
+  min-height: 22px;
+  padding: 3px 7px;
+  place-items: center;
+  border-radius: 999px;
+  background: rgba(255, 225, 119, 0.16);
+  color: #ffe071;
+  font-size: 0.74rem;
+  font-weight: 1000;
+  line-height: 1;
+  text-align: center;
+}
+
+.detail-skill-meta small {
+  min-width: 0;
+  overflow: hidden;
+  color: rgba(255, 244, 220, 0.82);
+  font-size: 0.76rem;
+  font-weight: 750;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.detail-skill-card.effect-control .detail-skill-meta span,
+.detail-skill-card.effect-shield .detail-skill-meta span {
+  background: rgba(107, 183, 255, 0.17);
+  color: #a9dbff;
+}
+
+.detail-skill-card.effect-amplify .detail-skill-meta span,
+.detail-skill-card.effect-tempo .detail-skill-meta span {
+  background: rgba(126, 255, 178, 0.16);
+  color: #a8ffc8;
+}
+
+.detail-skill-card.effect-economy .detail-skill-meta span {
+  background: rgba(255, 218, 92, 0.18);
+  color: #ffdc67;
+}
+
+.detail-skill-card.effect-execute .detail-skill-meta span {
+  background: rgba(255, 119, 133, 0.18);
+  color: #ff9ca8;
+}
+
+.detail-skill-card.effect-chain .detail-skill-meta span,
+.detail-skill-card.effect-splash .detail-skill-meta span,
+.detail-skill-card.effect-summon .detail-skill-meta span {
+  background: rgba(188, 139, 255, 0.17);
+  color: #d8baff;
+}
+
 .detail-skill-card p {
   margin: 8px 0;
   color: #ffe8b7;
