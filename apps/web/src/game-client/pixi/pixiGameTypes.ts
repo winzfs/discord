@@ -61,6 +61,8 @@ export type PixiControlZone = {
 export type PixiTestControlsView = {
   root: Container;
   lastKey: string;
+  collapsed: boolean;
+  scrollRow: number;
 };
 
 export type ActiveEnemy = {
