@@ -1,2 +1,2 @@
-deploy trigger: 2026-06-08T00:12:00Z
-reason: allow public server-backed hero sprite scale persistence
+deploy trigger: 2026-06-08T00:24:00Z
+reason: show visible hero sprite scale save status and persistence errors
