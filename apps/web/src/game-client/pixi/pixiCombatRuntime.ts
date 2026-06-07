@@ -9,7 +9,7 @@ import { getProgressHeroPower, applyEconomyRewardBonus } from "./pixiProgressBon
 import { getHeroLevelMultiplier } from "./pixiLobbyHeroPool";
 import { getHeroSynergyAttackMultiplier, getHeroSynergyLabel } from "./pixiHeroSynergyRuntime";
 import { getPixiUnitAttackRange, isPointInPixiUnitRange } from "./pixiUnitRange";
-import { chargeMythicUltimateFromAttack, tryTriggerMythicUltimate } from "./pixiUltimateRuntime";
+import { chargeMythicUltimateFromAttack, getAttackIntervalMultiplier, tryTriggerMythicUltimate } from "./pixiUltimateRuntime";
 import { applyMythicHeroSkillEffects } from "./pixiSkillRuntime";
 import { spawnDistinctHeroAttackFx } from "./pixiHeroAttackFxRuntime";
 import { pickWinstonBeamTargets, spawnWinstonElectricBeam } from "./pixiWinstonBeamRuntime";
@@ -38,8 +38,26 @@ export type PixiCombatRuntimeOptions = {
   drawBoard: (refs: GameRefs, layout: ReturnType<typeof createGameLayout>) => void;
 };
 
-const SPRITE_ATTACK_HERO_IDS = new Set(["spark-runner", "rookie-guard", "mini-mender", "scrap-gunner", "tracer", "kiriko", "dva", "zarya", "cassidy", "winston", "genji", "ana", "illari"]);
+const SPRITE_ATTACK_HERO_IDS = new Set([
+  "spark-runner",
+  "rookie-guard",
+  "mini-mender",
+  "scrap-gunner",
+  "slow-bot",
+  "charge-helper",
+  "tracer",
+  "kiriko",
+  "dva",
+  "zarya",
+  "cassidy",
+  "winston",
+  "genji",
+  "ana",
+  "illari",
+]);
 const HERO_IDLE_DIRECTION_HOLD_MS = 3000;
+const HERO_BASE_ATTACK_INTERVAL_SECONDS = 0.48;
+const HERO_MIN_ATTACK_INTERVAL_SECONDS = 0.12;
 const ZARYA_MAX_BEAM_CHARGE = 6;
 const ZARYA_BEAM_CHAIN_WINDOW_MS = 1200;
 const BOSS_LUCK_STONE_REWARD = 1;
@@ -147,6 +165,30 @@ function getHeroDamage(refs: GameRefs, hero: BoardHero) {
       synergyMultiplier *
       (1 + refs.state.powerUpgradeLevel * 0.16),
   );
+}
+
+function getHeroAttackIntervalSeconds(refs: GameRefs, hero: BoardHero) {
+  const definition = getHeroById(hero.heroId);
+  const attackSpeed = Math.max(0.1, definition?.attackSpeed ?? 1);
+  const globalMultiplier = getAttackIntervalMultiplier(refs);
+  return Math.max(HERO_MIN_ATTACK_INTERVAL_SECONDS, (HERO_BASE_ATTACK_INTERVAL_SECONDS / attackSpeed) * globalMultiplier);
+}
+
+function cleanupHeroAttackCooldowns(refs: GameRefs, heroes: BoardHero[]) {
+  const aliveHeroIds = new Set(heroes.map((hero) => hero.instanceId));
+  Object.keys(refs.heroAttackCooldowns).forEach((instanceId) => {
+    if (!aliveHeroIds.has(instanceId)) delete refs.heroAttackCooldowns[instanceId];
+  });
+}
+
+function canHeroAttackNow(refs: GameRefs, hero: BoardHero, deltaSeconds: number) {
+  const nextCooldown = Math.max(0, (refs.heroAttackCooldowns[hero.instanceId] ?? 0) - deltaSeconds);
+  refs.heroAttackCooldowns[hero.instanceId] = nextCooldown;
+  return nextCooldown <= 0;
+}
+
+function resetHeroAttackCooldown(refs: GameRefs, hero: BoardHero) {
+  refs.heroAttackCooldowns[hero.instanceId] = getHeroAttackIntervalSeconds(refs, hero);
 }
 
 function damageEnemy(
@@ -367,11 +409,17 @@ function applySkillEffects(refs: GameRefs, options: PixiCombatRuntimeOptions, he
   );
 }
 
-export function spawnAttackEffects(refs: GameRefs, options: PixiCombatRuntimeOptions) {
+export function spawnAttackEffects(refs: GameRefs, options: PixiCombatRuntimeOptions, deltaSeconds = 0.016) {
   const heroes = getAllBoardHeroes(refs.state.board);
   if (heroes.length === 0) return;
 
+  cleanupHeroAttackCooldowns(refs, heroes);
+  let attackersThisTick = 0;
+
   heroes.forEach((hero, index) => {
+    if (attackersThisTick >= 10) return;
+    if (!canHeroAttackNow(refs, hero, deltaSeconds)) return;
+
     const definition = getHeroById(hero.heroId);
     const role = definition?.role ?? "damage";
     const fromIndex = getHeroCellIndex(refs, hero);
@@ -380,6 +428,9 @@ export function spawnAttackEffects(refs: GameRefs, options: PixiCombatRuntimeOpt
     const range = getPixiUnitAttackRange(hero);
     const target = pickAttackTarget(refs, role, from, range);
     if (!target) return;
+
+    attackersThisTick += 1;
+    resetHeroAttackCooldown(refs, hero);
 
     let damage = getHeroDamage(refs, hero);
     const synergyLabel = getHeroSynergyLabel(refs, hero);
