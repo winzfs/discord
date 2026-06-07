@@ -7,6 +7,7 @@ import { colors } from "./gameTheme";
 import type { GameRefs } from "./pixiGameTypes";
 import { getCellCenter } from "./pixiBoardRuntime";
 import { createPixiUnitMenuView } from "./pixiUnitMenuView";
+import { showUnitRevealFx } from "./pixiUnitRevealFxRuntime";
 
 export type PixiUnitActionRuntimeOptions = {
   clearMenu: (refs: GameRefs) => void;
@@ -72,6 +73,7 @@ export function mergeMenuAction(
   refs.state = result.state;
   refs.lastSummonedIndex = cellIndex;
   options.render(refs);
+  showUnitRevealFx(refs, result.mergedHero, "merge");
   options.floatText(
     refs,
     "합성!",
