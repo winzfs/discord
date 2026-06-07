@@ -171,9 +171,29 @@ function drawCellUnitShadow(target: Container, x: number, y: number, cellWidth: 
   const centerX = x + cellWidth / 2;
   const centerY = y + cellHeight * 0.78;
 
+  if (hero.grade === "mythic") {
+    const glowOuter = new Graphics();
+    glowOuter.ellipse(centerX, centerY, cell * 0.76, cell * 0.33);
+    glowOuter.fill({ color: colors.mythicGlow, alpha: 0.24 });
+    target.addChild(glowOuter);
+
+    const glowMid = new Graphics();
+    glowMid.ellipse(centerX, centerY, cell * 0.62, cell * 0.27);
+    glowMid.fill({ color: 0xffa12d, alpha: 0.34 });
+    target.addChild(glowMid);
+
+    const glowInner = new Graphics();
+    glowInner.ellipse(centerX, centerY, cell * 0.52, cell * 0.22);
+    glowInner.fill({ color: colors.mythicGlow, alpha: 0.48 });
+    target.addChild(glowInner);
+  }
+
   const base = new Graphics();
   base.ellipse(centerX, centerY, cell * 0.44, cell * 0.18);
-  base.fill({ color: gradeColor(hero.grade), alpha: 0.78 });
+  base.fill({ color: gradeColor(hero.grade), alpha: hero.grade === "mythic" ? 0.92 : 0.78 });
+  if (hero.grade === "mythic") {
+    base.stroke({ color: colors.mythicGlow, width: Math.max(2, cell * 0.045), alpha: 0.94 });
+  }
   target.addChild(base);
 }
 
