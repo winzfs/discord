@@ -58,6 +58,11 @@ export type PixiControlZone = {
   root: Graphics;
 };
 
+export type PixiTestControlsView = {
+  root: Container;
+  lastKey: string;
+};
+
 export type ActiveEnemy = {
   id: number;
   enemyId: string;
@@ -109,11 +114,13 @@ export type GameRefs = {
   menuLayer: Container;
   hudView: PixiHudView | null;
   controlsView: PixiControlsView | null;
+  testControlsView: PixiTestControlsView | null;
   state: GameState;
   progressBonuses: PixiProgressBonuses;
   heroPool: HeroDefinition[];
   heroLevels: PixiHeroLevelMap;
   random: ReturnType<typeof import("@discord-random-defense/game").createSeededRandom>;
+  runStartedAt: number;
   animations: PixiAnimation[];
   lastSummonedIndex: number | null;
   dragging: DragState | null;
