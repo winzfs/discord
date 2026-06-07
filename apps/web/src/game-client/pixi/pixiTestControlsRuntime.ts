@@ -7,6 +7,10 @@ import {
   resetHeroSpriteScaleOverride,
   setHeroSpriteScaleOverride,
 } from "./pixiHeroSpriteView";
+import {
+  resetHeroSpriteScaleOverrideOnServer,
+  saveHeroSpriteScaleOverrideToServer,
+} from "./pixiHeroSpriteScaleApi";
 
 export const pixiTestHeroIds = [
   "spark-runner",
@@ -77,6 +81,7 @@ export function adjustPixiTestHeroScale(heroId: string | null | undefined, delta
   const selected = getPixiTestHeroScale(heroId);
   if (!selected) return null;
   const nextScale = setHeroSpriteScaleOverride(selected.heroId, selected.scale + delta);
+  void saveHeroSpriteScaleOverrideToServer(selected.heroId, nextScale).catch(() => undefined);
   return {
     ...selected,
     scale: nextScale,
@@ -87,6 +92,7 @@ export function resetPixiTestHeroScale(heroId: string | null | undefined) {
   const selected = getPixiTestHeroScale(heroId);
   if (!selected) return null;
   const nextScale = resetHeroSpriteScaleOverride(selected.heroId);
+  void resetHeroSpriteScaleOverrideOnServer(selected.heroId).catch(() => undefined);
   return {
     ...selected,
     scale: nextScale,
