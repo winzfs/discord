@@ -62,28 +62,19 @@ export type PixiTestHeroId = (typeof pixiTestHeroIds)[number];
 export type PixiTestMythicHeroId = (typeof pixiTestMythicHeroIds)[number];
 export type PixiTestEnemyHpMultiplier = (typeof pixiTestEnemyHpMultipliers)[number];
 
-function getSelectedBoardHero(refs: GameRefs) {
-  const cellIndex = refs.selectedCellIndex;
-  if (cellIndex === null) return null;
-  const cell = refs.state.board[cellIndex];
-  if (!cell || cell.units.length === 0) return null;
-  return cell.units[cell.units.length - 1] ?? null;
-}
-
-export function getSelectedPixiTestHeroScale(refs: GameRefs) {
-  const hero = getSelectedBoardHero(refs);
-  if (!hero) return null;
-  const definition = getHeroById(hero.heroId);
+export function getPixiTestHeroScale(heroId: string | null | undefined) {
+  if (!heroId) return null;
+  const definition = getHeroById(heroId);
   return {
-    heroId: hero.heroId,
-    displayName: definition?.displayName ?? hero.heroId,
-    defaultScale: getHeroSpriteDefaultScale(hero.heroId),
-    scale: getHeroSpriteScale(hero.heroId),
+    heroId,
+    displayName: definition?.displayName ?? heroId,
+    defaultScale: getHeroSpriteDefaultScale(heroId),
+    scale: getHeroSpriteScale(heroId),
   };
 }
 
-export function adjustSelectedPixiTestHeroScale(refs: GameRefs, delta: number) {
-  const selected = getSelectedPixiTestHeroScale(refs);
+export function adjustPixiTestHeroScale(heroId: string | null | undefined, delta: number) {
+  const selected = getPixiTestHeroScale(heroId);
   if (!selected) return null;
   const nextScale = setHeroSpriteScaleOverride(selected.heroId, selected.scale + delta);
   return {
@@ -92,8 +83,8 @@ export function adjustSelectedPixiTestHeroScale(refs: GameRefs, delta: number) {
   };
 }
 
-export function resetSelectedPixiTestHeroScale(refs: GameRefs) {
-  const selected = getSelectedPixiTestHeroScale(refs);
+export function resetPixiTestHeroScale(heroId: string | null | undefined) {
+  const selected = getPixiTestHeroScale(heroId);
   if (!selected) return null;
   const nextScale = resetHeroSpriteScaleOverride(selected.heroId);
   return {
