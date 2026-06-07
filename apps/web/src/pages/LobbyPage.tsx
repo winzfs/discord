@@ -121,7 +121,6 @@ function syncLineupWithHeroes(lineupHeroIds: string[], heroes: LobbyHero[]) {
 export function LobbyPage() {
   const savedProgress = loadLobbyProgress();
   const [activeTab, setActiveTab] = useState<LobbyTabId>("battle");
-  const [difficulty, setDifficulty] = useState(3);
   const [gold, setGold] = useState(savedProgress.gold);
   const [crystals, setCrystals] = useState(savedProgress.crystals);
   const [heroes, setHeroes] = useState(savedProgress.heroes);
@@ -132,6 +131,12 @@ export function LobbyPage() {
   const [revealResults, setRevealResults] = useState<RecruitResult[]>([]);
   const [detail, setDetail] = useState<Detail | null>(null);
   const [notice, setNotice] = useState("상점, 영웅, 전투, 유물을 확인해보세요.");
+
+  const openLobbyTab = (tabId: LobbyTabId, nextNotice: string) => {
+    setActiveTab(tabId);
+    setDetail(null);
+    setNotice(nextNotice);
+  };
 
   const persistProgress = (
     nextHeroes: LobbyHero[],
@@ -267,7 +272,11 @@ export function LobbyPage() {
   return (
     <main className="lobby-shell">
       <LobbyTopBar gold={gold} crystals={crystals} />
-      <LobbyStage difficulty={difficulty} onDifficulty={() => setDifficulty((value) => (value >= 5 ? 1 : value + 1))} />
+      <LobbyStage
+        onOpenShop={() => openLobbyTab("shop", "상점에서 보상을 확인해보세요.")}
+        onOpenHeroes={() => openLobbyTab("heroes", "영웅 편성과 강화를 확인해보세요.")}
+        onOpenArtifacts={() => openLobbyTab("artifacts", "유물 강화로 전투 보너스를 올려보세요.")}
+      />
       <p className="lobby-notice">{notice}</p>
       {activeTab === "shop" && <ShopView onPick={buyShopItem} />}
       {activeTab === "heroes" && (
@@ -287,7 +296,7 @@ export function LobbyPage() {
           />
         </>
       )}
-      {activeTab === "battle" && <BattleView difficulty={difficulty} accountProgress={accountProgress} onClaimPassReward={claimPassReward} />}
+      {activeTab === "battle" && <BattleView accountProgress={accountProgress} onClaimPassReward={claimPassReward} />}
       {activeTab === "artifacts" && (
         <ArtifactsView
           artifacts={artifacts}
