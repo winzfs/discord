@@ -15,20 +15,36 @@ export type LobbyPassRewardClaimResult = {
   message: string;
 };
 
-function addHeroShards(heroes: LobbyHero[], amount: number) {
-  const targetIndex = heroes.findIndex((hero) => hero.owned && hero.grade !== "mythic");
-  const fallbackIndex = heroes.findIndex((hero) => hero.owned);
-  const index = targetIndex >= 0 ? targetIndex : fallbackIndex;
-  if (index < 0) return heroes;
+type ShardTargetResult<T> = {
+  items: T[];
+  targetName: string | null;
+};
 
-  return heroes.map((hero, heroIndex) => heroIndex === index ? { ...hero, shards: hero.shards + amount } : hero);
+function addHeroShards(heroes: LobbyHero[], amount: number, mythicOnly = false): ShardTargetResult<LobbyHero> {
+  const candidates = heroes
+    .map((hero, index) => ({ hero, index }))
+    .filter(({ hero }) => hero.owned && (mythicOnly ? hero.grade === "mythic" : hero.grade !== "mythic"));
+  const fallbackCandidates = heroes
+    .map((hero, index) => ({ hero, index }))
+    .filter(({ hero }) => hero.owned);
+  const target = candidates[0] ?? fallbackCandidates[0];
+
+  if (!target) return { items: heroes, targetName: null };
+
+  return {
+    items: heroes.map((hero, heroIndex) => heroIndex === target.index ? { ...hero, shards: hero.shards + amount } : hero),
+    targetName: target.hero.displayName,
+  };
 }
 
-function addArtifactPieces(artifacts: LobbyArtifact[], amount: number) {
-  const targetIndex = artifacts.findIndex((artifact) => artifact.owned);
-  if (targetIndex < 0) return artifacts;
+function addArtifactPieces(artifacts: LobbyArtifact[], amount: number): ShardTargetResult<LobbyArtifact> {
+  const target = artifacts.map((artifact, index) => ({ artifact, index })).find(({ artifact }) => artifact.owned);
+  if (!target) return { items: artifacts, targetName: null };
 
-  return artifacts.map((artifact, artifactIndex) => artifactIndex === targetIndex ? { ...artifact, pieces: artifact.pieces + amount } : artifact);
+  return {
+    items: artifacts.map((artifact, artifactIndex) => artifactIndex === target.index ? { ...artifact, pieces: artifact.pieces + amount } : artifact),
+    targetName: target.artifact.displayName,
+  };
 }
 
 export function claimLobbyPassReward(
@@ -47,15 +63,26 @@ export function claimLobbyPassReward(
   let nextCrystals = progress.crystals;
   let nextHeroes = progress.heroes;
   let nextArtifacts = progress.artifacts;
+  let rewardDetail = reward.label;
 
   if (reward.kind === "gold") {
     nextGold += reward.amount;
+    rewardDetail = `골드 ${reward.amount}`;
   } else if (reward.kind === "crystals") {
     nextCrystals += reward.amount;
+    rewardDetail = `보석 ${reward.amount}`;
   } else if (reward.kind === "hero-shards") {
-    nextHeroes = addHeroShards(progress.heroes, reward.amount);
+    const result = addHeroShards(progress.heroes, reward.amount);
+    nextHeroes = result.items;
+    rewardDetail = result.targetName ? `${result.targetName} 조각 ${reward.amount}개` : `영웅 조각 ${reward.amount}개`;
+  } else if (reward.kind === "mythic-shards") {
+    const result = addHeroShards(progress.heroes, reward.amount, true);
+    nextHeroes = result.items;
+    rewardDetail = result.targetName ? `${result.targetName} 신화 조각 ${reward.amount}개` : `신화 조각 ${reward.amount}개`;
   } else if (reward.kind === "artifact-pieces") {
-    nextArtifacts = addArtifactPieces(progress.artifacts, reward.amount);
+    const result = addArtifactPieces(progress.artifacts, reward.amount);
+    nextArtifacts = result.items;
+    rewardDetail = result.targetName ? `${result.targetName} 조각 ${reward.amount}개` : `유물 조각 ${reward.amount}개`;
   }
 
   return {
@@ -64,6 +91,6 @@ export function claimLobbyPassReward(
     heroes: nextHeroes,
     artifacts: nextArtifacts,
     accountProgress: markPassRewardClaimed(progress.accountProgress, reward.level),
-    message: `패스 Lv.${reward.level} 보상 수령: ${reward.label}`,
+    message: `패스 Lv.${reward.level} 보상 수령: ${rewardDetail}`,
   };
 }
