@@ -5,6 +5,7 @@ const HERO_IDLE_SPRITES: Record<string, string> = {
   "rookie-guard": "/assets/heroes/helixsecurity.png?v=20260607-helixsecurity1",
   "mini-mender": "/assets/heroes/medic.png?v=20260607-medic1",
   "scrap-gunner": "/assets/heroes/junkgunner.png?v=20260607-junkgunner1",
+  "slow-bot": "/assets/heroes/nullslow.png?v=20260607-nullslow1",
   tracer: "/assets/heroes/tracer.png?v=20260605-tracer1",
   kiriko: "/assets/heroes/kiriko.png?v=20260605-kiriko1",
   dva: "/assets/heroes/d.va.png?v=20260605-dva1",
@@ -16,7 +17,22 @@ const HERO_IDLE_SPRITES: Record<string, string> = {
   illari: "/assets/heroes/illari.png?v=20260606-illari1",
 };
 
-const SPRITE_PORTRAIT_IDS = new Set(["spark-runner", "rookie-guard", "mini-mender", "scrap-gunner", "tracer", "kiriko", "dva", "zarya", "cassidy", "winston", "genji", "ana", "illari"]);
+const SPRITE_PORTRAIT_IDS = new Set([
+  "spark-runner",
+  "rookie-guard",
+  "mini-mender",
+  "scrap-gunner",
+  "slow-bot",
+  "tracer",
+  "kiriko",
+  "dva",
+  "zarya",
+  "cassidy",
+  "winston",
+  "genji",
+  "ana",
+  "illari",
+]);
 
 type LobbyHeroPortraitProps = {
   hero: LobbyHero;
