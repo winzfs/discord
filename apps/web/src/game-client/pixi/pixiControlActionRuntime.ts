@@ -11,6 +11,7 @@ import type { GameRefs } from "./pixiGameTypes";
 import { createPixiMythicMenuView } from "./pixiMythicMenuView";
 import { createPixiGambleMenuView } from "./pixiGambleMenuView";
 import { showRunBoostMenu } from "./pixiRunBoostRuntime";
+import { showUnitRevealFx } from "./pixiUnitRevealFxRuntime";
 
 export type SummonButtonState = {
   cost: number;
@@ -63,6 +64,7 @@ export function summonAction(refs: GameRefs, options: PixiControlActionRuntimeOp
   refs.lastSummonedIndex = options.getCellIndexFromHero(refs.state, result.summonedHero);
 
   options.render(refs);
+  showUnitRevealFx(refs, result.summonedHero, "summon");
   options.floatText(
     refs,
     result.summonedHero ? "소환!" : "실패",
@@ -101,6 +103,7 @@ function runGambleAction(refs: GameRefs, tierId: "epic-gamble" | "legendary-gamb
   refs.lastSummonedIndex = options.getCellIndexFromHero(refs.state, result.summonedHero);
 
   options.render(refs);
+  showUnitRevealFx(refs, result.summonedHero, "gamble");
   options.floatText(
     refs,
     result.success ? (tierId === "legendary-gamble" ? "전설 도박 성공!" : "도박 성공!") : "보정 소환",
@@ -172,6 +175,7 @@ export function mythicCraftAction(
   refs.lastSummonedIndex = options.getCellIndexFromHero(refs.state, result.craftedHero);
 
   options.render(refs);
+  showUnitRevealFx(refs, result.craftedHero, "mythic");
   options.floatText(
     refs,
     "신화 조합 완성!",
