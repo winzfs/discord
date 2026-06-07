@@ -216,7 +216,7 @@ button.artifact-card {
 }
 
 .hero-idle-sprite-barrier-guard {
-  top: 7px;
+  top: 3px;
   transform: translateX(-50%) scale(1.08);
 }
 
