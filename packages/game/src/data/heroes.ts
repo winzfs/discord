@@ -59,8 +59,8 @@ export const heroes: HeroDefinition[] = [
   },
   {
     id: "slow-bot",
-    displayName: "눌 섹터 감속 옴닉",
-    description: "눌 섹터 잔존 병력의 보급형 제어 옴닉. 감속 오일과 저출력 전자전으로 적의 전진 속도를 늦춘다.",
+    displayName: "널 섹터 감속 옴닉",
+    description: "널 섹터 잔존 병력의 보급형 제어 옴닉. 감속 오일과 저출력 전자전으로 적의 전진 속도를 늦춘다.",
     role: "tank",
     grade: "common",
     attackType: "control",
@@ -213,8 +213,8 @@ export const heroes: HeroDefinition[] = [
   },
   {
     id: "arc-captain",
-    displayName: "눌 섹터 전류 지휘체",
-    description: "눌 섹터 분대망을 통제하는 전류 지휘체. 전기 신호를 적 사이로 전이시켜 군집 웨이브에 강한 압박을 만든다.",
+    displayName: "널 섹터 전류 지휘체",
+    description: "널 섹터 분대망을 통제하는 전류 지휘체. 전기 신호를 적 사이로 전이시켜 군집 웨이브에 강한 압박을 만든다.",
     role: "damage",
     grade: "epic",
     attackType: "area",
