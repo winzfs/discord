@@ -47,6 +47,7 @@ const SPRITE_ATTACK_HERO_IDS = new Set([
   "charge-helper",
   "pulse-ranger",
   "barrier-guard",
+  "field-medic",
   "tracer",
   "kiriko",
   "dva",
