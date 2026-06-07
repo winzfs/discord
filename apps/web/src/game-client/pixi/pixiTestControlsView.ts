@@ -68,6 +68,13 @@ function heroButtonColor(heroId: string) {
   return colors.orange;
 }
 
+function saveStatusColor(view: PixiTestControlsView) {
+  if (view.scaleSaveStatus === "saved") return colors.green;
+  if (view.scaleSaveStatus === "error") return colors.orange;
+  if (view.scaleSaveStatus === "saving") return colors.yellow;
+  return colors.white;
+}
+
 function clampScrollRow(row: number) {
   const totalRows = Math.ceil(pixiTestHeroIds.length / HERO_COLUMNS);
   return Math.max(0, Math.min(Math.max(0, totalRows - HERO_VISIBLE_ROWS), row));
@@ -78,8 +85,35 @@ function invalidateAndChange(view: PixiTestControlsView, options: PixiTestContro
   options.onChange();
 }
 
+function setScaleSaveStatus(
+  view: PixiTestControlsView,
+  options: PixiTestControlsOptions,
+  status: PixiTestControlsView["scaleSaveStatus"],
+  message: string,
+) {
+  view.scaleSaveStatus = status;
+  view.scaleSaveMessage = message;
+  invalidateAndChange(view, options);
+}
+
+function trackScaleSave(view: PixiTestControlsView, options: PixiTestControlsOptions, result: ReturnType<typeof adjustPixiTestHeroScale>) {
+  if (!result) return;
+  setScaleSaveStatus(view, options, "saving", "서버 저장중...");
+  void result.savePromise
+    .then(() => setScaleSaveStatus(view, options, "saved", "서버 저장 완료"))
+    .catch((error) => setScaleSaveStatus(view, options, "error", error instanceof Error ? `서버 저장 실패: ${error.message}` : "서버 저장 실패"));
+}
+
 export function createPixiTestControlsView(parent: Container): PixiTestControlsView {
-  const view = { root: new Container(), lastKey: "", collapsed: false, scrollRow: 0, scaleHeroId: null };
+  const view = {
+    root: new Container(),
+    lastKey: "",
+    collapsed: false,
+    scrollRow: 0,
+    scaleHeroId: null,
+    scaleSaveStatus: "idle" as const,
+    scaleSaveMessage: "",
+  };
   parent.addChild(view.root);
   return view;
 }
@@ -94,7 +128,7 @@ export function updatePixiTestControlsView(
   view.scrollRow = clampScrollRow(view.scrollRow);
   const selectedScale = getPixiTestHeroScale(view.scaleHeroId);
   const selectedScaleKey = selectedScale ? `${selectedScale.heroId}:${selectedScale.scale}` : "none";
-  const key = `${layout.width}|${layout.height}|${refs.testEnemyHpMultiplier}|${view.collapsed}|${view.scrollRow}|${selectedScaleKey}`;
+  const key = `${layout.width}|${layout.height}|${refs.testEnemyHpMultiplier}|${view.collapsed}|${view.scrollRow}|${selectedScaleKey}|${view.scaleSaveStatus}|${view.scaleSaveMessage}`;
   if (!force && view.lastKey === key) return;
   view.lastKey = key;
   view.root.removeChildren();
@@ -102,7 +136,7 @@ export function updatePixiTestControlsView(
   const panelWidth = Math.min(layout.width - 24, 370);
   const buttonHeight = 28;
   const gap = 7;
-  const panelHeight = view.collapsed ? 42 : 292;
+  const panelHeight = view.collapsed ? 42 : 314;
   const buttonWidth = Math.floor((panelWidth - 24 - gap * (HERO_COLUMNS - 1)) / HERO_COLUMNS);
   const hpButtonWidth = 36;
   const hpButtonGap = 4;
@@ -135,6 +169,8 @@ export function updatePixiTestControlsView(
     const button = makeButton(hero?.displayName ?? heroId, buttonWidth, buttonHeight, isScaleTarget ? colors.green : heroButtonColor(heroId), () => {
       summonPixiTestHero(refs, heroId);
       view.scaleHeroId = heroId;
+      view.scaleSaveStatus = "idle";
+      view.scaleSaveMessage = "";
       refs.selectedCellIndex = null;
       invalidateAndChange(view, options);
     });
@@ -175,32 +211,34 @@ export function updatePixiTestControlsView(
   view.root.addChild(scaleLabel);
 
   const scaleDownButton = makeButton("-0.03", 50, 24, selectedScale ? colors.blue : 0x4b5565, () => {
-    adjustPixiTestHeroScale(view.scaleHeroId, -0.03);
-    invalidateAndChange(view, options);
+    trackScaleSave(view, options, adjustPixiTestHeroScale(view.scaleHeroId, -0.03));
   });
   scaleDownButton.x = 12;
   scaleDownButton.y = 230;
   view.root.addChild(scaleDownButton);
 
   const scaleUpButton = makeButton("+0.03", 50, 24, selectedScale ? colors.blue : 0x4b5565, () => {
-    adjustPixiTestHeroScale(view.scaleHeroId, 0.03);
-    invalidateAndChange(view, options);
+    trackScaleSave(view, options, adjustPixiTestHeroScale(view.scaleHeroId, 0.03));
   });
   scaleUpButton.x = 68;
   scaleUpButton.y = 230;
   view.root.addChild(scaleUpButton);
 
   const scaleResetButton = makeButton("초기화", 62, 24, selectedScale ? colors.orange : 0x4b5565, () => {
-    resetPixiTestHeroScale(view.scaleHeroId);
-    invalidateAndChange(view, options);
+    trackScaleSave(view, options, resetPixiTestHeroScale(view.scaleHeroId));
   });
   scaleResetButton.x = 124;
   scaleResetButton.y = 230;
   view.root.addChild(scaleResetButton);
 
+  const saveText = makeText(view.scaleSaveMessage || " ", 10, saveStatusColor(view));
+  saveText.x = 12;
+  saveText.y = 258;
+  view.root.addChild(saveText);
+
   const hpLabel = makeText(`몬스터 HP x${refs.testEnemyHpMultiplier}`, 12, colors.white);
   hpLabel.x = 12;
-  hpLabel.y = 262;
+  hpLabel.y = 282;
   view.root.addChild(hpLabel);
 
   pixiTestEnemyHpMultipliers.forEach((multiplier, index) => {
@@ -210,7 +248,7 @@ export function updatePixiTestControlsView(
       invalidateAndChange(view, options);
     });
     button.x = 104 + index * (hpButtonWidth + hpButtonGap);
-    button.y = 258;
+    button.y = 278;
     view.root.addChild(button);
   });
 }
