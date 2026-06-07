@@ -4,8 +4,11 @@ import type { GameLayout } from "./gameLayout";
 import type { GameRefs, PixiTestControlsView } from "./pixiGameTypes";
 import { colors } from "./gameTheme";
 import {
+  adjustSelectedPixiTestHeroScale,
+  getSelectedPixiTestHeroScale,
   pixiTestEnemyHpMultipliers,
   pixiTestHeroIds,
+  resetSelectedPixiTestHeroScale,
   setPixiTestEnemyHpMultiplier,
   summonPixiTestHero,
 } from "./pixiTestControlsRuntime";
@@ -70,6 +73,11 @@ function clampScrollRow(row: number) {
   return Math.max(0, Math.min(Math.max(0, totalRows - HERO_VISIBLE_ROWS), row));
 }
 
+function invalidateAndChange(view: PixiTestControlsView, options: PixiTestControlsOptions) {
+  view.lastKey = "";
+  options.onChange();
+}
+
 export function createPixiTestControlsView(parent: Container): PixiTestControlsView {
   const view = { root: new Container(), lastKey: "", collapsed: false, scrollRow: 0 };
   parent.addChild(view.root);
@@ -84,7 +92,9 @@ export function updatePixiTestControlsView(
   force = false,
 ) {
   view.scrollRow = clampScrollRow(view.scrollRow);
-  const key = `${layout.width}|${layout.height}|${refs.testEnemyHpMultiplier}|${view.collapsed}|${view.scrollRow}`;
+  const selectedScale = getSelectedPixiTestHeroScale(refs);
+  const selectedScaleKey = selectedScale ? `${selectedScale.heroId}:${selectedScale.scale}` : "none";
+  const key = `${layout.width}|${layout.height}|${refs.testEnemyHpMultiplier}|${view.collapsed}|${view.scrollRow}|${selectedScaleKey}`;
   if (!force && view.lastKey === key) return;
   view.lastKey = key;
   view.root.removeChildren();
@@ -92,7 +102,7 @@ export function updatePixiTestControlsView(
   const panelWidth = Math.min(layout.width - 24, 370);
   const buttonHeight = 28;
   const gap = 7;
-  const panelHeight = view.collapsed ? 42 : 250;
+  const panelHeight = view.collapsed ? 42 : 292;
   const buttonWidth = Math.floor((panelWidth - 24 - gap * (HERO_COLUMNS - 1)) / HERO_COLUMNS);
   const hpButtonWidth = 36;
   const hpButtonGap = 4;
@@ -108,8 +118,7 @@ export function updatePixiTestControlsView(
 
   const toggle = makeButton(view.collapsed ? "펼치기" : "접기", 60, 26, colors.blue, () => {
     view.collapsed = !view.collapsed;
-    view.lastKey = "";
-    options.onChange();
+    invalidateAndChange(view, options);
   });
   toggle.x = panelWidth - 72;
   toggle.y = 8;
@@ -125,8 +134,7 @@ export function updatePixiTestControlsView(
     const button = makeButton(hero?.displayName ?? heroId, buttonWidth, buttonHeight, heroButtonColor(heroId), () => {
       const placed = summonPixiTestHero(refs, heroId);
       if (placed) refs.selectedCellIndex = placed.position.row * refs.state.boardSize.columns + placed.position.column;
-      view.lastKey = "";
-      options.onChange();
+      invalidateAndChange(view, options);
     });
     button.x = 12 + (index % HERO_COLUMNS) * (buttonWidth + gap);
     button.y = 40 + Math.floor(index / HERO_COLUMNS) * (buttonHeight + gap);
@@ -142,8 +150,7 @@ export function updatePixiTestControlsView(
 
   const upButton = makeButton("▲", 42, 26, view.scrollRow <= 0 ? 0x4b5565 : colors.blue, () => {
     view.scrollRow = clampScrollRow(view.scrollRow - 1);
-    view.lastKey = "";
-    options.onChange();
+    invalidateAndChange(view, options);
   });
   upButton.x = panelWidth - 96;
   upButton.y = 172;
@@ -151,27 +158,57 @@ export function updatePixiTestControlsView(
 
   const downButton = makeButton("▼", 42, 26, view.scrollRow >= totalRows - HERO_VISIBLE_ROWS ? 0x4b5565 : colors.blue, () => {
     view.scrollRow = clampScrollRow(view.scrollRow + 1);
-    view.lastKey = "";
-    options.onChange();
+    invalidateAndChange(view, options);
   });
   downButton.x = panelWidth - 50;
   downButton.y = 172;
   view.root.addChild(downButton);
 
+  const scaleLabelText = selectedScale
+    ? `스케일 ${selectedScale.displayName} ${selectedScale.scale.toFixed(2)}`
+    : "스케일: 유닛 선택 필요";
+  const scaleLabel = makeText(scaleLabelText, 11, selectedScale ? colors.yellow : colors.white);
+  scaleLabel.x = 12;
+  scaleLabel.y = 210;
+  view.root.addChild(scaleLabel);
+
+  const scaleDownButton = makeButton("-0.03", 50, 24, selectedScale ? colors.blue : 0x4b5565, () => {
+    adjustSelectedPixiTestHeroScale(refs, -0.03);
+    invalidateAndChange(view, options);
+  });
+  scaleDownButton.x = 12;
+  scaleDownButton.y = 230;
+  view.root.addChild(scaleDownButton);
+
+  const scaleUpButton = makeButton("+0.03", 50, 24, selectedScale ? colors.blue : 0x4b5565, () => {
+    adjustSelectedPixiTestHeroScale(refs, 0.03);
+    invalidateAndChange(view, options);
+  });
+  scaleUpButton.x = 68;
+  scaleUpButton.y = 230;
+  view.root.addChild(scaleUpButton);
+
+  const scaleResetButton = makeButton("초기화", 62, 24, selectedScale ? colors.orange : 0x4b5565, () => {
+    resetSelectedPixiTestHeroScale(refs);
+    invalidateAndChange(view, options);
+  });
+  scaleResetButton.x = 124;
+  scaleResetButton.y = 230;
+  view.root.addChild(scaleResetButton);
+
   const hpLabel = makeText(`몬스터 HP x${refs.testEnemyHpMultiplier}`, 12, colors.white);
   hpLabel.x = 12;
-  hpLabel.y = 216;
+  hpLabel.y = 262;
   view.root.addChild(hpLabel);
 
   pixiTestEnemyHpMultipliers.forEach((multiplier, index) => {
     const selected = refs.testEnemyHpMultiplier === multiplier;
     const button = makeButton(`x${multiplier}`, hpButtonWidth, 26, selected ? colors.green : colors.blue, () => {
       setPixiTestEnemyHpMultiplier(refs, multiplier);
-      view.lastKey = "";
-      options.onChange();
+      invalidateAndChange(view, options);
     });
     button.x = 104 + index * (hpButtonWidth + hpButtonGap);
-    button.y = 212;
+    button.y = 258;
     view.root.addChild(button);
   });
 }
