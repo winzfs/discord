@@ -1,6 +1,7 @@
 import { getPowerUpgradeMultiplier } from "../data/balance";
 import { getEnemyById } from "../data/enemies";
 import { getHeroById } from "../data/heroes";
+import { getHeroTacticalPowerMultiplier } from "../data/heroTactics";
 import { getWaveByNumber } from "../data/waves";
 import { getAllBoardHeroes } from "./boardSystem";
 import type { GameState } from "../types/gameState";
@@ -65,7 +66,8 @@ function getRoleBonus(heroes: HeroDefinition[]): number {
 function getHeroCombatPower(hero: HeroDefinition): number {
   const attackSpeedBonus = 0.82 + hero.attackSpeed * 0.18;
   const rangeBonus = 0.9 + Math.min(hero.range, 5) * 0.035;
-  return hero.power * attackSpeedBonus * rangeBonus * getAttackTypeMultiplier(hero);
+  const tacticalBonus = getHeroTacticalPowerMultiplier(hero.id);
+  return hero.power * attackSpeedBonus * rangeBonus * getAttackTypeMultiplier(hero) * tacticalBonus;
 }
 
 function getBoardHeroes(state: GameState): HeroDefinition[] {
