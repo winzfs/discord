@@ -63,6 +63,7 @@ export type PixiTestControlsView = {
   lastKey: string;
   collapsed: boolean;
   scrollRow: number;
+  scaleHeroId: string | null;
 };
 
 export type ActiveEnemy = {
