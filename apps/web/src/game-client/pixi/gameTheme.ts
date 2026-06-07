@@ -20,7 +20,9 @@ type GameColorName =
   | "green"
   | "purple"
   | "rareGrade"
-  | "epicGrade";
+  | "epicGrade"
+  | "mythicGrade"
+  | "mythicGlow";
 
 export const colors: Record<GameColorName, number> = {
   sky: 0x7bbf43,
@@ -45,10 +47,12 @@ export const colors: Record<GameColorName, number> = {
   purple: 0x9b5de5,
   rareGrade: 0x9eefff,
   epicGrade: 0x4b1aa8,
+  mythicGrade: 0xd96a00,
+  mythicGlow: 0xffd45a,
 };
 
 export function gradeColor(grade?: string): number {
-  if (grade === "mythic") return colors.orange;
+  if (grade === "mythic") return colors.mythicGrade;
   if (grade === "legendary") return colors.yellow;
   if (grade === "epic") return colors.epicGrade;
   if (grade === "rare") return colors.rareGrade;
