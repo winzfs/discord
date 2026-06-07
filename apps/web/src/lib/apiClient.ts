@@ -48,6 +48,14 @@ export async function apiPost<T>(path: string, body: unknown): Promise<T> {
   return readApiResponse<T>(response);
 }
 
+export async function apiDelete<T>(path: string): Promise<T> {
+  const response = await fetch(createApiUrl(path), {
+    method: "DELETE",
+    credentials: "include",
+  });
+  return readApiResponse<T>(response);
+}
+
 export const apiClient = {
   health: () => apiGet<unknown>("/api/health"),
   me: () => apiGet<CurrentUser>("/api/me"),
