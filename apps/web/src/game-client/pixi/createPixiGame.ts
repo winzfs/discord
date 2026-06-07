@@ -66,7 +66,6 @@ import { createPixiProgressBonuses } from "./pixiProgressBonuses";
 import {
   createPixiTestControlsView,
   updatePixiTestControlsView,
-  type PixiTestControlsView,
 } from "./pixiTestControlsView";
 import { chargeMythicUltimatesOverTime, getAttackIntervalMultiplier } from "./pixiUltimateRuntime";
 import { destroyFxGraphicsPool } from "./pixiFxPoolRuntime";
@@ -78,7 +77,6 @@ export type PixiGameHandle = { cleanup: () => void };
 export type PixiGameOptions = { testMode?: boolean };
 
 const ACTIVE_ENEMY_LIMIT = 100;
-let testControlsView: PixiTestControlsView | null = null;
 
 function makeText(value: string, size = 18, fill: number = colors.white) {
   return makePixiText(value, size, fill);
@@ -120,7 +118,7 @@ function invalidateHud(refs: GameRefs) {
 
 function invalidateControls(refs: GameRefs) {
   invalidatePixiControlsView(refs.controlsView);
-  if (refs.isTestMode && testControlsView) testControlsView.lastKey = "";
+  if (refs.isTestMode && refs.testControlsView) refs.testControlsView.lastKey = "";
 }
 
 function getCellIndexFromHero(state: GameState, hero: BoardHero | null) {
@@ -261,13 +259,13 @@ function createTestControlOptions(refs: GameRefs) {
 
 function drawTestControls(refs: GameRefs, layout: GameLayout) {
   if (!refs.isTestMode) return;
-  if (!testControlsView) testControlsView = createPixiTestControlsView(refs.controls);
-  updatePixiTestControlsView(testControlsView, refs, layout, createTestControlOptions(refs));
+  if (!refs.testControlsView) refs.testControlsView = createPixiTestControlsView(refs.controls);
+  updatePixiTestControlsView(refs.testControlsView, refs, layout, createTestControlOptions(refs));
 }
 
 function updateTestControls(refs: GameRefs, layout: GameLayout) {
-  if (!refs.isTestMode || !testControlsView) return;
-  updatePixiTestControlsView(testControlsView, refs, layout, createTestControlOptions(refs));
+  if (!refs.isTestMode || !refs.testControlsView) return;
+  updatePixiTestControlsView(refs.testControlsView, refs, layout, createTestControlOptions(refs));
 }
 
 function render(refs: GameRefs) {
@@ -354,6 +352,7 @@ export function createPixiGame(parent: HTMLElement, options: PixiGameOptions = {
     menuLayer: new Container(),
     hudView: null,
     controlsView: null,
+    testControlsView: null,
     state: createInitialGameState(seed),
     progressBonuses: createPixiProgressBonuses(),
     heroPool: lobbyHeroPool.heroes,
