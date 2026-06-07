@@ -2,9 +2,15 @@
 
 ## 1. 기준
 
-이 문서는 최근 `/play` PixiJS 전투 화면에서 수정한 내용과 다음 작업 우선순위를 정리합니다.
+이 문서는 최근 `/play` PixiJS 전투 화면, 기록 저장 API, 랭킹, Discord OAuth 개발 환경에서 수정한 내용을 정리합니다.
 
-기준 커밋 범위는 최근 스프라이트/웨이브/영웅 성장/신화 조합 UX 안정화 작업 이후 상태입니다.
+현재 기준은 다음 작업 이후 상태입니다.
+
+- Illari 스프라이트/공격 방향/idle 예외 처리 안정화
+- 웨이브 클리어 후 다음 웨이브 진행 수정
+- 영웅 개성/성장/신화 조합 UX 개선
+- 몬스터 체력 난이도 상향
+- 기록 저장 시간, 서버 검증, 랭킹 필터, OAuth 로컬 쿠키, `/play-test` 테스트 컨트롤 상태 수정
 
 ## 2. 최근 반영 사항
 
@@ -201,11 +207,103 @@ apps/web/src/game-client/pixi/pixiEnemyRuntime.ts
 - 보스는 추가로 `1.35 + wave * 0.34` 배율을 더 받아 보스 웨이브 체감 난이도를 크게 올립니다.
 - 웨이브 수, 스폰 수, 보상, 이자 시스템은 건드리지 않았습니다.
 
+### 2.12 게임 기록 시간 저장 보정
+
+게임 기록 저장 시 `durationSeconds`가 항상 0으로 제출되던 문제를 수정했습니다.
+
+적용 위치:
+
+```text
+apps/web/src/game-client/submitGameRun.ts
+```
+
+반영 내용:
+
+- `durationSeconds` 인자를 받을 수 있도록 확장했습니다.
+- 인자가 없거나 유효하지 않으면 클라이언트 로드 이후 경과 시간을 기준으로 최소 1초 이상 저장합니다.
+- 기존 `score`, `wave`, `kills`, `bossKills`, `resultPayload` 제출 구조는 유지했습니다.
+
+주의:
+
+- 현재 보정은 클라이언트 기준 경과 시간입니다.
+- 추후 더 정확한 런 단위 시간을 위해 `createPixiGame.ts`의 `runStartedAt`을 제출 함수에 직접 넘기는 방식으로 고도화할 수 있습니다.
+
+### 2.13 서버 기록 검증 및 suspicious 처리 추가
+
+클라이언트에서 제출한 기록을 그대로 랭킹에 반영하지 않도록 최소 검증을 추가했습니다.
+
+적용 위치:
+
+```text
+apps/api/src/services/gameRunService.ts
+```
+
+반영 내용:
+
+- mode가 `single_random_wave_defense`가 아니면 suspicious 처리합니다.
+- 최대 웨이브 초과, 0초 이하 기록, 보스 처치 수 과다, 킬/점수 과다 제출을 suspicious 처리합니다.
+- suspicious 기록은 `game_runs`에는 저장하지만 `leaderboard_entries` 갱신에는 사용하지 않습니다.
+- 점수/킬 상한은 현재 넉넉한 1차 방어선입니다.
+
+주의:
+
+- 아직 서버가 전체 전투를 재시뮬레이션하지는 않습니다.
+- 경쟁 랭킹을 강화하려면 점수/보상 계산 기준을 `packages/game` 쪽으로 더 모아야 합니다.
+
+### 2.14 랭킹 hidden/suspicious 필터 추가
+
+랭킹 조회에서 숨김/의심 기록이 노출되지 않도록 했습니다.
+
+적용 위치:
+
+```text
+apps/api/src/services/leaderboardService.ts
+```
+
+반영 내용:
+
+- `leaderboard_entries` 조회 시 `game_runs`를 join합니다.
+- `game_runs.hidden = 0` 조건을 추가했습니다.
+- `game_runs.suspicious = 0` 조건을 추가했습니다.
+
+### 2.15 로컬 Discord OAuth 쿠키 분기
+
+로컬 HTTP 환경에서 Discord OAuth 테스트 시 secure cookie 때문에 세션이 저장되지 않을 수 있던 문제를 완화했습니다.
+
+적용 위치:
+
+```text
+apps/api/src/utils/session.ts
+```
+
+반영 내용:
+
+- `PUBLIC_APP_URL` 또는 `DISCORD_REDIRECT_URI`가 `http://localhost`, `http://127.0.0.1`, `http://0.0.0.0`이면 cookie `secure`를 false로 설정합니다.
+- 배포 환경처럼 HTTPS 주소를 사용하는 경우에는 기존처럼 `secure: true`를 유지합니다.
+
+### 2.16 `/play-test` 테스트 컨트롤 전역 상태 제거
+
+React StrictMode 또는 재마운트 상황에서 `/play-test` 테스트 컨트롤이 이전 Pixi 인스턴스의 전역 상태를 참조할 수 있던 구조를 정리했습니다.
+
+적용 위치:
+
+```text
+apps/web/src/game-client/pixi/createPixiGame.ts
+apps/web/src/game-client/pixi/pixiGameTypes.ts
+```
+
+반영 내용:
+
+- 파일 전역 `testControlsView`를 제거했습니다.
+- `GameRefs`에 `testControlsView`를 두고 Pixi 게임 인스턴스별로 관리합니다.
+- `invalidateControls`, `drawTestControls`, `updateTestControls`가 모두 `refs.testControlsView`를 사용합니다.
+- `createPixiGame()` 초기 refs에 `testControlsView: null`을 추가했습니다.
+
 ## 3. 현재 주의할 점
 
 ### 3.1 빌드 재확인 필요
 
-최근 타입 수정 이후 Cloudflare Pages 또는 로컬에서 다시 확인해야 합니다.
+최근 타입/API/랭킹/OAuth/Pixi 상태 수정 이후 Cloudflare Pages 또는 로컬에서 다시 확인해야 합니다.
 
 권장 확인 명령:
 
@@ -213,6 +311,12 @@ apps/web/src/game-client/pixi/pixiEnemyRuntime.ts
 pnpm typecheck
 pnpm build:web
 ```
+
+특히 확인할 부분:
+
+- `apps/api/src/services/gameRunService.ts`에서 `@discord-random-defense/game`의 `initialBalance` import가 API 빌드에서 정상 해석되는지
+- `GameRefs.testControlsView` 선택 필드와 `createPixiGame.ts` refs 초기화가 타입체크를 통과하는지
+- `submitGameRun()`의 optional `durationSeconds` 변경이 호출부와 충돌하지 않는지
 
 ### 3.2 실제 플레이 회귀 테스트 필요
 
@@ -234,6 +338,11 @@ pnpm build:web
 - 신화 조합 메뉴에서 재료별 보유/필요 수량이 표시되는지
 - 보유한 재료만 개별적으로 노란색 강조되는지
 - 조합 가능 상태에서 행 터치로 정상 조합되는지
+- `/play-test` 진입/이탈/재진입 시 테스트 컨트롤이 정상 표시되는지
+- 테스트 모드 몬스터 HP 배율 버튼이 정상 동작하는지
+- 로그인 상태에서 게임 종료 시 `durationSeconds`가 0이 아닌 값으로 저장되는지
+- suspicious 기록이 랭킹에 반영되지 않는지
+- 로컬 HTTP OAuth 테스트에서 session/state cookie가 저장되는지
 
 ## 4. 다음 작업 우선순위
 
@@ -244,9 +353,22 @@ pnpm build:web
 이유:
 
 - Cloudflare 배포가 막히면 실제 테스트가 불가능합니다.
-- 최근 타입 변경이나 import 변경처럼 다른 런타임에서 깨질 수 있는 지점을 빨리 확인해야 합니다.
+- 최근 API import, Pixi 타입, 기록 저장 함수 시그니처 변경처럼 다른 런타임에서 깨질 수 있는 지점을 빨리 확인해야 합니다.
 
-### 2순위: 웨이브 회귀 테스트
+### 2순위: 기록/랭킹 회귀 테스트
+
+기록 저장과 랭킹 신뢰성 관련 변경이 들어갔으므로 실제 DB 기준으로 확인합니다.
+
+체크 항목:
+
+- 정상 기록 저장
+- `durationSeconds` 0 고정 해소
+- suspicious 기록 저장 여부
+- suspicious 기록 랭킹 제외 여부
+- hidden 기록 랭킹 제외 여부
+- 기존 정상 최고 점수 갱신 흐름 유지 여부
+
+### 3순위: 웨이브 회귀 테스트
 
 웨이브가 자동으로 올라가는지, 난이도가 실제 체감되는지 확인합니다.
 
@@ -258,7 +380,7 @@ pnpm build:web
 - 보스 웨이브 도달
 - 실패/클리어 상태에서 더 이상 웨이브가 진행되지 않는지
 
-### 3순위: 스프라이트 방향/모션 검수
+### 4순위: 스프라이트 방향/모션 검수
 
 최근 여러 영웅 스프라이트가 추가되었으므로, 방향 행 순서를 영웅별로 점검합니다.
 
@@ -270,7 +392,7 @@ pnpm build:web
 - 공격 프레임 좌/우 일치
 - Illari idle만 예외 처리되는지
 
-### 4순위: 영웅 개성 2차 강화
+### 5순위: 영웅 개성 2차 강화
 
 1차는 태그 기반 패시브와 주변 지원 연계를 강화했습니다.
 
@@ -278,47 +400,5 @@ pnpm build:web
 
 - 보드 위 신화 재료 영웅 테두리 강조
 - 특정 영웅별 고유 타겟팅 추가: 최고 체력 우선, 낮은 체력 우선, 선두 적 우선
-- 탱커 오라형 감속 범위 표시
-- 지원형 버프 범위에 실제 적용 대상 표시
-
-### 5순위: 기록 저장 정확도 개선
-
-현재 `durationSeconds`는 아직 실제 플레이 시간 기반으로 완전히 신뢰할 수 있는 값이 아닙니다.
-
-다음 개선:
-
-- 전투 시작 시각 저장
-- 종료 시 실제 플레이 시간 계산
-- 서버 기록 저장 시 `durationSeconds` 반영
-- 서버에서 score/wave/kills/duration 상한 검증
-
-### 6순위: `createPixiGame.ts` 추가 분리
-
-아직 `createPixiGame.ts`가 앱 초기화, tick, 렌더, 입력, 런타임 연결을 많이 가지고 있습니다.
-
-다음 분리 후보:
-
-- tick loop 전용 런타임
-- game refs 생성 전용 팩토리
-- input/stage pointer 처리 전용 모듈
-- result submit/lobby reward 연결 모듈
-
-## 5. 다음 작업 권장 순서
-
-```text
-1. pnpm typecheck / pnpm build:web 확인
-2. 배포 로그 재확인
-3. /play-test에서 웨이브 1~5 진행 확인
-4. 보스 웨이브 체력/시간 압박 확인
-5. Illari / Genji / Ana / Winston 스프라이트 방향 확인
-6. 지원형 주변 배치 연계 보너스 확인
-7. 로비 영웅 레벨에 따른 스킬 강화 체감 확인
-8. 영웅 정보 패널에 연계/숙련 효과 설명 표시 확인
-9. 지원형 영웅 선택 시 주변 8칸 버프 범위 확인
-10. 신화 조합 메뉴 재료 보유/필요 표시 확인
-11. 보유 재료 개별 노란색 강조 확인
-12. 보드 위 신화 재료 영웅 테두리 강조
-13. durationSeconds 실제 측정 적용
-14. 점수/웨이브/킬 수 서버 검증 추가
-15. createPixiGame.ts tick/init 분리
-```
+- 신화 조합 가능 상태를 전투 화면에서 더 강하게 알림
+- 보상/점수 계산 기준을 `packages/game` 쪽으로 더 정리
