@@ -34,7 +34,6 @@ type HeroesViewProps = {
 };
 
 type BattleViewProps = {
-  difficulty: number;
   accountProgress: LobbyAccountProgress;
   onClaimPassReward: (reward: LobbyPassReward) => void;
 };
@@ -145,7 +144,7 @@ function PassRewardCard({
   );
 }
 
-export function BattleView({ difficulty, accountProgress, onClaimPassReward }: BattleViewProps) {
+export function BattleView({ accountProgress, onClaimPassReward }: BattleViewProps) {
   return (
     <section className="lobby-panel battle-panel">
       <h2>보상</h2>
@@ -178,7 +177,7 @@ export function BattleView({ difficulty, accountProgress, onClaimPassReward }: B
           ))}
         </div>
       </div>
-      <div className="battle-actions"><button type="button">친구랑 하기</button><Link to={`/play?difficulty=${difficulty}`}>빠른 시작</Link></div>
+      <div className="battle-actions"><button type="button">친구랑 하기</button><Link to="/play">빠른 시작</Link></div>
       <div className="quest-mini">
         <h3>퀘스트</h3>
         {quests.map((quest) => <label key={quest.title}><span>{quest.title}</span><progress value={quest.progress} max="100" /></label>)}
