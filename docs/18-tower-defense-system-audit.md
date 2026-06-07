@@ -49,6 +49,7 @@
 - 공격속도와 공격력 관계가 명확히 체계화되어 있지 않았음
 - 타겟 우선순위가 대부분 선두/보스 위주라 영웅 차이가 덜 느껴졌음
 - 스킬 컨셉은 tags에 흩어져 있고, 데이터 구조로 보기 어려웠음
+- 적/웨이브가 단순 카운트 증가 위주라 영웅별 카운터 역할이 덜 살아났음
 
 ## 4. 보완 방향
 
@@ -175,19 +176,56 @@ shield: 방어/방벽/지연
 summon: 포탑/소환/보조 화력
 ```
 
-효과 그룹:
+## 7. 적 타입/웨이브 요구 타입 정리
+
+적마다 전술 역할과 카운터 효과를 부여했습니다.
+
+적 역할:
 
 ```text
-damage-core: damage, splash, chain, summon
-crowd-control: control, shield
-team-scaling: amplify, tempo
-resource-scaling: economy
-finisher: execute
+swarm: 다수 잡몹, 광역/연쇄 요구
+runner: 빠른 돌파형, 제어/처형 요구
+armored: 고체력 탱커형, 증폭/정밀/제어 요구
+elite: 중간 보스형, 증폭/처형/제어 요구
+boss: 보스형, 증폭/정밀/처형 요구
 ```
 
-이 구조 덕분에 UI와 전투 런타임은 이제 복잡한 태그를 직접 해석하지 않고, 축소된 스킬 효과 타입을 기준으로 표시/밸런싱할 수 있습니다.
+적 데이터 적용 파일:
 
-## 7. 스킬 효과 타입 UI 표시
+```text
+packages/game/src/types/enemy.ts
+packages/game/src/data/enemies.ts
+```
+
+웨이브마다 전술 테마와 추천 효과도 추가했습니다.
+
+웨이브 테마:
+
+```text
+swarm: 잡버그 무리
+rush: 핑러너 돌파
+armored: 렉덩어리 압박
+elite: 엘리트 버그 출현
+boss: 서버 크래셔 침공
+mixed: 혼합 웨이브
+```
+
+웨이브 데이터 적용 파일:
+
+```text
+packages/game/src/types/wave.ts
+packages/game/src/data/waves.ts
+```
+
+웨이브 추천 효과가 보드 영웅의 전술 효과와 맞으면 전투력에 최대 12% 대응 보너스를 줍니다.
+
+적용 파일:
+
+```text
+packages/game/src/systems/combatSystem.ts
+```
+
+## 8. 스킬 효과 타입 UI 표시
 
 영웅 상세 drawer에 스킬 효과 타입 배지를 추가했습니다.
 
@@ -208,15 +246,7 @@ apps/web/src/styles/lobby-detail-drawer.css
 상세 효과 1~3줄
 ```
 
-예시:
-
-```text
-펄스 폭탄
-궁극기 · 게이지 100%
-광역 · 광역 피해로 군집 웨이브를 처리합니다.
-```
-
-## 8. 공격력/공격속도 설계 기준
+## 9. 공격력/공격속도 설계 기준
 
 공격속도 수치는 이제 단순 표시가 아니라 실시간 전투에서 공격 간격에 직접 반영됩니다.
 
@@ -240,7 +270,7 @@ apps/web/src/game-client/pixi/pixiCombatRuntime.ts
 - 제어형: 직접 피해는 낮고 감속/빙결/전선 유지 가치 보상
 - 지원형: 직접 피해는 낮지만 버프/경제/템포 가치 보상
 
-## 9. 타겟 우선순위 보완
+## 10. 타겟 우선순위 보완
 
 영웅마다 타겟 우선순위를 부여했습니다.
 
@@ -253,99 +283,43 @@ low-hp: 체력 낮은 적 우선
 support: 기본 선두 지원
 ```
 
-이제 모든 영웅이 같은 대상을 때리는 느낌을 줄이고, 전술 타입에 따라 행동이 달라집니다.
-
-예시:
-
-- 캐서디: boss
-- 감시위성 저격관: highest-hp
-- 트레이서/겐지: low-hp
-- D.Va/윈스턴/일리아리: cluster
-- 감속/탱커 계열: front
-
-## 10. 적용된 코드 변경
-
-### 10.1 전술 프로필 타입 추가
+## 11. 적용된 코드 변경
 
 ```text
 packages/game/src/types/heroTactics.ts
-```
-
-### 10.2 33명 전체 전술 프로필 추가
-
-```text
 packages/game/src/data/heroTactics.ts
-```
-
-### 10.3 스킬 효과 타입 축소
-
-```text
 packages/game/src/types/skill.ts
 packages/game/src/data/skills.ts
-```
-
-### 10.4 스킬 효과 타입 UI 표시
-
-```text
+packages/game/src/types/enemy.ts
+packages/game/src/data/enemies.ts
+packages/game/src/types/wave.ts
+packages/game/src/data/waves.ts
+packages/game/src/systems/combatSystem.ts
+apps/web/src/game-client/pixi/pixiCombatRuntime.ts
 apps/web/src/components/lobby/lobbyHeroSkillDetails.ts
 apps/web/src/components/lobby/LobbyDetailPanel.tsx
 apps/web/src/styles/lobby-detail-drawer.css
 ```
 
-### 10.5 패키지 export 추가
+## 12. 남은 보완점
 
-```text
-packages/game/src/index.ts
-```
-
-### 10.6 웨이브 단위 전투력 계산 반영
-
-```text
-packages/game/src/systems/combatSystem.ts
-```
-
-`getHeroTacticalPowerMultiplier()`가 전투력 계산에 들어갑니다.
-
-### 10.7 실시간 전투 타겟팅/공격간격 반영
-
-```text
-apps/web/src/game-client/pixi/pixiCombatRuntime.ts
-```
-
-- `getHeroTargetPriority()`로 타겟 선택
-- `getHeroTacticalAttackIntervalMultiplier()`로 공격 간격 보정
-
-## 11. 남은 보완점
-
-이번 작업은 기획 구조와 데이터 기반을 만든 1차 작업입니다.
-
-다음 작업으로 권장되는 항목:
-
-1. 적 타입 세분화
-   - 군집형
-   - 고속형
-   - 중장갑형
-   - 보스형
-   - 보호막형
-
-2. 웨이브 설계 재정리
-   - 감속이 필요한 웨이브
-   - 광역이 필요한 웨이브
-   - 저격이 필요한 웨이브
-   - 경제/성장 선택이 유리한 웨이브
-
-3. 전투 중 효과 로그/팝업 정리
+1. 전투 중 효과 로그/팝업 정리
    - 표식
    - 연쇄
    - 빙결
    - 처형
    - 보상
 
-4. 축소 스킬 타입을 실제 전투 효과 계산의 공통 기준으로 점진 이전
+2. 축소 스킬 타입을 실제 전투 효과 계산의 공통 기준으로 점진 이전
    - 기존 개별 영웅 스킬 런타임은 유지
    - 공통 효과는 `effectType` 기반 helper로 이전
 
-## 12. 확인 필요
+3. 웨이브 정보 UI 표시
+   - 현재 웨이브 테마
+   - 추천 효과
+   - 주요 적 타입
+
+## 13. 확인 필요
 
 ```bash
 pnpm typecheck
@@ -362,3 +336,4 @@ pnpm build:web
 - 공격속도 차이가 체감되는지
 - 신화 스킬/궁극기가 기존처럼 작동하는지
 - 영웅 상세 UI에서 스킬 타입 배지가 표시되는지
+- 웨이브별 대응 타입 보너스가 전투력 계산에 반영되는지
