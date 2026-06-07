@@ -103,7 +103,8 @@ export function applyHeroSpriteScaleOverrides(scales: Record<string, number>) {
   });
 }
 
-export async function loadHeroSpriteScaleOverrides() {
+export async function loadHeroSpriteScaleOverrides(force = false) {
+  if (force) serverScaleLoadPromise = null;
   if (!serverScaleLoadPromise) {
     serverScaleLoadPromise = apiGet<HeroSpriteScaleListResponse>("/api/game/hero-sprite-scales")
       .then((data) => applyHeroSpriteScaleOverrides(data.scales ?? {}))
