@@ -18,19 +18,18 @@ gameRoutes.get("/hero-sprite-scales", async (c) => {
   return ok(c, data);
 });
 
-gameRoutes.post("/hero-sprite-scales", authRequired, async (c) => {
-  const session = c.get("user");
+gameRoutes.post("/hero-sprite-scales", async (c) => {
   const input = await c.req.json().catch(() => ({}));
 
   try {
-    const scale = await saveHeroSpriteScale(c.env.DB, session.userId, input);
+    const scale = await saveHeroSpriteScale(c.env.DB, null, input);
     return ok(c, { status: "saved", scale }, 201);
   } catch (error) {
     return fail(c, "invalid_sprite_scale", error instanceof Error ? error.message : "스케일 저장에 실패했습니다.");
   }
 });
 
-gameRoutes.delete("/hero-sprite-scales/:heroId", authRequired, async (c) => {
+gameRoutes.delete("/hero-sprite-scales/:heroId", async (c) => {
   try {
     const result = await resetHeroSpriteScale(c.env.DB, c.req.param("heroId"));
     return ok(c, result);
