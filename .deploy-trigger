@@ -1,2 +1,2 @@
-deploy trigger: 2026-06-08T00:24:00Z
-reason: show visible hero sprite scale save status and persistence errors
+deploy trigger: 2026-06-08T00:34:00Z
+reason: improve mobile-visible API error diagnostics for sprite scale persistence
