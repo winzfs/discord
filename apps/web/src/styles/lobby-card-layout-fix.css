@@ -1,0 +1,137 @@
+.lobby-shell {
+  padding-bottom: calc(132px + env(safe-area-inset-bottom));
+}
+
+.lobby-panel {
+  margin-left: max(14px, env(safe-area-inset-left));
+  margin-right: max(14px, env(safe-area-inset-right));
+}
+
+.hero-grid.collection-grid,
+.artifact-grid.collection-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px 14px;
+  align-items: stretch;
+}
+
+.hero-card.collection-card,
+.artifact-card.collection-card {
+  display: grid;
+  grid-template-rows: auto auto minmax(2.35em, auto) auto auto;
+  align-items: start;
+  justify-items: center;
+  min-width: 0;
+  min-height: 288px;
+  padding: 14px 10px 16px;
+  overflow: hidden;
+  text-align: center;
+}
+
+.hero-card.collection-card em,
+.artifact-card.collection-card em {
+  position: static;
+  display: inline-grid;
+  min-width: 58px;
+  min-height: 34px;
+  margin: 0 auto 10px;
+  padding: 6px 10px;
+  place-items: center;
+  border-radius: 0;
+  font-size: 0.98rem;
+  line-height: 1;
+  transform: none;
+}
+
+.hero-card.collection-card .hero-portrait,
+.artifact-card.collection-card .artifact-icon {
+  width: min(118px, 82%);
+  height: 96px;
+  margin: 0 auto 12px;
+  flex: none;
+}
+
+.hero-card.collection-card strong,
+.artifact-card.collection-card strong {
+  display: -webkit-box;
+  width: 100%;
+  max-width: 100%;
+  min-height: 2.35em;
+  margin: 0;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  color: #fff8e9;
+  font-size: clamp(1.02rem, 4vw, 1.28rem);
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+  text-align: center;
+  text-shadow: 0 3px 0 rgba(0, 0, 0, 0.24);
+}
+
+.hero-card.collection-card small,
+.artifact-card.collection-card small {
+  display: block;
+  width: 100%;
+  min-height: 1.25em;
+  margin: 6px 0 8px;
+  overflow: hidden;
+  color: rgba(255, 248, 233, 0.92);
+  font-size: clamp(0.78rem, 3.25vw, 0.94rem);
+  font-weight: 850;
+  line-height: 1.18;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hero-card.collection-card > span,
+.artifact-card.collection-card > span {
+  position: static;
+  display: inline-grid;
+  min-width: 64px;
+  min-height: 34px;
+  margin: 0 auto;
+  padding: 5px 10px;
+  place-items: center;
+  border-radius: 14px;
+  background: rgba(58, 34, 31, 0.9);
+  color: #fff8e9;
+  font-size: clamp(0.9rem, 3.8vw, 1.06rem);
+  font-weight: 950;
+  line-height: 1;
+  box-shadow: 0 4px 0 rgba(0, 0, 0, 0.18);
+}
+
+.hero-card.collection-card.locked strong,
+.artifact-card.collection-card.locked strong {
+  font-size: clamp(0.95rem, 3.7vw, 1.12rem);
+}
+
+.lobby-bottom-nav {
+  bottom: max(12px, env(safe-area-inset-bottom));
+}
+
+@media (max-width: 390px) {
+  .lobby-panel {
+    margin-left: 12px;
+    margin-right: 12px;
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  .hero-grid.collection-grid,
+  .artifact-grid.collection-grid {
+    gap: 16px 12px;
+  }
+
+  .hero-card.collection-card,
+  .artifact-card.collection-card {
+    min-height: 276px;
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+
+  .hero-card.collection-card .hero-portrait,
+  .artifact-card.collection-card .artifact-icon {
+    height: 90px;
+  }
+}
