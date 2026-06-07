@@ -66,6 +66,10 @@ export type PixiTestHeroId = (typeof pixiTestHeroIds)[number];
 export type PixiTestMythicHeroId = (typeof pixiTestMythicHeroIds)[number];
 export type PixiTestEnemyHpMultiplier = (typeof pixiTestEnemyHpMultipliers)[number];
 
+function logScaleSaveFailure(action: string, error: unknown) {
+  console.warn(`[pixi-test] hero sprite scale ${action} failed`, error);
+}
+
 export function getPixiTestHeroScale(heroId: string | null | undefined) {
   if (!heroId) return null;
   const definition = getHeroById(heroId);
@@ -81,7 +85,7 @@ export function adjustPixiTestHeroScale(heroId: string | null | undefined, delta
   const selected = getPixiTestHeroScale(heroId);
   if (!selected) return null;
   const nextScale = setHeroSpriteScaleOverride(selected.heroId, selected.scale + delta);
-  void saveHeroSpriteScaleOverrideToServer(selected.heroId, nextScale).catch(() => undefined);
+  void saveHeroSpriteScaleOverrideToServer(selected.heroId, nextScale).catch((error) => logScaleSaveFailure("save", error));
   return {
     ...selected,
     scale: nextScale,
@@ -92,7 +96,7 @@ export function resetPixiTestHeroScale(heroId: string | null | undefined) {
   const selected = getPixiTestHeroScale(heroId);
   if (!selected) return null;
   const nextScale = resetHeroSpriteScaleOverride(selected.heroId);
-  void resetHeroSpriteScaleOverrideOnServer(selected.heroId).catch(() => undefined);
+  void resetHeroSpriteScaleOverrideOnServer(selected.heroId).catch((error) => logScaleSaveFailure("reset", error));
   return {
     ...selected,
     scale: nextScale,
