@@ -4,6 +4,8 @@ import { colors } from "./gameTheme";
 import type { GameRefs } from "./pixiGameTypes";
 import { createUnitGhost, getCellCenter, getNearestCellIndexForDrop } from "./pixiBoardRuntime";
 
+const UNIT_MOVE_ANIMATION_MS = 680;
+
 export type PixiDragRuntimeOptions = {
   isFinished: (state: GameState) => boolean;
   clearMenu: (refs: GameRefs) => void;
@@ -100,18 +102,18 @@ function animateWalk(
   const ghost = createStackGhost(sourceCell.units, from.cell);
   ghost.x = from.x;
   ghost.y = from.y;
-  ghost.alpha = 0.96;
+  ghost.alpha = 0.98;
   refs.effects.addChild(ghost);
 
   options.addAnimation(refs, {
-    duration: 420,
+    duration: UNIT_MOVE_ANIMATION_MS,
     update: (progress) => {
       const eased = 1 - Math.pow(1 - progress, 3);
       const bob = Math.sin(progress * Math.PI * 4) * from.cell * 0.04;
       ghost.x = from.x + (to.x - from.x) * eased;
       ghost.y = from.y + (to.y - from.y) * eased + bob;
       ghost.rotation = Math.sin(progress * Math.PI * 6) * 0.08;
-      ghost.alpha = 0.96 - progress * 0.06;
+      ghost.alpha = 0.98 - progress * 0.05;
     },
     done: () => {
       ghost.destroy({ children: true });
@@ -141,18 +143,18 @@ function animateSwapWalk(
   const ghost = createStackGhost(targetCell.units, from.cell);
   ghost.x = from.x;
   ghost.y = from.y;
-  ghost.alpha = 0.96;
+  ghost.alpha = 0.98;
   refs.effects.addChild(ghost);
 
   options.addAnimation(refs, {
-    duration: 420,
+    duration: UNIT_MOVE_ANIMATION_MS,
     update: (progress) => {
       const eased = 1 - Math.pow(1 - progress, 3);
       const bob = Math.sin(progress * Math.PI * 4) * from.cell * 0.04;
       ghost.x = from.x + (to.x - from.x) * eased;
       ghost.y = from.y + (to.y - from.y) * eased + bob;
       ghost.rotation = Math.sin(progress * Math.PI * 6) * 0.08;
-      ghost.alpha = 0.96 - progress * 0.06;
+      ghost.alpha = 0.98 - progress * 0.05;
     },
     done: () => {
       ghost.destroy({ children: true });
