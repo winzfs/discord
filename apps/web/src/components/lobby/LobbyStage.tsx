@@ -1,20 +1,21 @@
 import { Link } from "react-router-dom";
 
 type LobbyStageProps = {
-  difficulty: number;
-  onDifficulty: () => void;
+  onOpenShop: () => void;
+  onOpenHeroes: () => void;
+  onOpenArtifacts: () => void;
 };
 
-export function LobbyStage({ difficulty, onDifficulty }: LobbyStageProps) {
+export function LobbyStage({ onOpenShop, onOpenHeroes, onOpenArtifacts }: LobbyStageProps) {
   return (
     <section className="lobby-stage">
       <div className="stage-backdrop" aria-hidden="true" />
       <div className="stage-floor" aria-hidden="true" />
 
-      <button className="stage-node stage-node-shop" type="button">
+      <button className="stage-node stage-node-shop" type="button" onClick={onOpenShop}>
         <span className="stage-node-icon">상</span>
         <strong>상점</strong>
-        <small>오늘의 상품</small>
+        <small>상품 보기</small>
       </button>
 
       <div className="stage-hero-showcase">
@@ -26,18 +27,18 @@ export function LobbyStage({ difficulty, onDifficulty }: LobbyStageProps) {
         <small>웨이브를 돌파하세요</small>
       </div>
 
-      <button className="stage-node stage-node-hero" type="button">
+      <button className="stage-node stage-node-hero" type="button" onClick={onOpenHeroes}>
         <span className="stage-node-icon">검</span>
         <strong>영웅</strong>
-        <small>조합 강화</small>
+        <small>편성 강화</small>
       </button>
 
       <div className="stage-cta-stack">
-        <Link className="battle-start" to={`/play?difficulty=${difficulty}`}>
+        <Link className="battle-start" to="/play">
           빠른 시작
         </Link>
-        <button className="stage-speech" type="button" onClick={onDifficulty}>
-          난이도 {difficulty}
+        <button className="stage-speech" type="button" onClick={onOpenArtifacts}>
+          유물 강화
         </button>
       </div>
     </section>
