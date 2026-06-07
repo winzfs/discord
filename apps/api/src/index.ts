@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import { cors } from "hono/cors";
 import { adminRoutes } from "./routes/admin.routes";
 import { authRoutes } from "./routes/auth.routes";
 import { gameRoutes } from "./routes/game.routes";
@@ -11,6 +12,24 @@ import type { AppEnv } from "./utils/env";
 const app = new Hono<AppEnv>();
 
 app.onError(errorHandler);
+
+app.use(
+  "*",
+  cors({
+    origin: (origin, c) => {
+      const allowedOrigins = new Set([
+        "http://localhost:5173",
+        "https://discord-cz9.pages.dev",
+        c.env.PUBLIC_APP_URL,
+      ].filter(Boolean));
+
+      return allowedOrigins.has(origin) ? origin : "https://discord-cz9.pages.dev";
+    },
+    allowHeaders: ["Content-Type", "Authorization"],
+    allowMethods: ["GET", "POST", "DELETE", "OPTIONS"],
+    credentials: true,
+  }),
+);
 
 app.route("/health", healthRoutes);
 app.route("/api/health", healthRoutes);
