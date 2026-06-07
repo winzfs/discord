@@ -35,7 +35,11 @@ export async function getLeaderboard(db: D1Database | undefined, mode = "single_
         leaderboard_entries.updated_at
       FROM leaderboard_entries
       INNER JOIN users ON users.id = leaderboard_entries.user_id
-      WHERE leaderboard_entries.season_id IS NULL AND leaderboard_entries.mode = ?
+      INNER JOIN game_runs ON game_runs.id = leaderboard_entries.best_run_id
+      WHERE leaderboard_entries.season_id IS NULL
+        AND leaderboard_entries.mode = ?
+        AND game_runs.hidden = 0
+        AND game_runs.suspicious = 0
       ORDER BY leaderboard_entries.best_score DESC, leaderboard_entries.best_wave DESC, leaderboard_entries.updated_at ASC
       LIMIT ?`,
     )
