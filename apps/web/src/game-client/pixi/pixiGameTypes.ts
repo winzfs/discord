@@ -133,6 +133,7 @@ export type GameRefs = {
   combatTimer: number;
   resultTimer: number;
   attackTimer: number;
+  heroAttackCooldowns: Record<string, number>;
   activeEnemies: ActiveEnemy[];
   controlZones: PixiControlZone[];
   nextControlZoneId: number;
