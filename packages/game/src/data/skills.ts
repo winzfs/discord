@@ -1,6 +1,72 @@
-import type { SkillDefinition } from "../types/skill";
+import type { SkillDefinition, SkillEffectGroup, SkillEffectType, SkillType } from "../types/skill";
 
-export const skills: SkillDefinition[] = [
+type RawSkillDefinition = Omit<SkillDefinition, "effectType" | "effectGroup" | "summary">;
+
+function hasAnyTag(skill: RawSkillDefinition, tags: string[]) {
+  return tags.some((tag) => skill.tags.includes(tag));
+}
+
+function getSkillEffectType(skill: RawSkillDefinition): SkillEffectType {
+  if (hasAnyTag(skill, ["coin-bonus", "economy", "wave-reward"])) return "economy";
+  if (hasAnyTag(skill, ["execute", "chain-kill", "low-hp-target"])) return "execute";
+  if (hasAnyTag(skill, ["attack-speed", "haste", "ultimate-charge", "cleanse"])) return "tempo";
+  if (hasAnyTag(skill, ["power-up", "damage-boost", "mark", "vulnerable", "critical", "precision"])) return "amplify";
+  if (hasAnyTag(skill, ["shield", "damage-reduction", "barrier", "last-stand"])) return "shield";
+  if (hasAnyTag(skill, ["slow", "freeze", "grouping", "disable", "knockback", "control", "disrupt", "delay"])) return "control";
+  if (hasAnyTag(skill, ["turret", "support-fire"])) return "summon";
+  if (hasAnyTag(skill, ["chain", "multi-hit", "extra-hit", "multi-shot"])) return "chain";
+  if (hasAnyTag(skill, ["area-damage", "burst", "large-burst", "beam", "splash", "sticky-bomb"])) return "splash";
+  return "damage";
+}
+
+function getSkillEffectGroup(effectType: SkillEffectType): SkillEffectGroup {
+  if (effectType === "control" || effectType === "shield") return "crowd-control";
+  if (effectType === "tempo" || effectType === "amplify") return "team-scaling";
+  if (effectType === "economy") return "resource-scaling";
+  if (effectType === "execute") return "finisher";
+  return "damage-core";
+}
+
+function getSkillSummary(skill: RawSkillDefinition, effectType: SkillEffectType) {
+  const gradeTag = skill.tags.find((tag) => ["common", "rare", "epic", "legendary"].includes(tag));
+  const gradeText = gradeTag ? `${gradeTag} ` : "";
+
+  switch (effectType) {
+    case "control":
+      return `${gradeText}적 이동을 늦추거나 묶어 전선 시간을 벌어줍니다.`;
+    case "shield":
+      return `${gradeText}방어/지연 효과로 누수를 줄이고 전선을 안정화합니다.`;
+    case "amplify":
+      return `${gradeText}표식, 취약, 강화로 후속 피해 기대값을 높입니다.`;
+    case "tempo":
+      return `${gradeText}공격속도나 궁극기 흐름을 앞당겨 전투 템포를 올립니다.`;
+    case "economy":
+      return `${gradeText}처치 보상이나 웨이브 보상을 늘려 장기 성장을 돕습니다.`;
+    case "execute":
+      return `${gradeText}약해진 적을 마무리해 웨이브 누수를 줄입니다.`;
+    case "chain":
+      return `${gradeText}추가타나 연쇄 피해로 여러 적을 이어서 압박합니다.`;
+    case "splash":
+      return `${gradeText}광역 피해로 군집 웨이브를 처리합니다.`;
+    case "summon":
+      return `${gradeText}임시 화력 또는 보조 공격체를 더해 라인을 보강합니다.`;
+    case "damage":
+    default:
+      return `${gradeText}기본 단일 피해로 안정적인 처리를 담당합니다.`;
+  }
+}
+
+function normalizeSkillDefinition(skill: RawSkillDefinition): SkillDefinition {
+  const effectType = getSkillEffectType(skill);
+  return {
+    ...skill,
+    effectType,
+    effectGroup: getSkillEffectGroup(effectType),
+    summary: getSkillSummary(skill, effectType),
+  };
+}
+
+const rawSkills: RawSkillDefinition[] = [
   { id: "spark-runner-zap", displayName: "펄스 견제 사격", type: "attack", assetKey: "skill.placeholder", tags: ["unique", "common", "attack", "fast", "single-target"] },
   { id: "rookie-guard-bash", displayName: "방패 밀치기", type: "control", assetKey: "skill.placeholder", tags: ["unique", "common", "debuff", "slow", "frontline"] },
   { id: "mini-mender-boost", displayName: "응급 증폭", type: "support", assetKey: "skill.placeholder", tags: ["unique", "common", "buff", "power-up"] },
@@ -18,7 +84,7 @@ export const skills: SkillDefinition[] = [
   { id: "plasma-mage-orb", displayName: "하드라이트 광자구", type: "attack", assetKey: "skill.placeholder", tags: ["unique", "epic", "attack", "area-damage", "wave-clear"] },
   { id: "core-knight-anchor", displayName: "전술 방패 앵커", type: "control", assetKey: "skill.placeholder", tags: ["unique", "epic", "debuff", "slow", "shield"] },
   { id: "overclock-tech-haste", displayName: "오아시스 가속 회로", type: "support", assetKey: "skill.placeholder", tags: ["unique", "epic", "buff", "haste", "ultimate-charge"] },
-  { id: "arc-captain-current", displayName: "눌 섹터 전류망", type: "attack", assetKey: "skill.placeholder", tags: ["unique", "epic", "attack", "chain", "multi-hit"] },
+  { id: "arc-captain-current", displayName: "널 섹터 전류망", type: "attack", assetKey: "skill.placeholder", tags: ["unique", "epic", "attack", "chain", "multi-hit"] },
   { id: "gravity-jailer-field", displayName: "달 기지 중력장", type: "control", assetKey: "skill.placeholder", tags: ["unique", "epic", "debuff", "grouping", "slow"] },
   { id: "combat-engineer-turret", displayName: "스크랩 임시 포탑", type: "attack", assetKey: "skill.placeholder", tags: ["unique", "epic", "attack", "turret", "support-fire"] },
 
@@ -88,9 +154,49 @@ export const skills: SkillDefinition[] = [
 
   { id: "kiriko-kunai", displayName: "쿠나이", type: "attack", assetKey: "skill.placeholder", tags: ["kiriko", "critical", "precision"] },
   { id: "kiriko-protection-suzu", displayName: "정화의 방울", type: "support", assetKey: "skill.placeholder", tags: ["kiriko", "cleanse", "attack-speed"] },
-  { id: "kiriko-kitsune-rush", displayName: "여우길", type: "ultimate", assetKey: "skill.placeholder", tags: ["kiriko", "team-buff", "haste"] },
+  { id: "kiriko-kitsune-rush", displayName: "여우길", type: "ultimate", assetKey: "skill.placeholder", tags: ["kiriko", "haste", "team-wide"] },
 
-  { id: "illari-solar-rifle", displayName: "태양 소총", type: "attack", assetKey: "skill.placeholder", tags: ["illari", "charge-shot", "single-target"] },
-  { id: "illari-healing-pylon", displayName: "치유의 태양석", type: "support", assetKey: "skill.placeholder", tags: ["illari", "pylon", "support-fire"] },
-  { id: "illari-captive-sun", displayName: "태양 작렬", type: "ultimate", assetKey: "skill.placeholder", tags: ["illari", "mark", "area-explosion"] },
+  { id: "illari-solar-rifle", displayName: "태양 소총", type: "attack", assetKey: "skill.placeholder", tags: ["illari", "charged-shot", "single-target"] },
+  { id: "illari-healing-pylon", displayName: "태양 기둥", type: "support", assetKey: "skill.placeholder", tags: ["illari", "support-fire", "power-up"] },
+  { id: "illari-captive-sun", displayName: "태양 작렬", type: "ultimate", assetKey: "skill.placeholder", tags: ["illari", "mark", "area-damage", "burst"] },
 ];
+
+export const skills: SkillDefinition[] = rawSkills.map(normalizeSkillDefinition);
+
+export function getSkillById(id: string): SkillDefinition | null {
+  return skills.find((skill) => skill.id === id) ?? null;
+}
+
+export function getSkillsByEffectType(effectType: SkillEffectType): SkillDefinition[] {
+  return skills.filter((skill) => skill.effectType === effectType);
+}
+
+export function getSkillsByEffectGroup(effectGroup: SkillEffectGroup): SkillDefinition[] {
+  return skills.filter((skill) => skill.effectGroup === effectGroup);
+}
+
+export function getSkillTacticalLabel(skill: SkillDefinition) {
+  switch (skill.effectType) {
+    case "control":
+      return "제어";
+    case "shield":
+      return "방어";
+    case "amplify":
+      return "증폭";
+    case "tempo":
+      return "템포";
+    case "economy":
+      return "경제";
+    case "execute":
+      return "처형";
+    case "chain":
+      return "연쇄";
+    case "splash":
+      return "광역";
+    case "summon":
+      return "소환";
+    case "damage":
+    default:
+      return "피해";
+  }
+}
