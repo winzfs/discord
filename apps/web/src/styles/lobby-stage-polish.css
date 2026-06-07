@@ -1,4 +1,5 @@
 @import "./lobby-mythic-glow.css";
+@import "./lobby-card-layout-fix.css";
 
 .lobby-stage {
   display: block;
