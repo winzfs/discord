@@ -4,11 +4,11 @@ import type { GameLayout } from "./gameLayout";
 import type { GameRefs, PixiTestControlsView } from "./pixiGameTypes";
 import { colors } from "./gameTheme";
 import {
-  adjustSelectedPixiTestHeroScale,
-  getSelectedPixiTestHeroScale,
+  adjustPixiTestHeroScale,
+  getPixiTestHeroScale,
   pixiTestEnemyHpMultipliers,
   pixiTestHeroIds,
-  resetSelectedPixiTestHeroScale,
+  resetPixiTestHeroScale,
   setPixiTestEnemyHpMultiplier,
   summonPixiTestHero,
 } from "./pixiTestControlsRuntime";
@@ -79,7 +79,7 @@ function invalidateAndChange(view: PixiTestControlsView, options: PixiTestContro
 }
 
 export function createPixiTestControlsView(parent: Container): PixiTestControlsView {
-  const view = { root: new Container(), lastKey: "", collapsed: false, scrollRow: 0 };
+  const view = { root: new Container(), lastKey: "", collapsed: false, scrollRow: 0, scaleHeroId: null };
   parent.addChild(view.root);
   return view;
 }
@@ -92,7 +92,7 @@ export function updatePixiTestControlsView(
   force = false,
 ) {
   view.scrollRow = clampScrollRow(view.scrollRow);
-  const selectedScale = getSelectedPixiTestHeroScale(refs);
+  const selectedScale = getPixiTestHeroScale(view.scaleHeroId);
   const selectedScaleKey = selectedScale ? `${selectedScale.heroId}:${selectedScale.scale}` : "none";
   const key = `${layout.width}|${layout.height}|${refs.testEnemyHpMultiplier}|${view.collapsed}|${view.scrollRow}|${selectedScaleKey}`;
   if (!force && view.lastKey === key) return;
@@ -131,9 +131,11 @@ export function updatePixiTestControlsView(
 
   visibleHeroIds.forEach((heroId, index) => {
     const hero = getHeroById(heroId);
-    const button = makeButton(hero?.displayName ?? heroId, buttonWidth, buttonHeight, heroButtonColor(heroId), () => {
-      const placed = summonPixiTestHero(refs, heroId);
-      if (placed) refs.selectedCellIndex = placed.position.row * refs.state.boardSize.columns + placed.position.column;
+    const isScaleTarget = view.scaleHeroId === heroId;
+    const button = makeButton(hero?.displayName ?? heroId, buttonWidth, buttonHeight, isScaleTarget ? colors.green : heroButtonColor(heroId), () => {
+      summonPixiTestHero(refs, heroId);
+      view.scaleHeroId = heroId;
+      refs.selectedCellIndex = null;
       invalidateAndChange(view, options);
     });
     button.x = 12 + (index % HERO_COLUMNS) * (buttonWidth + gap);
@@ -166,14 +168,14 @@ export function updatePixiTestControlsView(
 
   const scaleLabelText = selectedScale
     ? `스케일 ${selectedScale.displayName} ${selectedScale.scale.toFixed(2)}`
-    : "스케일: 유닛 선택 필요";
+    : "스케일: 유닛 버튼을 누르세요";
   const scaleLabel = makeText(scaleLabelText, 11, selectedScale ? colors.yellow : colors.white);
   scaleLabel.x = 12;
   scaleLabel.y = 210;
   view.root.addChild(scaleLabel);
 
   const scaleDownButton = makeButton("-0.03", 50, 24, selectedScale ? colors.blue : 0x4b5565, () => {
-    adjustSelectedPixiTestHeroScale(refs, -0.03);
+    adjustPixiTestHeroScale(view.scaleHeroId, -0.03);
     invalidateAndChange(view, options);
   });
   scaleDownButton.x = 12;
@@ -181,7 +183,7 @@ export function updatePixiTestControlsView(
   view.root.addChild(scaleDownButton);
 
   const scaleUpButton = makeButton("+0.03", 50, 24, selectedScale ? colors.blue : 0x4b5565, () => {
-    adjustSelectedPixiTestHeroScale(refs, 0.03);
+    adjustPixiTestHeroScale(view.scaleHeroId, 0.03);
     invalidateAndChange(view, options);
   });
   scaleUpButton.x = 68;
@@ -189,7 +191,7 @@ export function updatePixiTestControlsView(
   view.root.addChild(scaleUpButton);
 
   const scaleResetButton = makeButton("초기화", 62, 24, selectedScale ? colors.orange : 0x4b5565, () => {
-    resetSelectedPixiTestHeroScale(refs);
+    resetPixiTestHeroScale(view.scaleHeroId);
     invalidateAndChange(view, options);
   });
   scaleResetButton.x = 124;
