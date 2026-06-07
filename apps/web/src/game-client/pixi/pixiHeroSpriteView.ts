@@ -64,7 +64,7 @@ const HERO_SPRITE_SCALE: Record<string, number> = {
   "charge-helper": 1.18,
   "pulse-ranger": 1.18,
   "barrier-guard": 1.42,
-  "field-medic": 1.18,
+  "field-medic": 1.38,
   tracer: 1.1,
   kiriko: 1.31,
   dva: 1.47,
