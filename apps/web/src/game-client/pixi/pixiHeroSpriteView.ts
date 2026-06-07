@@ -1,6 +1,7 @@
 import { Assets, Container, Rectangle, Sprite, Texture } from "pixi.js";
 import type { BoardHero } from "@discord-random-defense/game";
 import type { HeroSpriteAttackState } from "./pixiGameTypes";
+import { apiGet } from "../../lib/apiClient";
 
 const HERO_TEXTURE_PATHS: Record<string, string> = {
   "spark-runner": "/assets/heroes/private.png?v=20260607-private1",
@@ -78,10 +79,16 @@ const HERO_SPRITE_SCALE: Record<string, number> = {
   illari: 1.2,
 };
 
+type HeroSpriteScaleListResponse = {
+  scales: Record<string, number>;
+  status: string;
+};
+
 let textureCache = new Map<string, Texture>();
 let frameTextureCache = new Map<string, Texture[]>();
 let loadingCache = new Set<string>();
 let spriteScaleOverrides: Record<string, number> = {};
+let serverScaleLoadPromise: Promise<void> | null = null;
 
 function clampSpriteScale(value: number) {
   return Math.max(HERO_MIN_SPRITE_SCALE, Math.min(HERO_MAX_SPRITE_SCALE, Number(value.toFixed(2))));
@@ -94,6 +101,15 @@ export function applyHeroSpriteScaleOverrides(scales: Record<string, number>) {
       spriteScaleOverrides[heroId] = clampSpriteScale(value);
     }
   });
+}
+
+export async function loadHeroSpriteScaleOverrides() {
+  if (!serverScaleLoadPromise) {
+    serverScaleLoadPromise = apiGet<HeroSpriteScaleListResponse>("/api/game/hero-sprite-scales")
+      .then((data) => applyHeroSpriteScaleOverrides(data.scales ?? {}))
+      .catch(() => undefined);
+  }
+  await serverScaleLoadPromise;
 }
 
 export function getHeroSpriteDefaultScale(heroId: string) {
@@ -146,6 +162,7 @@ function requestHeroTexture(heroId: string) {
 }
 
 export async function preloadHeroSpriteTextures() {
+  await loadHeroSpriteScaleOverrides();
   await Promise.all(Object.keys(HERO_TEXTURE_PATHS).map((heroId) => loadHeroTexture(heroId).catch(() => undefined)));
 }
 
