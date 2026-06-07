@@ -2,7 +2,7 @@ import { moveOneHeroToCell } from "@discord-random-defense/game";
 import type { BoardHero, GameState } from "@discord-random-defense/game";
 import { colors } from "./gameTheme";
 import type { GameRefs } from "./pixiGameTypes";
-import { createUnitGhost, getCellCenter, getCellIndexAtPoint } from "./pixiBoardRuntime";
+import { createUnitGhost, getCellCenter, getNearestCellIndexForDrop } from "./pixiBoardRuntime";
 
 export type PixiDragRuntimeOptions = {
   isFinished: (state: GameState) => boolean;
@@ -100,6 +100,7 @@ function animateWalk(
   const ghost = createStackGhost(sourceCell.units, from.cell);
   ghost.x = from.x;
   ghost.y = from.y;
+  ghost.alpha = 0.96;
   refs.effects.addChild(ghost);
 
   options.addAnimation(refs, {
@@ -110,6 +111,7 @@ function animateWalk(
       ghost.x = from.x + (to.x - from.x) * eased;
       ghost.y = from.y + (to.y - from.y) * eased + bob;
       ghost.rotation = Math.sin(progress * Math.PI * 6) * 0.08;
+      ghost.alpha = 0.96 - progress * 0.06;
     },
     done: () => {
       ghost.destroy({ children: true });
@@ -139,6 +141,7 @@ function animateSwapWalk(
   const ghost = createStackGhost(targetCell.units, from.cell);
   ghost.x = from.x;
   ghost.y = from.y;
+  ghost.alpha = 0.96;
   refs.effects.addChild(ghost);
 
   options.addAnimation(refs, {
@@ -149,6 +152,7 @@ function animateSwapWalk(
       ghost.x = from.x + (to.x - from.x) * eased;
       ghost.y = from.y + (to.y - from.y) * eased + bob;
       ghost.rotation = Math.sin(progress * Math.PI * 6) * 0.08;
+      ghost.alpha = 0.96 - progress * 0.06;
     },
     done: () => {
       ghost.destroy({ children: true });
@@ -207,7 +211,7 @@ export function finishCellDrag(
 
   const sourceIndex = refs.dragging.sourceIndex;
   const wasMoving = refs.dragging.isMoving;
-  const targetIndex = getCellIndexAtPoint(refs, globalX, globalY);
+  const targetIndex = getNearestCellIndexForDrop(refs, globalX, globalY);
 
   options.clearDrag(refs);
 
