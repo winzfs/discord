@@ -1,7 +1,7 @@
 import { Container, Graphics, Text } from "pixi.js";
 import { getHeroById } from "@discord-random-defense/game";
 import type { GameLayout } from "./gameLayout";
-import type { GameRefs, PixiTestControlsView } from "./pixiGameTypes";
+import type { GameRefs } from "./pixiGameTypes";
 import { colors } from "./gameTheme";
 import {
   pixiTestEnemyHpMultipliers,
@@ -9,6 +9,11 @@ import {
   setPixiTestEnemyHpMultiplier,
   summonPixiTestMythicHero,
 } from "./pixiTestControlsRuntime";
+
+export type PixiTestControlsView = {
+  root: Container;
+  lastKey: string;
+};
 
 export type PixiTestControlsOptions = {
   onChange: () => void;
@@ -30,25 +35,18 @@ function makeText(value: string, size = 11, fill: number = colors.white) {
 function makeButton(label: string, width: number, height: number, color: number, onTap: () => void) {
   const root = new Container();
   const background = new Graphics();
-  const text = makeText(label, 11, colors.white);
+  const text = makeText(label);
 
   background.roundRect(0, 0, width, height, 8);
   background.fill({ color, alpha: 0.94 });
   background.stroke({ color: colors.black, width: 2, alpha: 0.35 });
-
   text.anchor.set(0.5);
   text.x = width / 2;
   text.y = height / 2;
-
   root.addChild(background, text);
   root.eventMode = "static";
   root.cursor = "pointer";
-  root.on("pointertap", () => {
-    root.scale.set(0.96);
-    window.setTimeout(() => root.scale.set(1), 80);
-    onTap();
-  });
-
+  root.on("pointertap", onTap);
   return root;
 }
 
@@ -61,11 +59,7 @@ function drawPanel(width: number, height: number) {
 }
 
 export function createPixiTestControlsView(parent: Container): PixiTestControlsView {
-  const view: PixiTestControlsView = {
-    root: new Container(),
-    lastKey: "",
-  };
-
+  const view = { root: new Container(), lastKey: "" };
   parent.addChild(view.root);
   return view;
 }
@@ -101,19 +95,14 @@ export function updatePixiTestControlsView(
 
   pixiTestMythicHeroIds.forEach((heroId, index) => {
     const hero = getHeroById(heroId);
-    const label = hero?.displayName ?? heroId;
-    const x = 12 + (index % 5) * (buttonWidth + gap);
-    const y = 32 + Math.floor(index / 5) * (buttonHeight + gap);
-    const button = makeButton(label, buttonWidth, buttonHeight, colors.orange, () => {
+    const button = makeButton(hero?.displayName ?? heroId, buttonWidth, buttonHeight, colors.orange, () => {
       const placed = summonPixiTestMythicHero(refs, heroId);
-      if (placed) {
-        refs.selectedCellIndex = placed.position.row * refs.state.boardSize.columns + placed.position.column;
-      }
+      if (placed) refs.selectedCellIndex = placed.position.row * refs.state.boardSize.columns + placed.position.column;
       view.lastKey = "";
       options.onChange();
     });
-    button.x = x;
-    button.y = y;
+    button.x = 12 + (index % 5) * (buttonWidth + gap);
+    button.y = 32 + Math.floor(index / 5) * (buttonHeight + gap);
     view.root.addChild(button);
   });
 
@@ -124,15 +113,13 @@ export function updatePixiTestControlsView(
 
   pixiTestEnemyHpMultipliers.forEach((multiplier, index) => {
     const selected = refs.testEnemyHpMultiplier === multiplier;
-    const x = 102 + index * (hpButtonWidth + hpButtonGap);
-    const y = 100;
     const button = makeButton(`x${multiplier}`, hpButtonWidth, 28, selected ? colors.green : colors.blue, () => {
       setPixiTestEnemyHpMultiplier(refs, multiplier);
       view.lastKey = "";
       options.onChange();
     });
-    button.x = x;
-    button.y = y;
+    button.x = 102 + index * (hpButtonWidth + hpButtonGap);
+    button.y = 100;
     view.root.addChild(button);
   });
 }
