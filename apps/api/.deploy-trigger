@@ -1,0 +1,2 @@
+deploy trigger: 2026-06-08T00:58:00Z
+reason: run API Worker auto deployment after CORS fix
