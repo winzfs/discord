@@ -168,11 +168,11 @@ splash: 광역/폭발/빔 피해
 chain: 연쇄/추가타/다중타
 control: 감속/빙결/묶기/방해
 amplify: 표식/취약/피해 증폭
- tempo: 공격속도/궁극기 템포/정화
- economy: 보상/코인/웨이브 보상
- execute: 마무리/처형/연속 처치
- shield: 방어/방벽/지연
- summon: 포탑/소환/보조 화력
+tempo: 공격속도/궁극기 템포/정화
+economy: 보상/코인/웨이브 보상
+execute: 마무리/처형/연속 처치
+shield: 방어/방벽/지연
+summon: 포탑/소환/보조 화력
 ```
 
 효과 그룹:
@@ -187,7 +187,36 @@ finisher: execute
 
 이 구조 덕분에 UI와 전투 런타임은 이제 복잡한 태그를 직접 해석하지 않고, 축소된 스킬 효과 타입을 기준으로 표시/밸런싱할 수 있습니다.
 
-## 7. 공격력/공격속도 설계 기준
+## 7. 스킬 효과 타입 UI 표시
+
+영웅 상세 drawer에 스킬 효과 타입 배지를 추가했습니다.
+
+적용 파일:
+
+```text
+apps/web/src/components/lobby/lobbyHeroSkillDetails.ts
+apps/web/src/components/lobby/LobbyDetailPanel.tsx
+apps/web/src/styles/lobby-detail-drawer.css
+```
+
+표시 방식:
+
+```text
+스킬명
+기존 분류 + 발동 조건
+축소 효과 타입 배지 + 효과 요약
+상세 효과 1~3줄
+```
+
+예시:
+
+```text
+펄스 폭탄
+궁극기 · 게이지 100%
+광역 · 광역 피해로 군집 웨이브를 처리합니다.
+```
+
+## 8. 공격력/공격속도 설계 기준
 
 공격속도 수치는 이제 단순 표시가 아니라 실시간 전투에서 공격 간격에 직접 반영됩니다.
 
@@ -211,7 +240,7 @@ apps/web/src/game-client/pixi/pixiCombatRuntime.ts
 - 제어형: 직접 피해는 낮고 감속/빙결/전선 유지 가치 보상
 - 지원형: 직접 피해는 낮지만 버프/경제/템포 가치 보상
 
-## 8. 타겟 우선순위 보완
+## 9. 타겟 우선순위 보완
 
 영웅마다 타겟 우선순위를 부여했습니다.
 
@@ -234,34 +263,42 @@ support: 기본 선두 지원
 - D.Va/윈스턴/일리아리: cluster
 - 감속/탱커 계열: front
 
-## 9. 적용된 코드 변경
+## 10. 적용된 코드 변경
 
-### 9.1 전술 프로필 타입 추가
+### 10.1 전술 프로필 타입 추가
 
 ```text
 packages/game/src/types/heroTactics.ts
 ```
 
-### 9.2 33명 전체 전술 프로필 추가
+### 10.2 33명 전체 전술 프로필 추가
 
 ```text
 packages/game/src/data/heroTactics.ts
 ```
 
-### 9.3 스킬 효과 타입 축소
+### 10.3 스킬 효과 타입 축소
 
 ```text
 packages/game/src/types/skill.ts
 packages/game/src/data/skills.ts
 ```
 
-### 9.4 패키지 export 추가
+### 10.4 스킬 효과 타입 UI 표시
+
+```text
+apps/web/src/components/lobby/lobbyHeroSkillDetails.ts
+apps/web/src/components/lobby/LobbyDetailPanel.tsx
+apps/web/src/styles/lobby-detail-drawer.css
+```
+
+### 10.5 패키지 export 추가
 
 ```text
 packages/game/src/index.ts
 ```
 
-### 9.5 웨이브 단위 전투력 계산 반영
+### 10.6 웨이브 단위 전투력 계산 반영
 
 ```text
 packages/game/src/systems/combatSystem.ts
@@ -269,7 +306,7 @@ packages/game/src/systems/combatSystem.ts
 
 `getHeroTacticalPowerMultiplier()`가 전투력 계산에 들어갑니다.
 
-### 9.6 실시간 전투 타겟팅/공격간격 반영
+### 10.7 실시간 전투 타겟팅/공격간격 반영
 
 ```text
 apps/web/src/game-client/pixi/pixiCombatRuntime.ts
@@ -278,7 +315,7 @@ apps/web/src/game-client/pixi/pixiCombatRuntime.ts
 - `getHeroTargetPriority()`로 타겟 선택
 - `getHeroTacticalAttackIntervalMultiplier()`로 공격 간격 보정
 
-## 10. 남은 보완점
+## 11. 남은 보완점
 
 이번 작업은 기획 구조와 데이터 기반을 만든 1차 작업입니다.
 
@@ -297,23 +334,18 @@ apps/web/src/game-client/pixi/pixiCombatRuntime.ts
    - 저격이 필요한 웨이브
    - 경제/성장 선택이 유리한 웨이브
 
-3. 영웅 상세 카드에 전술 타입/스킬 효과 타입 표시
-   - 정밀
-   - 광역
-   - 제어
-   - 증폭
-   - 템포
-   - 경제
-   - 처형
-
-4. 전투 중 효과 로그/팝업 정리
+3. 전투 중 효과 로그/팝업 정리
    - 표식
    - 연쇄
    - 빙결
    - 처형
    - 보상
 
-## 11. 확인 필요
+4. 축소 스킬 타입을 실제 전투 효과 계산의 공통 기준으로 점진 이전
+   - 기존 개별 영웅 스킬 런타임은 유지
+   - 공통 효과는 `effectType` 기반 helper로 이전
+
+## 12. 확인 필요
 
 ```bash
 pnpm typecheck
@@ -329,4 +361,4 @@ pnpm build:web
 - D.Va/윈스턴/일리아리가 군집 적을 우선 치는지
 - 공격속도 차이가 체감되는지
 - 신화 스킬/궁극기가 기존처럼 작동하는지
-- 영웅 카드/상세 UI에서 스킬 타입을 표시할 수 있는지
+- 영웅 상세 UI에서 스킬 타입 배지가 표시되는지
