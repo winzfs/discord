@@ -108,6 +108,7 @@ function ProgressCard({ title, level, exp, required, percent, caption }: { title
 function passRewardIcon(kind: LobbyPassReward["kind"]) {
   if (kind === "crystals") return "💎";
   if (kind === "hero-shards") return "🧩";
+  if (kind === "mythic-shards") return "🌟";
   if (kind === "artifact-pieces") return "🏺";
   return "🪙";
 }
