@@ -1,7 +1,7 @@
 import { Container, Graphics, Text } from "pixi.js";
 import { getHeroById } from "@discord-random-defense/game";
 import type { GameLayout } from "./gameLayout";
-import type { GameRefs } from "./pixiGameTypes";
+import type { GameRefs, PixiTestControlsView } from "./pixiGameTypes";
 import { colors } from "./gameTheme";
 import {
   pixiTestEnemyHpMultipliers,
@@ -9,11 +9,6 @@ import {
   setPixiTestEnemyHpMultiplier,
   summonPixiTestMythicHero,
 } from "./pixiTestControlsRuntime";
-
-export type PixiTestControlsView = {
-  root: Container;
-  lastKey: string;
-};
 
 export type PixiTestControlsOptions = {
   onChange: () => void;
@@ -65,7 +60,7 @@ function drawPanel(width: number, height: number) {
   return panel;
 }
 
-export function createPixiTestControlsView(parent: Container) {
+export function createPixiTestControlsView(parent: Container): PixiTestControlsView {
   const view: PixiTestControlsView = {
     root: new Container(),
     lastKey: "",
