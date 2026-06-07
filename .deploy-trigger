@@ -1,2 +1,2 @@
-deploy trigger: 2026-06-08T00:42:00Z
-reason: prevent Pages domain API calls when VITE_API_BASE_URL is missing
+deploy trigger: 2026-06-08T00:50:00Z
+reason: enable API CORS for Cloudflare Pages web app
