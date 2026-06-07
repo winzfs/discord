@@ -77,76 +77,15 @@ combatNote: 운용 설명
 
 ## 5. 전술 타입 체계
 
-### 5.1 precision
-
-보스/고체력/중요 적을 제거하는 정밀 딜러입니다.
-
-예시:
-
-- 캐서디
-- 누미니 레일건 에이스
-- 감시위성 저격관
-
-### 5.2 wave-clear
-
-군집 웨이브 처리에 강한 광역/연쇄 딜러입니다.
-
-예시:
-
-- D.Va
-- 윈스턴
-- 비슈카르 광자 설계사
-- 널 섹터 전류 지휘체
-
-### 5.3 control-stall
-
-감속, 빙결, 방벽, 전선 지연을 담당합니다.
-
-예시:
-
-- 널 섹터 감속 옴닉
-- 십자군 수습대원
-- 자리야
-- 남극 연구기지 대원
-
-### 5.4 amplifier
-
-표식, 취약, 피해 증폭, 명령으로 딜러의 효율을 끌어올립니다.
-
-예시:
-
-- 탈론 추적요원
-- 아나
-- 이지스 작전지휘관
-
-### 5.5 tempo-support
-
-공격속도, 궁극기 충전, 전투 템포를 올립니다.
-
-예시:
-
-- 오버워치 야전 의무관
-- 오아시스 가속 기술자
-- 키리코
-- 오아시스 시간 예측관
-
-### 5.6 economy-support
-
-처치 보상, 코인 흐름, 성장 가속을 담당합니다.
-
-예시:
-
-- 볼스카야 정비공
-- 탈론 크레딧 해커
-
-### 5.7 execution
-
-낮은 체력 적을 마무리하거나 연속 처치로 흐름을 만듭니다.
-
-예시:
-
-- 트레이서
-- 겐지
+```text
+precision: 보스/고체력/중요 적 제거
+wave-clear: 군집 웨이브 처리
+control-stall: 감속, 빙결, 방벽, 전선 지연
+amplifier: 표식, 취약, 피해 증폭
+tempo-support: 공격속도, 궁극기 충전, 전투 템포
+economy-support: 처치 보상, 코인 흐름, 성장 가속
+execution: 낮은 체력 적 마무리, 연속 처치
+```
 
 ## 6. 스킬 효과 타입 축소
 
@@ -180,8 +119,6 @@ summon: 포탑/소환/보조 화력
 
 적마다 전술 역할과 카운터 효과를 부여했습니다.
 
-적 역할:
-
 ```text
 swarm: 다수 잡몹, 광역/연쇄 요구
 runner: 빠른 돌파형, 제어/처형 요구
@@ -190,16 +127,7 @@ elite: 중간 보스형, 증폭/처형/제어 요구
 boss: 보스형, 증폭/정밀/처형 요구
 ```
 
-적 데이터 적용 파일:
-
-```text
-packages/game/src/types/enemy.ts
-packages/game/src/data/enemies.ts
-```
-
 웨이브마다 전술 테마와 추천 효과도 추가했습니다.
-
-웨이브 테마:
 
 ```text
 swarm: 잡버그 무리
@@ -210,32 +138,11 @@ boss: 서버 크래셔 침공
 mixed: 혼합 웨이브
 ```
 
-웨이브 데이터 적용 파일:
-
-```text
-packages/game/src/types/wave.ts
-packages/game/src/data/waves.ts
-```
-
 웨이브 추천 효과가 보드 영웅의 전술 효과와 맞으면 전투력에 최대 12% 대응 보너스를 줍니다.
-
-적용 파일:
-
-```text
-packages/game/src/systems/combatSystem.ts
-```
 
 ## 8. 스킬 효과 타입 UI 표시
 
 영웅 상세 drawer에 스킬 효과 타입 배지를 추가했습니다.
-
-적용 파일:
-
-```text
-apps/web/src/components/lobby/lobbyHeroSkillDetails.ts
-apps/web/src/components/lobby/LobbyDetailPanel.tsx
-apps/web/src/styles/lobby-detail-drawer.css
-```
 
 표시 방식:
 
@@ -246,31 +153,42 @@ apps/web/src/styles/lobby-detail-drawer.css
 상세 효과 1~3줄
 ```
 
-## 9. 공격력/공격속도 설계 기준
+## 9. 웨이브 정보 HUD 표시
+
+전투 화면 상단 HUD에 현재 웨이브 정보를 추가했습니다.
+
+적용 파일:
+
+```text
+apps/web/src/game-client/pixi/pixiHudView.ts
+apps/web/src/game-client/pixi/pixiRenderRuntime.ts
+```
+
+표시 내용:
+
+```text
+웨이브 테마 · 웨이브 이름
+추천 효과 3개
+```
+
+예시:
+
+```text
+러시 · W9 핑러너 돌파
+추천 제어 · 처형 · 연쇄
+```
+
+이제 플레이어는 다음 웨이브가 어떤 조합을 요구하는지 전투 화면에서 바로 볼 수 있습니다.
+
+## 10. 공격력/공격속도 설계 기준
 
 공격속도 수치는 이제 단순 표시가 아니라 실시간 전투에서 공격 간격에 직접 반영됩니다.
-
-기본 구조:
 
 ```text
 공격 간격 = 기본 공격 간격 / attackSpeed × 전역 보정 × 전술 보정
 ```
 
-적용 파일:
-
-```text
-apps/web/src/game-client/pixi/pixiCombatRuntime.ts
-```
-
-설계 기준:
-
-- 빠른 연타형: 낮은 단발 피해, 빠른 공격간격
-- 저격형: 높은 단발 피해, 느린 공격간격
-- 광역형: 단일 기대값은 낮추고 군집 처리에 보상
-- 제어형: 직접 피해는 낮고 감속/빙결/전선 유지 가치 보상
-- 지원형: 직접 피해는 낮지만 버프/경제/템포 가치 보상
-
-## 10. 타겟 우선순위 보완
+## 11. 타겟 우선순위 보완
 
 영웅마다 타겟 우선순위를 부여했습니다.
 
@@ -283,7 +201,7 @@ low-hp: 체력 낮은 적 우선
 support: 기본 선두 지원
 ```
 
-## 11. 적용된 코드 변경
+## 12. 적용된 코드 변경
 
 ```text
 packages/game/src/types/heroTactics.ts
@@ -296,12 +214,14 @@ packages/game/src/types/wave.ts
 packages/game/src/data/waves.ts
 packages/game/src/systems/combatSystem.ts
 apps/web/src/game-client/pixi/pixiCombatRuntime.ts
+apps/web/src/game-client/pixi/pixiHudView.ts
+apps/web/src/game-client/pixi/pixiRenderRuntime.ts
 apps/web/src/components/lobby/lobbyHeroSkillDetails.ts
 apps/web/src/components/lobby/LobbyDetailPanel.tsx
 apps/web/src/styles/lobby-detail-drawer.css
 ```
 
-## 12. 남은 보완점
+## 13. 남은 보완점
 
 1. 전투 중 효과 로그/팝업 정리
    - 표식
@@ -314,12 +234,7 @@ apps/web/src/styles/lobby-detail-drawer.css
    - 기존 개별 영웅 스킬 런타임은 유지
    - 공통 효과는 `effectType` 기반 helper로 이전
 
-3. 웨이브 정보 UI 표시
-   - 현재 웨이브 테마
-   - 추천 효과
-   - 주요 적 타입
-
-## 13. 확인 필요
+## 14. 확인 필요
 
 ```bash
 pnpm typecheck
@@ -337,3 +252,4 @@ pnpm build:web
 - 신화 스킬/궁극기가 기존처럼 작동하는지
 - 영웅 상세 UI에서 스킬 타입 배지가 표시되는지
 - 웨이브별 대응 타입 보너스가 전투력 계산에 반영되는지
+- 상단 HUD에 웨이브 테마/추천 효과가 보이는지
