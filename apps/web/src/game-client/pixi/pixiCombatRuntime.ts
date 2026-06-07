@@ -10,7 +10,7 @@ import { createGameLayout } from "./gameLayout";
 import type { ActiveEnemy, GameRefs } from "./pixiGameTypes";
 import { updateEnemyViewHp } from "./pixiEnemyView";
 import { destroyActiveEnemy } from "./pixiEnemyRuntime";
-import { getProgressHeroPower, applyEconomyRewardBonus } from "./pixiProgressBonuses";
+import { applyEconomyRewardBonus, getProgressHeroPower } from "./pixiProgressBonuses";
 import { getHeroLevelMultiplier } from "./pixiLobbyHeroPool";
 import { getHeroSynergyAttackMultiplier, getHeroSynergyLabel } from "./pixiHeroSynergyRuntime";
 import { getPixiUnitAttackRange, isPointInPixiUnitRange } from "./pixiUnitRange";
@@ -63,24 +63,25 @@ const SPRITE_ATTACK_HERO_IDS = new Set([
   "ana",
   "illari",
 ]);
+
 const HERO_IDLE_DIRECTION_HOLD_MS = 3000;
 const HERO_BASE_ATTACK_INTERVAL_SECONDS = 0.48;
 const HERO_MIN_ATTACK_INTERVAL_SECONDS = 0.12;
+const BOSS_LUCK_STONE_REWARD = 1;
 const ZARYA_MAX_BEAM_CHARGE = 6;
 const ZARYA_BEAM_CHAIN_WINDOW_MS = 1200;
-const BOSS_LUCK_STONE_REWARD = 1;
 const STACK_ATTACK_OFFSETS = [
   { x: 0, y: -5 },
   { x: -7, y: 5 },
   { x: 7, y: 5 },
 ];
+
 let boardDrawQueued = false;
 let hudControlsDrawQueued = false;
 
 function requestBoardDraw(refs: GameRefs, options: PixiCombatRuntimeOptions) {
   if (boardDrawQueued) return;
   boardDrawQueued = true;
-
   window.requestAnimationFrame(() => {
     boardDrawQueued = false;
     options.drawBoard(refs, createGameLayout(refs.app.renderer.width, refs.app.renderer.height));
@@ -90,7 +91,6 @@ function requestBoardDraw(refs: GameRefs, options: PixiCombatRuntimeOptions) {
 function requestHudControlsDraw(refs: GameRefs, options: PixiCombatRuntimeOptions) {
   if (hudControlsDrawQueued) return;
   hudControlsDrawQueued = true;
-
   window.requestAnimationFrame(() => {
     hudControlsDrawQueued = false;
     const layout = createGameLayout(refs.app.renderer.width, refs.app.renderer.height);
@@ -123,47 +123,25 @@ function getHeroStackIndex(refs: GameRefs, hero: BoardHero) {
 }
 
 function getStackedAttackOrigin(refs: GameRefs, hero: BoardHero, center: { x: number; y: number; cell: number }) {
-  const stackIndex = getHeroStackIndex(refs, hero);
-  const offset = STACK_ATTACK_OFFSETS[stackIndex % STACK_ATTACK_OFFSETS.length] ?? STACK_ATTACK_OFFSETS[0];
-  return {
-    x: center.x + offset.x,
-    y: center.y + offset.y,
-    cell: center.cell,
-  };
-}
-
-function sortTargetsByPriority(targets: ActiveEnemy[], priority: HeroTargetPriority) {
-  const ordered = [...targets];
-
-  if (priority === "boss") {
-    ordered.sort((a, b) => Number(b.boss) - Number(a.boss) || b.hp - a.hp || b.progress - a.progress);
-    return ordered;
-  }
-
-  if (priority === "highest-hp") {
-    ordered.sort((a, b) => b.hp - a.hp || b.progress - a.progress);
-    return ordered;
-  }
-
-  if (priority === "low-hp") {
-    ordered.sort((a, b) => a.hp - b.hp || b.progress - a.progress);
-    return ordered;
-  }
-
-  if (priority === "cluster") {
-    ordered.sort((a, b) => countNearbyTargets(targets, b) - countNearbyTargets(targets, a) || b.progress - a.progress);
-    return ordered;
-  }
-
-  ordered.sort((a, b) => b.progress - a.progress);
-  return ordered;
+  const offset = STACK_ATTACK_OFFSETS[getHeroStackIndex(refs, hero) % STACK_ATTACK_OFFSETS.length] ?? STACK_ATTACK_OFFSETS[0];
+  return { x: center.x + offset.x, y: center.y + offset.y, cell: center.cell };
 }
 
 function countNearbyTargets(targets: ActiveEnemy[], target: ActiveEnemy) {
   return targets.filter((enemy) => enemy.id !== target.id && Math.hypot(enemy.x - target.x, enemy.y - target.y) <= 76).length;
 }
 
-function pickAttackTarget(refs: GameRefs, heroId: string, role: HeroRole | undefined, from: { x: number; y: number }, range: number): ActiveEnemy | null {
+function sortTargetsByPriority(targets: ActiveEnemy[], priority: HeroTargetPriority) {
+  const ordered = [...targets];
+  if (priority === "boss") ordered.sort((a, b) => Number(b.boss) - Number(a.boss) || b.hp - a.hp || b.progress - a.progress);
+  else if (priority === "highest-hp") ordered.sort((a, b) => b.hp - a.hp || b.progress - a.progress);
+  else if (priority === "low-hp") ordered.sort((a, b) => a.hp - b.hp || b.progress - a.progress);
+  else if (priority === "cluster") ordered.sort((a, b) => countNearbyTargets(targets, b) - countNearbyTargets(targets, a) || b.progress - a.progress);
+  else ordered.sort((a, b) => b.progress - a.progress);
+  return ordered;
+}
+
+function pickAttackTarget(refs: GameRefs, heroId: string, role: HeroRole | undefined, from: { x: number; y: number }, range: number) {
   const liveEnemies = refs.activeEnemies.filter(
     (enemy) => enemy.alive && enemy.progress >= 0 && isPointInPixiUnitRange(from, enemy, range),
   );
@@ -171,28 +149,17 @@ function pickAttackTarget(refs: GameRefs, heroId: string, role: HeroRole | undef
 
   const priority = getHeroTargetPriority(heroId);
   const orderedTargets = sortTargetsByPriority(liveEnemies, priority);
-
   if (priority === "front" && role === "damage") {
     const boss = orderedTargets.find((enemy) => enemy.boss);
     if (boss) return boss;
   }
-
   return orderedTargets[0] ?? null;
 }
 
 function getHeroDamage(refs: GameRefs, hero: BoardHero) {
   const definition = getHeroById(hero.heroId);
   const role = definition?.role ?? "damage";
-  const gradeBase =
-    hero.grade === "mythic"
-      ? 150
-      : hero.grade === "legendary"
-        ? 95
-        : hero.grade === "epic"
-          ? 52
-          : hero.grade === "rare"
-            ? 28
-            : 16;
+  const gradeBase = hero.grade === "mythic" ? 150 : hero.grade === "legendary" ? 95 : hero.grade === "epic" ? 52 : hero.grade === "rare" ? 28 : 16;
   const roleMultiplier = role === "damage" ? 1.35 : role === "tank" ? 0.62 : 0.48;
   const fallbackPower = Math.round(gradeBase * roleMultiplier);
   const progressPower = getProgressHeroPower(refs.progressBonuses, hero, fallbackPower);
@@ -200,11 +167,7 @@ function getHeroDamage(refs: GameRefs, hero: BoardHero) {
   const synergyMultiplier = getHeroSynergyAttackMultiplier(refs, hero);
 
   return Math.round(
-    progressPower *
-      lobbyLevelMultiplier *
-      refs.progressBonuses.attackMultiplier *
-      synergyMultiplier *
-      (1 + refs.state.powerUpgradeLevel * 0.16),
+    progressPower * lobbyLevelMultiplier * refs.progressBonuses.attackMultiplier * synergyMultiplier * (1 + refs.state.powerUpgradeLevel * 0.16),
   );
 }
 
@@ -233,21 +196,13 @@ function resetHeroAttackCooldown(refs: GameRefs, hero: BoardHero) {
   refs.heroAttackCooldowns[hero.instanceId] = getHeroAttackIntervalSeconds(refs, hero);
 }
 
-function damageEnemy(
-  refs: GameRefs,
-  enemy: ActiveEnemy,
-  damage: number,
-  options: PixiCombatRuntimeOptions,
-) {
+function damageEnemy(refs: GameRefs, enemy: ActiveEnemy, damage: number, options: PixiCombatRuntimeOptions) {
   if (!enemy.alive) return;
-
   enemy.hp = Math.max(0, enemy.hp - damage);
   updateEnemyViewHp(enemy.view, enemy.hp, enemy.maxHp);
-
   if (enemy.hp > 0) return;
 
   enemy.alive = false;
-
   const reward = applyEconomyRewardBonus(refs.progressBonuses, enemy.reward);
   const luckStoneReward = enemy.boss ? BOSS_LUCK_STONE_REWARD : 0;
   refs.waveKilled += 1;
@@ -260,11 +215,8 @@ function damageEnemy(
     defeatedBosses: refs.state.defeatedBosses + (enemy.boss ? 1 : 0),
     score: refs.state.score + reward * 3 + (enemy.boss ? 250 : 20),
   };
-
   options.floatText(refs, `+${reward}`, enemy.x, enemy.y - 26, colors.green);
-  if (luckStoneReward > 0) {
-    options.floatText(refs, `행운석 +${luckStoneReward}`, enemy.x, enemy.y - 46, colors.blue);
-  }
+  if (luckStoneReward > 0) options.floatText(refs, `행운석 +${luckStoneReward}`, enemy.x, enemy.y - 46, colors.blue);
   destroyActiveEnemy(enemy);
   options.invalidateControls(refs);
   requestHudControlsDraw(refs, options);
@@ -276,48 +228,24 @@ function applyTankSlow(enemy: ActiveEnemy) {
 
 function triggerHeroSpriteAttack(refs: GameRefs, hero: BoardHero, from: { x: number; y: number }, target: ActiveEnemy, options: PixiCombatRuntimeOptions) {
   if (!SPRITE_ATTACK_HERO_IDS.has(hero.heroId)) return;
-
   const now = Date.now();
-  const direction = target.x < from.x ? "left" : "right";
   const duration = getHeroSpriteAttackDuration(hero.heroId);
-
   refs.heroSpriteAttacks[hero.instanceId] = {
-    direction,
+    direction: target.x < from.x ? "left" : "right",
     until: now + duration,
     idleUntil: now + HERO_IDLE_DIRECTION_HOLD_MS,
   };
-
   requestBoardDraw(refs, options);
-
-  window.setTimeout(() => {
-    requestBoardDraw(refs, options);
-  }, duration + 20);
-
-  window.setTimeout(() => {
-    requestBoardDraw(refs, options);
-  }, HERO_IDLE_DIRECTION_HOLD_MS + 20);
+  window.setTimeout(() => requestBoardDraw(refs, options), duration + 20);
+  window.setTimeout(() => requestBoardDraw(refs, options), HERO_IDLE_DIRECTION_HOLD_MS + 20);
 }
 
 function showBaseSkillStartupFx(refs: GameRefs, hero: BoardHero, role: HeroRole, target: ActiveEnemy, options: PixiCombatRuntimeOptions) {
   const fxKind = getBaseHeroSkillFxKind(hero, role);
-  if (!fxKind) return;
-
-  spawnBaseSkillFx(
-    refs,
-    { addAnimation: options.addAnimation },
-    fxKind,
-    target,
-  );
+  if (fxKind) spawnBaseSkillFx(refs, { addAnimation: options.addAnimation }, fxKind, target);
 }
 
-function applyBaseHeroPostDamage(
-  refs: GameRefs,
-  hero: BoardHero,
-  role: HeroRole,
-  target: ActiveEnemy,
-  damage: number,
-  options: PixiCombatRuntimeOptions,
-) {
+function applyBaseHeroPostDamage(refs: GameRefs, hero: BoardHero, role: HeroRole, target: ActiveEnemy, damage: number, options: PixiCombatRuntimeOptions) {
   applyBaseHeroSkillPostDamage(
     refs,
     {
@@ -334,9 +262,7 @@ function applyBaseHeroPostDamage(
 
 function applyAttackDamage(refs: GameRefs, hero: BoardHero, role: HeroRole, target: ActiveEnemy, damage: number, options: PixiCombatRuntimeOptions) {
   if (!target.alive) return;
-
   if (role === "tank") applyTankSlow(target);
-
   damageEnemy(refs, target, damage, options);
   applyBaseHeroPostDamage(refs, hero, role, target, damage, options);
 }
@@ -344,21 +270,9 @@ function applyAttackDamage(refs: GameRefs, hero: BoardHero, role: HeroRole, targ
 function updateZaryaBeamCharge(refs: GameRefs, hero: BoardHero, target: ActiveEnemy) {
   const now = Date.now();
   const previous = refs.zaryaBeamCharges[hero.instanceId];
-  const isContinuing =
-    previous &&
-    previous.targetId === target.id &&
-    now - previous.lastAttackAt <= ZARYA_BEAM_CHAIN_WINDOW_MS;
-
-  const charge = isContinuing
-    ? Math.min(ZARYA_MAX_BEAM_CHARGE, previous.charge + 1)
-    : 1;
-
-  refs.zaryaBeamCharges[hero.instanceId] = {
-    targetId: target.id,
-    charge,
-    lastAttackAt: now,
-  };
-
+  const continuing = previous && previous.targetId === target.id && now - previous.lastAttackAt <= ZARYA_BEAM_CHAIN_WINDOW_MS;
+  const charge = continuing ? Math.min(ZARYA_MAX_BEAM_CHARGE, previous.charge + 1) : 1;
+  refs.zaryaBeamCharges[hero.instanceId] = { targetId: target.id, charge, lastAttackAt: now };
   return charge;
 }
 
@@ -366,14 +280,7 @@ function getZaryaBeamDamage(baseDamage: number, charge: number) {
   return Math.round(baseDamage * (0.78 + charge * 0.16));
 }
 
-function spawnZaryaBeamEffect(
-  refs: GameRefs,
-  options: PixiCombatRuntimeOptions,
-  from: { x: number; y: number },
-  target: ActiveEnemy,
-  charge: number,
-  done: () => void,
-) {
+function spawnZaryaBeamEffect(refs: GameRefs, options: PixiCombatRuntimeOptions, from: { x: number; y: number }, target: ActiveEnemy, charge: number, done: () => void) {
   const beam = acquireFxGraphics(refs);
   const duration = 620;
   const baseOuterWidth = 7 + charge * 1.9;
@@ -382,26 +289,15 @@ function spawnZaryaBeamEffect(
   options.addAnimation(refs, {
     duration,
     update: (progress) => {
-      if (!target.alive) {
-        beam.alpha = Math.max(0, 1 - progress);
-        return;
-      }
-
+      const alpha = target.alive ? 0.92 - progress * 0.18 : Math.max(0, 1 - progress);
       const pulse = 0.72 + Math.sin(progress * Math.PI * 8) * 0.18;
-      const alpha = 0.92 - progress * 0.18;
-      const outerWidth = baseOuterWidth * pulse;
-      const innerWidth = baseInnerWidth * (0.9 + pulse * 0.12);
-
       beam.clear();
-      beam.moveTo(from.x, from.y);
-      beam.lineTo(target.x, target.y);
-      beam.stroke({ color: 0xff4fd8, width: outerWidth, alpha: 0.28 * alpha });
-      beam.moveTo(from.x, from.y);
-      beam.lineTo(target.x, target.y);
-      beam.stroke({ color: 0xff9ff1, width: Math.max(3, outerWidth * 0.52), alpha: 0.32 * alpha });
-      beam.moveTo(from.x, from.y);
-      beam.lineTo(target.x, target.y);
-      beam.stroke({ color: 0xffffff, width: innerWidth, alpha });
+      beam.moveTo(from.x, from.y).lineTo(target.x, target.y);
+      beam.stroke({ color: 0xff4fd8, width: baseOuterWidth * pulse, alpha: 0.28 * alpha });
+      beam.moveTo(from.x, from.y).lineTo(target.x, target.y);
+      beam.stroke({ color: 0xff9ff1, width: Math.max(3, baseOuterWidth * 0.52), alpha: 0.32 * alpha });
+      beam.moveTo(from.x, from.y).lineTo(target.x, target.y);
+      beam.stroke({ color: 0xffffff, width: baseInnerWidth, alpha });
     },
     done: () => {
       releaseFxGraphics(refs, beam);
@@ -412,7 +308,6 @@ function spawnZaryaBeamEffect(
 
 function tryTriggerUltimateAttack(refs: GameRefs, options: PixiCombatRuntimeOptions, hero: BoardHero, from: { x: number; y: number }, target: ActiveEnemy, damage: number) {
   chargeMythicUltimateFromAttack(refs, hero);
-
   const triggered = tryTriggerMythicUltimate(
     refs,
     {
@@ -425,13 +320,8 @@ function tryTriggerUltimateAttack(refs: GameRefs, options: PixiCombatRuntimeOpti
     target,
     damage,
   );
-
   requestBoardDraw(refs, options);
   return triggered;
-}
-
-function drawBoardNow(refs: GameRefs, options: PixiCombatRuntimeOptions) {
-  requestBoardDraw(refs, options);
 }
 
 function applySkillEffects(refs: GameRefs, options: PixiCombatRuntimeOptions, hero: BoardHero, role: HeroRole, target: ActiveEnemy, damage: number, from: { x: number; y: number }) {
@@ -440,7 +330,7 @@ function applySkillEffects(refs: GameRefs, options: PixiCombatRuntimeOptions, he
     {
       addAnimation: options.addAnimation,
       damageEnemy: (refs, enemy, damage) => damageEnemy(refs, enemy, damage, options),
-      drawBoard: (refs) => drawBoardNow(refs, options),
+      drawBoard: () => requestBoardDraw(refs, options),
       floatText: options.floatText,
     },
     hero,
@@ -451,4 +341,104 @@ function applySkillEffects(refs: GameRefs, options: PixiCombatRuntimeOptions, he
   );
 }
 
+function spawnDefaultProjectile(refs: GameRefs, options: PixiCombatRuntimeOptions, hero: BoardHero, role: HeroRole, from: { x: number; y: number }, target: ActiveEnemy, damage: number, index: number) {
+  const projectile = acquireFxGraphics(refs);
+  projectile.circle(0, 0, hero.grade === "mythic" ? 5 : 3.5);
+  projectile.fill({ color: roleAccent(role), alpha: 1 });
+  projectile.x = from.x;
+  projectile.y = from.y;
+  const targetAtFire = { x: target.x, y: target.y };
+
+  options.addAnimation(refs, {
+    duration: 280 + index * 10,
+    update: (progress) => {
+      const eased = 1 - Math.pow(1 - progress, 2);
+      projectile.x = from.x + (targetAtFire.x - from.x) * eased;
+      projectile.y = from.y + (targetAtFire.y - from.y) * eased;
+      projectile.alpha = Math.max(0, 1 - progress * 0.18);
+    },
+    done: () => {
+      releaseFxGraphics(refs, projectile);
+      applyAttackDamage(refs, hero, role, target, damage, options);
+      if (index === 0) options.floatText(refs, `${damage}`, target.x, target.y - 18, roleAccent(role));
+    },
+  });
+}
+
 export function spawnAttackEffects(refs: GameRefs, options: PixiCombatRuntimeOptions, deltaSeconds = 0.016) {
+  const heroes = getAllBoardHeroes(refs.state.board);
+  if (heroes.length === 0) return;
+
+  cleanupHeroAttackCooldowns(refs, heroes);
+  let attackersThisTick = 0;
+
+  heroes.forEach((hero, index) => {
+    const isReady = tickHeroAttackCooldown(refs, hero, deltaSeconds);
+    if (!isReady || attackersThisTick >= 10) return;
+
+    const definition = getHeroById(hero.heroId);
+    const role = definition?.role ?? "damage";
+    const fromIndex = getHeroCellIndex(refs, hero);
+    const from = getStackedAttackOrigin(refs, hero, options.getCellCenter(refs, fromIndex));
+    const target = pickAttackTarget(refs, hero.heroId, role, from, getPixiUnitAttackRange(hero));
+    if (!target) return;
+
+    attackersThisTick += 1;
+    resetHeroAttackCooldown(refs, hero);
+
+    let damage = getHeroDamage(refs, hero);
+    const synergyLabel = getHeroSynergyLabel(refs, hero);
+    if (synergyLabel && index === 0) options.floatText(refs, synergyLabel, from.x, from.y - 34, 0x7dffb2);
+
+    damage = applyBaseHeroSkillPreDamage(hero, role, damage);
+    triggerHeroSpriteAttack(refs, hero, from, target, options);
+    showBaseSkillStartupFx(refs, hero, role, target, options);
+    damage = applySkillEffects(refs, options, hero, role, target, damage, from);
+    if (!target.alive) return;
+    if (tryTriggerUltimateAttack(refs, options, hero, from, target, damage)) return;
+
+    if (hero.heroId === "winston") {
+      const beamTargets = pickWinstonBeamTargets(refs, target);
+      spawnWinstonElectricBeam(
+        refs,
+        {
+          addAnimation: options.addAnimation,
+          applyDamage: (enemy, value) => damageEnemy(refs, enemy, value, options),
+        },
+        from,
+        beamTargets,
+        damage,
+        () => {
+          if (index === 0) options.floatText(refs, `${Math.round(damage * 0.72)}`, target.x, target.y - 18, 0x87b7ff);
+        },
+      );
+      return;
+    }
+
+    if (hero.heroId === "zarya") {
+      const charge = updateZaryaBeamCharge(refs, hero, target);
+      const beamDamage = getZaryaBeamDamage(damage, charge);
+      spawnZaryaBeamEffect(refs, options, from, target, charge, () => {
+        applyAttackDamage(refs, hero, role, target, beamDamage, options);
+        if (index === 0) options.floatText(refs, `${beamDamage}`, target.x, target.y - 18, charge >= 4 ? 0xff7de9 : colors.yellow);
+      });
+      return;
+    }
+
+    const distinctSpawned = spawnDistinctHeroAttackFx(
+      refs,
+      {
+        addAnimation: options.addAnimation,
+        applyDamage: (enemy, value) => damageEnemy(refs, enemy, value, options),
+        floatText: (value, x, y, color) => options.floatText(refs, value, x, y, color),
+      },
+      hero.heroId,
+      from,
+      target,
+      damage,
+    );
+    if (distinctSpawned) return;
+
+    spawnDefaultProjectile(refs, options, hero, role, from, target, damage, index);
+  });
+}
