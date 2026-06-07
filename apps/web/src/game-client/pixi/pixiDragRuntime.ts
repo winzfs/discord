@@ -4,7 +4,7 @@ import { colors } from "./gameTheme";
 import type { GameRefs } from "./pixiGameTypes";
 import { createUnitGhost, getCellCenter, getNearestCellIndexForDrop } from "./pixiBoardRuntime";
 
-const UNIT_MOVE_ANIMATION_MS = 680;
+const UNIT_MOVE_ANIMATION_MS = 1300;
 
 export type PixiDragRuntimeOptions = {
   isFinished: (state: GameState) => boolean;
