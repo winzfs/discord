@@ -67,7 +67,7 @@ import {
   createPixiTestControlsView,
   updatePixiTestControlsView,
 } from "./pixiTestControlsView";
-import { chargeMythicUltimatesOverTime, getAttackIntervalMultiplier } from "./pixiUltimateRuntime";
+import { chargeMythicUltimatesOverTime } from "./pixiUltimateRuntime";
 import { destroyFxGraphicsPool } from "./pixiFxPoolRuntime";
 import { preloadHeroSpriteTextures } from "./pixiHeroSpriteView";
 import { loadPixiLobbyHeroPool } from "./pixiLobbyHeroPool";
@@ -294,25 +294,20 @@ function tick(refs: GameRefs, deltaMs: number) {
 
   if (refs.wavePhase === "combat") {
     refs.combatTimer -= deltaSeconds;
-    refs.attackTimer -= deltaSeconds;
     updateActiveEnemies(refs, deltaSeconds, { getPathPoint });
     if (checkEnemyCountLimit(refs)) return;
     if (chargeMythicUltimatesOverTime(refs, deltaSeconds)) {
       drawBoard(refs, layout, createDragRuntimeOptions);
     }
-    if (refs.attackTimer <= 0) {
-      const baseAttackInterval = isBossWave(refs.state) ? 0.34 : 0.48;
-      refs.attackTimer = baseAttackInterval * getAttackIntervalMultiplier(refs);
-      spawnAttackEffects(refs, {
-        getCellCenter,
-        addAnimation,
-        floatText,
-        invalidateControls,
-        drawTopHud,
-        drawControls: (refs, layout) => drawControls(refs, layout, controlHandlers(refs)),
-        drawBoard: (refs, layout) => drawBoard(refs, layout, createDragRuntimeOptions),
-      });
-    }
+    spawnAttackEffects(refs, {
+      getCellCenter,
+      addAnimation,
+      floatText,
+      invalidateControls,
+      drawTopHud,
+      drawControls: (refs, layout) => drawControls(refs, layout, controlHandlers(refs)),
+      drawBoard: (refs, layout) => drawBoard(refs, layout, createDragRuntimeOptions),
+    }, deltaSeconds);
     if (refs.combatTimer <= 0 && refs.state.currentWave < initialBalance.maxWave) {
       startNextTimedWave(refs, createWaveFlowRuntimeOptions());
     }
@@ -370,6 +365,7 @@ export function createPixiGame(parent: HTMLElement, options: PixiGameOptions = {
     combatTimer: 0,
     resultTimer: 0,
     attackTimer: 0,
+    heroAttackCooldowns: {},
     activeEnemies: [],
     controlZones: [],
     nextControlZoneId: 1,
