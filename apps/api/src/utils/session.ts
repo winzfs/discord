@@ -73,10 +73,18 @@ async function decodeSignedPayload<T extends SessionPayload | StatePayload>(valu
   }
 }
 
-function cookieOptions(maxAge: number) {
+function isLocalHttpUrl(value: string | undefined) {
+  return value?.startsWith("http://localhost") || value?.startsWith("http://127.0.0.1") || value?.startsWith("http://0.0.0.0") || false;
+}
+
+function shouldUseSecureCookie(env: AppEnv["Bindings"]) {
+  return !isLocalHttpUrl(getEnvValue(env, "PUBLIC_APP_URL")) && !isLocalHttpUrl(getEnvValue(env, "DISCORD_REDIRECT_URI"));
+}
+
+function cookieOptions(maxAge: number, env: AppEnv["Bindings"]) {
   return {
     httpOnly: true,
-    secure: true,
+    secure: shouldUseSecureCookie(env),
     sameSite: "Lax" as const,
     path: "/",
     maxAge,
@@ -91,7 +99,7 @@ export async function setOAuthStateCookie(c: Context<AppEnv>, state: string) {
     { state, exp: Math.floor(Date.now() / 1000) + STATE_TTL_SECONDS },
     secret,
   );
-  setCookie(c, STATE_COOKIE_NAME, value, cookieOptions(STATE_TTL_SECONDS));
+  setCookie(c, STATE_COOKIE_NAME, value, cookieOptions(STATE_TTL_SECONDS, c.env));
 }
 
 export async function verifyOAuthStateCookie(c: Context<AppEnv>, state: string | null) {
@@ -110,7 +118,7 @@ export async function setSessionCookie(c: Context<AppEnv>, payload: Omit<Session
     { ...payload, exp: Math.floor(Date.now() / 1000) + SESSION_TTL_SECONDS },
     secret,
   );
-  setCookie(c, SESSION_COOKIE_NAME, value, cookieOptions(SESSION_TTL_SECONDS));
+  setCookie(c, SESSION_COOKIE_NAME, value, cookieOptions(SESSION_TTL_SECONDS, c.env));
 }
 
 export async function getSession(c: Context<AppEnv>) {
