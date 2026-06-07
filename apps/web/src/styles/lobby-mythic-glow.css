@@ -1,0 +1,78 @@
+.grade-mythic {
+  position: relative;
+  isolation: isolate;
+  overflow: visible;
+}
+
+.grade-mythic::before {
+  content: "";
+  position: absolute;
+  inset: -8px;
+  z-index: -1;
+  border-radius: 28px;
+  background:
+    radial-gradient(circle at 50% 36%, rgba(255, 218, 88, 0.58), transparent 36%),
+    radial-gradient(circle at 50% 50%, rgba(255, 161, 45, 0.28), transparent 58%);
+  filter: blur(2px);
+  pointer-events: none;
+}
+
+.grade-mythic .hero-portrait {
+  position: relative;
+  overflow: visible;
+  border-color: rgba(255, 225, 91, 0.96);
+  background:
+    radial-gradient(circle at 50% 42%, rgba(255, 227, 98, 0.3), rgba(77, 19, 70, 0.78) 58%, #1e0c1d 100%);
+  box-shadow:
+    0 0 0 3px rgba(255, 223, 96, 0.42),
+    0 0 12px rgba(255, 226, 101, 0.86),
+    0 0 26px rgba(255, 177, 48, 0.66),
+    0 0 42px rgba(255, 111, 69, 0.34),
+    inset 0 8px 20px rgba(0, 0, 0, 0.32),
+    0 5px 0 rgba(0, 0, 0, 0.22);
+}
+
+.grade-mythic .hero-portrait::before,
+.grade-mythic .hero-portrait::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: -1;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.grade-mythic .hero-portrait::before {
+  width: 142%;
+  height: 142%;
+  background: radial-gradient(circle, rgba(255, 230, 111, 0.72) 0%, rgba(255, 191, 56, 0.34) 38%, transparent 69%);
+  filter: blur(4px);
+}
+
+.grade-mythic .hero-portrait::after {
+  width: 118%;
+  height: 118%;
+  border: 3px solid rgba(255, 238, 154, 0.72);
+  box-shadow:
+    0 0 10px rgba(255, 238, 154, 0.88),
+    0 0 24px rgba(255, 199, 59, 0.72),
+    inset 0 0 14px rgba(255, 222, 95, 0.3);
+}
+
+.grade-mythic .hero-idle-sprite,
+.grade-mythic .mythic-hero-idle-sprite {
+  z-index: 1;
+  filter:
+    drop-shadow(0 7px 2px rgba(0, 0, 0, 0.35))
+    drop-shadow(0 0 8px rgba(255, 218, 92, 0.42));
+}
+
+.grade-mythic em {
+  box-shadow:
+    0 0 0 2px rgba(255, 235, 139, 0.34),
+    0 0 12px rgba(255, 223, 91, 0.95),
+    0 0 24px rgba(255, 168, 44, 0.58),
+    0 4px 0 rgba(0, 0, 0, 0.24);
+}
