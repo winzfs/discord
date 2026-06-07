@@ -4,11 +4,16 @@
 
 `/play-test`에서 신화 영웅만 소환할 수 있던 테스트 UI를 전체 유닛 소환 테스트 도구로 확장했습니다.
 
-추가로 테스트 패널의 유닛 버튼을 기준으로 인게임 스프라이트 스케일을 실시간 조정하고, 브라우저에 저장할 수 있게 했습니다.
+추가로 테스트 패널의 유닛 버튼을 기준으로 인게임 스프라이트 스케일을 실시간 조정하고, 서버 D1 데이터베이스에 저장할 수 있게 했습니다.
 
 ## 2. 적용 파일
 
 ```text
+apps/api/src/routes/game.routes.ts
+apps/api/src/services/heroSpriteScaleService.ts
+apps/api/migrations/0002_hero_sprite_scales.sql
+apps/web/src/lib/apiClient.ts
+apps/web/src/game-client/pixi/pixiHeroSpriteScaleApi.ts
 apps/web/src/game-client/pixi/pixiTestControlsRuntime.ts
 apps/web/src/game-client/pixi/pixiTestControlsView.ts
 apps/web/src/game-client/pixi/pixiGameTypes.ts
@@ -55,22 +60,30 @@ Pixi 캔버스 내부에서 안정적으로 동작하도록 마우스 휠 대신
 - 스케일 조정 대상 버튼은 초록색으로 표시됩니다.
 - 보드 유닛 선택 UI는 열지 않습니다.
 - `-0.03` / `+0.03` 버튼을 누르면 즉시 보드에 반영됩니다.
-- 값은 `localStorage`에 저장됩니다.
-- 새로고침 후에도 유지됩니다.
-- 일반 `/play`에서도 저장된 스케일이 적용됩니다.
-- `초기화`를 누르면 코드 기본값으로 돌아갑니다.
+- 조정값은 서버 D1의 `hero_sprite_scales` 테이블에 저장됩니다.
+- `/play`와 `/play-test`는 시작 시 `/api/game/hero-sprite-scales`를 읽어 서버 저장값을 적용합니다.
+- `초기화`를 누르면 서버 저장값을 삭제하고 코드 기본값으로 돌아갑니다.
 
-저장 키:
+서버 API:
 
 ```text
-owrd.heroSpriteScaleOverrides.v1
+GET    /api/game/hero-sprite-scales
+POST   /api/game/hero-sprite-scales
+DELETE /api/game/hero-sprite-scales/:heroId
 ```
 
 ### 3.5 몬스터 HP 배율 유지
 
 기존 몬스터 HP 배율 버튼은 그대로 유지했습니다.
 
-## 4. 확인 필요
+## 4. D1 마이그레이션
+
+```bash
+cd apps/api
+wrangler d1 execute discord_random_defense --file=./migrations/0002_hero_sprite_scales.sql
+```
+
+## 5. 확인 필요
 
 ```bash
 pnpm typecheck
@@ -88,6 +101,7 @@ pnpm build:web
 - 보드가 가득 찼을 때 오류 없이 무시되는지
 - 스케일 값이 표시되는지
 - `-0.03` / `+0.03` 버튼을 누르면 스프라이트 크기가 즉시 바뀌는지
-- 새로고침 후에도 조정값이 유지되는지
-- `초기화` 버튼으로 기본 스케일로 돌아가는지
+- 새로고침 후에도 서버 저장값이 유지되는지
+- 일반 `/play`에서도 서버 저장값이 적용되는지
+- `초기화` 버튼으로 서버 저장값이 삭제되고 기본 스케일로 돌아가는지
 - 몬스터 HP 배율 버튼이 기존처럼 동작하는지
