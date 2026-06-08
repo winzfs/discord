@@ -70,7 +70,8 @@ const HERO_MIN_ATTACK_INTERVAL_SECONDS = 0.12;
 const BOSS_LUCK_STONE_REWARD = 1;
 const ZARYA_MAX_BEAM_CHARGE = 6;
 const ZARYA_BEAM_CHAIN_WINDOW_MS = 1200;
-const ZARYA_BEAM_PULSE_TIMES = [0.18, 0.5, 0.82];
+const ZARYA_BEAM_DURATION_MS = 520;
+const ZARYA_BEAM_PULSE_TIMES = [0.12, 0.31, 0.5, 0.69, 0.88];
 const STACK_ATTACK_OFFSETS = [
   { x: 0, y: -5 },
   { x: -7, y: 5 },
@@ -78,18 +79,18 @@ const STACK_ATTACK_OFFSETS = [
 ];
 
 const RELOAD_ATTACK_INTERVALS: Record<string, number> = {
-  tracer: 0.68,
-  zarya: 0.72,
-  winston: 0.62,
-  dva: 0.58,
+  tracer: 0.82,
+  zarya: 0.78,
+  winston: 0.74,
+  dva: 0.72,
 };
 
 const RAPID_PROJECTILE_PROFILES: Record<string, { shots: number; gapMs: number }> = {
-  "spark-runner": { shots: 3, gapMs: 58 },
-  "scrap-gunner": { shots: 2, gapMs: 76 },
-  "pulse-ranger": { shots: 3, gapMs: 70 },
-  "burst-scout": { shots: 2, gapMs: 96 },
-  "field-medic": { shots: 3, gapMs: 74 },
+  "spark-runner": { shots: 5, gapMs: 100 },
+  "scrap-gunner": { shots: 3, gapMs: 100 },
+  "pulse-ranger": { shots: 4, gapMs: 100 },
+  "burst-scout": { shots: 3, gapMs: 100 },
+  "field-medic": { shots: 4, gapMs: 100 },
 };
 
 let boardDrawQueued = false;
@@ -117,10 +118,11 @@ function requestHudControlsDraw(refs: GameRefs, options: PixiCombatRuntimeOption
 
 function getHeroSpriteAttackDuration(heroId: string) {
   if (heroId === "cassidy") return 520;
-  if (heroId === "zarya") return 620;
-  if (heroId === "winston") return 560;
-  if (heroId === "tracer") return 520;
-  return 260;
+  if (heroId === "zarya") return ZARYA_BEAM_DURATION_MS;
+  if (heroId === "winston") return 520;
+  if (heroId === "tracer") return 620;
+  if (heroId === "dva") return 520;
+  return 360;
 }
 
 function roleAccent(role: HeroRole | undefined) {
@@ -316,7 +318,7 @@ function spawnZaryaBeamEffect(
   done: () => void,
 ) {
   const beam = acquireFxGraphics(refs);
-  const duration = 640;
+  const duration = ZARYA_BEAM_DURATION_MS;
   const baseOuterWidth = 7 + charge * 1.9;
   const baseInnerWidth = 2.5 + charge * 0.7;
   const appliedPulseIndexes = new Set<number>();
@@ -325,8 +327,8 @@ function spawnZaryaBeamEffect(
     duration,
     update: (progress) => {
       const alpha = target.alive ? 0.92 - progress * 0.18 : Math.max(0, 1 - progress);
-      const pulseHit = ZARYA_BEAM_PULSE_TIMES.some((time) => Math.abs(progress - time) < 0.08) ? 1.26 : 0.9;
-      const pulse = (0.72 + Math.sin(progress * Math.PI * 11) * 0.18) * pulseHit;
+      const pulseHit = ZARYA_BEAM_PULSE_TIMES.some((time) => Math.abs(progress - time) < 0.055) ? 1.32 : 0.9;
+      const pulse = (0.72 + Math.sin(progress * Math.PI * 15) * 0.18) * pulseHit;
       beam.clear();
       beam.moveTo(from.x, from.y).lineTo(target.x, target.y);
       beam.stroke({ color: 0xff4fd8, width: baseOuterWidth * pulse, alpha: 0.28 * alpha });
@@ -401,7 +403,7 @@ function spawnDefaultProjectile(
   projectile.y = from.y;
   projectile.alpha = startDelayMs > 0 ? 0 : 1;
   const targetAtFire = { x: target.x, y: target.y };
-  const flightDuration = 220 + index * 8;
+  const flightDuration = 180 + index * 6;
 
   options.addAnimation(refs, {
     duration: startDelayMs + flightDuration,
