@@ -390,7 +390,7 @@ export function spawnAttackEffects(refs: GameRefs, options: PixiCombatRuntimeOpt
     const synergyLabel = getHeroSynergyLabel(refs, hero);
     if (synergyLabel && index === 0) options.floatText(refs, synergyLabel, from.x, from.y - 34, 0x7dffb2);
 
-    damage = applyBaseHeroSkillPreDamage(hero, role, damage);
+    damage = applyBaseHeroSkillPreDamage(refs, hero, role, damage);
     triggerHeroSpriteAttack(refs, hero, from, target, options);
     showBaseSkillStartupFx(refs, hero, role, target, options);
     damage = applySkillEffects(refs, options, hero, role, target, damage, from);
