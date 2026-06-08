@@ -1,5 +1,34 @@
 import type { Detail } from "../../game-lobby/lobbyData";
 
+function DetailCombatProfileSection({ detail }: { detail: Detail }) {
+  if (!detail.combatProfile) return null;
+  const profile = detail.combatProfile;
+
+  return (
+    <section className="detail-combat-profile">
+      <h3>전투 분류</h3>
+      <div className="detail-combat-grid">
+        <div>
+          <small>포지션</small>
+          <b>{profile.position}</b>
+        </div>
+        <div>
+          <small>공격타입</small>
+          <b>{profile.attackType}</b>
+        </div>
+        <div>
+          <small>스킬효과</small>
+          <b>{profile.skillEffects.join(" · ")}</b>
+        </div>
+        <div>
+          <small>특징</small>
+          <b>{profile.features.join(" · ")}</b>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function DetailSkillSection({ detail }: { detail: Detail }) {
   if (!detail.skills?.length) return null;
 
@@ -65,6 +94,7 @@ export function LobbyDetailPanel({ detail, gold, onClose, onUpgrade }: LobbyDeta
         <section className="detail-stat-grid">
           {detail.stats.map((stat) => <strong key={stat}>{stat}</strong>)}
         </section>
+        <DetailCombatProfileSection detail={detail} />
         <DetailSkillSection detail={detail} />
         {detail.lockedText && <p>{detail.lockedText}</p>}
       </div>
