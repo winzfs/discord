@@ -21,7 +21,7 @@ function skillTypeLabel(type: SkillDefinition["type"]): LobbyHeroSkillDetail["ty
 
 function getSkillConditionText(skill: SkillDefinition) {
   if (skill.type === "ultimate") return "궁극기 게이지 100%";
-  if (skill.tags.includes("unique")) return "기본 공격 시 항상 적용";
+  if (skill.tags.includes("unique")) return "기본 공격 시 42% 확률";
   if (skill.type === "attack") return "기본 공격 시 42% 확률";
   if (skill.type === "control") return "기본 공격 시 30% 확률";
   return "기본 공격 시 24% 확률";
@@ -42,7 +42,7 @@ function getTagLines(skill: SkillDefinition) {
   if (skill.effectType === "control") lines.push(tags.includes("freeze") ? "강한 둔화로 전선을 지연시킵니다." : "이동속도를 낮춰 누수를 줄입니다.");
   if (skill.effectType === "amplify") lines.push("표식/취약으로 후속 피해 효율을 올립니다.");
   if (skill.effectType === "tempo") lines.push("공격속도나 궁극기 흐름을 보조합니다.");
-  if (skill.effectType === "economy") lines.push("보상 흐름을 늘려 장기 성장에 기여합니다.");
+  if (skill.effectType === "economy") lines.push("보상 흐름을 늘려 경제를 보조합니다.");
   if (skill.effectType === "execute") lines.push("약해진 적을 빠르게 마무리합니다.");
   if (skill.effectType === "shield") lines.push("방어/지연 효과로 전선을 안정화합니다.");
   if (skill.effectType === "summon") lines.push("보조 화력으로 라인을 보강합니다.");
@@ -81,12 +81,12 @@ const manualSkillDetails: Record<string, LobbyHeroSkillDetail[]> = {
     withTacticalEffect({ id: "dva-self-destruct", name: "자폭", type: "궁극기", condition: "궁극기 게이지 100%", summary: "영웅 위치 기준 넓은 범위 폭발", lines: ["넓은 범위에 공격력 450% 피해", "적이 많이 모였을 때 효율 극대화", "탱커지만 강력한 광역 마무리 가능"] }),
   ],
   zarya: [
-    withTacticalEffect({ id: "zarya-particle-cannon", name: "입자포", type: "공격", condition: "기본 공격 시 항상 적용", summary: "같은 대상을 계속 공격할수록 강해지는 빔", lines: ["연속 공격 시 차지 상승", "피해 배율 94%에서 최대 174%까지 상승", "보스전과 장기전에 강함"] }),
+    withTacticalEffect({ id: "zarya-particle-cannon", name: "입자포", type: "공격", condition: "기본 공격", summary: "같은 대상을 계속 공격할수록 강해지는 지속 강화 공격", lines: ["공격타입 자체가 지속 강화", "연속 공격 시 차지 상승", "피해 배율 94%에서 최대 174%까지 상승"] }),
     withTacticalEffect({ id: "zarya-projected-barrier", name: "방벽 충전", type: "지원", condition: "기본 공격 시 24% 확률, 차지 3 이상", summary: "차지가 쌓이면 추가 제어와 피해를 부여", lines: ["차지 3 이상일 때 발동 가능", "대상 감속 + 108% 피해", "입자포 유지력이 좋을수록 강력"] }),
     withTacticalEffect({ id: "zarya-graviton-surge", name: "중력자탄", type: "궁극기", condition: "궁극기 게이지 100%", summary: "주변 적을 끌어모아 묶고 폭발 피해", lines: ["3초 동안 흡입/속박", "좁은 범위에 공격력 240% 피해", "광역 영웅과 연계하기 좋음"] }),
   ],
   winston: [
-    withTacticalEffect({ id: "winston-tesla-cannon", name: "테슬라 캐논", type: "공격", condition: "기본 공격 시 항상 적용 / 연쇄 42% 확률", summary: "좁은 범위를 튀는 전기 공격", lines: ["주 대상에게 안정적인 전기 피해", "확률로 주변 적에게 연쇄 피해", "최대 4명까지 정리 가능"] }),
+    withTacticalEffect({ id: "winston-tesla-cannon", name: "테슬라 캐논", type: "공격", condition: "기본 공격 시 42% 확률", summary: "좁은 범위를 튀는 전기 공격", lines: ["주 대상에게 전기 피해", "확률로 주변 적에게 연쇄 피해", "최대 4명까지 정리 가능"] }),
     withTacticalEffect({ id: "winston-jump-pack", name: "점프 팩", type: "제어", condition: "기본 공격 시 30% 확률", summary: "선두 적에게 충격을 주고 늦춤", lines: ["선두 대상에게 42% 피해", "이동속도 감소 적용", "전선 돌파를 막는 탱커형 제어"] }),
     withTacticalEffect({ id: "winston-primal-rage", name: "원시의 분노", type: "궁극기", condition: "궁극기 게이지 100%", summary: "광역 충격파로 적을 흔드는 궁극기", lines: ["범위 내 적에게 공격력 240% 피해", "광역 감속 적용", "많은 적이 몰릴 때 방어력이 높음"] }),
   ],
