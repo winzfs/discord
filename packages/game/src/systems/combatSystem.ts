@@ -6,6 +6,8 @@ import { getWaveByNumber } from "../data/waves";
 import { getAllBoardHeroes } from "./boardSystem";
 import type { GameState } from "../types/gameState";
 import type { HeroDefinition } from "../types/hero";
+import type { HeroStatusKeyword } from "../types/heroTactics";
+import type { SkillEffectType } from "../types/skill";
 import type { WaveDefinition } from "../types/wave";
 
 export type BoardPowerBreakdown = {
@@ -64,15 +66,32 @@ function getRoleBonus(heroes: HeroDefinition[]): number {
   return 1;
 }
 
+function heroStatusMatchesEffect(status: HeroStatusKeyword | null | undefined, effect: SkillEffectType) {
+  if (!status) return false;
+
+  if (status === "slow" || status === "freeze") return effect === "control";
+  if (status === "mark" || status === "vulnerable" || status === "burst" || status === "ramp") return effect === "amplify" || effect === "damage";
+  if (status === "chain") return effect === "chain";
+  if (status === "splash") return effect === "splash";
+  if (status === "execute") return effect === "execute";
+  if (status === "haste") return effect === "tempo";
+  if (status === "shield") return effect === "shield" || effect === "control";
+  if (status === "economy") return effect === "economy";
+  if (status === "summon") return effect === "summon";
+
+  return false;
+}
+
 function getCounterBonus(heroes: HeroDefinition[], wave: WaveDefinition | null): number {
   if (!wave || heroes.length === 0 || wave.recommendedEffects.length === 0) return 1;
 
-  const recommended = new Set(wave.recommendedEffects);
   const matchedCount = heroes.reduce((count, hero) => {
     const profile = getHeroTacticalProfile(hero.id);
     if (!profile) return count;
-    const matchedPrimary = profile.primaryStatus && recommended.has(profile.primaryStatus as never);
-    const matchedSecondary = profile.secondaryStatus && recommended.has(profile.secondaryStatus as never);
+
+    const matchedPrimary = wave.recommendedEffects.some((effect) => heroStatusMatchesEffect(profile.primaryStatus, effect));
+    const matchedSecondary = wave.recommendedEffects.some((effect) => heroStatusMatchesEffect(profile.secondaryStatus, effect));
+
     return count + (matchedPrimary ? 1 : 0) + (matchedSecondary ? 0.5 : 0);
   }, 0);
 
