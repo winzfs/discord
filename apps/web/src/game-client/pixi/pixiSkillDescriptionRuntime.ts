@@ -10,7 +10,7 @@ export type PixiSkillDescription = {
 
 function getCondition(skill: SkillDefinition) {
   if (skill.type === "ultimate") return "궁극기 게이지 100%";
-  if (skill.tags.includes("unique")) return "기본 공격 시 항상 적용";
+  if (skill.tags.includes("unique")) return "기본 공격 시 42% 확률";
   if (skill.type === "attack") return "기본 공격 시 42% 확률";
   if (skill.type === "control") return "기본 공격 시 30% 확률";
   return "기본 공격 시 24% 확률";
@@ -27,7 +27,7 @@ function getEffectLines(skill: SkillDefinition) {
   if (skill.effectType === "control") lines.push(tags.includes("freeze") ? "강한 둔화로 전선을 지연시킵니다." : "이동속도를 낮춰 누수를 줄입니다.");
   if (skill.effectType === "amplify") lines.push("표식/취약으로 후속 피해 효율을 올립니다.");
   if (skill.effectType === "tempo") lines.push("공격속도나 궁극기 흐름을 보조합니다.");
-  if (skill.effectType === "economy") lines.push("보상 흐름을 늘려 장기 성장에 기여합니다.");
+  if (skill.effectType === "economy") lines.push("보상 흐름을 늘려 경제를 보조합니다.");
   if (skill.effectType === "execute") lines.push("약해진 적을 빠르게 마무리합니다.");
   if (skill.effectType === "shield") lines.push("방어/지연 효과로 전선을 안정화합니다.");
   if (skill.effectType === "summon") lines.push("보조 화력으로 라인을 보강합니다.");
