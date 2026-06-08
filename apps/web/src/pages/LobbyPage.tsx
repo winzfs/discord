@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { getAttackTypeLabel, getSkillEffectLabel, type HeroDefinition } from "@discord-random-defense/game";
 import { LobbyBottomNav } from "../components/lobby/LobbyBottomNav";
 import { LobbyDetailPanel } from "../components/lobby/LobbyDetailPanel";
 import { LobbyRecruitPanel } from "../components/lobby/LobbyRecruitPanel";
@@ -16,6 +17,7 @@ import {
   getHeroUpgradeRequirement,
   tabs,
   type Detail,
+  type DetailCombatProfile,
   type LobbyArtifact,
   type LobbyHero,
   type LobbyTabId,
@@ -64,6 +66,49 @@ function categoryLabel(category: string) {
   return labels[category] ?? category;
 }
 
+function featureTagLabel(tag: string) {
+  const labels: Record<string, string> = {
+    overwatch: "오버워치",
+    talon: "탈론",
+    nullsector: "널 섹터",
+    volskaya: "볼스카야",
+    helix: "헬릭스",
+    crusader: "십자군",
+    cadet: "신입",
+    rookie: "신입",
+    medic: "의무",
+    engineer: "정비",
+    chaser: "추적",
+    sniper: "저격",
+    fast: "고속",
+    slow: "감속",
+    "single-target": "단일 집중",
+    "boss-killer": "보스 대응",
+    "wave-clear": "웨이브 정리",
+    frontline: "전선 유지",
+    support: "지원",
+    economy: "성장",
+    summon: "소환",
+  };
+  return labels[tag] ?? tag;
+}
+
+function buildHeroCombatProfile(hero: HeroDefinition, skills = getLobbyHeroSkillDetails(hero.id)): DetailCombatProfile {
+  const skillEffects = Array.from(new Set(skills.map((skill) => getSkillEffectLabel(skill.effectType).shortLabel))).slice(0, 3);
+  const features = hero.tags
+    .filter((tag) => ![hero.attackType, hero.role, hero.grade, "single", "area", "control"].includes(tag))
+    .map(featureTagLabel)
+    .filter((tag, index, array) => array.indexOf(tag) === index)
+    .slice(0, 4);
+
+  return {
+    position: roleLabel(hero.role),
+    attackType: getAttackTypeLabel(hero.attackType).shortLabel,
+    skillEffects: skillEffects.length > 0 ? skillEffects : ["피해"],
+    features: features.length > 0 ? features : [gradeLabel(hero.grade)],
+  };
+}
+
 function rewardIcon(kind: LobbyPassReward["kind"]) {
   if (kind === "gold") return "🪙";
   if (kind === "crystals") return "💎";
@@ -90,19 +135,20 @@ function RewardPopup({ reward, onClose }: { reward: RewardPopupData; onClose: ()
 function createHeroDetail(hero: LobbyHero): Detail {
   const required = getHeroUpgradeRequirement(Math.max(1, hero.level));
   const power = hero.owned ? getHeroPowerAtLevel(hero, hero.level) : hero.power;
+  const skills = getLobbyHeroSkillDetails(hero.id);
   return {
     kind: "hero",
     id: hero.id,
     title: hero.displayName,
-    subtitle: `${gradeLabel(hero.grade)} · ${roleLabel(hero.role)} · ${hero.attackType}`,
+    subtitle: `${gradeLabel(hero.grade)} · ${roleLabel(hero.role)} · ${getAttackTypeLabel(hero.attackType).shortLabel}`,
     stats: [
       hero.description,
       `전투력 ${power}`,
       `공격속도 ${hero.attackSpeed}`,
       `사거리 ${hero.range}`,
-      `태그 ${hero.tags.join(" / ")}`,
     ],
-    skills: getLobbyHeroSkillDetails(hero.id),
+    combatProfile: buildHeroCombatProfile(hero, skills),
+    skills,
     owned: hero.owned,
     level: hero.level,
     progressText: hero.owned ? `조각 ${hero.shards}/${required}` : "미보유",
@@ -258,99 +304,61 @@ export function LobbyPage() {
     setLastRecruitResults(summary.results);
     setRevealResults(summary.results);
     persistProgress(summary.nextHeroes, artifacts, gold, nextCrystals, nextLineupHeroIds);
-    setActiveTab("heroes");
-    setDetail(null);
-    setNotice(`영웅 모집 완료 · 신규 ${summary.newHeroCount}명 · 조각 ${summary.totalShards}개 획득`);
+    setNotice(summary.message);
   };
 
-  const upgradeSelected = () => {
+  const closeRecruitReveal = () => {
+    setRevealResults([]);
+  };
+
+  const upgradeDetail = () => {
     if (!detail) return;
-    if (!detail.owned) {
-      setNotice("아직 보유하지 않은 항목입니다.");
-      return;
-    }
-    if (!detail.canUpgrade) {
-      setNotice("업그레이드 조각이 부족합니다.");
-      return;
-    }
-    if (gold < detail.upgradeCost) {
-      setNotice("골드 부족");
+    if (detail.kind === "hero") {
+      const target = heroes.find((hero) => hero.id === detail.id);
+      if (!target) return;
+      const required = getHeroUpgradeRequirement(Math.max(1, target.level));
+      const cost = getCollectionUpgradeCost("hero", Math.max(1, target.level));
+      if (!target.owned || target.shards < required || gold < cost) return;
+      const nextHeroes = heroes.map((hero) => hero.id === target.id
+        ? { ...hero, shards: hero.shards - required, level: hero.level + 1 }
+        : hero);
+      const nextGold = gold - cost;
+      setHeroes(nextHeroes);
+      setGold(nextGold);
+      persistProgress(nextHeroes, artifacts, nextGold);
+      refreshDetail("hero", target.id, nextHeroes, artifacts);
+      setNotice(`${target.displayName} Lv.${target.level + 1} 달성`);
       return;
     }
 
-    const nextGold = gold - detail.upgradeCost;
+    const target = artifacts.find((artifact) => artifact.id === detail.id);
+    if (!target) return;
+    const required = getArtifactUpgradeRequirement(Math.max(1, target.level));
+    const cost = getCollectionUpgradeCost("artifact", Math.max(1, target.level));
+    if (!target.owned || target.pieces < required || target.level >= target.maxLevel || gold < cost) return;
+    const nextArtifacts = artifacts.map((artifact) => artifact.id === target.id
+      ? { ...artifact, pieces: artifact.pieces - required, level: artifact.level + 1 }
+      : artifact);
+    const nextGold = gold - cost;
+    setArtifacts(nextArtifacts);
     setGold(nextGold);
-    if (detail.kind === "hero") {
-      const nextHeroes = heroes.map((hero) => {
-        if (hero.id !== detail.id) return hero;
-        const required = getHeroUpgradeRequirement(Math.max(1, hero.level));
-        return { ...hero, level: hero.level + 1, shards: Math.max(0, hero.shards - required) };
-      });
-      const nextLineupHeroIds = syncLineupWithHeroes(lineupHeroIds, nextHeroes);
-      setHeroes(nextHeroes);
-      setLineupHeroIds(nextLineupHeroIds);
-      persistProgress(nextHeroes, artifacts, nextGold, crystals, nextLineupHeroIds);
-      refreshDetail(detail.kind, detail.id, nextHeroes, artifacts);
-    } else {
-      const nextArtifacts = artifacts.map((artifact) => {
-        if (artifact.id !== detail.id) return artifact;
-        const required = getArtifactUpgradeRequirement(Math.max(1, artifact.level));
-        return { ...artifact, level: Math.min(artifact.maxLevel, artifact.level + 1), pieces: Math.max(0, artifact.pieces - required) };
-      });
-      setArtifacts(nextArtifacts);
-      persistProgress(heroes, nextArtifacts, nextGold, crystals);
-      refreshDetail(detail.kind, detail.id, heroes, nextArtifacts);
-    }
-    setNotice(detail.title + " 업그레이드 완료");
+    persistProgress(heroes, nextArtifacts, nextGold);
+    refreshDetail("artifact", target.id, heroes, nextArtifacts);
+    setNotice(`${target.displayName} Lv.${target.level + 1} 달성`);
   };
 
   return (
-    <main className="lobby-shell">
+    <LobbyStage gold={gold} crystals={crystals} notice={notice}>
       <LobbyTopBar gold={gold} crystals={crystals} />
-      <LobbyStage
-        onOpenShop={() => openLobbyTab("shop", "상점에서 보상을 확인해보세요.")}
-        onOpenHeroes={() => openLobbyTab("heroes", "영웅 편성과 강화를 확인해보세요.")}
-        onOpenArtifacts={() => openLobbyTab("artifacts", "유물 강화로 전투 보너스를 올려보세요.")}
-      />
-      <p className="lobby-notice">{notice}</p>
-      {activeTab === "shop" && <ShopView onPick={buyShopItem} />}
-      {activeTab === "heroes" && (
-        <>
-          <LobbyRecruitPanel
-            crystals={crystals}
-            lastResults={lastRecruitResults}
-            onRecruitSingle={() => recruit("single")}
-            onRecruitTen={() => recruit("ten")}
-          />
-          <HeroesView
-            heroes={heroes}
-            onDetail={setDetail}
-            createDetail={createHeroDetail}
-            gradeLabel={gradeLabel}
-            roleLabel={roleLabel}
-          />
-        </>
-      )}
-      {activeTab === "battle" && <BattleView accountProgress={accountProgress} onClaimPassReward={claimPassReward} />}
-      {activeTab === "artifacts" && (
-        <ArtifactsView
-          artifacts={artifacts}
-          onDetail={setDetail}
-          createDetail={createArtifactDetail}
-          categoryLabel={categoryLabel}
-        />
-      )}
-      {detail && <LobbyDetailPanel detail={detail} gold={gold} onClose={() => setDetail(null)} onUpgrade={upgradeSelected} />}
-      {revealResults.length > 0 && <LobbyRecruitReveal results={revealResults} onClose={() => setRevealResults([])} />}
+      {activeTab === "shop" && <ShopView items={shopItems} onBuy={buyShopItem} />}
+      {activeTab === "heroes" && <HeroesView heroes={heroes} lineupHeroIds={lineupHeroIds} onSelectHero={(hero) => setDetail(createHeroDetail(hero))} />}
+      {activeTab === "battle" && <BattleView heroes={heroes} lineupHeroIds={lineupHeroIds} />}
+      {activeTab === "artifacts" && <ArtifactsView artifacts={artifacts} onSelectArtifact={(artifact) => setDetail(createArtifactDetail(artifact))} />}
+      {activeTab === "shop" && <LobbyRecruitPanel crystals={crystals} onRecruit={recruit} />}
+      {detail && <LobbyDetailPanel detail={detail} gold={gold} onClose={() => setDetail(null)} onUpgrade={upgradeDetail} />}
+      <LobbyBottomNav tabs={tabs} activeTab={activeTab} onChange={(id) => openLobbyTab(id, `${tabs.find((tab) => tab.id === id)?.label ?? "메뉴"} 확인 중`)} />
       {rewardPopup && <RewardPopup reward={rewardPopup} onClose={() => setRewardPopup(null)} />}
-      <LobbyBottomNav
-        activeTab={activeTab}
-        tabs={tabs}
-        onTabChange={(tabId) => {
-          setActiveTab(tabId);
-          setDetail(null);
-        }}
-      />
-    </main>
+      {revealResults.length > 0 && <LobbyRecruitReveal results={revealResults} onClose={closeRecruitReveal} />}
+    </LobbyStage>
   );
 }
