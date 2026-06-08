@@ -50,37 +50,6 @@ function makeInfoLine(value: string, x: number, y: number, fill = 0xd8d0c8, size
   return text;
 }
 
-function getRowLabel(row: number, rows: number) {
-  if (rows <= 3) {
-    if (row === 0) return "전방";
-    if (row === rows - 1) return "후방";
-    return "중앙";
-  }
-
-  if (row === 0) return "최전방";
-  if (row === 1) return "전방";
-  if (row === rows - 2) return "후방";
-  if (row === rows - 1) return "최후방";
-  return "중앙";
-}
-
-function getColumnLabel(column: number, columns: number) {
-  if (columns <= 1) return "중앙";
-  if (columns === 2) return column === 0 ? "좌측" : "우측";
-  if (columns === 3) return column === 0 ? "좌측" : column === 1 ? "중앙" : "우측";
-  if (column === 0) return "좌측";
-  if (column === columns - 1) return "우측";
-  return column < columns / 2 ? "중좌" : "중우";
-}
-
-function getTacticalCellLabel(cellIndex: number, columns: number, rows: number) {
-  const safeColumns = Math.max(1, columns);
-  const safeRows = Math.max(1, rows);
-  const row = Math.min(safeRows - 1, Math.max(0, Math.floor(cellIndex / safeColumns)));
-  const column = Math.min(safeColumns - 1, Math.max(0, cellIndex % safeColumns));
-  return `${getRowLabel(row, safeRows)} ${getColumnLabel(column, safeColumns)} 전술칸`;
-}
-
 function drawSkillCard(
   view: Container,
   skill: SkillDefinition,
@@ -129,7 +98,7 @@ export function drawPixiUnitInfoView(target: Container, options: PixiUnitInfoVie
   const normalSkills = heroSkills.filter((skill) => skill.type !== "ultimate");
   const ultimateSkills = heroSkills.filter((skill) => skill.type === "ultimate");
   const width = Math.min(360, options.rendererWidth - 24);
-  const height = Math.min(284, options.rendererHeight - 120);
+  const height = Math.min(268, options.rendererHeight - 120);
   const view = new Container();
   view.x = Math.max(12, options.rendererWidth / 2 - width / 2);
   view.y = Math.max(62, options.rendererHeight - height - 118);
@@ -153,16 +122,15 @@ export function drawPixiUnitInfoView(target: Container, options: PixiUnitInfoVie
     ? `전투력 ${definition.power}  속도 ${definition.attackSpeed}  사거리 ${definition.range}`
     : "영웅 정보를 찾을 수 없음";
   view.addChild(makeInfoLine(stats, 14, 70, 0xd8d0c8, 10));
-  view.addChild(makeInfoLine(`${getTacticalCellLabel(options.cellIndex, options.boardColumns, options.boardRows)} · 중첩 ${options.stackCount}/3`, 14, 87, options.stackCount >= 3 ? colors.yellow : 0xb7afa8, 10));
 
   const traitLines = options.traitLines?.slice(0, 2) ?? [];
   if (traitLines.length > 0) {
     traitLines.forEach((line, index) => {
-      view.addChild(makeInfoLine(line, 14, 104 + index * 12, index === 0 ? 0x7dffb2 : 0xbde7ff, 9));
+      view.addChild(makeInfoLine(line, 14, 88 + index * 12, index === 0 ? 0x7dffb2 : 0xbde7ff, 9));
     });
   }
 
-  const skillTitleY = traitLines.length > 0 ? 131 : 109;
+  const skillTitleY = traitLines.length > 0 ? 115 : 92;
   const skillTitle = makePixiText("스킬", 12, colors.green);
   skillTitle.x = 14;
   skillTitle.y = skillTitleY;
