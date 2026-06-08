@@ -35,9 +35,9 @@ export const heroArchetypeLabels: Record<HeroTacticalArchetype, TacticalLabel> =
     description: "공격속도, 궁극기, 전투 흐름을 보조합니다.",
   },
   "economy-support": {
-    label: "성장형",
-    shortLabel: "성장",
-    description: "보상, 코인, 장기 성장 흐름을 보조합니다.",
+    label: "경제형",
+    shortLabel: "경제",
+    description: "보상, 코인, 자원 흐름을 보조합니다.",
   },
   execution: {
     label: "처형 딜러",
@@ -101,9 +101,9 @@ export const skillEffectLabels: Record<SkillEffectType, TacticalLabel> = {
     description: "공격속도나 궁극기 흐름을 보조합니다.",
   },
   economy: {
-    label: "성장",
-    shortLabel: "성장",
-    description: "보상, 코인, 장기 성장에 기여합니다.",
+    label: "경제",
+    shortLabel: "경제",
+    description: "보상, 코인, 자원 흐름을 늘립니다.",
   },
   execute: {
     label: "처형",
