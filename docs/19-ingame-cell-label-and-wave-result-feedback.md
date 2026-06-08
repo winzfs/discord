@@ -2,11 +2,12 @@
 
 ## 1. 목적
 
-인게임 유닛 정보 패널에서 실제 플레이 판단에 필요하지 않은 보드 칸/중첩 문구를 제거하고, 웨이브 종료 문구가 너무 빠르게 사라지는 문제를 수정했습니다.
+인게임 유닛 정보 패널에서 실제 플레이 판단에 필요하지 않은 보드 칸/중첩 문구를 제거하고, 캐릭터 레벨 보정 문구를 정리했습니다. 추가로 웨이브 종료 문구가 너무 빠르게 사라지는 문제를 수정했습니다.
 
 ## 2. 적용 파일
 
 ```text
+apps/web/src/game-client/pixi/pixiSelectionRuntime.ts
 apps/web/src/game-client/pixi/pixiUnitInfoView.ts
 apps/web/src/game-client/pixi/pixiFloatingTextView.ts
 ```
@@ -23,6 +24,13 @@ apps/web/src/game-client/pixi/pixiFloatingTextView.ts
 
 현재 보드 칸마다 별도 기능이 있는 구조가 아니고, 중첩도 보드 위 시각 표현으로 충분히 확인할 수 있으므로 해당 줄을 제거했습니다.
 
+또한 별도 숙련도 시스템처럼 보이던 문구를 캐릭터 레벨 보정 문구로 변경했습니다.
+
+```text
+숙련 Lv.x: 스킬 +n%, 제어 +n%
+→ 레벨 보정: 스킬 +n%, 제어 +n%
+```
+
 현재 유닛 정보 패널에 남기는 정보:
 
 ```text
@@ -30,7 +38,7 @@ apps/web/src/game-client/pixi/pixiFloatingTextView.ts
 등급 · 역할 · 공격타입
 영웅 설명
 전투력 / 속도 / 사거리
-연계/숙련 효과
+연계 효과 / 레벨 보정
 스킬
 궁극기
 ```
@@ -74,6 +82,7 @@ pnpm build:web
 테스트 체크리스트:
 
 - 유닛 선택 시 셀/배치칸/중첩 문구가 보이지 않는지
+- `숙련` 문구 대신 `레벨 보정`으로 표시되는지
 - 영웅 정보/스킬/궁극기 설명 위치가 자연스러운지
 - 웨이브 종료 후 결과 문구가 약 2초 이상 유지되는지
 - 일반 피해 숫자 팝업이 너무 오래 남지 않는지
