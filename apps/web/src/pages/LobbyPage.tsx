@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { getAttackTypeLabel, getSkillEffectLabel, type HeroDefinition } from "@discord-random-defense/game";
+import { getAttackTypeLabel, type HeroDefinition } from "@discord-random-defense/game";
 import { LobbyBottomNav } from "../components/lobby/LobbyBottomNav";
 import { LobbyDetailPanel } from "../components/lobby/LobbyDetailPanel";
 import { LobbyRecruitPanel } from "../components/lobby/LobbyRecruitPanel";
@@ -74,6 +74,8 @@ function featureTagLabel(tag: string) {
     volskaya: "볼스카야",
     helix: "헬릭스",
     crusader: "십자군",
+    cairo: "카이로",
+    research: "연구소",
     cadet: "신입",
     rookie: "신입",
     medic: "의무",
@@ -89,22 +91,31 @@ function featureTagLabel(tag: string) {
     support: "지원",
     economy: "경제",
     summon: "소환",
+    shield: "방어",
+    barrier: "방벽",
+    control: "제어",
+    mark: "표식",
+    vulnerable: "취약",
   };
   return labels[tag] ?? tag;
 }
 
-function buildHeroCombatProfile(hero: HeroDefinition, skills = getLobbyHeroSkillDetails(hero.id)): DetailCombatProfile {
-  const skillEffects = Array.from(new Set(skills.map((skill) => getSkillEffectLabel(skill.effectType).shortLabel))).slice(0, 3);
+function getHeroAttackTypeLabel(hero: HeroDefinition) {
+  if (hero.id === "zarya") return "지속 강화";
+  return getAttackTypeLabel(hero.attackType).shortLabel;
+}
+
+function buildHeroCombatProfile(hero: HeroDefinition, _skills = getLobbyHeroSkillDetails(hero.id)): DetailCombatProfile {
+  const ignoredTags = new Set([hero.attackType, hero.role, hero.grade, "single", "area", "control", "support"]);
   const features = hero.tags
-    .filter((tag) => ![hero.attackType, hero.role, hero.grade, "single", "area", "control"].includes(tag))
+    .filter((tag) => !ignoredTags.has(tag))
     .map(featureTagLabel)
     .filter((tag, index, array) => array.indexOf(tag) === index)
     .slice(0, 4);
 
   return {
     position: roleLabel(hero.role),
-    attackType: getAttackTypeLabel(hero.attackType).shortLabel,
-    skillEffects: skillEffects.length > 0 ? skillEffects : ["피해"],
+    attackType: getHeroAttackTypeLabel(hero),
     features: features.length > 0 ? features : [gradeLabel(hero.grade)],
   };
 }
@@ -147,7 +158,7 @@ function createHeroDetail(hero: LobbyHero): Detail {
     kind: "hero",
     id: hero.id,
     title: hero.displayName,
-    subtitle: `${gradeLabel(hero.grade)} · ${roleLabel(hero.role)} · ${getAttackTypeLabel(hero.attackType).shortLabel}`,
+    subtitle: `${gradeLabel(hero.grade)} · ${roleLabel(hero.role)} · ${getHeroAttackTypeLabel(hero)}`,
     stats: [
       hero.description,
       `전투력 ${power}`,
