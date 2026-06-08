@@ -105,14 +105,52 @@
   line-height: 1.32;
 }
 
-.detail-skill-section {
-  margin-top: 14px;
+.detail-combat-profile {
+  margin: 12px 0 14px;
 }
 
+.detail-combat-profile h3,
 .detail-skill-section h3 {
   margin: 0 0 9px;
   color: #ffe071;
   font-size: 1.05rem;
+}
+
+.detail-combat-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.detail-combat-grid div {
+  min-width: 0;
+  padding: 9px 10px;
+  border: 2px solid rgba(255, 238, 198, 0.08);
+  border-radius: 14px;
+  background: rgba(36, 22, 18, 0.58);
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.05);
+}
+
+.detail-combat-grid small {
+  display: block;
+  margin-bottom: 4px;
+  color: rgba(255, 231, 174, 0.74);
+  font-size: 0.72rem;
+  font-weight: 900;
+}
+
+.detail-combat-grid b {
+  display: block;
+  overflow: hidden;
+  color: #fff8e9;
+  font-size: 0.88rem;
+  line-height: 1.24;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.detail-skill-section {
+  margin-top: 14px;
 }
 
 .detail-skill-list {
