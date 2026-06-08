@@ -51,6 +51,8 @@ export function drawSelectedUnitInfo(refs: GameRefs) {
     hero,
     stackCount: cell.units.length,
     cellIndex: refs.selectedCellIndex,
+    boardColumns: refs.state.boardSize.columns,
+    boardRows: refs.state.boardSize.rows,
     rendererWidth: refs.app.renderer.width,
     rendererHeight: refs.app.renderer.height,
     traitLines: buildTraitLines(refs, hero),
