@@ -69,9 +69,9 @@ const HERO_BASE_ATTACK_INTERVAL_SECONDS = 0.48;
 const HERO_MIN_ATTACK_INTERVAL_SECONDS = 0.12;
 const BOSS_LUCK_STONE_REWARD = 1;
 const ZARYA_MAX_BEAM_CHARGE = 6;
-const ZARYA_BEAM_CHAIN_WINDOW_MS = 1200;
-const ZARYA_BEAM_DURATION_MS = 520;
-const ZARYA_BEAM_PULSE_TIMES = [0.12, 0.31, 0.5, 0.69, 0.88];
+const ZARYA_BEAM_CHAIN_WINDOW_MS = 1400;
+const ZARYA_BEAM_DURATION_MS = 880;
+const ZARYA_BEAM_PULSE_TIMES = [0.06, 0.17, 0.28, 0.39, 0.5, 0.61, 0.72, 0.83, 0.94];
 const STACK_ATTACK_OFFSETS = [
   { x: 0, y: -5 },
   { x: -7, y: 5 },
@@ -79,18 +79,18 @@ const STACK_ATTACK_OFFSETS = [
 ];
 
 const RELOAD_ATTACK_INTERVALS: Record<string, number> = {
-  tracer: 0.82,
-  zarya: 0.78,
-  winston: 0.74,
-  dva: 0.72,
+  tracer: 1.18,
+  zarya: 1.08,
+  winston: 1.08,
+  dva: 1.04,
 };
 
 const RAPID_PROJECTILE_PROFILES: Record<string, { shots: number; gapMs: number }> = {
-  "spark-runner": { shots: 5, gapMs: 100 },
-  "scrap-gunner": { shots: 3, gapMs: 100 },
-  "pulse-ranger": { shots: 4, gapMs: 100 },
-  "burst-scout": { shots: 3, gapMs: 100 },
-  "field-medic": { shots: 4, gapMs: 100 },
+  "spark-runner": { shots: 8, gapMs: 100 },
+  "scrap-gunner": { shots: 6, gapMs: 100 },
+  "pulse-ranger": { shots: 7, gapMs: 100 },
+  "burst-scout": { shots: 6, gapMs: 100 },
+  "field-medic": { shots: 7, gapMs: 100 },
 };
 
 let boardDrawQueued = false;
@@ -119,10 +119,10 @@ function requestHudControlsDraw(refs: GameRefs, options: PixiCombatRuntimeOption
 function getHeroSpriteAttackDuration(heroId: string) {
   if (heroId === "cassidy") return 520;
   if (heroId === "zarya") return ZARYA_BEAM_DURATION_MS;
-  if (heroId === "winston") return 520;
-  if (heroId === "tracer") return 620;
-  if (heroId === "dva") return 520;
-  return 360;
+  if (heroId === "winston") return 880;
+  if (heroId === "tracer") return 940;
+  if (heroId === "dva") return 820;
+  return 760;
 }
 
 function roleAccent(role: HeroRole | undefined) {
@@ -326,9 +326,9 @@ function spawnZaryaBeamEffect(
   options.addAnimation(refs, {
     duration,
     update: (progress) => {
-      const alpha = target.alive ? 0.92 - progress * 0.18 : Math.max(0, 1 - progress);
-      const pulseHit = ZARYA_BEAM_PULSE_TIMES.some((time) => Math.abs(progress - time) < 0.055) ? 1.32 : 0.9;
-      const pulse = (0.72 + Math.sin(progress * Math.PI * 15) * 0.18) * pulseHit;
+      const alpha = target.alive ? 0.94 - progress * 0.32 : Math.max(0, 1 - progress);
+      const pulseHit = ZARYA_BEAM_PULSE_TIMES.some((time) => Math.abs(progress - time) < 0.038) ? 1.42 : 0.9;
+      const pulse = (0.72 + Math.sin(progress * Math.PI * 22) * 0.18) * pulseHit;
       beam.clear();
       beam.moveTo(from.x, from.y).lineTo(target.x, target.y);
       beam.stroke({ color: 0xff4fd8, width: baseOuterWidth * pulse, alpha: 0.28 * alpha });
@@ -403,7 +403,7 @@ function spawnDefaultProjectile(
   projectile.y = from.y;
   projectile.alpha = startDelayMs > 0 ? 0 : 1;
   const targetAtFire = { x: target.x, y: target.y };
-  const flightDuration = 180 + index * 6;
+  const flightDuration = 150 + index * 4;
 
   options.addAnimation(refs, {
     duration: startDelayMs + flightDuration,
@@ -422,7 +422,7 @@ function spawnDefaultProjectile(
     done: () => {
       releaseFxGraphics(refs, projectile);
       applyAttackDamage(refs, hero, role, target, damage, options);
-      options.floatText(refs, `${damage}`, target.x, target.y - 18, roleAccent(role));
+      options.floatText(refs, `${damage}`, target.x, target.y - 18 - (index % 3) * 5, roleAccent(role));
     },
   });
 }
@@ -476,13 +476,11 @@ export function spawnAttackEffects(refs: GameRefs, options: PixiCombatRuntimeOpt
         {
           addAnimation: options.addAnimation,
           applyDamage: (enemy, value) => damageEnemy(refs, enemy, value, options),
+          floatText: (value, x, y, color) => options.floatText(refs, value, x, y, color),
         },
         from,
         beamTargets,
         damage,
-        () => {
-          options.floatText(refs, `${Math.round(damage * 0.72)}`, target.x, target.y - 18, 0x87b7ff);
-        },
       );
       return;
     }
@@ -502,7 +500,7 @@ export function spawnAttackEffects(refs: GameRefs, options: PixiCombatRuntimeOpt
           const pulseDamage = pulseDamages[pulseIndex] ?? 1;
           if (pulseIndex === 0) applyTankSlow(target);
           damageEnemy(refs, target, pulseDamage, options);
-          options.floatText(refs, `${pulseDamage}`, target.x, target.y - 18, charge >= 4 ? 0xff7de9 : colors.yellow);
+          options.floatText(refs, `${pulseDamage}`, target.x, target.y - 18 - (pulseIndex % 3) * 5, charge >= 4 ? 0xff7de9 : colors.yellow);
         },
         () => undefined,
       );
