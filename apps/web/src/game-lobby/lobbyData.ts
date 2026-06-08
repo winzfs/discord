@@ -7,7 +7,6 @@ export type CollectionKind = "hero" | "artifact";
 export type DetailCombatProfile = {
   position: string;
   attackType: string;
-  skillEffects: string[];
   features: string[];
 };
 
