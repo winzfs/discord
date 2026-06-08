@@ -16,6 +16,8 @@ export type PixiWinstonBeamRuntimeOptions = {
 
 type Point = { x: number; y: number };
 
+const WINSTON_BEAM_PULSE_TIMES = [0.18, 0.48, 0.78];
+
 export function pickWinstonBeamTargets(refs: GameRefs, target: ActiveEnemy) {
   const nearby = refs.activeEnemies
     .filter((enemy) => enemy.alive && Math.hypot(enemy.x - target.x, enemy.y - target.y) <= 86)
@@ -70,6 +72,12 @@ function drawElectricSpark(graphics: Graphics, center: Point, phase: number, rad
   graphics.fill({ color: 0xffffff, alpha: alpha * 0.65 });
 }
 
+function splitPulseDamage(totalDamage: number, pulseCount: number) {
+  const base = Math.floor(totalDamage / pulseCount);
+  const remainder = totalDamage - base * pulseCount;
+  return Array.from({ length: pulseCount }, (_, index) => Math.max(1, base + (index < remainder ? 1 : 0)));
+}
+
 export function spawnWinstonElectricBeam(
   refs: GameRefs,
   options: PixiWinstonBeamRuntimeOptions,
@@ -79,13 +87,15 @@ export function spawnWinstonElectricBeam(
   done?: () => void,
 ) {
   const beam = acquireFxGraphics(refs);
+  const appliedPulseIndexes = new Set<number>();
 
   options.addAnimation(refs, {
-    duration: 420,
+    duration: 560,
     update: (progress) => {
       const alpha = 0.95 - progress * 0.35;
-      const phase = progress * 8;
-      const flicker = 0.78 + Math.sin(progress * Math.PI * 24) * 0.22;
+      const phase = progress * 12;
+      const pulseWave = WINSTON_BEAM_PULSE_TIMES.some((time) => Math.abs(progress - time) < 0.07) ? 1.18 : 0.92;
+      const flicker = (0.78 + Math.sin(progress * Math.PI * 30) * 0.22) * pulseWave;
       beam.clear();
 
       targets.forEach((enemy, index) => {
@@ -102,15 +112,23 @@ export function spawnWinstonElectricBeam(
         drawElectricSpark(beam, mid, branchPhase, 13, 0.4 * alpha);
         drawElectricSpark(beam, end, branchPhase + 0.2, 16, 0.72 * alpha);
       });
+
+      WINSTON_BEAM_PULSE_TIMES.forEach((time, pulseIndex) => {
+        if (progress < time || appliedPulseIndexes.has(pulseIndex)) return;
+        appliedPulseIndexes.add(pulseIndex);
+
+        targets.forEach((enemy, index) => {
+          if (!enemy.alive) return;
+          const multiplier = index === 0 ? 0.72 : 0.46;
+          const totalDamage = Math.max(1, Math.round(baseDamage * multiplier));
+          const pulseDamage = splitPulseDamage(totalDamage, WINSTON_BEAM_PULSE_TIMES.length)[pulseIndex] ?? 1;
+          options.applyDamage(enemy, pulseDamage);
+          if (pulseIndex === 0) enemy.speed = Math.max(0.2, enemy.speed * 0.88);
+        });
+      });
     },
     done: () => {
       releaseFxGraphics(refs, beam);
-      targets.forEach((enemy, index) => {
-        if (!enemy.alive) return;
-        const multiplier = index === 0 ? 0.72 : 0.46;
-        options.applyDamage(enemy, Math.max(1, Math.round(baseDamage * multiplier)));
-        enemy.speed = Math.max(0.2, enemy.speed * 0.88);
-      });
       done?.();
     },
   });
