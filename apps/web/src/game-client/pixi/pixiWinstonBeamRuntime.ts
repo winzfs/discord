@@ -16,7 +16,8 @@ export type PixiWinstonBeamRuntimeOptions = {
 
 type Point = { x: number; y: number };
 
-const WINSTON_BEAM_PULSE_TIMES = [0.18, 0.48, 0.78];
+const WINSTON_BEAM_DURATION_MS = 520;
+const WINSTON_BEAM_PULSE_TIMES = [0.12, 0.31, 0.5, 0.69, 0.88];
 
 export function pickWinstonBeamTargets(refs: GameRefs, target: ActiveEnemy) {
   const nearby = refs.activeEnemies
@@ -90,12 +91,12 @@ export function spawnWinstonElectricBeam(
   const appliedPulseIndexes = new Set<number>();
 
   options.addAnimation(refs, {
-    duration: 560,
+    duration: WINSTON_BEAM_DURATION_MS,
     update: (progress) => {
       const alpha = 0.95 - progress * 0.35;
-      const phase = progress * 12;
-      const pulseWave = WINSTON_BEAM_PULSE_TIMES.some((time) => Math.abs(progress - time) < 0.07) ? 1.18 : 0.92;
-      const flicker = (0.78 + Math.sin(progress * Math.PI * 30) * 0.22) * pulseWave;
+      const phase = progress * 16;
+      const pulseWave = WINSTON_BEAM_PULSE_TIMES.some((time) => Math.abs(progress - time) < 0.055) ? 1.32 : 0.9;
+      const flicker = (0.78 + Math.sin(progress * Math.PI * 42) * 0.22) * pulseWave;
       beam.clear();
 
       targets.forEach((enemy, index) => {
