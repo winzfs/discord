@@ -4,6 +4,7 @@ import { colors } from "./gameTheme";
 import type { ActiveEnemy, GameRefs } from "./pixiGameTypes";
 import { getProgressHeroMasteryEffect } from "./pixiProgressBonuses";
 import { spawnBaseSkillFx, type BaseSkillFxKind } from "./pixiBaseSkillFxRuntime";
+import { getPrimarySkillEffectLog } from "./pixiSkillEffectLogRuntime";
 import {
   applySingleControl,
   createAreaControlConfig,
@@ -48,6 +49,9 @@ const DEFAULT_PROFILE: SkillProfile = {
   color: colors.white,
 };
 
+const SKILL_EFFECT_POPUP_COOLDOWN_MS = 900;
+const lastSkillEffectPopupAt: Record<string, number> = {};
+
 function getHeroSkillIds(hero: BoardHero) {
   return getHeroById(hero.heroId)?.skillIds ?? [];
 }
@@ -83,6 +87,17 @@ function tuneControlByRole(config: ControlEffectConfig, role: HeroRole, gradeSca
     ...config,
     durationMs: Math.round(config.durationMs * roleBonus * (1 + (gradeScale - 1) * 0.18)),
     radius: Math.round(config.radius * (1 + (gradeScale - 1) * 0.12)),
+  };
+}
+
+function applyUnifiedEffectLabel(profile: SkillProfile, skillIds: string[]) {
+  const effectLog = getPrimarySkillEffectLog(skillIds);
+  if (!effectLog) return profile;
+
+  return {
+    ...profile,
+    text: effectLog.label,
+    color: effectLog.color,
   };
 }
 
@@ -180,7 +195,7 @@ function buildSkillProfile(hero: BoardHero, role: HeroRole): SkillProfile {
     profile.color = colors.red;
   }
 
-  return profile;
+  return applyUnifiedEffectLabel(profile, skillIds);
 }
 
 export function getBaseHeroSkillFxKind(hero: BoardHero, role: HeroRole) {
@@ -253,6 +268,14 @@ function applyControl(refs: GameRefs, target: ActiveEnemy, profile: SkillProfile
   applySingleControl(target, profile.control);
 }
 
+function shouldShowSkillEffectPopup(hero: BoardHero) {
+  const now = Date.now();
+  const previous = lastSkillEffectPopupAt[hero.instanceId] ?? 0;
+  if (now - previous < SKILL_EFFECT_POPUP_COOLDOWN_MS) return false;
+  lastSkillEffectPopupAt[hero.instanceId] = now;
+  return true;
+}
+
 export function applyBaseHeroSkillPreDamage(hero: BoardHero, role: HeroRole, baseDamage: number) {
   const profile = buildSkillProfile(hero, role);
   return Math.max(1, Math.round(baseDamage * profile.damageMultiplier));
@@ -282,7 +305,7 @@ export function applyBaseHeroSkillPostDamage(
     };
   }
 
-  if (profile.text) {
+  if (profile.text && shouldShowSkillEffectPopup(hero)) {
     options.floatText(refs, profile.text, target.x, target.y - 42, profile.color);
   }
 }
