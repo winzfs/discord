@@ -1,5 +1,5 @@
 import { Container } from "pixi.js";
-import { getHeroById, type BoardHero, type SkillDefinition } from "@discord-random-defense/game";
+import { getAttackTypeLabel, getHeroById, getSkillEffectLabel, type BoardHero, type SkillDefinition } from "@discord-random-defense/game";
 import { colors } from "./gameTheme";
 import { clearPixiContainer, makePixiPanel, makePixiText } from "./pixiSharedView";
 import { makePixiTouchBoundary } from "./pixiPointerGuards";
@@ -20,9 +20,9 @@ function roleLabel(role: string | undefined) {
 }
 
 function attackTypeLabel(attackType: string | undefined) {
-  if (attackType === "area") return "광역";
-  if (attackType === "support") return "지원";
-  if (attackType === "control") return "제어";
+  if (attackType === "single" || attackType === "area" || attackType === "support" || attackType === "control") {
+    return getAttackTypeLabel(attackType).shortLabel;
+  }
   return "단일";
 }
 
@@ -59,7 +59,8 @@ function drawSkillCard(
   width: number,
 ) {
   const description = getPixiSkillDescription(heroId, skill);
-  const title = makePixiText(`${skill.displayName} [${skillTypeLabel(skill.type)}·${getSkillStatusText(skill)}]`, 9, colors.white);
+  const effectLabel = getSkillEffectLabel(skill.effectType).shortLabel;
+  const title = makePixiText(`${skill.displayName} [${effectLabel}·${getSkillStatusText(skill)}]`, 9, colors.white);
   title.x = x;
   title.y = y;
   view.addChild(title);
@@ -150,7 +151,7 @@ export function drawPixiUnitInfoView(target: Container, options: PixiUnitInfoVie
   const ultimate = ultimateSkills[0];
   if (ultimate) {
     const ultimateDescription = getPixiSkillDescription(options.hero.heroId, ultimate);
-    view.addChild(makeInfoLine(`${ultimate.displayName} [${getSkillStatusText(ultimate)}]`, 14, ultimateY + 18, colors.white, 10));
+    view.addChild(makeInfoLine(`${ultimate.displayName} [${ultimateDescription.effectLabel}·${getSkillStatusText(ultimate)}]`, 14, ultimateY + 18, colors.white, 10));
     view.addChild(makeInfoLine(`조건: ${ultimateDescription.condition}`, 14, ultimateY + 32, 0xb7afa8, 8));
     ultimateDescription.lines.slice(0, 2).forEach((line, index) => {
       view.addChild(makeInfoLine(`- ${line}`, 14 + index * (cardWidth + 10), ultimateY + 44, 0xd8d0c8, 8));
