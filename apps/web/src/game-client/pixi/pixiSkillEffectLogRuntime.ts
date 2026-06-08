@@ -1,4 +1,4 @@
-import { getSkillById, getSkillTacticalLabel, type SkillDefinition, type SkillEffectType } from "@discord-random-defense/game";
+import { getSkillById, getSkillEffectLabel, type SkillDefinition, type SkillEffectType } from "@discord-random-defense/game";
 import { colors } from "./gameTheme";
 
 export type SkillEffectLog = {
@@ -45,9 +45,10 @@ export function getPrimarySkillEffectLog(skillIds: string[]): SkillEffectLog | n
   const selected = [...effects].sort(
     (a, b) => EFFECT_PRIORITY.indexOf(a.effectType) - EFFECT_PRIORITY.indexOf(b.effectType),
   )[0];
+  const label = getSkillEffectLabel(selected.effectType);
 
   return {
-    label: getSkillTacticalLabel(selected),
+    label: label.shortLabel,
     color: EFFECT_COLORS[selected.effectType],
     effectType: selected.effectType,
   };
