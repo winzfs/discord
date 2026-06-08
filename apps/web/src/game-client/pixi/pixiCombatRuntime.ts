@@ -360,7 +360,7 @@ function spawnDefaultProjectile(refs: GameRefs, options: PixiCombatRuntimeOption
     done: () => {
       releaseFxGraphics(refs, projectile);
       applyAttackDamage(refs, hero, role, target, damage, options);
-      if (index === 0) options.floatText(refs, `${damage}`, target.x, target.y - 18, roleAccent(role));
+      options.floatText(refs, `${damage}`, target.x, target.y - 18, roleAccent(role));
     },
   });
 }
@@ -409,7 +409,7 @@ export function spawnAttackEffects(refs: GameRefs, options: PixiCombatRuntimeOpt
         beamTargets,
         damage,
         () => {
-          if (index === 0) options.floatText(refs, `${Math.round(damage * 0.72)}`, target.x, target.y - 18, 0x87b7ff);
+          options.floatText(refs, `${Math.round(damage * 0.72)}`, target.x, target.y - 18, 0x87b7ff);
         },
       );
       return;
@@ -420,7 +420,7 @@ export function spawnAttackEffects(refs: GameRefs, options: PixiCombatRuntimeOpt
       const beamDamage = getZaryaBeamDamage(damage, charge);
       spawnZaryaBeamEffect(refs, options, from, target, charge, () => {
         applyAttackDamage(refs, hero, role, target, beamDamage, options);
-        if (index === 0) options.floatText(refs, `${beamDamage}`, target.x, target.y - 18, charge >= 4 ? 0xff7de9 : colors.yellow);
+        options.floatText(refs, `${beamDamage}`, target.x, target.y - 18, charge >= 4 ? 0xff7de9 : colors.yellow);
       });
       return;
     }
