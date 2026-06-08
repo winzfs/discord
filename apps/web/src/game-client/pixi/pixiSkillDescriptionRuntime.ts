@@ -9,11 +9,11 @@ export type PixiSkillDescription = {
 };
 
 function getCondition(skill: SkillDefinition) {
-  if (skill.type === "ultimate") return "게이지 100%";
-  if (skill.tags.includes("unique")) return "공격 시 적용";
-  if (skill.type === "attack") return "42%";
-  if (skill.type === "control") return "30%";
-  return "24%";
+  if (skill.type === "ultimate") return "궁극기 게이지 100%";
+  if (skill.tags.includes("unique")) return "기본 공격 시 항상 적용";
+  if (skill.type === "attack") return "기본 공격 시 42% 확률";
+  if (skill.type === "control") return "기본 공격 시 30% 확률";
+  return "기본 공격 시 24% 확률";
 }
 
 function getEffectLines(skill: SkillDefinition) {
@@ -48,7 +48,7 @@ function getManualUltimateLines(heroId: string, skill: SkillDefinition) {
   if (heroId === "ana") return [prefix, "공격 배율 +12% 지원"];
   if (heroId === "kiriko") return [prefix, "5초 동안 공격속도 200%"];
   if (heroId === "illari") return [prefix, "범위 300% 태양 폭발"];
-  return [prefix, "게이지 100% 발동"];
+  return [prefix, "궁극기 게이지 100% 발동"];
 }
 
 export function getPixiHeroSkills(heroId: string) {
