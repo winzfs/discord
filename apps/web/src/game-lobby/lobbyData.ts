@@ -4,12 +4,20 @@ import type { LobbyHeroSkillDetail } from "../components/lobby/lobbyHeroSkillDet
 export type LobbyTabId = "shop" | "heroes" | "battle" | "artifacts";
 export type CollectionKind = "hero" | "artifact";
 
+export type DetailCombatProfile = {
+  position: string;
+  attackType: string;
+  skillEffects: string[];
+  features: string[];
+};
+
 export type Detail = {
   kind: CollectionKind;
   id: string;
   title: string;
   subtitle: string;
   stats: string[];
+  combatProfile?: DetailCombatProfile;
   skills?: LobbyHeroSkillDetail[];
   owned: boolean;
   level: number;
