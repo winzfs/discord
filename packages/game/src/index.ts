@@ -10,6 +10,7 @@ export * from "./data/pets";
 export * from "./data/runBoosts";
 export * from "./data/runMissions";
 export * from "./data/skills";
+export * from "./data/tacticalLabels";
 export * from "./data/waves";
 export * from "./rules/scoring";
 export * from "./systems/attackUpgradeSystem";
