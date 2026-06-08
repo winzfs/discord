@@ -55,8 +55,6 @@
 
 영웅마다 별도 전술 프로필을 추가했습니다.
 
-적용 파일:
-
 ```text
 packages/game/src/types/heroTactics.ts
 packages/game/src/data/heroTactics.ts
@@ -89,11 +87,9 @@ execution: 낮은 체력 적 마무리, 연속 처치
 
 ## 6. 스킬 효과 타입 축소
 
-기존 스킬은 `tags`에 `burn`, `slow`, `freeze`, `coin-bonus`, `power-up`, `chain`, `area-damage`, `mark`, `vulnerable`처럼 많은 의미가 흩어져 있었습니다.
+기존 스킬은 `tags`에 많은 의미가 흩어져 있었습니다.
 
 이제 기존 `type`은 호환성을 위해 유지하고, 새로 축소된 `effectType`, `effectGroup`, `summary`를 모든 스킬에 자동 부여합니다.
-
-적용 파일:
 
 ```text
 packages/game/src/types/skill.ts
@@ -157,8 +153,6 @@ mixed: 혼합 웨이브
 
 전투 화면 상단 HUD에 현재 웨이브 정보를 추가했습니다.
 
-적용 파일:
-
 ```text
 apps/web/src/game-client/pixi/pixiHudView.ts
 apps/web/src/game-client/pixi/pixiRenderRuntime.ts
@@ -178,9 +172,38 @@ apps/web/src/game-client/pixi/pixiRenderRuntime.ts
 추천 제어 · 처형 · 연쇄
 ```
 
-이제 플레이어는 다음 웨이브가 어떤 조합을 요구하는지 전투 화면에서 바로 볼 수 있습니다.
+## 10. 전투 중 효과 팝업 정리
 
-## 10. 공격력/공격속도 설계 기준
+비신화/기본 영웅 스킬의 전투 중 팝업을 축소 스킬 타입 기준으로 통일했습니다.
+
+적용 파일:
+
+```text
+apps/web/src/game-client/pixi/pixiSkillEffectLogRuntime.ts
+apps/web/src/game-client/pixi/pixiBaseHeroSkillRuntime.ts
+```
+
+표시 예시:
+
+```text
+광역
+연쇄
+제어
+증폭
+템포
+경제
+처형
+방어
+소환
+```
+
+기존 태그 기반 문구인 `폭발`, `표식`, `지원`, `보상` 등이 스킬 데이터의 `effectType` 기준 라벨로 정리됩니다.
+
+모바일 화면이 지저분해지지 않도록 영웅별 효과 팝업은 0.9초 쿨다운을 둡니다.
+
+신화 영웅 궁극기는 기존 개별 궁극기명/효과 팝업이 이미 있으므로 이번 단계에서는 유지했습니다.
+
+## 11. 공격력/공격속도 설계 기준
 
 공격속도 수치는 이제 단순 표시가 아니라 실시간 전투에서 공격 간격에 직접 반영됩니다.
 
@@ -188,7 +211,7 @@ apps/web/src/game-client/pixi/pixiRenderRuntime.ts
 공격 간격 = 기본 공격 간격 / attackSpeed × 전역 보정 × 전술 보정
 ```
 
-## 11. 타겟 우선순위 보완
+## 12. 타겟 우선순위 보완
 
 영웅마다 타겟 우선순위를 부여했습니다.
 
@@ -201,7 +224,7 @@ low-hp: 체력 낮은 적 우선
 support: 기본 선두 지원
 ```
 
-## 12. 적용된 코드 변경
+## 13. 적용된 코드 변경
 
 ```text
 packages/game/src/types/heroTactics.ts
@@ -216,25 +239,24 @@ packages/game/src/systems/combatSystem.ts
 apps/web/src/game-client/pixi/pixiCombatRuntime.ts
 apps/web/src/game-client/pixi/pixiHudView.ts
 apps/web/src/game-client/pixi/pixiRenderRuntime.ts
+apps/web/src/game-client/pixi/pixiSkillEffectLogRuntime.ts
+apps/web/src/game-client/pixi/pixiBaseHeroSkillRuntime.ts
 apps/web/src/components/lobby/lobbyHeroSkillDetails.ts
 apps/web/src/components/lobby/LobbyDetailPanel.tsx
 apps/web/src/styles/lobby-detail-drawer.css
 ```
 
-## 13. 남은 보완점
+## 14. 남은 보완점
 
-1. 전투 중 효과 로그/팝업 정리
-   - 표식
-   - 연쇄
-   - 빙결
-   - 처형
-   - 보상
-
-2. 축소 스킬 타입을 실제 전투 효과 계산의 공통 기준으로 점진 이전
+1. 축소 스킬 타입을 실제 전투 효과 계산의 공통 기준으로 점진 이전
    - 기존 개별 영웅 스킬 런타임은 유지
    - 공통 효과는 `effectType` 기반 helper로 이전
 
-## 14. 확인 필요
+2. 신화 궁극기 문구도 축소 타입 라벨과 통일
+   - 기존 개별 궁극기명 팝업은 유지
+   - 필요 시 `광역 · D.Va 자폭!` 같은 형태로 정리
+
+## 15. 확인 필요
 
 ```bash
 pnpm typecheck
@@ -253,3 +275,4 @@ pnpm build:web
 - 영웅 상세 UI에서 스킬 타입 배지가 표시되는지
 - 웨이브별 대응 타입 보너스가 전투력 계산에 반영되는지
 - 상단 HUD에 웨이브 테마/추천 효과가 보이는지
+- 전투 중 비신화 스킬 효과 팝업이 축소 타입 기준으로 보이는지
