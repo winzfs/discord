@@ -1,5 +1,5 @@
 import { Container, Graphics, Text } from "pixi.js";
-import type { SkillEffectType, WaveTacticalTheme } from "@discord-random-defense/game";
+import { getSkillEffectLabel, type SkillEffectType, type WaveTacticalTheme } from "@discord-random-defense/game";
 import type { GameLayout } from "./gameLayout";
 import { colors } from "./gameTheme";
 import { drawGamePanel, drawSegmentedBar } from "./pixiGameUiPrimitives";
@@ -67,16 +67,7 @@ function getWaveThemeLabel(theme: WaveTacticalTheme) {
 }
 
 function getEffectLabel(effect: SkillEffectType) {
-  if (effect === "splash") return "광역";
-  if (effect === "chain") return "연쇄";
-  if (effect === "control") return "제어";
-  if (effect === "amplify") return "증폭";
-  if (effect === "tempo") return "템포";
-  if (effect === "economy") return "경제";
-  if (effect === "execute") return "처형";
-  if (effect === "shield") return "방어";
-  if (effect === "summon") return "소환";
-  return "피해";
+  return getSkillEffectLabel(effect).shortLabel;
 }
 
 export function createPixiHudView(parent: Container): PixiHudView {
