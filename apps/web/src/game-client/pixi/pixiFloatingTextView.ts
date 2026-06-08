@@ -12,6 +12,8 @@ const MAX_FLOATING_TEXT_POOL_SIZE = 48;
 const DAMAGE_TEXT_COLOR = 0xff4b4b;
 const CRITICAL_TEXT_COLOR = 0xffd166;
 const REWARD_TEXT_COLOR = 0x5ee27a;
+const DEFAULT_FLOATING_TEXT_DURATION_MS = 250;
+const WAVE_RESULT_TEXT_DURATION_MS = 2200;
 const floatingTextPool: Text[] = [];
 
 const HIDDEN_BASE_SKILL_TEXTS = new Set([
@@ -36,6 +38,22 @@ function isDamageText(value: string) {
 
 function isRewardText(value: string) {
   return /^\+\d+$/.test(value.trim()) || value.includes("보상") || value.includes("행운석 +");
+}
+
+function isWaveResultText(value: string) {
+  const normalized = value.trim();
+  return (
+    normalized.includes("완벽 방어") ||
+    normalized.includes("누수") ||
+    normalized.includes("패배") ||
+    normalized.startsWith("처치 ") ||
+    normalized.startsWith("처치 보상") ||
+    normalized.startsWith("코인 이자")
+  );
+}
+
+function getFloatingTextDuration(value: string) {
+  return isWaveResultText(value) ? WAVE_RESULT_TEXT_DURATION_MS : DEFAULT_FLOATING_TEXT_DURATION_MS;
 }
 
 function isCriticalColor(color: number) {
@@ -114,6 +132,7 @@ export function createFloatingText(
     };
   }
 
+  const duration = getFloatingTextDuration(value);
   const normalizedColor = normalizeFloatingTextColor(value, color);
   const floatingText = acquireFloatingText(value, normalizedColor);
   floatingText.x = x;
@@ -127,17 +146,19 @@ export function createFloatingText(
     releaseFloatingText(effects, floatingText);
   };
 
-  window.setTimeout(removeFloatingText, 250);
+  window.setTimeout(removeFloatingText, duration);
 
   return {
     text: floatingText,
     animation: {
-      duration: 250,
+      duration,
       update: (progress) => {
         if (removed || floatingText.destroyed) return;
-        floatingText.y = y - progress * 14;
-        floatingText.alpha = Math.max(0, 1 - progress);
-        floatingText.scale.set(1 + progress * 0.03);
+        const holdRatio = isWaveResultText(value) ? 0.72 : 0;
+        const fadeProgress = progress <= holdRatio ? 0 : (progress - holdRatio) / Math.max(0.001, 1 - holdRatio);
+        floatingText.y = y - progress * (isWaveResultText(value) ? 28 : 14);
+        floatingText.alpha = Math.max(0, 1 - fadeProgress);
+        floatingText.scale.set(1 + progress * (isWaveResultText(value) ? 0.06 : 0.03));
       },
       done: removeFloatingText,
     },
