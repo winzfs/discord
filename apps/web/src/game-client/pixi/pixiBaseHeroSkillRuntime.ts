@@ -34,6 +34,7 @@ type SkillProfile = {
   coinBonus: number;
   control: ControlEffectConfig | null;
   fxKind: BaseSkillFxKind | null;
+  triggerChance: number;
   text?: string;
   color: number;
 };
@@ -46,11 +47,16 @@ const DEFAULT_PROFILE: SkillProfile = {
   coinBonus: 0,
   control: null,
   fxKind: null,
+  triggerChance: 0,
   color: colors.white,
 };
 
+const ATTACK_SKILL_CHANCE = 0.42;
+const CONTROL_SKILL_CHANCE = 0.3;
+const SUPPORT_SKILL_CHANCE = 0.24;
 const SKILL_EFFECT_POPUP_COOLDOWN_MS = 900;
 const lastSkillEffectPopupAt: Record<string, number> = {};
+const activeBaseSkillTriggers: Record<string, boolean> = {};
 
 function getHeroSkillIds(hero: BoardHero) {
   return getHeroById(hero.heroId)?.skillIds ?? [];
@@ -79,6 +85,10 @@ function getRoleDamageScale(role: HeroRole) {
   if (role === "damage") return 1.18;
   if (role === "tank") return 0.82;
   return 0.68;
+}
+
+function setTriggerChance(profile: SkillProfile, chance: number) {
+  profile.triggerChance = Math.max(profile.triggerChance, chance);
 }
 
 function tuneControlByRole(config: ControlEffectConfig, role: HeroRole, gradeScale: number): ControlEffectConfig {
@@ -114,6 +124,7 @@ function buildSkillProfile(hero: BoardHero, role: HeroRole): SkillProfile {
     profile.fxKind = "attack";
     profile.text = "공격";
     profile.color = colors.yellow;
+    setTriggerChance(profile, ATTACK_SKILL_CHANCE);
   }
 
   if (hasTag(skillIds, "boss-killer")) {
@@ -121,6 +132,7 @@ function buildSkillProfile(hero: BoardHero, role: HeroRole): SkillProfile {
     profile.fxKind = "boss";
     profile.text = "약점";
     profile.color = colors.orange;
+    setTriggerChance(profile, ATTACK_SKILL_CHANCE);
   }
 
   if (hasTag(skillIds, "area-damage") || hasTag(skillIds, "burst")) {
@@ -129,6 +141,7 @@ function buildSkillProfile(hero: BoardHero, role: HeroRole): SkillProfile {
     profile.fxKind = "area";
     profile.text = "폭발";
     profile.color = colors.orange;
+    setTriggerChance(profile, ATTACK_SKILL_CHANCE);
   }
 
   if (hasTag(skillIds, "chain") || hasTag(skillIds, "multi-hit") || hasTag(skillIds, "extra-hit")) {
@@ -136,6 +149,7 @@ function buildSkillProfile(hero: BoardHero, role: HeroRole): SkillProfile {
     profile.fxKind = "chain";
     profile.text = "연쇄";
     profile.color = 0x88e9ff;
+    setTriggerChance(profile, ATTACK_SKILL_CHANCE);
   }
 
   if (hasTag(skillIds, "pierce") || hasTag(skillIds, "beam")) {
@@ -144,6 +158,7 @@ function buildSkillProfile(hero: BoardHero, role: HeroRole): SkillProfile {
     profile.fxKind = "beam";
     profile.text = "관통";
     profile.color = 0xbde7ff;
+    setTriggerChance(profile, ATTACK_SKILL_CHANCE);
   }
 
   if (hasTag(skillIds, "grouping")) {
@@ -151,11 +166,13 @@ function buildSkillProfile(hero: BoardHero, role: HeroRole): SkillProfile {
     profile.fxKind = "control";
     profile.text = "영역제어";
     profile.color = 0x9c83ff;
+    setTriggerChance(profile, CONTROL_SKILL_CHANCE);
   } else if (hasTag(skillIds, "debuff") || hasTag(skillIds, "slow") || hasTag(skillIds, "freeze")) {
     profile.control = tuneControlByRole(createSingleControlConfig(hasTag(skillIds, "freeze")), role, gradeScale);
     profile.fxKind = null;
     profile.text = hasTag(skillIds, "freeze") ? "단일빙결" : "단일제어";
     profile.color = 0x8fdcff;
+    setTriggerChance(profile, CONTROL_SKILL_CHANCE);
   }
 
   if (hasTag(skillIds, "mark") || hasTag(skillIds, "vulnerable")) {
@@ -164,6 +181,7 @@ function buildSkillProfile(hero: BoardHero, role: HeroRole): SkillProfile {
     profile.fxKind = null;
     profile.text = "표식";
     profile.color = 0xff8f74;
+    setTriggerChance(profile, CONTROL_SKILL_CHANCE);
   }
 
   if (hasTag(skillIds, "buff") || hasTag(skillIds, "haste") || hasTag(skillIds, "power-up") || hasTag(skillIds, "team-wide")) {
@@ -171,6 +189,7 @@ function buildSkillProfile(hero: BoardHero, role: HeroRole): SkillProfile {
     profile.fxKind = null;
     profile.text = "지원";
     profile.color = 0x7dffb2;
+    setTriggerChance(profile, SUPPORT_SKILL_CHANCE);
   }
 
   if (hasTag(skillIds, "turret") || hasTag(skillIds, "support-fire")) {
@@ -178,6 +197,7 @@ function buildSkillProfile(hero: BoardHero, role: HeroRole): SkillProfile {
     profile.fxKind = "turret";
     profile.text = "포탑";
     profile.color = 0xd8c1ff;
+    setTriggerChance(profile, SUPPORT_SKILL_CHANCE);
   }
 
   if (hasTag(skillIds, "economy") || hasTag(skillIds, "coin-bonus") || hasTag(skillIds, "wave-reward")) {
@@ -186,6 +206,7 @@ function buildSkillProfile(hero: BoardHero, role: HeroRole): SkillProfile {
     profile.fxKind = null;
     profile.text = "보상";
     profile.color = colors.green;
+    setTriggerChance(profile, SUPPORT_SKILL_CHANCE);
   }
 
   if (hasTag(skillIds, "overcrowd-bonus")) {
@@ -193,13 +214,23 @@ function buildSkillProfile(hero: BoardHero, role: HeroRole): SkillProfile {
     profile.fxKind = null;
     profile.text = "반격";
     profile.color = colors.red;
+    setTriggerChance(profile, ATTACK_SKILL_CHANCE);
   }
 
   return applyUnifiedEffectLabel(profile, skillIds);
 }
 
 export function getBaseHeroSkillFxKind(hero: BoardHero, role: HeroRole) {
+  if (!isBaseHeroSkillTriggered(hero)) return null;
   return buildSkillProfile(hero, role).fxKind;
+}
+
+export function isBaseHeroSkillTriggered(hero: BoardHero) {
+  return Boolean(activeBaseSkillTriggers[hero.instanceId]);
+}
+
+function clearBaseHeroSkillTrigger(hero: BoardHero) {
+  delete activeBaseSkillTriggers[hero.instanceId];
 }
 
 function applyMasteryToProfile(refs: GameRefs, hero: BoardHero, profile: SkillProfile) {
@@ -276,8 +307,13 @@ function shouldShowSkillEffectPopup(hero: BoardHero) {
   return true;
 }
 
-export function applyBaseHeroSkillPreDamage(hero: BoardHero, role: HeroRole, baseDamage: number) {
+export function applyBaseHeroSkillPreDamage(refs: GameRefs, hero: BoardHero, role: HeroRole, baseDamage: number) {
   const profile = buildSkillProfile(hero, role);
+  clearBaseHeroSkillTrigger(hero);
+  if (!isNonMythic(hero) || profile.triggerChance <= 0) return baseDamage;
+  if (refs.random() >= profile.triggerChance) return baseDamage;
+
+  activeBaseSkillTriggers[hero.instanceId] = true;
   return Math.max(1, Math.round(baseDamage * profile.damageMultiplier));
 }
 
@@ -289,6 +325,8 @@ export function applyBaseHeroSkillPostDamage(
   target: ActiveEnemy,
   damage: number,
 ) {
+  if (!isBaseHeroSkillTriggered(hero)) return;
+
   const profile = applyMasteryToProfile(refs, hero, buildSkillProfile(hero, role));
   if (!isNonMythic(hero)) return;
 
@@ -308,4 +346,6 @@ export function applyBaseHeroSkillPostDamage(
   if (profile.text && shouldShowSkillEffectPopup(hero)) {
     options.floatText(refs, profile.text, target.x, target.y - 42, profile.color);
   }
+
+  clearBaseHeroSkillTrigger(hero);
 }
