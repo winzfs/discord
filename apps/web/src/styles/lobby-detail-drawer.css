@@ -39,7 +39,7 @@
 
 .detail-hero-header {
   display: grid;
-  grid-template-columns: auto 1fr;
+  grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
   gap: 12px;
   margin-bottom: 12px;
@@ -57,14 +57,17 @@
   margin: 0 0 5px;
   color: #fff8e9;
   font-size: 1.45rem;
+  line-height: 1.12;
   text-shadow: 0 3px 0 rgba(0, 0, 0, 0.22);
+  overflow-wrap: anywhere;
 }
 
 .detail-hero-header p {
   margin: 0;
   color: #ffe5af;
   font-weight: 800;
-  line-height: 1.25;
+  line-height: 1.28;
+  overflow-wrap: anywhere;
 }
 
 .detail-badges {
@@ -80,6 +83,7 @@
   background: rgba(36, 22, 18, 0.62);
   color: #fff3d7;
   font-size: 0.82rem;
+  line-height: 1.2;
 }
 
 .detail-badges .owned-badge {
@@ -102,7 +106,8 @@
   background: rgba(46, 28, 24, 0.56);
   color: #fff1d0;
   font-size: 0.9rem;
-  line-height: 1.32;
+  line-height: 1.36;
+  overflow-wrap: anywhere;
 }
 
 .detail-combat-profile {
@@ -145,12 +150,11 @@
 
 .detail-combat-grid b {
   display: block;
-  overflow: hidden;
   color: #fff8e9;
   font-size: 0.88rem;
-  line-height: 1.24;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  line-height: 1.32;
+  overflow-wrap: anywhere;
+  white-space: normal;
 }
 
 .detail-skill-section {
@@ -175,27 +179,31 @@
 }
 
 .detail-skill-card header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
   gap: 8px;
 }
 
 .detail-skill-card b {
   color: #fff8e9;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
 }
 
 .detail-skill-card span {
   color: #9eefff;
   font-size: 0.78rem;
   font-weight: 900;
+  line-height: 1.25;
   text-align: right;
+  white-space: normal;
 }
 
 .detail-skill-meta {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
-  align-items: center;
+  align-items: start;
   gap: 7px;
   margin: 8px 0 6px;
 }
@@ -204,26 +212,25 @@
   display: inline-grid;
   min-width: 42px;
   min-height: 22px;
-  padding: 3px 7px;
+  padding: 4px 7px;
   place-items: center;
   border-radius: 999px;
   background: rgba(255, 225, 119, 0.16);
   color: #ffe071;
   font-size: 0.74rem;
   font-weight: 1000;
-  line-height: 1;
+  line-height: 1.1;
   text-align: center;
 }
 
 .detail-skill-meta small {
   min-width: 0;
-  overflow: hidden;
   color: rgba(255, 244, 220, 0.82);
   font-size: 0.76rem;
   font-weight: 750;
-  line-height: 1.25;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  line-height: 1.32;
+  overflow-wrap: anywhere;
+  white-space: normal;
 }
 
 .detail-skill-card.effect-control .detail-skill-meta span,
@@ -258,7 +265,8 @@
 .detail-skill-card p {
   margin: 8px 0;
   color: #ffe8b7;
-  line-height: 1.32;
+  line-height: 1.36;
+  overflow-wrap: anywhere;
 }
 
 .detail-skill-card ul {
@@ -266,12 +274,18 @@
   padding-left: 18px;
   color: #fff5dc;
   font-size: 0.86rem;
-  line-height: 1.4;
+  line-height: 1.44;
+}
+
+.detail-skill-card li {
+  margin: 2px 0;
+  overflow-wrap: anywhere;
 }
 
 .detail-drawer .lobby-upgrade {
   min-height: 48px;
   font-weight: 1000;
+  white-space: normal;
 }
 
 .detail-drawer .lobby-upgrade:disabled {
