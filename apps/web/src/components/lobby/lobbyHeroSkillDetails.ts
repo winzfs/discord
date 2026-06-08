@@ -1,4 +1,4 @@
-import { getHeroById, getSkillTacticalLabel, skills, type SkillDefinition, type SkillEffectType } from "@discord-random-defense/game";
+import { getHeroById, getSkillEffectLabel, skills, type SkillDefinition, type SkillEffectType } from "@discord-random-defense/game";
 
 export type LobbyHeroSkillDetail = {
   id: string;
@@ -27,40 +27,26 @@ function getSkillConditionText(skill: SkillDefinition) {
   return "24%";
 }
 
-function getTagSummary(skill: SkillDefinition) {
-  if (skill.summary) return skill.summary;
-
-  const tags = skill.tags;
-  if (tags.includes("economy")) return "처치 보상과 전투 흐름을 보조합니다.";
-  if (tags.includes("buff") || tags.includes("haste") || tags.includes("team-wide")) return "아군 화력이나 공격 흐름을 강화합니다.";
-  if (tags.includes("slow") || tags.includes("freeze") || tags.includes("grouping")) return "몬스터 이동을 늦추고 전선을 안정화합니다.";
-  if (tags.includes("mark") || tags.includes("vulnerable")) return "강한 적에게 표식을 남겨 피해 효율을 높입니다.";
-  if (tags.includes("area-damage") || tags.includes("burst")) return "주 대상 주변에 약한 광역 피해를 줍니다.";
-  if (tags.includes("chain") || tags.includes("multi-hit") || tags.includes("extra-hit")) return "추가타로 앞쪽 몬스터를 함께 견제합니다.";
-  if (tags.includes("pierce") || tags.includes("beam")) return "관통형 공격으로 여러 몬스터를 압박합니다.";
-  if (tags.includes("boss-killer")) return "보스와 고체력 몬스터 처리에 강합니다.";
-  return "유닛의 역할에 맞는 고유 전투 효과를 제공합니다.";
+function getEffectSummary(skill: SkillDefinition) {
+  return getSkillEffectLabel(skill.effectType).description;
 }
 
 function getTagLines(skill: SkillDefinition) {
   const tags = skill.tags;
-  const lines: string[] = [];
+  const label = getSkillEffectLabel(skill.effectType);
+  const lines: string[] = [`${label.shortLabel}: ${label.description}`];
 
-  if (tags.includes("attack")) lines.push("피해량이 소폭 증가합니다.");
-  if (tags.includes("boss-killer")) lines.push("보스/고체력 대상 대응력이 증가합니다.");
-  if (tags.includes("area-damage") || tags.includes("burst")) lines.push("주변 몬스터에게 약한 광역 피해를 줍니다.");
-  if (tags.includes("chain") || tags.includes("multi-hit") || tags.includes("extra-hit")) lines.push("다른 전방 몬스터에게 약한 추가타를 줍니다.");
-  if (tags.includes("pierce") || tags.includes("beam")) lines.push("넓은 범위에 관통형 보조 피해를 줍니다.");
-  if (tags.includes("slow")) lines.push("대상 이동속도를 낮춥니다.");
-  if (tags.includes("freeze")) lines.push("대상을 더 강하게 둔화합니다.");
-  if (tags.includes("grouping")) lines.push("몰린 몬스터를 제어하는 데 유리합니다.");
-  if (tags.includes("mark") || tags.includes("vulnerable")) lines.push("표식/취약 효과로 피해 효율을 높입니다.");
-  if (tags.includes("buff") || tags.includes("power-up")) lines.push("전투 피해 보정이 소폭 증가합니다.");
-  if (tags.includes("haste") || tags.includes("team-wide")) lines.push("팀 전투 템포를 끌어올리는 보조 효과입니다.");
-  if (tags.includes("turret") || tags.includes("support-fire")) lines.push("보조 포격으로 추가 피해를 줍니다.");
-  if (tags.includes("economy") || tags.includes("coin-bonus") || tags.includes("wave-reward")) lines.push("처치 시 소량의 보상 보너스를 제공합니다.");
+  if (skill.effectType === "damage" && tags.includes("boss-killer")) lines.push("보스/고체력 대상 대응력이 증가합니다.");
+  if (skill.effectType === "splash") lines.push("몰려 있는 적을 함께 처리합니다.");
+  if (skill.effectType === "chain") lines.push("추가타로 여러 적을 이어서 압박합니다.");
+  if (skill.effectType === "control") lines.push(tags.includes("freeze") ? "강한 둔화로 전선을 지연시킵니다." : "이동속도를 낮춰 누수를 줄입니다.");
+  if (skill.effectType === "amplify") lines.push("표식/취약으로 후속 피해 효율을 올립니다.");
+  if (skill.effectType === "tempo") lines.push("공격속도나 궁극기 흐름을 보조합니다.");
+  if (skill.effectType === "economy") lines.push("보상 흐름을 늘려 장기 성장에 기여합니다.");
+  if (skill.effectType === "execute") lines.push("약해진 적을 빠르게 마무리합니다.");
+  if (skill.effectType === "shield") lines.push("방어/지연 효과로 전선을 안정화합니다.");
+  if (skill.effectType === "summon") lines.push("보조 화력으로 라인을 보강합니다.");
 
-  if (lines.length === 0) lines.push(skill.summary || "영웅 공격력 기반으로 발동합니다.");
   return lines.slice(0, 3);
 }
 
@@ -78,11 +64,13 @@ function getFallbackEffectType(type: LobbyHeroSkillDetail["type"]): SkillEffectT
 function withTacticalEffect(detail: Omit<LobbyHeroSkillDetail, "effectType" | "effectLabel" | "effectSummary">): LobbyHeroSkillDetail {
   const definition = getSkillDefinition(detail.id);
   const effectType = definition?.effectType ?? getFallbackEffectType(detail.type);
+  const label = getSkillEffectLabel(effectType);
+
   return {
     ...detail,
     effectType,
-    effectLabel: definition ? getSkillTacticalLabel(definition) : detail.type,
-    effectSummary: definition?.summary ?? detail.summary,
+    effectLabel: label.shortLabel,
+    effectSummary: label.description,
   };
 }
 
@@ -135,15 +123,17 @@ const manualSkillDetails: Record<string, LobbyHeroSkillDetail[]> = {
 };
 
 export function getSkillDetailFromDefinition(skill: SkillDefinition): LobbyHeroSkillDetail {
+  const label = getSkillEffectLabel(skill.effectType);
+
   return {
     id: skill.id,
     name: skill.displayName,
     type: skillTypeLabel(skill.type),
     effectType: skill.effectType,
-    effectLabel: getSkillTacticalLabel(skill),
+    effectLabel: label.shortLabel,
     condition: getSkillConditionText(skill),
-    summary: getTagSummary(skill),
-    effectSummary: skill.summary,
+    summary: getEffectSummary(skill),
+    effectSummary: label.description,
     lines: getTagLines(skill),
   };
 }
