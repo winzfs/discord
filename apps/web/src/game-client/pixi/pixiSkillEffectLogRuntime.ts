@@ -1,4 +1,4 @@
-import { getSkillById, getSkillTacticalLabel, type SkillEffectType } from "@discord-random-defense/game";
+import { getSkillById, getSkillTacticalLabel, type SkillDefinition, type SkillEffectType } from "@discord-random-defense/game";
 import { colors } from "./gameTheme";
 
 export type SkillEffectLog = {
@@ -33,10 +33,12 @@ const EFFECT_PRIORITY: SkillEffectType[] = [
   "damage",
 ];
 
+function isSkillDefinition(skill: SkillDefinition | null): skill is SkillDefinition {
+  return Boolean(skill);
+}
+
 export function getPrimarySkillEffectLog(skillIds: string[]): SkillEffectLog | null {
-  const effects = skillIds
-    .map((skillId) => getSkillById(skillId))
-    .filter((skill): skill is NonNullable<typeof skill> => Boolean(skill));
+  const effects = skillIds.map((skillId) => getSkillById(skillId)).filter(isSkillDefinition);
 
   if (effects.length === 0) return null;
 
