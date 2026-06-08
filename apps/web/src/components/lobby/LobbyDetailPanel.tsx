@@ -7,7 +7,7 @@ function DetailCombatProfileSection({ detail }: { detail: Detail }) {
   return (
     <section className="detail-combat-profile">
       <h3>전투 분류</h3>
-      <div className="detail-combat-grid">
+      <div className="detail-combat-grid compact">
         <div>
           <small>포지션</small>
           <b>{profile.position}</b>
@@ -16,11 +16,7 @@ function DetailCombatProfileSection({ detail }: { detail: Detail }) {
           <small>공격타입</small>
           <b>{profile.attackType}</b>
         </div>
-        <div>
-          <small>스킬효과</small>
-          <b>{profile.skillEffects.join(" · ")}</b>
-        </div>
-        <div>
+        <div className="wide">
           <small>특징</small>
           <b>{profile.features.join(" · ")}</b>
         </div>
