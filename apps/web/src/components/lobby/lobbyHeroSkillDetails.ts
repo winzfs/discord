@@ -81,7 +81,7 @@ const manualSkillDetails: Record<string, LobbyHeroSkillDetail[]> = {
     withTacticalEffect({ id: "dva-self-destruct", name: "자폭", type: "궁극기", condition: "궁극기 게이지 100%", summary: "영웅 위치 기준 넓은 범위 폭발", lines: ["넓은 범위에 공격력 450% 피해", "적이 많이 모였을 때 효율 극대화", "탱커지만 강력한 광역 마무리 가능"] }),
   ],
   zarya: [
-    withTacticalEffect({ id: "zarya-particle-cannon", name: "입자포", type: "공격", condition: "기본 공격", summary: "같은 대상을 계속 공격할수록 강해지는 지속 강화 공격", lines: ["공격타입 자체가 지속 강화", "연속 공격 시 차지 상승", "피해 배율 94%에서 최대 174%까지 상승"] }),
+    withTacticalEffect({ id: "zarya-particle-cannon", name: "입자포", type: "공격", condition: "공격타입: 지속 강화", summary: "같은 대상을 계속 공격할수록 강해지는 기본 공격", lines: ["스킬 확률이 아니라 공격타입 자체 효과", "연속 공격 시 차지 상승", "피해 배율 94%에서 최대 174%까지 상승"] }),
     withTacticalEffect({ id: "zarya-projected-barrier", name: "방벽 충전", type: "지원", condition: "기본 공격 시 24% 확률, 차지 3 이상", summary: "차지가 쌓이면 추가 제어와 피해를 부여", lines: ["차지 3 이상일 때 발동 가능", "대상 감속 + 108% 피해", "입자포 유지력이 좋을수록 강력"] }),
     withTacticalEffect({ id: "zarya-graviton-surge", name: "중력자탄", type: "궁극기", condition: "궁극기 게이지 100%", summary: "주변 적을 끌어모아 묶고 폭발 피해", lines: ["3초 동안 흡입/속박", "좁은 범위에 공격력 240% 피해", "광역 영웅과 연계하기 좋음"] }),
   ],
