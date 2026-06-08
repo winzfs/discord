@@ -87,7 +87,7 @@ function featureTagLabel(tag: string) {
     "wave-clear": "웨이브 정리",
     frontline: "전선 유지",
     support: "지원",
-    economy: "성장",
+    economy: "경제",
     summon: "소환",
   };
   return labels[tag] ?? tag;
@@ -116,6 +116,13 @@ function rewardIcon(kind: LobbyPassReward["kind"]) {
   if (kind === "mythic-shards") return "🌟";
   if (kind === "artifact-pieces") return "🏺";
   return "🎁";
+}
+
+function createRecruitNotice(mode: RecruitPullMode, results: RecruitResult[], totalShards: number, newHeroCount: number) {
+  if (mode === "ten") return `10회 모집 완료 · 신규 ${newHeroCount}명 · 조각 ${totalShards}개`;
+  const result = results[0];
+  if (!result) return "모집 완료";
+  return result.wasNew ? `${result.displayName} 신규 해금` : `${result.displayName} 조각 +${result.shards}`;
 }
 
 function RewardPopup({ reward, onClose }: { reward: RewardPopupData; onClose: () => void }) {
@@ -304,7 +311,7 @@ export function LobbyPage() {
     setLastRecruitResults(summary.results);
     setRevealResults(summary.results);
     persistProgress(summary.nextHeroes, artifacts, gold, nextCrystals, nextLineupHeroIds);
-    setNotice(summary.message);
+    setNotice(createRecruitNotice(mode, summary.results, summary.totalShards, summary.newHeroCount));
   };
 
   const closeRecruitReveal = () => {
@@ -348,17 +355,49 @@ export function LobbyPage() {
   };
 
   return (
-    <LobbyStage gold={gold} crystals={crystals} notice={notice}>
+    <main className="lobby-shell">
       <LobbyTopBar gold={gold} crystals={crystals} />
-      {activeTab === "shop" && <ShopView items={shopItems} onBuy={buyShopItem} />}
-      {activeTab === "heroes" && <HeroesView heroes={heroes} lineupHeroIds={lineupHeroIds} onSelectHero={(hero) => setDetail(createHeroDetail(hero))} />}
-      {activeTab === "battle" && <BattleView heroes={heroes} lineupHeroIds={lineupHeroIds} />}
-      {activeTab === "artifacts" && <ArtifactsView artifacts={artifacts} onSelectArtifact={(artifact) => setDetail(createArtifactDetail(artifact))} />}
-      {activeTab === "shop" && <LobbyRecruitPanel crystals={crystals} onRecruit={recruit} />}
+      <LobbyStage
+        onOpenShop={() => openLobbyTab("shop", "상점 상품을 확인해보세요.")}
+        onOpenHeroes={() => openLobbyTab("heroes", "영웅 전투 분류와 스킬을 확인해보세요.")}
+        onOpenArtifacts={() => openLobbyTab("artifacts", "유물 효과를 확인해보세요.")}
+      />
+      <p className="lobby-notice">{notice}</p>
+      {activeTab === "shop" && <ShopView onPick={buyShopItem} />}
+      {activeTab === "heroes" && (
+        <HeroesView
+          heroes={heroes}
+          onDetail={setDetail}
+          createDetail={createHeroDetail}
+          gradeLabel={gradeLabel}
+          roleLabel={roleLabel}
+        />
+      )}
+      {activeTab === "battle" && <BattleView accountProgress={accountProgress} onClaimPassReward={claimPassReward} />}
+      {activeTab === "artifacts" && (
+        <ArtifactsView
+          artifacts={artifacts}
+          onDetail={setDetail}
+          createDetail={createArtifactDetail}
+          categoryLabel={categoryLabel}
+        />
+      )}
+      {activeTab === "shop" && (
+        <LobbyRecruitPanel
+          crystals={crystals}
+          lastResults={lastRecruitResults}
+          onRecruitSingle={() => recruit("single")}
+          onRecruitTen={() => recruit("ten")}
+        />
+      )}
       {detail && <LobbyDetailPanel detail={detail} gold={gold} onClose={() => setDetail(null)} onUpgrade={upgradeDetail} />}
-      <LobbyBottomNav tabs={tabs} activeTab={activeTab} onChange={(id) => openLobbyTab(id, `${tabs.find((tab) => tab.id === id)?.label ?? "메뉴"} 확인 중`)} />
+      <LobbyBottomNav
+        tabs={tabs}
+        activeTab={activeTab}
+        onTabChange={(id) => openLobbyTab(id, `${tabs.find((tab) => tab.id === id)?.label ?? "메뉴"} 확인 중`)}
+      />
       {rewardPopup && <RewardPopup reward={rewardPopup} onClose={() => setRewardPopup(null)} />}
       {revealResults.length > 0 && <LobbyRecruitReveal results={revealResults} onClose={closeRecruitReveal} />}
-    </LobbyStage>
+    </main>
   );
 }
