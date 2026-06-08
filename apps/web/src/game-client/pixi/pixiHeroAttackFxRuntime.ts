@@ -185,12 +185,12 @@ function spawnDvaFusionCannons(refs: GameRefs, options: PixiHeroAttackFxOptions,
   const fx = acquireFxGraphics(refs);
   const targetAtFire = { x: target.x, y: target.y };
   const angle = angleBetween(from, targetAtFire);
-  const hitTimes = [0.08, 0.27, 0.46, 0.65, 0.84];
+  const hitTimes = [0.05, 0.18, 0.31, 0.44, 0.57, 0.7, 0.83, 0.96];
   const hitDamages = splitDamage(damage, hitTimes.length);
   const appliedHitIndexes = new Set<number>();
 
   options.addAnimation(refs, {
-    duration: 520,
+    duration: 820,
     update: (progress) => {
       fx.clear();
       const alpha = 1 - progress * 0.36;
@@ -199,7 +199,7 @@ function spawnDvaFusionCannons(refs: GameRefs, options: PixiHeroAttackFxOptions,
 
       const pellets = [-3, -2, -1, 0, 1, 2, 3, 4];
       pellets.forEach((offset, index) => {
-        const local = clamp01((progress - index * 0.035) / 0.52);
+        const local = clamp01((progress - index * 0.03) / 0.42);
         if (local <= 0 || local >= 1) return;
         const end = {
           x: targetAtFire.x + (offset - 0.5) * 8,
@@ -230,16 +230,16 @@ function spawnTracerPulsePistols(refs: GameRefs, options: PixiHeroAttackFxOption
   const fx = acquireFxGraphics(refs);
   const targetAtFire = { x: target.x, y: target.y };
   const angle = angleBetween(from, targetAtFire);
-  const shots = [0, 0.095, 0.19, 0.285, 0.38, 0.475];
+  const shots = [0, 0.09, 0.18, 0.27, 0.36, 0.45, 0.54, 0.63, 0.72, 0.81];
   const hitDamages = splitDamage(damage, shots.length);
   const appliedShotIndexes = new Set<number>();
 
   options.addAnimation(refs, {
-    duration: 620,
+    duration: 940,
     update: (progress) => {
       fx.clear();
       shots.forEach((delay, index) => {
-        const local = clamp01((progress - delay) / 0.34);
+        const local = clamp01((progress - delay) / 0.28);
         if (local <= 0 || local >= 1) return;
         const side = index % 2 === 0 ? -1 : 1;
         const start = { x: from.x + side * 7, y: from.y - 3 };
@@ -248,13 +248,13 @@ function spawnTracerPulsePistols(refs: GameRefs, options: PixiHeroAttackFxOption
         drawShortTracer(fx, start, end, local, 0xffd166, 0.62, 2.8, 0.12);
         drawSoftOrb(fx, pointAt(start, end, easeOutExpo(local)), 0xfff06a, 2.8, 0.88);
 
-        if (progress >= delay + 0.075 && !appliedShotIndexes.has(index)) {
+        if (progress >= delay + 0.055 && !appliedShotIndexes.has(index)) {
           appliedShotIndexes.add(index);
           applySplitHit(options, target, hitDamages[index] ?? 1, 0xffc857, -18 - (index % 3) * 4);
         }
       });
 
-      if (progress > 0.52) drawImpactBurst(fx, targetAtFire, 0xffd166, (progress - 0.52) / 0.48, 20, 8);
+      if (progress > 0.76) drawImpactBurst(fx, targetAtFire, 0xffd166, (progress - 0.76) / 0.24, 20, 8);
     },
     done: () => releaseFxGraphics(refs, fx),
   });
