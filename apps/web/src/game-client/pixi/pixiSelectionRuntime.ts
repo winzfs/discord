@@ -12,14 +12,14 @@ export type PixiSelectionRuntimeOptions = {
 function buildTraitLines(refs: GameRefs, hero: BoardHero) {
   const lines: string[] = [];
   const synergyMultiplier = getHeroSynergyAttackMultiplier(refs, hero);
-  const mastery = getProgressHeroMasteryEffect(refs.progressBonuses, hero.heroId);
+  const levelBonus = getProgressHeroMasteryEffect(refs.progressBonuses, hero.heroId);
 
   if (synergyMultiplier > 1.001) {
     lines.push(`연계 효과: 주변/지휘 지원으로 공격 +${Math.round((synergyMultiplier - 1) * 100)}%`);
   }
 
-  if (mastery.level > 1) {
-    lines.push(`숙련 Lv.${mastery.level}: 스킬 +${Math.round((mastery.skillMultiplier - 1) * 100)}%, 제어 +${Math.round((mastery.controlMultiplier - 1) * 100)}%`);
+  if (levelBonus.level > 1) {
+    lines.push(`레벨 보정: 스킬 +${Math.round((levelBonus.skillMultiplier - 1) * 100)}%, 제어 +${Math.round((levelBonus.controlMultiplier - 1) * 100)}%`);
   }
 
   return lines;
