@@ -1,50 +1,38 @@
+import {
+  describeUpgradeLevel,
+  getCriticalChance,
+  getCriticalMultiplier,
+  getForwardBulletCount,
+  getMagnetRadius,
+  getPowerCoreDamage,
+  getPulseDriveCharge,
+  getRapidFireInterval,
+  getShieldGrant,
+  getUltimateGainMultiplier,
+  HERO_STRIKE_UPGRADE_MAX_LEVELS,
+  HERO_STRIKE_WEAPON_UPGRADES,
+} from "./heroStrikeUpgradeScaling";
 import type { HeroStrikeState, UpgradeId, UpgradeOption } from "./heroStrikeTypes";
 
-const UPGRADE_POOL: UpgradeOption[] = [
-  { id: "rapid-fire", title: "속사 모듈", description: "공격 속도 +18%", icon: "⚡", rarity: "common" },
-  { id: "twin-shot", title: "펄스 확장", description: "정면 탄환 수 +1", icon: "✦", rarity: "rare" },
-  { id: "power-core", title: "고출력 코어", description: "모든 무기 공격력 +25%", icon: "◆", rarity: "common" },
-  { id: "piercing", title: "관통 탄환", description: "기본탄 관통 횟수 +1", icon: "➤", rarity: "rare" },
-  { id: "magnet", title: "회수 자석", description: "경험치 흡수 범위 증가", icon: "◎", rarity: "common" },
-  { id: "shield", title: "시간 방벽", description: "보호막 1칸 획득", icon: "⬡", rarity: "epic" },
-  { id: "pulse-drive", title: "펄스 드라이브", description: "궁극기 게이지 즉시 충전", icon: "◉", rarity: "rare" },
-  { id: "overclock", title: "오버클럭", description: "오버드라이브 화력 강화", icon: "∞", rarity: "epic" },
-  { id: "homing-missile", title: "유도 미사일", description: "영구 자동 추적 미사일 · 재선택 시 강화", icon: "🚀", rarity: "epic" },
-  { id: "drone-wing", title: "드론 편대", description: "양옆 지원 드론 영구 배치", icon: "⌁", rarity: "epic" },
-  { id: "side-cannons", title: "측면 포대", description: "좌우 대각선 보조탄 추가", icon: "⋘", rarity: "rare" },
-  { id: "rear-guard", title: "후방 방어포", description: "아래 방향 방어탄 자동 발사", icon: "⇊", rarity: "rare" },
-  { id: "explosive-rounds", title: "폭발 탄두", description: "기본탄 명중 시 주변 범위 피해", icon: "✹", rarity: "epic" },
-  { id: "chain-core", title: "연쇄 코어", description: "명중 피해가 주변 적에게 전이", icon: "ϟ", rarity: "epic" },
-  { id: "critical-core", title: "치명 코어", description: "치명타 확률과 배율 증가", icon: "✧", rarity: "rare" },
+type UpgradeMetadata = Omit<UpgradeOption, "description" | "currentLevel" | "nextLevel" | "maxLevel">;
+
+const UPGRADE_POOL: UpgradeMetadata[] = [
+  { id: "rapid-fire", title: "속사 모듈", icon: "⚡", rarity: "common" },
+  { id: "twin-shot", title: "펄스 확장", icon: "✦", rarity: "rare" },
+  { id: "power-core", title: "고출력 코어", icon: "◆", rarity: "common" },
+  { id: "piercing", title: "관통 탄환", icon: "➤", rarity: "rare" },
+  { id: "magnet", title: "회수 자석", icon: "◎", rarity: "common" },
+  { id: "shield", title: "시간 방벽", icon: "⬡", rarity: "epic" },
+  { id: "pulse-drive", title: "펄스 드라이브", icon: "◉", rarity: "rare" },
+  { id: "overclock", title: "오버클럭", icon: "∞", rarity: "epic" },
+  { id: "homing-missile", title: "유도 미사일", icon: "🚀", rarity: "epic" },
+  { id: "drone-wing", title: "드론 편대", icon: "⌁", rarity: "epic" },
+  { id: "side-cannons", title: "측면 포대", icon: "⋘", rarity: "rare" },
+  { id: "rear-guard", title: "후방 방어포", icon: "⇊", rarity: "rare" },
+  { id: "explosive-rounds", title: "폭발 탄두", icon: "✹", rarity: "epic" },
+  { id: "chain-core", title: "연쇄 코어", icon: "ϟ", rarity: "epic" },
+  { id: "critical-core", title: "치명 코어", icon: "✧", rarity: "rare" },
 ];
-
-const MAX_LEVELS: Record<UpgradeId, number> = {
-  "rapid-fire": 5,
-  "twin-shot": 3,
-  "power-core": 5,
-  piercing: 3,
-  magnet: 5,
-  shield: 5,
-  "pulse-drive": 5,
-  overclock: 5,
-  "homing-missile": 5,
-  "drone-wing": 4,
-  "side-cannons": 3,
-  "rear-guard": 3,
-  "explosive-rounds": 4,
-  "chain-core": 3,
-  "critical-core": 5,
-};
-
-const WEAPON_UPGRADES = new Set<UpgradeId>([
-  "homing-missile",
-  "drone-wing",
-  "side-cannons",
-  "rear-guard",
-  "explosive-rounds",
-  "chain-core",
-  "critical-core",
-]);
 
 function shuffle<T>(items: T[]) {
   const result = [...items];
@@ -55,24 +43,34 @@ function shuffle<T>(items: T[]) {
   return result;
 }
 
+function makeUpgradeOption(state: HeroStrikeState, metadata: UpgradeMetadata): UpgradeOption {
+  const currentLevel = state.upgradeLevels[metadata.id] ?? 0;
+  const nextLevel = currentLevel + 1;
+  return {
+    ...metadata,
+    description: describeUpgradeLevel(metadata.id, nextLevel),
+    currentLevel,
+    nextLevel,
+    maxLevel: HERO_STRIKE_UPGRADE_MAX_LEVELS[metadata.id],
+  };
+}
+
 function replaceLastChoice(choices: UpgradeOption[], upgrade: UpgradeOption) {
   const withoutDuplicate = choices.filter((choice) => choice.id !== upgrade.id);
   return [...withoutDuplicate.slice(0, 2), upgrade];
 }
 
 export function createUpgradeChoices(state: HeroStrikeState) {
-  const weighted = UPGRADE_POOL.filter((upgrade) => {
-    const level = state.upgradeLevels[upgrade.id] ?? 0;
-    if (upgrade.id === "shield" && state.player.shield >= 5) return false;
-    return level < MAX_LEVELS[upgrade.id];
-  });
+  const available = UPGRADE_POOL
+    .filter((upgrade) => (state.upgradeLevels[upgrade.id] ?? 0) < HERO_STRIKE_UPGRADE_MAX_LEVELS[upgrade.id])
+    .map((upgrade) => makeUpgradeOption(state, upgrade));
 
-  let choices = shuffle(weighted).slice(0, 3);
-  const missile = weighted.find((upgrade) => upgrade.id === "homing-missile");
+  let choices = shuffle(available).slice(0, 3);
+  const missile = available.find((upgrade) => upgrade.id === "homing-missile");
   if (state.player.level <= 2 && missile && (state.upgradeLevels["homing-missile"] ?? 0) === 0) {
     choices = replaceLastChoice(choices, missile);
-  } else if (!choices.some((choice) => WEAPON_UPGRADES.has(choice.id))) {
-    const weapon = shuffle(weighted.filter((upgrade) => WEAPON_UPGRADES.has(upgrade.id)))[0];
+  } else if (!choices.some((choice) => HERO_STRIKE_WEAPON_UPGRADES.has(choice.id))) {
+    const weapon = shuffle(available.filter((upgrade) => HERO_STRIKE_WEAPON_UPGRADES.has(upgrade.id)))[0];
     if (weapon) choices = replaceLastChoice(choices, weapon);
   }
   return choices;
@@ -84,14 +82,20 @@ export function applyUpgrade(state: HeroStrikeState, id: UpgradeId) {
   state.upgradeLevels[id] = nextLevel;
 
   switch (id) {
-    case "rapid-fire": player.fireInterval = Math.max(0.075, player.fireInterval * 0.82); break;
-    case "twin-shot": player.bulletCount = Math.min(5, player.bulletCount + 1); break;
-    case "power-core": player.damage *= 1.25; break;
-    case "piercing": player.pierce += 1; break;
-    case "magnet": player.magnetRadius += 48; break;
-    case "shield": player.shield = Math.min(5, player.shield + 1); break;
-    case "pulse-drive": player.ultimate = Math.min(player.ultimateMax, player.ultimate + 32); break;
-    case "overclock": player.overdriveLevel += 1; break;
+    case "rapid-fire": player.fireInterval = getRapidFireInterval(nextLevel); break;
+    case "twin-shot": player.bulletCount = getForwardBulletCount(nextLevel); break;
+    case "power-core": player.damage = getPowerCoreDamage(nextLevel); break;
+    case "piercing": player.pierce = nextLevel; break;
+    case "magnet": player.magnetRadius = getMagnetRadius(nextLevel); break;
+    case "shield":
+      player.shield = Math.min(5, player.shield + getShieldGrant(nextLevel));
+      player.invulnerable = Math.max(player.invulnerable, 0.35 + nextLevel * 0.12);
+      break;
+    case "pulse-drive":
+      player.ultimateGainMultiplier = getUltimateGainMultiplier(nextLevel);
+      player.ultimate = Math.min(player.ultimateMax, player.ultimate + getPulseDriveCharge(nextLevel));
+      break;
+    case "overclock": player.overdriveLevel = nextLevel; break;
     case "homing-missile":
       player.homingMissileLevel = nextLevel;
       player.missileCooldown = 0;
@@ -105,8 +109,8 @@ export function applyUpgrade(state: HeroStrikeState, id: UpgradeId) {
     case "explosive-rounds": player.explosiveRoundsLevel = nextLevel; break;
     case "chain-core": player.chainCoreLevel = nextLevel; break;
     case "critical-core":
-      player.criticalChance = Math.min(0.42, player.criticalChance + 0.07);
-      player.criticalMultiplier = Math.min(2.7, player.criticalMultiplier + 0.15);
+      player.criticalChance = getCriticalChance(nextLevel);
+      player.criticalMultiplier = getCriticalMultiplier(nextLevel);
       break;
   }
 
