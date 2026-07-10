@@ -74,8 +74,10 @@ function drawUpgradeCards(ctx: CanvasRenderingContext2D, state: HeroStrikeState)
     }
     ctx.fillText(line.trim(), bounds.x + bounds.width / 2, lineY);
     ctx.fillStyle = accent;
-    ctx.font = "800 9px system-ui";
-    ctx.fillText(upgrade.rarity.toUpperCase(), bounds.x + bounds.width / 2, bounds.y + bounds.height - 18);
+    ctx.font = "800 8px system-ui";
+    ctx.fillText(upgrade.rarity.toUpperCase(), bounds.x + bounds.width / 2, bounds.y + bounds.height - 30);
+    ctx.font = "900 10px system-ui";
+    ctx.fillText(`LV.${upgrade.currentLevel} → ${upgrade.nextLevel} / ${upgrade.maxLevel}`, bounds.x + bounds.width / 2, bounds.y + bounds.height - 15);
   });
   ctx.textAlign = "left";
 }
