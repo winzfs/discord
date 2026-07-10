@@ -53,7 +53,7 @@ export function resolvePlayerCollisions(state: HeroStrikeState) {
 
   if (player.shield > 0) {
     player.shield -= 1;
-    addFloatingText(state, player.x, player.y - 34, "SHIELD", HERO_STRIKE_COLORS.cyan, 16);
+    addFloatingText(state, player.x, player.y - 34, "SHIELD", HERO_STRIKE_COLORS.shield, 16);
   } else player.hp -= 1;
   player.invulnerable = 1.25;
   player.combo = 0;
@@ -66,6 +66,24 @@ export function resolvePlayerCollisions(state: HeroStrikeState) {
   if (player.hp <= 0) state.phase = "game-over";
 }
 
+function detonateBombPickup(state: HeroStrikeState) {
+  const player = state.player;
+  state.bullets = state.bullets.filter((bullet) => !bullet.enemy);
+  addRing(state, player.x, player.y - 110, HERO_STRIKE_COLORS.orange, 42);
+  addBurst(state, player.x, player.y - 110, HERO_STRIKE_COLORS.orange, 28, 260, 4);
+  addFloatingText(state, player.x, player.y - 46, "SCREEN CLEAR", HERO_STRIKE_COLORS.orange, 16);
+  state.shake = Math.max(state.shake, 0.65);
+
+  for (const enemy of state.enemies) {
+    enemy.hp -= enemy.boss ? 240 + player.damage * 2 : 320 + player.damage * 3;
+    if (enemy.hp <= 0 && !enemy.dead) {
+      enemy.dead = true;
+      awardEnemyDefeat(state, enemy);
+    }
+  }
+  state.enemies = state.enemies.filter((enemy) => !enemy.dead);
+}
+
 function grantPickup(state: HeroStrikeState, kind: PickupKind, value: number) {
   const player = state.player;
   if (kind === "heal") {
@@ -73,6 +91,15 @@ function grantPickup(state: HeroStrikeState, kind: PickupKind, value: number) {
     addFloatingText(state, player.x, player.y - 30, "+HP", HERO_STRIKE_COLORS.green, 16);
   } else if (kind === "charge") {
     player.ultimate = Math.min(player.ultimateMax, player.ultimate + value);
+    addFloatingText(state, player.x, player.y - 30, `ULT +${value}`, HERO_STRIKE_COLORS.gold, 15);
+  } else if (kind === "shield") {
+    player.shield = Math.min(5, player.shield + value);
+    addFloatingText(state, player.x, player.y - 30, "SHIELD +1", HERO_STRIKE_COLORS.shield, 15);
+  } else if (kind === "bomb") {
+    detonateBombPickup(state);
+  } else if (kind === "overdrive") {
+    player.overdrive = Math.max(player.overdrive, value);
+    addFloatingText(state, player.x, player.y - 30, "OVERDRIVE", HERO_STRIKE_COLORS.purple, 16);
   } else {
     player.xp += value;
     if (player.xp >= player.nextXp) {
@@ -86,6 +113,15 @@ function grantPickup(state: HeroStrikeState, kind: PickupKind, value: number) {
   }
 }
 
+function pickupColor(kind: PickupKind) {
+  if (kind === "heal") return HERO_STRIKE_COLORS.green;
+  if (kind === "charge") return HERO_STRIKE_COLORS.gold;
+  if (kind === "shield") return HERO_STRIKE_COLORS.shield;
+  if (kind === "bomb") return HERO_STRIKE_COLORS.orange;
+  if (kind === "overdrive") return HERO_STRIKE_COLORS.purple;
+  return HERO_STRIKE_COLORS.xp;
+}
+
 export function updatePickups(state: HeroStrikeState, dt: number) {
   const player = state.player;
   for (const pickup of state.pickups) {
@@ -97,7 +133,7 @@ export function updatePickups(state: HeroStrikeState, dt: number) {
       const speed = 150 + (player.magnetRadius - Math.min(player.magnetRadius, distance)) * 4;
       pickup.vx += dx / distance * speed * dt;
       pickup.vy += dy / distance * speed * dt;
-    } else pickup.vy += 42 * dt;
+    } else pickup.vy += pickup.kind === "xp" ? 42 * dt : 24 * dt;
     pickup.vx *= Math.pow(0.92, dt * 60);
     pickup.vy *= Math.pow(0.96, dt * 60);
     pickup.x += pickup.vx * dt;
@@ -107,8 +143,7 @@ export function updatePickups(state: HeroStrikeState, dt: number) {
     if (distanceSquared(player.x, player.y, pickup.x, pickup.y) <= collectRadius * collectRadius) {
       pickup.life = 0;
       grantPickup(state, pickup.kind, pickup.value);
-      const color = pickup.kind === "heal" ? HERO_STRIKE_COLORS.green : HERO_STRIKE_COLORS.cyan;
-      addBurst(state, pickup.x, pickup.y, color, 6, 90, 2);
+      addBurst(state, pickup.x, pickup.y, pickupColor(pickup.kind), pickup.kind === "xp" ? 4 : 8, 90, 2);
     }
   }
   state.pickups = state.pickups.filter((pickup) => pickup.life > 0 && pickup.y < HERO_STRIKE_HEIGHT + 40);
