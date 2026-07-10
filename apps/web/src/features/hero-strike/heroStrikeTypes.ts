@@ -1,5 +1,8 @@
 export type HeroStrikePhase = "title" | "playing" | "level-up" | "stage-clear" | "paused" | "game-over" | "victory";
 export type EnemyKind = "runner" | "drone" | "tank" | "sniper" | "weaver" | "bomber" | "boss";
+export type EliteTrait = "armored" | "rapid" | "scatter" | "veteran";
+export type EvolutionId = "pulse-storm" | "hunter-swarm" | "arc-overload" | "aegis-wing";
+export type StageObjectiveId = "kills" | "graze" | "combo" | "survivor" | "elite";
 export type StageId =
   | "kings-row"
   | "hanamura-ruins"
@@ -147,6 +150,9 @@ export type HeroStrikeEnemy = {
   reward: number;
   score: number;
   boss: boolean;
+  bossPhase?: number;
+  elite?: boolean;
+  eliteTrait?: EliteTrait;
   dead?: boolean;
 };
 
@@ -225,6 +231,7 @@ export type HeroStrikeState = {
   score: number;
   highScore: number;
   kills: number;
+  maxCombo: number;
   nextId: number;
   player: HeroStrikePlayer;
   bullets: HeroStrikeBullet[];
@@ -237,16 +244,37 @@ export type HeroStrikeState = {
   spawnCooldown: number;
   stageIndex: number;
   stageBanner: number;
+  waveIndex: number;
+  waveBanner: number;
+  eliteSpawned: boolean;
+  eliteDefeated: boolean;
   bossSpawned: boolean;
   bossDefeated: boolean;
   bossWarning: number;
+  bossPhaseBanner: number;
+  bossPhaseLabel: string;
   shake: number;
   flash: number;
   combatRank: number;
+  stageKills: number;
+  stageHits: number;
+  stageGrazes: number;
+  stageMaxCombo: number;
+  objectiveId: StageObjectiveId;
+  objectiveTarget: number;
+  objectiveComplete: boolean;
+  objectiveRewarded: boolean;
   upgradeChoices: UpgradeOption[];
   upgradeLevels: Partial<Record<UpgradeId, number>>;
   protocolChoices: StageProtocolOption[];
   protocolLevels: Partial<Record<StageProtocolId, number>>;
+  evolutions: EvolutionId[];
+  evolutionBanner: number;
+  evolutionLabel: string;
+  researchData: number;
+  researchRank: number;
+  runResearchEarned: number;
+  resultCommitted: boolean;
   pointerActive: boolean;
   pointerLastX: number | null;
   pointerLastY: number | null;
