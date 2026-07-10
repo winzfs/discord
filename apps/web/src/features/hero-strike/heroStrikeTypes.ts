@@ -1,4 +1,4 @@
-export type HeroStrikePhase = "title" | "playing" | "level-up" | "paused" | "game-over" | "victory";
+export type HeroStrikePhase = "title" | "playing" | "level-up" | "stage-clear" | "paused" | "game-over" | "victory";
 export type EnemyKind = "runner" | "drone" | "tank" | "boss";
 export type StageId = "kings-row" | "null-sector-factory" | "gibraltar-orbit";
 export type PickupKind = "xp" | "heal" | "charge" | "shield" | "bomb" | "overdrive";
@@ -126,6 +126,7 @@ export type HeroStrikeState = {
   phase: HeroStrikePhase;
   previousPhase: HeroStrikePhase;
   elapsed: number;
+  stageElapsed: number;
   score: number;
   highScore: number;
   kills: number;
