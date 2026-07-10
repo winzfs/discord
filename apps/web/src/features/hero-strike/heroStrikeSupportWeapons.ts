@@ -5,6 +5,16 @@ import {
   HERO_STRIKE_WIDTH,
 } from "./heroStrikeConfig";
 import { addBurst, addRing } from "./heroStrikeEffects";
+import {
+  getDroneDamageScale,
+  getDroneFireInterval,
+  getExplosionRadius,
+  getMissileDamageScale,
+  getMissileExplosionRadius,
+  getMissileFireInterval,
+  getMissileSpeed,
+  getMissileTurnRate,
+} from "./heroStrikeUpgradeScaling";
 import { awardEnemyDefeat } from "./heroStrikeWeaponRuntime";
 import type { HeroStrikeEnemy, HeroStrikeMissile, HeroStrikeState } from "./heroStrikeTypes";
 
@@ -45,11 +55,11 @@ function spawnMissile(state: HeroStrikeState) {
     y: state.player.y - 12,
     vx: side * 80,
     vy: -280,
-    speed: 340 + level * 18,
-    turnRate: 5.8 + level * 0.55,
-    damage: criticalDamage(state, 62 + state.player.damage * (1.35 + level * 0.35)),
+    speed: getMissileSpeed(level),
+    turnRate: getMissileTurnRate(level),
+    damage: criticalDamage(state, 62 + state.player.damage * getMissileDamageScale(level)),
     radius: 7,
-    explosionRadius: 42 + level * 9,
+    explosionRadius: getMissileExplosionRadius(level),
     life: 4.5,
     targetId: target.id,
   });
@@ -61,7 +71,7 @@ function spawnMissile(state: HeroStrikeState) {
 function spawnDroneVolley(state: HeroStrikeState) {
   const player = state.player;
   const level = Math.max(1, player.supportDroneLevel);
-  const timedBoost = player.supportDroneTime > 0 ? 0.18 : 0;
+  const timedBoost = player.supportDroneTime > 0;
   for (const side of [-1, 1] as const) {
     const critical = Math.random() < player.criticalChance;
     state.bullets.push({
@@ -71,13 +81,15 @@ function spawnDroneVolley(state: HeroStrikeState) {
       vx: side * (18 + level * 4),
       vy: -830,
       radius: 3.4,
-      damage: player.damage * (0.34 + level * 0.11 + timedBoost) * (critical ? player.criticalMultiplier : 1),
+      damage: player.damage * getDroneDamageScale(level, timedBoost) * (critical ? player.criticalMultiplier : 1),
       pierce: level >= 4 ? 1 : 0,
       enemy: false,
       life: 1.35,
       color: critical ? HERO_STRIKE_COLORS.gold : HERO_STRIKE_COLORS.lime,
-      explosionRadius: player.explosiveRoundsLevel > 0 ? 12 + player.explosiveRoundsLevel * 4 : undefined,
-      chain: player.chainCoreLevel > 0 ? 1 : undefined,
+      explosionRadius: player.explosiveRoundsLevel > 0
+        ? getExplosionRadius(player.explosiveRoundsLevel) * 0.55
+        : undefined,
+      chain: player.chainCoreLevel,
     });
   }
 }
@@ -157,7 +169,7 @@ export function updateSupportWeapons(state: HeroStrikeState, dt: number) {
     player.missileCooldown -= dt;
     if (player.missileCooldown <= 0 && state.enemies.length > 0) {
       spawnMissile(state);
-      player.missileCooldown = Math.max(0.42, 1.42 - player.homingMissileLevel * 0.18);
+      player.missileCooldown = getMissileFireInterval(player.homingMissileLevel);
     }
   } else player.missileCooldown = 0;
 
@@ -166,7 +178,7 @@ export function updateSupportWeapons(state: HeroStrikeState, dt: number) {
     if (player.supportDroneCooldown <= 0) {
       spawnDroneVolley(state);
       const level = Math.max(1, player.supportDroneLevel);
-      player.supportDroneCooldown = Math.max(0.2, 0.56 - level * 0.07 - (player.supportDroneTime > 0 ? 0.08 : 0));
+      player.supportDroneCooldown = getDroneFireInterval(level, player.supportDroneTime > 0);
     }
   } else player.supportDroneCooldown = 0;
 
