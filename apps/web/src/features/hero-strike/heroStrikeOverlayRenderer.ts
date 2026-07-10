@@ -21,7 +21,7 @@ function drawTitle(ctx: CanvasRenderingContext2D, state: HeroStrikeState) {
   ctx.fillStyle = HERO_STRIKE_COLORS.muted;
   ctx.font = "700 15px system-ui";
   ctx.fillText("드래그로 이동 · 공격은 자동", HERO_STRIKE_WIDTH / 2, 318);
-  ctx.fillText("레벨업과 작전 프로토콜로 10개 지역을 돌파하세요", HERO_STRIKE_WIDTH / 2, 342);
+  ctx.fillText("레벨업·프로토콜로 10개 지역 돌파", HERO_STRIKE_WIDTH / 2, 342);
   roundedRect(ctx, 88, 390, HERO_STRIKE_WIDTH - 176, 64, 20);
   ctx.fillStyle = HERO_STRIKE_COLORS.orange;
   ctx.fill();
