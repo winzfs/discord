@@ -1,4 +1,5 @@
 import { HERO_STRIKE_BOSS_Y, HERO_STRIKE_RUN_SECONDS, HERO_STRIKE_WIDTH } from "./heroStrikeConfig";
+import { chooseEnemyKindForStage, getCurrentHeroStrikeStage } from "./heroStrikeStages";
 import type { EnemyKind, HeroStrikeEnemy, HeroStrikeState } from "./heroStrikeTypes";
 
 const ENEMY_STATS: Record<Exclude<EnemyKind, "boss">, Pick<HeroStrikeEnemy, "radius" | "hp" | "maxHp" | "reward" | "score">> = {
@@ -8,29 +9,28 @@ const ENEMY_STATS: Record<Exclude<EnemyKind, "boss">, Pick<HeroStrikeEnemy, "rad
 };
 
 function difficultyScale(state: HeroStrikeState) {
-  return 1 + Math.min(1.2, state.elapsed / 55);
+  return 1 + Math.min(1.28, state.elapsed / 58) + state.stageIndex * 0.08;
 }
 
-function chooseEnemyKind(state: HeroStrikeState): Exclude<EnemyKind, "boss"> {
-  const roll = Math.random();
-  if (state.elapsed > 28 && roll < 0.2) return "tank";
-  if (state.elapsed > 8 && roll < 0.56) return "drone";
-  return "runner";
-}
-
-export function spawnEnemy(state: HeroStrikeState, kind = chooseEnemyKind(state)) {
+export function spawnEnemy(state: HeroStrikeState, requestedKind?: Exclude<EnemyKind, "boss">) {
+  const stage = getCurrentHeroStrikeStage(state);
+  const kind = requestedKind ?? chooseEnemyKindForStage(stage);
   const base = ENEMY_STATS[kind];
   const scale = difficultyScale(state);
   const x = 30 + Math.random() * (HERO_STRIKE_WIDTH - 60);
-  const speed = kind === "runner" ? 104 : kind === "drone" ? 62 : 42;
+  const baseSpeed = kind === "runner" ? 104 : kind === "drone" ? 62 : 42;
+  const speed = baseSpeed * stage.enemySpeedMultiplier;
   state.enemies.push({
-    id: state.nextId++, kind, x, y: -36,
+    id: state.nextId++,
+    kind,
+    x,
+    y: -36,
     vx: (Math.random() - 0.5) * 18,
     vy: speed * (0.9 + Math.random() * 0.25),
     radius: base.radius,
     hp: base.hp * scale,
     maxHp: base.maxHp * scale,
-    fireCooldown: kind === "runner" ? 99 : 1.2 + Math.random() * 1.4,
+    fireCooldown: kind === "runner" ? 99 : 1.1 + Math.random() * 1.25,
     age: 0,
     phase: Math.random() * Math.PI * 2,
     reward: base.reward,
@@ -42,11 +42,23 @@ export function spawnEnemy(state: HeroStrikeState, kind = chooseEnemyKind(state)
 export function spawnBoss(state: HeroStrikeState) {
   state.bossSpawned = true;
   state.bossWarning = 2.6;
-  const hp = 2800 + state.player.level * 160;
+  const hp = 3000 + state.player.level * 175;
   state.enemies.push({
-    id: state.nextId++, kind: "boss", x: HERO_STRIKE_WIDTH / 2, y: -100,
-    vx: 78, vy: 78, radius: 52, hp, maxHp: hp, fireCooldown: 1.3,
-    age: 0, phase: 0, reward: 120, score: 6000, boss: true,
+    id: state.nextId++,
+    kind: "boss",
+    x: HERO_STRIKE_WIDTH / 2,
+    y: -100,
+    vx: 78,
+    vy: 78,
+    radius: 52,
+    hp,
+    maxHp: hp,
+    fireCooldown: 1.3,
+    age: 0,
+    phase: 0,
+    reward: 120,
+    score: 6500,
+    boss: true,
   });
 }
 
@@ -56,10 +68,15 @@ export function updateSpawning(state: HeroStrikeState, dt: number) {
     return;
   }
   if (state.bossSpawned) return;
+
   state.spawnCooldown -= dt;
   if (state.spawnCooldown > 0) return;
+
+  const stage = getCurrentHeroStrikeStage(state);
   spawnEnemy(state);
-  state.spawnCooldown = Math.max(0.38, 0.95 - state.elapsed * 0.007) * (0.72 + Math.random() * 0.62);
+  const stageElapsed = Math.max(0, state.elapsed - stage.startsAt);
+  state.spawnCooldown = Math.max(stage.spawnMin, stage.spawnBase - stageElapsed * stage.spawnDecay)
+    * (0.74 + Math.random() * 0.58);
 }
 
 export function updateEnemyMovement(enemy: HeroStrikeEnemy, dt: number) {
