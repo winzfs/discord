@@ -1,7 +1,6 @@
 export const HERO_STRIKE_WIDTH = 420;
 export const HERO_STRIKE_HEIGHT = 760;
 export const HERO_STRIKE_PLAYER_Y = 650;
-export const HERO_STRIKE_RUN_SECONDS = 60;
 export const HERO_STRIKE_BOSS_Y = 142;
 export const HERO_STRIKE_PLAYER_RADIUS = 18;
 export const HERO_STRIKE_MAX_DT = 0.033;
