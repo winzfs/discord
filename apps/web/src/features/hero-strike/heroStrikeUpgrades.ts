@@ -36,6 +36,16 @@ const MAX_LEVELS: Record<UpgradeId, number> = {
   "critical-core": 5,
 };
 
+const WEAPON_UPGRADES = new Set<UpgradeId>([
+  "homing-missile",
+  "drone-wing",
+  "side-cannons",
+  "rear-guard",
+  "explosive-rounds",
+  "chain-core",
+  "critical-core",
+]);
+
 function shuffle<T>(items: T[]) {
   const result = [...items];
   for (let index = result.length - 1; index > 0; index -= 1) {
@@ -45,13 +55,27 @@ function shuffle<T>(items: T[]) {
   return result;
 }
 
+function replaceLastChoice(choices: UpgradeOption[], upgrade: UpgradeOption) {
+  const withoutDuplicate = choices.filter((choice) => choice.id !== upgrade.id);
+  return [...withoutDuplicate.slice(0, 2), upgrade];
+}
+
 export function createUpgradeChoices(state: HeroStrikeState) {
   const weighted = UPGRADE_POOL.filter((upgrade) => {
     const level = state.upgradeLevels[upgrade.id] ?? 0;
     if (upgrade.id === "shield" && state.player.shield >= 5) return false;
     return level < MAX_LEVELS[upgrade.id];
   });
-  return shuffle(weighted).slice(0, 3);
+
+  let choices = shuffle(weighted).slice(0, 3);
+  const missile = weighted.find((upgrade) => upgrade.id === "homing-missile");
+  if (state.player.level <= 2 && missile && (state.upgradeLevels["homing-missile"] ?? 0) === 0) {
+    choices = replaceLastChoice(choices, missile);
+  } else if (!choices.some((choice) => WEAPON_UPGRADES.has(choice.id))) {
+    const weapon = shuffle(weighted.filter((upgrade) => WEAPON_UPGRADES.has(upgrade.id)))[0];
+    if (weapon) choices = replaceLastChoice(choices, weapon);
+  }
+  return choices;
 }
 
 export function applyUpgrade(state: HeroStrikeState, id: UpgradeId) {
