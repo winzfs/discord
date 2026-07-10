@@ -1,4 +1,6 @@
 import { getStageObjectiveResearch, getStageObjectiveScore } from "./heroStrikeBalance";
+import { HERO_STRIKE_COLORS, HERO_STRIKE_WIDTH } from "./heroStrikeConfig";
+import { addFloatingText } from "./heroStrikeEffects";
 import { grantResearchData } from "./heroStrikeMetaProgress";
 import type { HeroStrikeEnemy, HeroStrikeState, StageObjectiveId } from "./heroStrikeTypes";
 
@@ -30,7 +32,7 @@ export function resetStageObjective(state: HeroStrikeState, stageIndex: number) 
   state.eliteSpawned = false;
   state.eliteDefeated = false;
   state.waveIndex = 1;
-  state.waveBanner = 1.6;
+  state.waveBanner = 3.5;
 }
 
 export function getObjectiveProgress(state: HeroStrikeState) {
@@ -47,7 +49,19 @@ export function isStageObjectiveComplete(state: HeroStrikeState) {
 }
 
 function refreshObjectiveState(state: HeroStrikeState) {
+  const wasComplete = state.objectiveComplete;
   state.objectiveComplete = isStageObjectiveComplete(state);
+  if (!wasComplete && state.objectiveComplete) {
+    addFloatingText(
+      state,
+      HERO_STRIKE_WIDTH / 2,
+      205,
+      "OBJECTIVE COMPLETE",
+      HERO_STRIKE_COLORS.green,
+      18,
+    );
+    state.flash = Math.max(state.flash, 0.16);
+  }
 }
 
 export function recordStageEnemyDefeat(state: HeroStrikeState, enemy: HeroStrikeEnemy) {
