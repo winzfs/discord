@@ -7,9 +7,11 @@ export function HeroStrikeCanvas() {
 
   const getPoint = (event: PointerEvent<HTMLCanvasElement>) => {
     const rect = event.currentTarget.getBoundingClientRect();
+    const samples = event.nativeEvent.getCoalescedEvents?.();
+    const latest = samples?.[samples.length - 1] ?? event.nativeEvent;
     return {
-      x: (event.clientX - rect.left) * (HERO_STRIKE_WIDTH / rect.width),
-      y: (event.clientY - rect.top) * (HERO_STRIKE_HEIGHT / rect.height),
+      x: (latest.clientX - rect.left) * (HERO_STRIKE_WIDTH / rect.width),
+      y: (latest.clientY - rect.top) * (HERO_STRIKE_HEIGHT / rect.height),
     };
   };
 
