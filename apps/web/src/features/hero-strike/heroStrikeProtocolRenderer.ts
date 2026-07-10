@@ -1,3 +1,4 @@
+import { getStageObjectiveResearch, getStageObjectiveScore } from "./heroStrikeBalance";
 import {
   HERO_STRIKE_COLORS,
   HERO_STRIKE_HEIGHT,
@@ -82,19 +83,27 @@ export function drawHeroStrikeProtocolReward(ctx: CanvasRenderingContext2D, stat
   ctx.textAlign = "center";
   ctx.fillStyle = HERO_STRIKE_COLORS.gold;
   ctx.font = "900 12px system-ui";
-  ctx.fillText(`STAGE ${state.stageIndex + 1} CLEAR`, HERO_STRIKE_WIDTH / 2, 205);
+  ctx.fillText(`STAGE ${state.stageIndex + 1} CLEAR`, HERO_STRIKE_WIDTH / 2, 185);
   ctx.fillStyle = HERO_STRIKE_COLORS.white;
   ctx.font = "1000 31px system-ui";
-  ctx.fillText(stage.name, HERO_STRIKE_WIDTH / 2, 246);
+  ctx.fillText(stage.name, HERO_STRIKE_WIDTH / 2, 226);
   ctx.fillStyle = HERO_STRIKE_COLORS.muted;
   ctx.font = "800 12px system-ui";
-  ctx.fillText(`COMBAT RANK ${state.combatRank} · SCORE +${stage.clearBonus.toLocaleString()}`, HERO_STRIKE_WIDTH / 2, 278);
+  ctx.fillText(`COMBAT RANK ${state.combatRank} · SCORE +${stage.clearBonus.toLocaleString()}`, HERO_STRIKE_WIDTH / 2, 258);
+
+  ctx.fillStyle = state.objectiveComplete ? HERO_STRIKE_COLORS.green : HERO_STRIKE_COLORS.red;
+  ctx.font = "900 12px system-ui";
+  const objectiveText = state.objectiveComplete
+    ? `OBJECTIVE CLEAR · +${getStageObjectiveScore(state.stageIndex)} · DATA +${getStageObjectiveResearch(state.stageIndex)}`
+    : "OBJECTIVE FAILED · 기본 보상만 획득";
+  ctx.fillText(objectiveText, HERO_STRIKE_WIDTH / 2, 286);
+
   ctx.fillStyle = rankUp ? HERO_STRIKE_COLORS.cyan : HERO_STRIKE_COLORS.orange;
   ctx.font = "900 13px system-ui";
-  ctx.fillText(rankUp ? "프로토콜 선택 후 전투 등급 상승" : "다음 작전 프로토콜을 선택하세요", HERO_STRIKE_WIDTH / 2, 312);
+  ctx.fillText(rankUp ? "프로토콜 선택 후 전투 등급 상승" : "다음 작전 프로토콜을 선택하세요", HERO_STRIKE_WIDTH / 2, 316);
   ctx.fillStyle = HERO_STRIKE_COLORS.muted;
   ctx.font = "700 11px system-ui";
-  ctx.fillText(`NEXT · ${nextStage.name}`, HERO_STRIKE_WIDTH / 2, 338);
+  ctx.fillText(`NEXT · ${nextStage.name}`, HERO_STRIKE_WIDTH / 2, 340);
 
   state.protocolChoices.forEach((protocol, index) => drawProtocolCard(ctx, protocol, index));
   ctx.fillStyle = HERO_STRIKE_COLORS.muted;
