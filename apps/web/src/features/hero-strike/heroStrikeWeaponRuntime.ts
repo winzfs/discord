@@ -6,6 +6,7 @@ import {
 } from "./heroStrikeConfig";
 import { addBurst, addFloatingText } from "./heroStrikeEffects";
 import { maybeSpawnBonusPickup, spawnEnemyXp } from "./heroStrikePickups";
+import { completeHeroStrikeStage } from "./heroStrikeStageRuntime";
 import { getCurrentHeroStrikeStage } from "./heroStrikeStages";
 import type { HeroStrikeEnemy, HeroStrikeState } from "./heroStrikeTypes";
 
@@ -100,11 +101,12 @@ export function updateEnemyFire(state: HeroStrikeState, enemy: HeroStrikeEnemy, 
         spawnEnemyBullet(state, enemy, baseAngle + index * 0.15, 165 * speedMultiplier, 6);
       }
     } else {
-      for (let index = 0; index < 12; index += 1) {
-        spawnEnemyBullet(state, enemy, enemy.age * 0.7 + index * Math.PI / 6, 125 * speedMultiplier, 5.5);
+      const count = 10 + state.stageIndex * 2;
+      for (let index = 0; index < count; index += 1) {
+        spawnEnemyBullet(state, enemy, enemy.age * 0.7 + index * Math.PI * 2 / count, 125 * speedMultiplier, 5.5);
       }
     }
-    enemy.fireCooldown = 0.85;
+    enemy.fireCooldown = Math.max(0.62, 0.88 - state.stageIndex * 0.1);
   } else if (enemy.kind === "tank") {
     fireTankPattern(state, enemy, baseAngle, 135 * speedMultiplier);
     enemy.fireCooldown = stage.bulletPattern === "assault" ? 1.35 : 1.55;
@@ -128,12 +130,7 @@ export function awardEnemyDefeat(state: HeroStrikeState, enemy: HeroStrikeEnemy)
   spawnEnemyXp(state, enemy);
   maybeSpawnBonusPickup(state, enemy);
 
-  if (enemy.boss) {
-    state.bossDefeated = true;
-    state.phase = "victory";
-    state.flash = 0.65;
-    state.shake = 1;
-  }
+  if (enemy.boss) completeHeroStrikeStage(state);
 }
 
 export function resolveBulletCollisions(state: HeroStrikeState) {
