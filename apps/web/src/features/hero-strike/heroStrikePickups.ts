@@ -42,6 +42,13 @@ export function spawnEnemyXp(state: HeroStrikeState, enemy: HeroStrikeEnemy) {
 
 export function maybeSpawnBonusPickup(state: HeroStrikeState, enemy: HeroStrikeEnemy) {
   if (enemy.boss) return;
+
+  // 첫 플레이에서도 신규 보조무기를 확실히 체험할 수 있게 1스테이지 8번째 처치에 확정 지급한다.
+  if (state.stageIndex === 0 && state.kills === 8) {
+    spawnHeroStrikePickup(state, "missile", enemy.x, enemy.y);
+    return;
+  }
+
   const rarityMultiplier = enemy.kind === "bomber"
     ? 2.25
     : enemy.kind === "tank"
