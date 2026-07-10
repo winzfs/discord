@@ -19,6 +19,7 @@ import {
   type Bubble,
   type Shot,
 } from "./puzzleBubbleEngine";
+import { configurePuzzleCanvasResolution } from "./puzzleBubbleCanvasResolution";
 import { preloadPuzzleBubbleImages, renderPuzzleBubble, type RenderState } from "./puzzleBubbleRenderer";
 
 const INITIAL_DROP_COUNT = 6;
@@ -128,6 +129,10 @@ export function usePuzzleBubbleGame() {
     const context = canvas.getContext("2d");
     if (!context) return;
 
+    const syncResolution = () => configurePuzzleCanvasResolution(canvas, context);
+    syncResolution();
+    window.addEventListener("resize", syncResolution);
+
     const tick = (time: number) => {
       const dt = Math.min(.033, Math.max(0, (time - lastTimeRef.current) / 1000 || 0));
       lastTimeRef.current = time;
@@ -159,6 +164,7 @@ export function usePuzzleBubbleGame() {
 
     animationRef.current = requestAnimationFrame(tick);
     return () => {
+      window.removeEventListener("resize", syncResolution);
       if (animationRef.current !== null) cancelAnimationFrame(animationRef.current);
     };
   }, [resolveShot]);
