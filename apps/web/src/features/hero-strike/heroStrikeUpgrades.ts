@@ -1,3 +1,5 @@
+import { getNextXpRequirement } from "./heroStrikeBalance";
+import { unlockEligibleEvolutions } from "./heroStrikeEvolutions";
 import {
   describeUpgradeLevel,
   getCriticalChance,
@@ -76,6 +78,22 @@ export function createUpgradeChoices(state: HeroStrikeState) {
   return choices;
 }
 
+function continuePendingLevelUps(state: HeroStrikeState) {
+  const player = state.player;
+  if (player.xp < player.nextXp) {
+    state.upgradeChoices = [];
+    state.phase = "playing";
+    return;
+  }
+
+  player.xp -= player.nextXp;
+  player.level += 1;
+  player.nextXp = getNextXpRequirement(player.level);
+  const choices = createUpgradeChoices(state);
+  state.upgradeChoices = choices;
+  state.phase = choices.length > 0 ? "level-up" : "playing";
+}
+
 export function applyUpgrade(state: HeroStrikeState, id: UpgradeId) {
   const player = state.player;
   const nextLevel = (state.upgradeLevels[id] ?? 0) + 1;
@@ -114,6 +132,6 @@ export function applyUpgrade(state: HeroStrikeState, id: UpgradeId) {
       break;
   }
 
-  state.upgradeChoices = [];
-  state.phase = "playing";
+  unlockEligibleEvolutions(state);
+  continuePendingLevelUps(state);
 }
