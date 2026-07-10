@@ -104,8 +104,10 @@ function grantExperience(state: HeroStrikeState, value: number) {
   player.xp -= player.nextXp;
   player.level += 1;
   player.nextXp = getNextXpRequirement(player.level);
-  state.phase = "level-up";
-  state.upgradeChoices = createUpgradeChoices(state);
+  const choices = createUpgradeChoices(state);
+  state.upgradeChoices = choices;
+  state.phase = choices.length > 0 ? "level-up" : "playing";
+  if (choices.length === 0) player.xp = 0;
   state.flash = 0.24;
   return gained;
 }
