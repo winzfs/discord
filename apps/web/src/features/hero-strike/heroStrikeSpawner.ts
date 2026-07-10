@@ -59,7 +59,7 @@ export function updateSpawning(state: HeroStrikeState, dt: number) {
   state.spawnCooldown -= dt;
   if (state.spawnCooldown > 0) return;
   spawnEnemy(state);
-  state.spawnCooldown = Math.max(0.28, 0.82 - state.elapsed * 0.008) * (0.72 + Math.random() * 0.62);
+  state.spawnCooldown = Math.max(0.38, 0.95 - state.elapsed * 0.007) * (0.72 + Math.random() * 0.62);
 }
 
 export function updateEnemyMovement(enemy: HeroStrikeEnemy, dt: number) {
