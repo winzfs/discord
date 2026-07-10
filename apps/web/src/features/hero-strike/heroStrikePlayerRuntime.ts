@@ -1,5 +1,7 @@
+import { getNextXpRequirement } from "./heroStrikeBalance";
 import { HERO_STRIKE_COLORS, HERO_STRIKE_HEIGHT } from "./heroStrikeConfig";
 import { addBurst, addFloatingText, addRing } from "./heroStrikeEffects";
+import { recordStageGraze, recordStageHit } from "./heroStrikeObjectives";
 import { updateHeroStrikePickupMotion } from "./heroStrikePickupPhysics";
 import { createUpgradeChoices } from "./heroStrikeUpgrades";
 import { awardEnemyDefeat } from "./heroStrikeWeaponRuntime";
@@ -34,6 +36,7 @@ export function resolvePlayerCollisions(state: HeroStrikeState) {
     const grazeRadius = hitRadius + 21;
     if (!bullet.grazed && distanceSq <= grazeRadius * grazeRadius) {
       bullet.grazed = true;
+      recordStageGraze(state);
       const gain = 1.5 * player.ultimateGainMultiplier;
       player.ultimate = Math.min(player.ultimateMax, player.ultimate + gain);
       const grazeScore = Math.round(20 * player.scoreMultiplier);
@@ -54,6 +57,8 @@ export function resolvePlayerCollisions(state: HeroStrikeState) {
   }
   if (!hit) return;
 
+  recordStageHit(state);
+  state.hitsTaken += 1;
   if (player.shield > 0) {
     player.shield -= 1;
     addFloatingText(state, player.x, player.y - 34, "SHIELD", HERO_STRIKE_COLORS.shield, 16);
@@ -63,7 +68,7 @@ export function resolvePlayerCollisions(state: HeroStrikeState) {
   player.comboTimer = 0;
   state.flash = 0.42;
   state.shake = 0.8;
-  clearNearbyEnemyBullets(state, 85);
+  clearNearbyEnemyBullets(state, 92);
   addBurst(state, player.x, player.y, HERO_STRIKE_COLORS.red, 22, 210, 4);
   addRing(state, player.x, player.y, HERO_STRIKE_COLORS.red, 28);
   if (player.hp <= 0) state.phase = "game-over";
@@ -93,14 +98,16 @@ function detonateBombPickup(state: HeroStrikeState) {
 
 function grantExperience(state: HeroStrikeState, value: number) {
   const player = state.player;
-  player.xp += value * player.xpGainMultiplier;
-  if (player.xp < player.nextXp || state.phase !== "playing") return;
+  const gained = Math.max(1, Math.round(value * player.xpGainMultiplier));
+  player.xp += gained;
+  if (player.xp < player.nextXp || state.phase !== "playing") return gained;
   player.xp -= player.nextXp;
   player.level += 1;
-  player.nextXp = Math.round(player.nextXp * 1.3 + 8);
+  player.nextXp = getNextXpRequirement(player.level);
   state.phase = "level-up";
   state.upgradeChoices = createUpgradeChoices(state);
   state.flash = 0.24;
+  return gained;
 }
 
 function grantPickup(state: HeroStrikeState, kind: PickupKind, value: number) {
@@ -128,9 +135,8 @@ function grantPickup(state: HeroStrikeState, kind: PickupKind, value: number) {
     player.timeWarp = Math.min(16, player.timeWarp + value);
     addFloatingText(state, player.x, player.y - 30, "TIME WARP", HERO_STRIKE_COLORS.cyan, 15);
   } else if (kind === "xp-core") {
-    const gained = Math.round(value * player.xpGainMultiplier);
+    const gained = grantExperience(state, value);
     addFloatingText(state, player.x, player.y - 30, `XP +${gained}`, HERO_STRIKE_COLORS.xp, 15);
-    grantExperience(state, value);
   } else {
     grantExperience(state, value);
   }
