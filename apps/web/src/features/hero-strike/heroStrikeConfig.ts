@@ -5,6 +5,11 @@ export const HERO_STRIKE_RUN_SECONDS = 60;
 export const HERO_STRIKE_BOSS_Y = 142;
 export const HERO_STRIKE_PLAYER_RADIUS = 18;
 export const HERO_STRIKE_MAX_DT = 0.033;
+export const HERO_STRIKE_RENDER_SCALE_MAX = 1.5;
+export const HERO_STRIKE_PLAYER_RESPONSE = 42;
+export const HERO_STRIKE_MAX_BULLETS = 220;
+export const HERO_STRIKE_MAX_PARTICLES = 140;
+export const HERO_STRIKE_MAX_TEXTS = 10;
 export const HERO_STRIKE_HIGH_SCORE_KEY = "hero-strike-high-score-v1";
 export const HERO_STRIKE_TRACER_ASSET = "/assets/heroes/tracer.png?v=20260605-tracer1";
 
