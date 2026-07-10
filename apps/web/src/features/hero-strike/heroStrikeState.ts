@@ -67,6 +67,8 @@ export function createInitialHeroStrikeState(): HeroStrikeState {
     texts: [],
     stars: createStars(),
     spawnCooldown: 0.25,
+    stageIndex: 0,
+    stageBanner: 2.4,
     bossSpawned: false,
     bossDefeated: false,
     bossWarning: 0,
