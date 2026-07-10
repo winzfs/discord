@@ -1,8 +1,25 @@
 export type HeroStrikePhase = "title" | "playing" | "level-up" | "stage-clear" | "paused" | "game-over" | "victory";
-export type EnemyKind = "runner" | "drone" | "tank" | "boss";
-export type StageId = "kings-row" | "null-sector-factory" | "gibraltar-orbit";
-export type PickupKind = "xp" | "heal" | "charge" | "shield" | "bomb" | "overdrive";
+export type EnemyKind = "runner" | "drone" | "tank" | "sniper" | "weaver" | "bomber" | "boss";
+export type StageId =
+  | "kings-row"
+  | "hanamura-ruins"
+  | "null-sector-factory"
+  | "antarctic-base"
+  | "junkertown-skyway"
+  | "gibraltar-orbit";
+export type PickupKind =
+  | "xp"
+  | "heal"
+  | "charge"
+  | "shield"
+  | "bomb"
+  | "overdrive"
+  | "missile"
+  | "support-drone"
+  | "time-warp"
+  | "xp-core";
 export type UpgradeId = "rapid-fire" | "twin-shot" | "power-core" | "piercing" | "magnet" | "shield" | "pulse-drive" | "overclock";
+export type EnemyBulletVariant = "orb" | "needle" | "heavy" | "shard";
 
 export type Vec2 = { x: number; y: number };
 
@@ -33,6 +50,11 @@ export type HeroStrikePlayer = {
   comboTimer: number;
   overdrive: number;
   overdriveLevel: number;
+  homingMissileTime: number;
+  missileCooldown: number;
+  supportDroneTime: number;
+  supportDroneCooldown: number;
+  timeWarp: number;
 };
 
 export type HeroStrikeBullet = {
@@ -47,7 +69,23 @@ export type HeroStrikeBullet = {
   enemy: boolean;
   life: number;
   color: string;
+  variant?: EnemyBulletVariant;
   grazed?: boolean;
+};
+
+export type HeroStrikeMissile = {
+  id: number;
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  speed: number;
+  turnRate: number;
+  damage: number;
+  radius: number;
+  explosionRadius: number;
+  life: number;
+  targetId: number | null;
 };
 
 export type HeroStrikeEnemy = {
@@ -133,6 +171,7 @@ export type HeroStrikeState = {
   nextId: number;
   player: HeroStrikePlayer;
   bullets: HeroStrikeBullet[];
+  missiles: HeroStrikeMissile[];
   enemies: HeroStrikeEnemy[];
   pickups: HeroStrikePickup[];
   particles: HeroStrikeParticle[];
