@@ -46,10 +46,7 @@ function drawTopHud(ctx: CanvasRenderingContext2D, state: HeroStrikeState) {
   ctx.fillStyle = "rgba(255,255,255,.08)";
   ctx.fillRect(18, 91, HERO_STRIKE_WIDTH - 36, 7);
   const xpRatio = Math.max(0, Math.min(1, state.player.xp / state.player.nextXp));
-  const xpGradient = ctx.createLinearGradient(18, 0, HERO_STRIKE_WIDTH - 18, 0);
-  xpGradient.addColorStop(0, HERO_STRIKE_COLORS.cyan);
-  xpGradient.addColorStop(1, HERO_STRIKE_COLORS.purple);
-  ctx.fillStyle = xpGradient;
+  ctx.fillStyle = HERO_STRIKE_COLORS.cyan;
   ctx.fillRect(18, 91, (HERO_STRIKE_WIDTH - 36) * xpRatio, 7);
   ctx.fillStyle = HERO_STRIKE_COLORS.white;
   ctx.font = "800 10px system-ui";
@@ -102,13 +99,10 @@ function drawUltimate(ctx: CanvasRenderingContext2D, state: HeroStrikeState) {
   ctx.lineWidth = 5;
   ctx.stroke();
   ctx.strokeStyle = ratio >= 1 ? HERO_STRIKE_COLORS.gold : HERO_STRIKE_COLORS.cyan;
-  ctx.shadowColor = ctx.strokeStyle;
-  ctx.shadowBlur = ratio >= 1 ? 18 : 6;
-  ctx.lineWidth = 6;
+  ctx.lineWidth = ratio >= 1 ? 7 : 6;
   ctx.beginPath();
   ctx.arc(0, 0, radius - 4, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * ratio);
   ctx.stroke();
-  ctx.shadowBlur = 0;
   ctx.fillStyle = ratio >= 1 ? HERO_STRIKE_COLORS.gold : HERO_STRIKE_COLORS.white;
   ctx.textAlign = "center";
   ctx.font = "900 24px system-ui";
@@ -126,10 +120,7 @@ function drawBossBar(ctx: CanvasRenderingContext2D, state: HeroStrikeState) {
   ctx.fillStyle = "rgba(5,7,16,.78)";
   ctx.fill();
   const ratio = Math.max(0, boss.hp / boss.maxHp);
-  const gradient = ctx.createLinearGradient(50, 0, HERO_STRIKE_WIDTH - 50, 0);
-  gradient.addColorStop(0, "#ff5f6d");
-  gradient.addColorStop(1, "#ffb347");
-  ctx.fillStyle = gradient;
+  ctx.fillStyle = HERO_STRIKE_COLORS.red;
   ctx.fillRect(51, 187, (HERO_STRIKE_WIDTH - 102) * ratio, 9);
   ctx.textAlign = "center";
   ctx.fillStyle = HERO_STRIKE_COLORS.white;
