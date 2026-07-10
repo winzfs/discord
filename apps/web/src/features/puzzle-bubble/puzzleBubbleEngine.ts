@@ -8,11 +8,14 @@ import {
   type PuzzleHeroKind,
 } from "./puzzleBubbleConfig";
 
+export type PuzzleSpecialKind = "bomb" | "rainbow";
+
 export type Bubble = {
   id: number;
   row: number;
   col: number;
   kind: PuzzleHeroKind;
+  special?: PuzzleSpecialKind;
   falling?: boolean;
   x?: number;
   y?: number;
@@ -22,6 +25,7 @@ export type Bubble = {
 
 export type Shot = {
   kind: PuzzleHeroKind;
+  special?: PuzzleSpecialKind;
   x: number;
   y: number;
   vx: number;
@@ -51,7 +55,7 @@ export function createInitialBubbles(rows = 6): Bubble[] {
   return bubbles;
 }
 
-function getNeighbors(target: Bubble, bubbles: Bubble[]) {
+export function getBubbleNeighbors(target: Bubble, bubbles: Bubble[]) {
   const offsets = target.row % 2 === 0
     ? [[-1, -1], [-1, 0], [0, -1], [0, 1], [1, -1], [1, 0]]
     : [[-1, 0], [-1, 1], [0, -1], [0, 1], [1, 0], [1, 1]];
@@ -71,7 +75,7 @@ export function snapShotToGrid(shot: Shot, bubbles: Bubble[]): Bubble {
       if (distance < best.distance) best = { row, col, distance };
     }
   }
-  return { id: nextId++, row: best.row, col: best.col, kind: shot.kind };
+  return { id: nextId++, row: best.row, col: best.col, kind: shot.kind, special: shot.special };
 }
 
 export function findMatchingCluster(start: Bubble, bubbles: Bubble[]) {
@@ -83,7 +87,7 @@ export function findMatchingCluster(start: Bubble, bubbles: Bubble[]) {
     if (!current || visited.has(current.id) || current.kind !== start.kind) continue;
     visited.add(current.id);
     cluster.push(current);
-    getNeighbors(current, bubbles).forEach((neighbor) => queue.push(neighbor));
+    getBubbleNeighbors(current, bubbles).forEach((neighbor) => queue.push(neighbor));
   }
   return cluster;
 }
@@ -95,16 +99,15 @@ export function findDetachedBubbles(bubbles: Bubble[]) {
     const current = queue.shift();
     if (!current || connected.has(current.id)) continue;
     connected.add(current.id);
-    getNeighbors(current, bubbles).forEach((neighbor) => queue.push(neighbor));
+    getBubbleNeighbors(current, bubbles).forEach((neighbor) => queue.push(neighbor));
   }
   return bubbles.filter((bubble) => !connected.has(bubble.id));
 }
 
 export function addPressureRow(bubbles: Bubble[]) {
   const shifted = bubbles.map((bubble) => ({ ...bubble, row: bubble.row + 1 }));
-  const columns = GRID_COLUMNS;
   const activeKinds = HERO_KINDS.slice(0, 4);
-  const added = Array.from({ length: columns }, (_, col) => ({
+  const added = Array.from({ length: GRID_COLUMNS }, (_, col) => ({
     id: nextId++,
     row: 0,
     col,
