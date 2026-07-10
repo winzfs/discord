@@ -55,12 +55,23 @@ function drawTopHud(ctx: CanvasRenderingContext2D, state: HeroStrikeState) {
   ctx.fillText(`LV.${state.player.level}`, 20, 112);
 }
 
+type SupportStatusItem = {
+  label: string;
+  time: number;
+  color: string;
+};
+
 function drawSupportStatus(ctx: CanvasRenderingContext2D, state: HeroStrikeState) {
-  const active = [
-    state.player.homingMissileTime > 0 ? { label: "MISSILE", time: state.player.homingMissileTime, color: HERO_STRIKE_COLORS.orange } : null,
-    state.player.supportDroneTime > 0 ? { label: "DRONE", time: state.player.supportDroneTime, color: HERO_STRIKE_COLORS.lime } : null,
-    state.player.timeWarp > 0 ? { label: "SLOW", time: state.player.timeWarp, color: HERO_STRIKE_COLORS.xp } : null,
-  ].filter((item): item is { label: string; time: number; color: string } => item !== null);
+  const active: SupportStatusItem[] = [];
+  if (state.player.homingMissileTime > 0) {
+    active.push({ label: "MISSILE", time: state.player.homingMissileTime, color: HERO_STRIKE_COLORS.orange });
+  }
+  if (state.player.supportDroneTime > 0) {
+    active.push({ label: "DRONE", time: state.player.supportDroneTime, color: HERO_STRIKE_COLORS.lime });
+  }
+  if (state.player.timeWarp > 0) {
+    active.push({ label: "SLOW", time: state.player.timeWarp, color: HERO_STRIKE_COLORS.xp });
+  }
 
   let x = HERO_STRIKE_WIDTH - 28;
   ctx.textAlign = "right";
