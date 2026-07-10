@@ -13,14 +13,14 @@ function drawTitle(ctx: CanvasRenderingContext2D, state: HeroStrikeState) {
   ctx.textAlign = "center";
   ctx.fillStyle = HERO_STRIKE_COLORS.cyan;
   ctx.font = "900 12px system-ui";
-  ctx.fillText("3-STAGE ARCADE PROTOCOL", HERO_STRIKE_WIDTH / 2, 225);
+  ctx.fillText("6-STAGE ARCADE CAMPAIGN", HERO_STRIKE_WIDTH / 2, 225);
   ctx.fillStyle = HERO_STRIKE_COLORS.white;
   ctx.font = "1000 46px system-ui";
   ctx.fillText("HERO STRIKE", HERO_STRIKE_WIDTH / 2, 278);
   ctx.fillStyle = HERO_STRIKE_COLORS.muted;
   ctx.font = "700 15px system-ui";
   ctx.fillText("드래그로 이동 · 공격은 자동", HERO_STRIKE_WIDTH / 2, 318);
-  ctx.fillText("각 스테이지의 보스를 격파하세요", HERO_STRIKE_WIDTH / 2, 342);
+  ctx.fillText("아이템을 모아 6개 작전을 돌파하세요", HERO_STRIKE_WIDTH / 2, 342);
   roundedRect(ctx, 88, 390, HERO_STRIKE_WIDTH - 176, 64, 20);
   ctx.fillStyle = HERO_STRIKE_COLORS.orange;
   ctx.fill();
@@ -117,18 +117,19 @@ function drawStageClear(ctx: CanvasRenderingContext2D, state: HeroStrikeState) {
   ctx.font = "800 13px system-ui";
   ctx.fillText(`클리어 보너스  +${stage.clearBonus.toLocaleString()}`, HERO_STRIKE_WIDTH / 2, 329);
   ctx.fillText("체력 +1 · 보호막 +1 · 궁극기 +25%", HERO_STRIKE_WIDTH / 2, 355);
+  ctx.fillText("다음 작전 보조 아이템 지급", HERO_STRIKE_WIDTH / 2, 378);
 
-  roundedRect(ctx, 72, 402, HERO_STRIKE_WIDTH - 144, 78, 22);
+  roundedRect(ctx, 72, 414, HERO_STRIKE_WIDTH - 144, 78, 22);
   ctx.fillStyle = HERO_STRIKE_COLORS.orange;
   ctx.fill();
   ctx.fillStyle = "#111827";
   ctx.font = "900 19px system-ui";
-  ctx.fillText("다음 스테이지", HERO_STRIKE_WIDTH / 2, 437);
+  ctx.fillText("다음 스테이지", HERO_STRIKE_WIDTH / 2, 449);
   ctx.font = "800 11px system-ui";
-  ctx.fillText(`${nextStage.name}  →`, HERO_STRIKE_WIDTH / 2, 459);
+  ctx.fillText(`${nextStage.name}  →`, HERO_STRIKE_WIDTH / 2, 471);
   ctx.fillStyle = HERO_STRIKE_COLORS.muted;
   ctx.font = "700 11px system-ui";
-  ctx.fillText("화면을 눌러 계속", HERO_STRIKE_WIDTH / 2, 520);
+  ctx.fillText("화면을 눌러 계속", HERO_STRIKE_WIDTH / 2, 530);
   ctx.textAlign = "left";
 }
 
