@@ -1,5 +1,7 @@
 import { HERO_STRIKE_COLORS, HERO_STRIKE_PLAYER_Y, HERO_STRIKE_WIDTH } from "./heroStrikeConfig";
 import { addFloatingText } from "./heroStrikeEffects";
+import { grantResearchData } from "./heroStrikeMetaProgress";
+import { resetStageObjective, resolveStageObjective } from "./heroStrikeObjectives";
 import { spawnStageReward } from "./heroStrikePickups";
 import { applyCombatRankMilestone, createStageProtocolChoices } from "./heroStrikeProtocols";
 import { getHeroStrikeStage, isFinalHeroStrikeStage } from "./heroStrikeStages";
@@ -18,6 +20,8 @@ export function completeHeroStrikeStage(state: HeroStrikeState) {
   state.enemies = [];
   state.flash = 0.65;
   state.shake = 1;
+  resolveStageObjective(state);
+  grantResearchData(state, 3 + state.stageIndex);
 
   if (isFinalHeroStrikeStage(state.stageIndex)) {
     state.phase = "victory";
@@ -42,6 +46,8 @@ export function advanceHeroStrikeStage(state: HeroStrikeState) {
   state.bossSpawned = false;
   state.bossDefeated = false;
   state.bossWarning = 0;
+  state.bossPhaseBanner = 0;
+  state.bossPhaseLabel = "";
   state.bullets = [];
   state.missiles = [];
   state.enemies = [];
@@ -55,6 +61,7 @@ export function advanceHeroStrikeStage(state: HeroStrikeState) {
   state.player.y = HERO_STRIKE_PLAYER_Y;
   state.player.targetY = HERO_STRIKE_PLAYER_Y;
   state.phase = "playing";
+  resetStageObjective(state, state.stageIndex);
 
   spawnStageReward(state, clearedStageIndex);
   const stage = getHeroStrikeStage(state.stageIndex);
