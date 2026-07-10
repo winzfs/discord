@@ -13,6 +13,7 @@ export function completeHeroStrikeStage(state: HeroStrikeState) {
   state.bossDefeated = true;
   state.score += stage.clearBonus;
   state.bullets = state.bullets.filter((bullet) => !bullet.enemy);
+  state.missiles = [];
   state.enemies = [];
   state.flash = 0.65;
   state.shake = 1;
@@ -37,6 +38,7 @@ export function advanceHeroStrikeStage(state: HeroStrikeState) {
   state.bossDefeated = false;
   state.bossWarning = 0;
   state.bullets = [];
+  state.missiles = [];
   state.enemies = [];
   state.player.hp = Math.min(state.player.maxHp, state.player.hp + 1);
   state.player.shield = Math.min(5, state.player.shield + 1);
