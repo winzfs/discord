@@ -51,7 +51,7 @@
 .hero-strike-canvas {
   display: block;
   align-self: center;
-  width: min(100%, calc((100dvh - 108px) * 420 / 760));
+  width: min(100%, calc(55.263dvh - 60px));
   height: auto;
   max-height: 100%;
   aspect-ratio: 420 / 760;
@@ -73,7 +73,7 @@
 
 @media (max-height: 720px) {
   .hero-strike-topbar { min-height: 45px; }
-  .hero-strike-canvas { width: min(100%, calc((100dvh - 66px) * 420 / 760)); }
+  .hero-strike-canvas { width: min(100%, calc(55.263dvh - 37px)); }
   .hero-strike-help { display: none; }
   .hero-strike-disclaimer { padding-top: 3px; }
 }
