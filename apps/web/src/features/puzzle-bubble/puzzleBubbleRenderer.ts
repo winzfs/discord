@@ -9,6 +9,7 @@ import {
   type PuzzleHeroKind,
 } from "./puzzleBubbleConfig";
 import { getCellPosition, type Bubble, type Shot } from "./puzzleBubbleEngine";
+import { drawCrispHeroPortrait } from "./puzzleBubblePortraitRenderer";
 
 export type RenderState = {
   bubbles: Bubble[];
@@ -110,11 +111,7 @@ function drawBubble(ctx: CanvasRenderingContext2D, kind: PuzzleHeroKind, x: numb
   ctx.clip();
   const image = images.get(kind);
   if (image?.complete && image.naturalWidth > 0) {
-    const frameHeight = image.naturalHeight / 4;
-    const ratio = Math.max((radius * 2) / image.naturalWidth, (radius * 2) / frameHeight);
-    const width = image.naturalWidth * ratio;
-    const height = frameHeight * ratio;
-    ctx.drawImage(image, 0, 0, image.naturalWidth, frameHeight, x - width / 2, y - height * .48, width, height);
+    drawCrispHeroPortrait(ctx, image, x, y, radius * 2);
   }
   ctx.restore();
 
