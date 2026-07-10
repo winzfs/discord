@@ -14,7 +14,7 @@ function readHighScore() {
 }
 
 function createStars(): HeroStrikeStar[] {
-  return Array.from({ length: 64 }, () => ({
+  return Array.from({ length: 42 }, () => ({
     x: Math.random() * HERO_STRIKE_WIDTH,
     y: Math.random() * HERO_STRIKE_HEIGHT,
     speed: 22 + Math.random() * 86,
@@ -75,6 +75,8 @@ export function createInitialHeroStrikeState(): HeroStrikeState {
     upgradeChoices: [],
     upgradeLevels: {},
     pointerActive: false,
+    pointerLastX: null,
+    pointerLastY: null,
   };
 }
 
