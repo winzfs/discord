@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef } from "react";
 import { preloadHeroStrikeAssets } from "./heroStrikeAssets";
 import { configureHeroStrikeCanvas } from "./heroStrikeCanvasResolution";
 import { HERO_STRIKE_MAX_DT } from "./heroStrikeConfig";
-import { handleHeroStrikePointer } from "./heroStrikeInput";
+import { handleHeroStrikePointer, releaseHeroStrikePointer } from "./heroStrikeInput";
 import { renderHeroStrike } from "./heroStrikeRenderer";
 import { tickHeroStrike } from "./heroStrikeRuntime";
 import { createInitialHeroStrikeState } from "./heroStrikeState";
@@ -15,6 +15,10 @@ export function useHeroStrikeGame() {
 
   const pointer = useCallback((x: number, y: number, pressed: boolean) => {
     handleHeroStrikePointer(stateRef.current, x, y, pressed);
+  }, []);
+
+  const release = useCallback(() => {
+    releaseHeroStrikePointer(stateRef.current);
   }, []);
 
   useEffect(() => {
@@ -53,5 +57,5 @@ export function useHeroStrikeGame() {
     };
   }, []);
 
-  return { canvasRef, pointer };
+  return { canvasRef, pointer, release };
 }
