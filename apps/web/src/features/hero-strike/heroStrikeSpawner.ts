@@ -1,4 +1,4 @@
-import { HERO_STRIKE_BOSS_Y, HERO_STRIKE_RUN_SECONDS, HERO_STRIKE_WIDTH } from "./heroStrikeConfig";
+import { HERO_STRIKE_BOSS_Y, HERO_STRIKE_WIDTH } from "./heroStrikeConfig";
 import { chooseEnemyKindForStage, getCurrentHeroStrikeStage } from "./heroStrikeStages";
 import type { EnemyKind, HeroStrikeEnemy, HeroStrikeState } from "./heroStrikeTypes";
 
@@ -9,7 +9,7 @@ const ENEMY_STATS: Record<Exclude<EnemyKind, "boss">, Pick<HeroStrikeEnemy, "rad
 };
 
 function difficultyScale(state: HeroStrikeState) {
-  return 1 + Math.min(1.28, state.elapsed / 58) + state.stageIndex * 0.08;
+  return 1 + Math.min(0.7, state.stageElapsed / 45) + state.stageIndex * 0.18;
 }
 
 export function spawnEnemy(state: HeroStrikeState, requestedKind?: Exclude<EnemyKind, "boss">) {
@@ -40,30 +40,33 @@ export function spawnEnemy(state: HeroStrikeState, requestedKind?: Exclude<Enemy
 }
 
 export function spawnBoss(state: HeroStrikeState) {
+  const stage = getCurrentHeroStrikeStage(state);
   state.bossSpawned = true;
   state.bossWarning = 2.6;
-  const hp = 3000 + state.player.level * 175;
+  state.bullets = state.bullets.filter((bullet) => !bullet.enemy);
+  const hp = stage.bossHpBase + state.player.level * stage.bossHpPerLevel;
   state.enemies.push({
     id: state.nextId++,
     kind: "boss",
     x: HERO_STRIKE_WIDTH / 2,
     y: -100,
-    vx: 78,
+    vx: 74 + state.stageIndex * 8,
     vy: 78,
-    radius: 52,
+    radius: 48 + state.stageIndex * 3,
     hp,
     maxHp: hp,
     fireCooldown: 1.3,
     age: 0,
-    phase: 0,
-    reward: 120,
-    score: 6500,
+    phase: state.stageIndex,
+    reward: 100 + state.stageIndex * 35,
+    score: stage.bossScore,
     boss: true,
   });
 }
 
 export function updateSpawning(state: HeroStrikeState, dt: number) {
-  if (!state.bossSpawned && state.elapsed >= HERO_STRIKE_RUN_SECONDS) {
+  const stage = getCurrentHeroStrikeStage(state);
+  if (!state.bossSpawned && state.stageElapsed >= stage.durationSeconds) {
     spawnBoss(state);
     return;
   }
@@ -72,10 +75,8 @@ export function updateSpawning(state: HeroStrikeState, dt: number) {
   state.spawnCooldown -= dt;
   if (state.spawnCooldown > 0) return;
 
-  const stage = getCurrentHeroStrikeStage(state);
   spawnEnemy(state);
-  const stageElapsed = Math.max(0, state.elapsed - stage.startsAt);
-  state.spawnCooldown = Math.max(stage.spawnMin, stage.spawnBase - stageElapsed * stage.spawnDecay)
+  state.spawnCooldown = Math.max(stage.spawnMin, stage.spawnBase - state.stageElapsed * stage.spawnDecay)
     * (0.74 + Math.random() * 0.58);
 }
 
