@@ -1,3 +1,4 @@
+import { getEliteTraitLabel } from "./heroStrikeWaveDirector";
 import type { HeroStrikeEnemy } from "./heroStrikeTypes";
 
 function enemyPalette(enemy: HeroStrikeEnemy) {
@@ -8,6 +9,13 @@ function enemyPalette(enemy: HeroStrikeEnemy) {
   if (enemy.kind === "weaver") return { fill: "#237f83", accent: "#7ffff4" };
   if (enemy.kind === "bomber") return { fill: "#9a5b2f", accent: "#ffd18a" };
   return { fill: "#8d3d43", accent: "#ffd166" };
+}
+
+function eliteAccent(enemy: HeroStrikeEnemy) {
+  if (enemy.eliteTrait === "armored") return "#8fc7ff";
+  if (enemy.eliteTrait === "rapid") return "#ffdd63";
+  if (enemy.eliteTrait === "scatter") return "#ff82d6";
+  return "#c49bff";
 }
 
 function drawBossBody(ctx: CanvasRenderingContext2D, radius: number, accent: string) {
@@ -111,6 +119,35 @@ function drawNormalBody(ctx: CanvasRenderingContext2D, enemy: HeroStrikeEnemy, a
   else drawBomber(ctx, enemy.radius);
 }
 
+function drawEliteAura(ctx: CanvasRenderingContext2D, enemy: HeroStrikeEnemy) {
+  if (!enemy.elite || !enemy.eliteTrait) return;
+  const accent = eliteAccent(enemy);
+  ctx.strokeStyle = accent;
+  ctx.lineWidth = 2.5;
+  ctx.globalAlpha = 0.7 + Math.sin(enemy.age * 5) * 0.2;
+  ctx.beginPath();
+  ctx.arc(0, 0, enemy.radius + 8, enemy.age, enemy.age + Math.PI * 1.4);
+  ctx.stroke();
+  ctx.globalAlpha = 1;
+  ctx.fillStyle = accent;
+  ctx.textAlign = "center";
+  ctx.font = "900 9px system-ui";
+  ctx.fillText(`ELITE · ${getEliteTraitLabel(enemy.eliteTrait)}`, 0, -enemy.radius - 18);
+  ctx.textAlign = "left";
+}
+
+function drawBossPhaseMark(ctx: CanvasRenderingContext2D, enemy: HeroStrikeEnemy) {
+  if (!enemy.boss) return;
+  const phase = enemy.bossPhase ?? 1;
+  ctx.strokeStyle = phase >= 3 ? "#ff5f6d" : phase >= 2 ? "#ffd166" : "#69e7ff";
+  ctx.lineWidth = 2;
+  for (let index = 0; index < phase; index += 1) {
+    ctx.beginPath();
+    ctx.arc(0, 0, enemy.radius + 8 + index * 4, -Math.PI * 0.8, -Math.PI * 0.2);
+    ctx.stroke();
+  }
+}
+
 export function drawHeroStrikeEnemy(ctx: CanvasRenderingContext2D, enemy: HeroStrikeEnemy) {
   const palette = enemyPalette(enemy);
   const radius = enemy.radius;
@@ -123,9 +160,12 @@ export function drawHeroStrikeEnemy(ctx: CanvasRenderingContext2D, enemy: HeroSt
   ctx.ellipse(0, radius * 0.62, radius * (enemy.boss ? 1.15 : 0.9), radius * (enemy.boss ? 0.42 : 0.25), 0, 0, Math.PI * 2);
   ctx.fill();
 
+  drawEliteAura(ctx, enemy);
+  drawBossPhaseMark(ctx, enemy);
+
   ctx.fillStyle = palette.fill;
-  ctx.strokeStyle = "rgba(4,10,18,.88)";
-  ctx.lineWidth = enemy.boss ? 4 : 2.5;
+  ctx.strokeStyle = enemy.elite ? eliteAccent(enemy) : "rgba(4,10,18,.88)";
+  ctx.lineWidth = enemy.boss ? 4 : enemy.elite ? 3.5 : 2.5;
   if (enemy.boss) drawBossBody(ctx, radius, palette.accent);
   else drawNormalBody(ctx, enemy, palette.accent);
 
@@ -141,12 +181,12 @@ export function drawHeroStrikeEnemy(ctx: CanvasRenderingContext2D, enemy: HeroSt
   }
   ctx.fill();
 
-  if (!enemy.boss && enemy.hp < enemy.maxHp) {
-    const width = radius * 1.8;
-    ctx.fillStyle = "rgba(0,0,0,.5)";
-    ctx.fillRect(-width / 2, -radius - 10, width, 3);
-    ctx.fillStyle = palette.accent;
-    ctx.fillRect(-width / 2, -radius - 10, width * Math.max(0, enemy.hp / enemy.maxHp), 3);
+  if (!enemy.boss && (enemy.hp < enemy.maxHp || enemy.elite)) {
+    const width = radius * 1.9;
+    ctx.fillStyle = "rgba(0,0,0,.58)";
+    ctx.fillRect(-width / 2, -radius - 10, width, 4);
+    ctx.fillStyle = enemy.elite ? eliteAccent(enemy) : palette.accent;
+    ctx.fillRect(-width / 2, -radius - 10, width * Math.max(0, enemy.hp / enemy.maxHp), 4);
   }
   ctx.restore();
 }
