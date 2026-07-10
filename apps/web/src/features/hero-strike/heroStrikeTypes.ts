@@ -145,4 +145,6 @@ export type HeroStrikeState = {
   upgradeChoices: UpgradeOption[];
   upgradeLevels: Partial<Record<UpgradeId, number>>;
   pointerActive: boolean;
+  pointerLastX: number | null;
+  pointerLastY: number | null;
 };
