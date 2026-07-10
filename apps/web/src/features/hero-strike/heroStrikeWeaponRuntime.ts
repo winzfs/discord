@@ -52,16 +52,16 @@ export function updateEnemyFire(state: HeroStrikeState, enemy: HeroStrikeEnemy, 
 
   if (enemy.boss) {
     if (Math.floor(enemy.age / 3) % 2 === 0) {
-      for (let index = -3; index <= 3; index += 1) spawnEnemyBullet(state, enemy, baseAngle + index * 0.15, 185, 6);
+      for (let index = -3; index <= 3; index += 1) spawnEnemyBullet(state, enemy, baseAngle + index * 0.15, 165, 6);
     } else {
-      for (let index = 0; index < 12; index += 1) spawnEnemyBullet(state, enemy, enemy.age * 0.7 + index * Math.PI / 6, 138, 5.5);
+      for (let index = 0; index < 12; index += 1) spawnEnemyBullet(state, enemy, enemy.age * 0.7 + index * Math.PI / 6, 125, 5.5);
     }
-    enemy.fireCooldown = 0.72;
+    enemy.fireCooldown = 0.85;
   } else if (enemy.kind === "tank") {
-    for (let index = -1; index <= 1; index += 1) spawnEnemyBullet(state, enemy, baseAngle + index * 0.22, 148, 6);
+    for (let index = -1; index <= 1; index += 1) spawnEnemyBullet(state, enemy, baseAngle + index * 0.22, 135, 6);
     enemy.fireCooldown = 1.55;
   } else {
-    spawnEnemyBullet(state, enemy, baseAngle, 174);
+    spawnEnemyBullet(state, enemy, baseAngle, 155);
     enemy.fireCooldown = 1.35 + Math.random() * 0.55;
   }
 }
