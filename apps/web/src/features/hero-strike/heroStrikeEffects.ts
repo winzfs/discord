@@ -1,4 +1,13 @@
+import {
+  HERO_STRIKE_MAX_PARTICLES,
+  HERO_STRIKE_MAX_TEXTS,
+} from "./heroStrikeConfig";
 import type { HeroStrikeState } from "./heroStrikeTypes";
+
+function makeParticleRoom(state: HeroStrikeState, incoming: number) {
+  const overflow = state.particles.length + incoming - HERO_STRIKE_MAX_PARTICLES;
+  if (overflow > 0) state.particles.splice(0, overflow);
+}
 
 export function addBurst(
   state: HeroStrikeState,
@@ -9,7 +18,10 @@ export function addBurst(
   speed = 130,
   size = 3,
 ) {
-  for (let index = 0; index < count; index += 1) {
+  const safeCount = Math.min(count, HERO_STRIKE_MAX_PARTICLES);
+  makeParticleRoom(state, safeCount);
+
+  for (let index = 0; index < safeCount; index += 1) {
     const angle = Math.random() * Math.PI * 2;
     const velocity = speed * (0.35 + Math.random() * 0.9);
     state.particles.push({
@@ -28,6 +40,7 @@ export function addBurst(
 }
 
 export function addRing(state: HeroStrikeState, x: number, y: number, color: string, size = 22) {
+  makeParticleRoom(state, 1);
   state.particles.push({
     id: state.nextId++,
     x,
@@ -51,6 +64,9 @@ export function addFloatingText(
   color: string,
   size = 16,
 ) {
+  if (state.texts.length >= HERO_STRIKE_MAX_TEXTS) {
+    state.texts.splice(0, state.texts.length - HERO_STRIKE_MAX_TEXTS + 1);
+  }
   state.texts.push({
     id: state.nextId++,
     x,
