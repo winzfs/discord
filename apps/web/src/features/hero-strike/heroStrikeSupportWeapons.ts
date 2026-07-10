@@ -39,9 +39,9 @@ function nearestEnemy(state: HeroStrikeState, x: number, y: number) {
 }
 
 function criticalDamage(state: HeroStrikeState, damage: number) {
-  return Math.random() < state.player.criticalChance
-    ? damage * state.player.criticalMultiplier
-    : damage;
+  const chance = Math.min(0.75, state.player.criticalChance + state.player.bonusCriticalChance);
+  const multiplier = state.player.criticalMultiplier + state.player.bonusCriticalMultiplier;
+  return Math.random() < chance ? damage * multiplier : damage;
 }
 
 function spawnMissile(state: HeroStrikeState) {
@@ -57,7 +57,10 @@ function spawnMissile(state: HeroStrikeState) {
     vy: -280,
     speed: getMissileSpeed(level),
     turnRate: getMissileTurnRate(level),
-    damage: criticalDamage(state, 62 + state.player.damage * getMissileDamageScale(level)),
+    damage: criticalDamage(
+      state,
+      (62 + state.player.damage * getMissileDamageScale(level)) * state.player.campaignDamageMultiplier,
+    ),
     radius: 7,
     explosionRadius: getMissileExplosionRadius(level),
     life: 4.5,
@@ -72,8 +75,10 @@ function spawnDroneVolley(state: HeroStrikeState) {
   const player = state.player;
   const level = Math.max(1, player.supportDroneLevel);
   const timedBoost = player.supportDroneTime > 0;
+  const criticalChance = Math.min(0.75, player.criticalChance + player.bonusCriticalChance);
+  const criticalMultiplier = player.criticalMultiplier + player.bonusCriticalMultiplier;
   for (const side of [-1, 1] as const) {
-    const critical = Math.random() < player.criticalChance;
+    const critical = Math.random() < criticalChance;
     state.bullets.push({
       id: state.nextId++,
       x: player.x + side * 30,
@@ -81,7 +86,10 @@ function spawnDroneVolley(state: HeroStrikeState) {
       vx: side * (18 + level * 4),
       vy: -830,
       radius: 3.4,
-      damage: player.damage * getDroneDamageScale(level, timedBoost) * (critical ? player.criticalMultiplier : 1),
+      damage: player.damage
+        * player.campaignDamageMultiplier
+        * getDroneDamageScale(level, timedBoost)
+        * (critical ? criticalMultiplier : 1),
       pierce: level >= 4 ? 1 : 0,
       enemy: false,
       life: 1.35,
@@ -169,7 +177,8 @@ export function updateSupportWeapons(state: HeroStrikeState, dt: number) {
     player.missileCooldown -= dt;
     if (player.missileCooldown <= 0 && state.enemies.length > 0) {
       spawnMissile(state);
-      player.missileCooldown = getMissileFireInterval(player.homingMissileLevel);
+      player.missileCooldown = getMissileFireInterval(player.homingMissileLevel)
+        * player.campaignFireRateMultiplier;
     }
   } else player.missileCooldown = 0;
 
@@ -178,7 +187,8 @@ export function updateSupportWeapons(state: HeroStrikeState, dt: number) {
     if (player.supportDroneCooldown <= 0) {
       spawnDroneVolley(state);
       const level = Math.max(1, player.supportDroneLevel);
-      player.supportDroneCooldown = getDroneFireInterval(level, player.supportDroneTime > 0);
+      player.supportDroneCooldown = getDroneFireInterval(level, player.supportDroneTime > 0)
+        * player.campaignFireRateMultiplier;
     }
   } else player.supportDroneCooldown = 0;
 
