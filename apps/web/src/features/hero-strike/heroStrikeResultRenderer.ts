@@ -20,7 +20,7 @@ export function drawHeroStrikeResult(ctx: CanvasRenderingContext2D, state: HeroS
   const victory = state.phase === "victory";
   const grade = getRunGrade(state);
   const evolutions = getEvolutionShortLabels(state);
-  const reachedStage = Math.min(10, state.stageIndex + (victory ? 1 : 0));
+  const reachedStage = Math.min(10, state.stageIndex + 1);
 
   ctx.fillStyle = "rgba(2,6,16,.9)";
   ctx.fillRect(0, 0, HERO_STRIKE_WIDTH, HERO_STRIKE_HEIGHT);
