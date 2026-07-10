@@ -25,7 +25,7 @@ function drawDrone(ctx: CanvasRenderingContext2D, x: number, y: number, side: nu
 }
 
 function drawSupportDrones(ctx: CanvasRenderingContext2D, state: HeroStrikeState) {
-  if (state.player.supportDroneTime <= 0) return;
+  if (state.player.supportDroneLevel <= 0 && state.player.supportDroneTime <= 0) return;
   const pulse = Math.sin(state.elapsed * 7) * 0.5 + 0.5;
   drawDrone(ctx, state.player.x - 31, state.player.y + 4, -1, pulse);
   drawDrone(ctx, state.player.x + 31, state.player.y + 4, 1, pulse);
