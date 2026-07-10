@@ -7,23 +7,23 @@ export const SHOOTER_Y = 686;
 export const LOSS_LINE_Y = 612;
 export const SHOT_SPEED = 720;
 
-export const HERO_KINDS = ["tracer", "kiriko", "dva", "mei", "lucio"] as const;
+export const HERO_KINDS = ["tracer", "kiriko", "dva", "illari", "genji"] as const;
 export type PuzzleHeroKind = (typeof HERO_KINDS)[number];
 
 export const HERO_ASSETS: Record<PuzzleHeroKind, string> = {
   tracer: "/assets/heroes/tracer.png?v=20260605-tracer1",
   kiriko: "/assets/heroes/kiriko.png?v=20260605-kiriko1",
   dva: "/assets/heroes/d.va.png?v=20260605-dva1",
-  mei: "/assets/heroes/illari.png?v=20260606-illari1",
-  lucio: "/assets/heroes/genji.png?v=20260606-genji1",
+  illari: "/assets/heroes/illari.png?v=20260606-illari1",
+  genji: "/assets/heroes/genji.png?v=20260606-genji1",
 };
 
 export const HERO_COLORS: Record<PuzzleHeroKind, string> = {
   tracer: "#ff9e35",
   kiriko: "#ff5d8f",
   dva: "#61d7ff",
-  mei: "#8d7cff",
-  lucio: "#72f08a",
+  illari: "#ffd45e",
+  genji: "#72f08a",
 };
 
 export function randomHeroKind(): PuzzleHeroKind {
