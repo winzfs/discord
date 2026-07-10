@@ -7,7 +7,8 @@ import {
 } from "./heroStrikeConfig";
 import { addFloatingText } from "./heroStrikeEffects";
 import { resolvePlayerCollisions, updatePickups } from "./heroStrikePlayerRuntime";
-import { updateEnemyMovement, updateSpawning } from "./heroStrikeSpawner";
+import { updateSpawning, updateEnemyMovement } from "./heroStrikeSpawner";
+import { tickHeroStrikeStage } from "./heroStrikeStageRuntime";
 import type { HeroStrikeState } from "./heroStrikeTypes";
 import { resolveBulletCollisions, updateBullets, updateEnemyFire, updatePlayerFire } from "./heroStrikeWeaponRuntime";
 
@@ -64,6 +65,7 @@ function updateEffects(state: HeroStrikeState, dt: number) {
   state.flash = Math.max(0, state.flash - dt * 1.7);
   state.shake = Math.max(0, state.shake - dt * 2.8);
   state.bossWarning = Math.max(0, state.bossWarning - dt);
+  state.stageBanner = Math.max(0, state.stageBanner - dt);
 }
 
 function persistHighScore(state: HeroStrikeState) {
@@ -81,6 +83,7 @@ export function tickHeroStrike(state: HeroStrikeState, dt: number) {
   }
 
   state.elapsed += dt;
+  tickHeroStrikeStage(state, dt);
   updatePlayer(state, dt);
   updatePlayerFire(state, dt);
   updateSpawning(state, dt);
