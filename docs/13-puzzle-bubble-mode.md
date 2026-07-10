@@ -7,7 +7,8 @@
 - 경로: `/puzzle-bubble`
 - 렌더링: React에서 호스팅하는 Canvas 2D
 - 조작: 드래그로 조준, 손을 떼어 발사
-- 규칙: 같은 영웅 버블 3개 이상 연결 시 제거
+- 기본 규칙: 같은 영웅 버블 3개 이상 연결 시 제거
+- 스테이지 목표: 버블 40개 제거
 - 실패: 버블이 하단 위험선에 도달
 
 ## 리소스 원칙
@@ -32,15 +33,19 @@ apps/web/src/features/puzzle-bubble/PuzzleBubbleCanvas.tsx
 apps/web/src/features/puzzle-bubble/usePuzzleBubbleGame.ts
 apps/web/src/features/puzzle-bubble/puzzleBubbleConfig.ts
 apps/web/src/features/puzzle-bubble/puzzleBubbleEngine.ts
+apps/web/src/features/puzzle-bubble/puzzleBubbleRules.ts
 apps/web/src/features/puzzle-bubble/puzzleBubbleRenderer.ts
+apps/web/src/features/puzzle-bubble/puzzleBubbleCanvasResolution.ts
+apps/web/src/features/puzzle-bubble/puzzleBubblePortraitRenderer.ts
 apps/web/src/styles/puzzle-bubble.css
 ```
 
-페이지, 입력/루프, 순수 규칙, 렌더링, 설정, 스타일을 분리해 한 파일에 기능을 몰아넣지 않습니다.
+페이지, 입력/루프, 순수 규칙, 렌더링, 해상도, 초상 렌더링, 설정, 스타일을 분리해 한 파일에 기능을 몰아넣지 않습니다.
 
 ## 현재 구현
 
 - 모바일 포인터 입력
+- 고해상도 캔버스 및 픽셀 스프라이트 선명도 보정
 - 조준 가이드
 - 좌우 벽 반사
 - 육각형 배치형 버블 스냅
@@ -48,6 +53,13 @@ apps/web/src/styles/puzzle-bubble.css
 - 3개 이상 제거
 - 천장과 연결이 끊긴 버블 낙하
 - 콤보 점수
+- 3연속 제거 시 5초 피버 및 점수 2배
+- 4개 이상 연결 시 다음 탄 폭탄 버블
+- 5개 이상 연결 시 다음 탄 무지개 버블
+- 폭탄 버블은 착탄 지점 주변을 제거
+- 무지개 버블은 착탄 위치의 인접 영웅 색으로 변환
+- 버블 40개 제거 목표 게이지
+- 스테이지 클리어 및 다음 판
 - 연속 실패 시 한 줄 하강
 - 게임 오버 및 재시작
 - 기존 영웅 스프라이트 재사용
@@ -57,6 +69,7 @@ apps/web/src/styles/puzzle-bubble.css
 - 실제 모바일 화면에서 짧은 세로 해상도 대응
 - 스프라이트별 버블 내부 크롭 위치 확인
 - 벽 반사 조준선과 실제 탄도 오차 확인
+- 특수 버블이 좁은 틈에 부착될 때 제거 범위 확인
 - 빈 칸 스냅이 비정상 위치로 들어가지 않는지 확인
 - 버블이 많을 때 프레임 유지 확인
 - 효과음은 기존 프로젝트 리소스가 확인된 뒤에만 연결
