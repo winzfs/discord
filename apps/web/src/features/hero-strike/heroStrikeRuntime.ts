@@ -6,11 +6,13 @@ import {
   HERO_STRIKE_WIDTH,
 } from "./heroStrikeConfig";
 import { addFloatingText } from "./heroStrikeEffects";
+import { updateEnemyFire } from "./heroStrikeEnemyFire";
 import { resolvePlayerCollisions, updatePickups } from "./heroStrikePlayerRuntime";
-import { updateSpawning, updateEnemyMovement } from "./heroStrikeSpawner";
+import { updateEnemyMovement, updateSpawning } from "./heroStrikeSpawner";
 import { tickHeroStrikeStage } from "./heroStrikeStageRuntime";
+import { updateSupportWeapons } from "./heroStrikeSupportWeapons";
 import type { HeroStrikeState } from "./heroStrikeTypes";
-import { resolveBulletCollisions, updateBullets, updateEnemyFire, updatePlayerFire } from "./heroStrikeWeaponRuntime";
+import { resolveBulletCollisions, updateBullets, updatePlayerFire } from "./heroStrikeWeaponRuntime";
 
 function updateStars(state: HeroStrikeState, dt: number) {
   const speedMultiplier = state.phase === "playing" ? 1 + Math.min(1.5, state.player.combo / 50) : 0.35;
@@ -86,8 +88,13 @@ export function tickHeroStrike(state: HeroStrikeState, dt: number) {
   tickHeroStrikeStage(state, dt);
   updatePlayer(state, dt);
   updatePlayerFire(state, dt);
-  updateSpawning(state, dt);
-  updateEnemies(state, dt);
+
+  const hazardTimeScale = state.player.timeWarp > 0 ? 0.48 : 1;
+  updateSpawning(state, dt * hazardTimeScale);
+  updateEnemies(state, dt * hazardTimeScale);
+  updateSupportWeapons(state, dt);
+  if (state.phase !== "playing") return;
+
   updateBullets(state, dt);
   resolveBulletCollisions(state);
   if (state.phase !== "playing") return;
