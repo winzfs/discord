@@ -13,6 +13,7 @@ import {
   createInitialBubbles,
   findDetachedBubbles,
   findMatchingCluster,
+  getBubbleNeighbors,
   getCellPosition,
   hasShotCollision,
   snapShotToGrid,
@@ -20,67 +21,95 @@ import {
   type Shot,
 } from "./puzzleBubbleEngine";
 import { configurePuzzleCanvasResolution } from "./puzzleBubbleCanvasResolution";
+import {
+  FEVER_COMBO_REQUIRED,
+  FEVER_DURATION_SECONDS,
+  STAGE_TARGET_REMOVED,
+  calculateShotScore,
+  pickRainbowKind,
+  pickSpecialReward,
+} from "./puzzleBubbleRules";
 import { preloadPuzzleBubbleImages, renderPuzzleBubble, type RenderState } from "./puzzleBubbleRenderer";
 
 const INITIAL_DROP_COUNT = 6;
 
-export function usePuzzleBubbleGame() {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const animationRef = useRef<number | null>(null);
-  const lastTimeRef = useRef(0);
-  const stateRef = useRef<RenderState>({
+function createInitialState(): RenderState {
+  return {
     bubbles: createInitialBubbles(),
     falling: [],
     shot: null,
     currentKind: randomHeroKind(),
     nextKind: randomHeroKind(),
+    currentSpecial: undefined,
+    nextSpecial: undefined,
     aimX: PUZZLE_WIDTH / 2,
     aimY: 250,
     score: 0,
     combo: 0,
     shotsUntilDrop: INITIAL_DROP_COUNT,
     gameOver: false,
+    stageCleared: false,
+    removedCount: 0,
+    targetRemoved: STAGE_TARGET_REMOVED,
+    feverRemaining: 0,
     flash: 0,
-  });
+  };
+}
+
+function createFallingBubble(bubble: Bubble): Bubble {
+  const position = getCellPosition(bubble.row, bubble.col);
+  return { ...bubble, falling: true, x: position.x, y: position.y, vy: -30, alpha: 1 };
+}
+
+export function usePuzzleBubbleGame() {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const animationRef = useRef<number | null>(null);
+  const lastTimeRef = useRef(0);
+  const stateRef = useRef<RenderState>(createInitialState());
   const [, forceRender] = useState(0);
 
   const reset = useCallback(() => {
-    stateRef.current = {
-      bubbles: createInitialBubbles(),
-      falling: [],
-      shot: null,
-      currentKind: randomHeroKind(),
-      nextKind: randomHeroKind(),
-      aimX: PUZZLE_WIDTH / 2,
-      aimY: 250,
-      score: 0,
-      combo: 0,
-      shotsUntilDrop: INITIAL_DROP_COUNT,
-      gameOver: false,
-      flash: 0,
-    };
+    stateRef.current = createInitialState();
     forceRender((value) => value + 1);
   }, []);
 
   const resolveShot = useCallback((shot: Shot) => {
     const state = stateRef.current;
-    const placed = snapShotToGrid(shot, state.bubbles);
+    let placed = snapShotToGrid(shot, state.bubbles);
     let bubbles = [...state.bubbles, placed];
-    const cluster = findMatchingCluster(placed, bubbles);
+    let removed: Bubble[] = [];
+    let clusterSize = 0;
 
-    if (cluster.length >= 3) {
-      const removedIds = new Set(cluster.map((bubble) => bubble.id));
+    if (shot.special === "rainbow") {
+      placed = { ...placed, kind: pickRainbowKind(placed, state.bubbles, shot.kind), special: undefined };
+      bubbles = [...state.bubbles, placed];
+    }
+
+    if (shot.special === "bomb") {
+      removed = [placed, ...getBubbleNeighbors(placed, bubbles)];
+      clusterSize = removed.length;
+    } else {
+      const cluster = findMatchingCluster(placed, bubbles);
+      clusterSize = cluster.length;
+      if (cluster.length >= 3) removed = cluster;
+    }
+
+    if (removed.length > 0) {
+      const removedIds = new Set(removed.map((bubble) => bubble.id));
       bubbles = bubbles.filter((bubble) => !removedIds.has(bubble.id));
       const detached = findDetachedBubbles(bubbles);
       const detachedIds = new Set(detached.map((bubble) => bubble.id));
       bubbles = bubbles.filter((bubble) => !detachedIds.has(bubble.id));
+
       state.combo += 1;
-      state.score += cluster.length * 100 * state.combo + detached.length * 180;
-      state.flash = .22;
-      state.falling.push(...detached.map((bubble) => {
-        const position = getCellPosition(bubble.row, bubble.col);
-        return { ...bubble, falling: true, x: position.x, y: position.y, vy: -30, alpha: 1 };
-      }));
+      if (state.combo >= FEVER_COMBO_REQUIRED) state.feverRemaining = FEVER_DURATION_SECONDS;
+      const feverActive = state.feverRemaining > 0;
+      state.score += calculateShotScore(removed.length, detached.length, state.combo, feverActive);
+      state.removedCount += removed.length + detached.length;
+      state.flash = feverActive ? .34 : .22;
+      state.falling.push(...removed.filter((bubble) => bubble.id !== placed.id).map(createFallingBubble));
+      state.falling.push(...detached.map(createFallingBubble));
+      state.nextSpecial = pickSpecialReward(clusterSize);
     } else {
       state.combo = 0;
       state.shotsUntilDrop -= 1;
@@ -93,15 +122,18 @@ export function usePuzzleBubbleGame() {
     state.bubbles = bubbles;
     state.shot = null;
     state.currentKind = state.nextKind;
+    state.currentSpecial = state.nextSpecial;
     state.nextKind = randomHeroKind();
-    state.gameOver = bubbles.some((bubble) => getCellPosition(bubble.row, bubble.col).y + BUBBLE_RADIUS >= LOSS_LINE_Y);
+    state.nextSpecial = undefined;
+    state.stageCleared = state.removedCount >= state.targetRemoved;
+    state.gameOver = !state.stageCleared && bubbles.some((bubble) => getCellPosition(bubble.row, bubble.col).y + BUBBLE_RADIUS >= LOSS_LINE_Y);
     forceRender((value) => value + 1);
   }, []);
 
   const shoot = useCallback((x: number, y: number) => {
     const state = stateRef.current;
-    if (state.gameOver) {
-      if (y >= 390 && y <= 480) reset();
+    if (state.gameOver || state.stageCleared) {
+      if (y >= 390 && y <= 490) reset();
       return;
     }
     if (state.shot || y >= SHOOTER_Y - 12) return;
@@ -110,6 +142,7 @@ export function usePuzzleBubbleGame() {
     const length = Math.hypot(dx, dy) || 1;
     state.shot = {
       kind: state.currentKind,
+      special: state.currentSpecial,
       x: PUZZLE_WIDTH / 2,
       y: SHOOTER_Y,
       vx: dx / length * SHOT_SPEED,
@@ -138,7 +171,7 @@ export function usePuzzleBubbleGame() {
       lastTimeRef.current = time;
       const state = stateRef.current;
 
-      if (state.shot) {
+      if (state.shot && !state.stageCleared) {
         state.shot.x += state.shot.vx * dt;
         state.shot.y += state.shot.vy * dt;
         if (state.shot.x <= BUBBLE_RADIUS + 7 || state.shot.x >= PUZZLE_WIDTH - BUBBLE_RADIUS - 7) {
@@ -156,6 +189,7 @@ export function usePuzzleBubbleGame() {
           alpha: Math.max(0, (bubble.alpha ?? 1) - dt * .35),
         }))
         .filter((bubble) => (bubble.y ?? 0) < PUZZLE_HEIGHT + 80 && (bubble.alpha ?? 0) > 0);
+      state.feverRemaining = Math.max(0, state.feverRemaining - dt);
       state.flash = Math.max(0, state.flash - dt * 1.8);
 
       renderPuzzleBubble(context, state);
