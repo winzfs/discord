@@ -53,6 +53,7 @@ export function createInitialHeroStrikeState(): HeroStrikeState {
       magnetRadius: 180,
       ultimate: 35,
       ultimateMax: 100,
+      ultimateGainMultiplier: 1,
       level: 1,
       xp: 0,
       nextXp: 34,
