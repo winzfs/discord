@@ -1,5 +1,6 @@
 import { HERO_STRIKE_COLORS, HERO_STRIKE_HEIGHT } from "./heroStrikeConfig";
 import { addBurst, addFloatingText, addRing } from "./heroStrikeEffects";
+import { updateHeroStrikePickupMotion } from "./heroStrikePickupPhysics";
 import { createUpgradeChoices } from "./heroStrikeUpgrades";
 import { awardEnemyDefeat } from "./heroStrikeWeaponRuntime";
 import type { HeroStrikeState, PickupKind } from "./heroStrikeTypes";
@@ -33,7 +34,8 @@ export function resolvePlayerCollisions(state: HeroStrikeState) {
     const grazeRadius = hitRadius + 21;
     if (!bullet.grazed && distanceSq <= grazeRadius * grazeRadius) {
       bullet.grazed = true;
-      player.ultimate = Math.min(player.ultimateMax, player.ultimate + 1.5);
+      const gain = 1.5 * player.ultimateGainMultiplier;
+      player.ultimate = Math.min(player.ultimateMax, player.ultimate + gain);
       state.score += 20;
       addFloatingText(state, player.x + 22, player.y - 12, "GRAZE", HERO_STRIKE_COLORS.cyan, 11);
     }
@@ -104,8 +106,9 @@ function grantPickup(state: HeroStrikeState, kind: PickupKind, value: number) {
     player.hp = Math.min(player.maxHp, player.hp + value);
     addFloatingText(state, player.x, player.y - 30, "+HP", HERO_STRIKE_COLORS.green, 16);
   } else if (kind === "charge") {
-    player.ultimate = Math.min(player.ultimateMax, player.ultimate + value);
-    addFloatingText(state, player.x, player.y - 30, `ULT +${value}`, HERO_STRIKE_COLORS.gold, 15);
+    const gain = Math.round(value * player.ultimateGainMultiplier);
+    player.ultimate = Math.min(player.ultimateMax, player.ultimate + gain);
+    addFloatingText(state, player.x, player.y - 30, `ULT +${gain}`, HERO_STRIKE_COLORS.gold, 15);
   } else if (kind === "shield") {
     player.shield = Math.min(5, player.shield + value);
     addFloatingText(state, player.x, player.y - 30, "SHIELD +1", HERO_STRIKE_COLORS.shield, 15);
@@ -144,18 +147,7 @@ export function updatePickups(state: HeroStrikeState, dt: number) {
   const player = state.player;
   for (const pickup of state.pickups) {
     pickup.life -= dt;
-    const dx = player.x - pickup.x;
-    const dy = player.y - pickup.y;
-    const distance = Math.hypot(dx, dy) || 1;
-    if (distance <= player.magnetRadius) {
-      const speed = 150 + (player.magnetRadius - Math.min(player.magnetRadius, distance)) * 4;
-      pickup.vx += dx / distance * speed * dt;
-      pickup.vy += dy / distance * speed * dt;
-    } else pickup.vy += pickup.kind === "xp" ? 42 * dt : 24 * dt;
-    pickup.vx *= Math.pow(0.92, dt * 60);
-    pickup.vy *= Math.pow(0.96, dt * 60);
-    pickup.x += pickup.vx * dt;
-    pickup.y += pickup.vy * dt;
+    updateHeroStrikePickupMotion(pickup, player, dt);
 
     const collectRadius = 18 + pickup.radius + 8;
     if (distanceSquared(player.x, player.y, pickup.x, pickup.y) <= collectRadius * collectRadius) {
