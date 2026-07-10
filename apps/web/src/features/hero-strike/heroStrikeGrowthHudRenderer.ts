@@ -7,6 +7,10 @@ export function drawHeroStrikeGrowthHud(ctx: CanvasRenderingContext2D, state: He
   ctx.textAlign = "right";
   ctx.fillStyle = HERO_STRIKE_COLORS.cyan;
   ctx.font = "800 8px system-ui";
-  ctx.fillText(`R${state.combatRank} · P${protocolCount}`, HERO_STRIKE_WIDTH - 28, 77);
+  ctx.fillText(
+    `R${state.combatRank} · P${protocolCount} · LAB${state.researchRank}`,
+    HERO_STRIKE_WIDTH - 28,
+    77,
+  );
   ctx.textAlign = "left";
 }
