@@ -43,7 +43,7 @@ export function getEliteResearchReward(stageIndex: number) {
 }
 
 export function getRunResearchReward(state: HeroStrikeState) {
-  const reachedStage = Math.min(10, state.stageIndex + (state.phase === "victory" ? 1 : 0));
+  const reachedStage = Math.min(10, state.stageIndex + 1);
   const scoreReward = Math.min(40, Math.floor(state.score / 18000));
   const victoryBonus = state.phase === "victory" ? 35 : 0;
   return reachedStage * 3 + scoreReward + victoryBonus;
