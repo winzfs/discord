@@ -5,6 +5,8 @@ import {
   HERO_STRIKE_PLAYER_Y,
   HERO_STRIKE_WIDTH,
 } from "./heroStrikeConfig";
+import { getResearchBonuses, getResearchRank, readResearchData } from "./heroStrikeMetaProgress";
+import { getStageObjective } from "./heroStrikeObjectives";
 import type { HeroStrikeStar, HeroStrikeState } from "./heroStrikeTypes";
 
 function readHighScore() {
@@ -24,6 +26,11 @@ function createStars(): HeroStrikeStar[] {
 }
 
 export function createInitialHeroStrikeState(): HeroStrikeState {
+  const researchData = readResearchData();
+  const researchRank = getResearchRank(researchData);
+  const research = getResearchBonuses(researchRank);
+  const objective = getStageObjective(0);
+
   return {
     phase: "title",
     previousPhase: "playing",
@@ -32,6 +39,7 @@ export function createInitialHeroStrikeState(): HeroStrikeState {
     score: 0,
     highScore: readHighScore(),
     kills: 0,
+    maxCombo: 0,
     nextId: 1,
     player: {
       x: HERO_STRIKE_WIDTH / 2,
@@ -41,7 +49,7 @@ export function createInitialHeroStrikeState(): HeroStrikeState {
       radius: HERO_STRIKE_PLAYER_RADIUS,
       hp: 4,
       maxHp: 4,
-      shield: 1,
+      shield: 1 + research.startingShield,
       invulnerable: 0,
       fireCooldown: 0,
       fireInterval: 0.18,
@@ -52,15 +60,15 @@ export function createInitialHeroStrikeState(): HeroStrikeState {
       pierce: 0,
       magnetRadius: 180,
       campaignMagnetBonus: 0,
-      ultimate: 35,
+      ultimate: Math.min(100, 35 + research.startingUltimate),
       ultimateMax: 100,
       ultimateGainMultiplier: 1,
       level: 1,
       xp: 0,
-      nextXp: 34,
-      xpGainMultiplier: 1,
+      nextXp: 38,
+      xpGainMultiplier: research.xpMultiplier,
       scoreMultiplier: 1,
-      campaignDamageMultiplier: 1,
+      campaignDamageMultiplier: research.damageMultiplier,
       campaignFireRateMultiplier: 1,
       bonusCriticalChance: 0,
       bonusCriticalMultiplier: 0,
@@ -91,16 +99,37 @@ export function createInitialHeroStrikeState(): HeroStrikeState {
     spawnCooldown: 0.25,
     stageIndex: 0,
     stageBanner: 2.4,
+    waveIndex: 1,
+    waveBanner: 1.6,
+    eliteSpawned: false,
+    eliteDefeated: false,
     bossSpawned: false,
     bossDefeated: false,
     bossWarning: 0,
+    bossPhaseBanner: 0,
+    bossPhaseLabel: "",
     shake: 0,
     flash: 0,
     combatRank: 1,
+    stageKills: 0,
+    stageHits: 0,
+    stageGrazes: 0,
+    stageMaxCombo: 0,
+    objectiveId: objective.id,
+    objectiveTarget: objective.target,
+    objectiveComplete: false,
+    objectiveRewarded: false,
     upgradeChoices: [],
     upgradeLevels: {},
     protocolChoices: [],
     protocolLevels: {},
+    evolutions: [],
+    evolutionBanner: 0,
+    evolutionLabel: "",
+    researchData,
+    researchRank,
+    runResearchEarned: 0,
+    resultCommitted: false,
     pointerActive: false,
     pointerLastX: null,
     pointerLastY: null,
