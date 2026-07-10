@@ -49,7 +49,7 @@ export function createInitialHeroStrikeState(): HeroStrikeState {
       bulletCount: 1,
       spread: 0.12,
       pierce: 0,
-      magnetRadius: 115,
+      magnetRadius: 180,
       ultimate: 35,
       ultimateMax: 100,
       level: 1,
