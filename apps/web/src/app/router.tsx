@@ -9,6 +9,7 @@ import { LeaderboardPage } from "../pages/LeaderboardPage";
 import { LoginPage } from "../pages/LoginPage";
 import { LobbyPage } from "../pages/LobbyPage";
 import { ProfilePage } from "../pages/ProfilePage";
+import { PuzzleBubblePage } from "../pages/PuzzleBubblePage";
 
 export const router = createBrowserRouter([
   {
@@ -18,6 +19,10 @@ export const router = createBrowserRouter([
   {
     path: "/play-test",
     element: <GamePage testMode />,
+  },
+  {
+    path: "/puzzle-bubble",
+    element: <PuzzleBubblePage />,
   },
   {
     path: "/lobby",
