@@ -94,33 +94,35 @@ function drawSupportStatus(ctx: CanvasRenderingContext2D, state: HeroStrikeState
 
 function drawHealthAndCombo(ctx: CanvasRenderingContext2D, state: HeroStrikeState) {
   const player = state.player;
-  for (let index = 0; index < player.maxHp; index += 1) {
-    const x = 24 + index * 26;
-    ctx.fillStyle = index < player.hp ? HERO_STRIKE_COLORS.orange : "rgba(255,255,255,.12)";
-    ctx.beginPath();
-    ctx.moveTo(x, 132);
-    ctx.lineTo(x + 8, 124);
-    ctx.lineTo(x + 16, 132);
-    ctx.lineTo(x + 8, 143);
-    ctx.closePath();
-    ctx.fill();
-  }
-  for (let index = 0; index < player.shield; index += 1) {
-    ctx.strokeStyle = HERO_STRIKE_COLORS.shield;
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.arc(114 + index * 20, 133, 7, 0, Math.PI * 2);
-    ctx.stroke();
-  }
+  const hpRatio = Math.max(0, Math.min(1, player.hp / Math.max(1, player.maxHp)));
+  roundedRect(ctx, 20, 124, 116, 21, 8);
+  ctx.fillStyle = "rgba(4,10,24,.78)";
+  ctx.fill();
+  ctx.strokeStyle = "rgba(255,155,61,.34)";
+  ctx.stroke();
+  ctx.fillStyle = "rgba(255,255,255,.08)";
+  ctx.fillRect(26, 139, 104, 3);
+  ctx.fillStyle = HERO_STRIKE_COLORS.orange;
+  ctx.fillRect(26, 139, 104 * hpRatio, 3);
+  ctx.fillStyle = HERO_STRIKE_COLORS.white;
+  ctx.font = "900 9px system-ui";
+  ctx.textAlign = "center";
+  ctx.fillText(`HP ${player.hp}/${player.maxHp}`, 78, 136);
+
+  ctx.textAlign = "left";
+  ctx.fillStyle = HERO_STRIKE_COLORS.shield;
+  ctx.font = "900 9px system-ui";
+  ctx.fillText(`SHIELD ${player.shield}`, 147, 137);
+
   if (player.combo < 2) return;
   ctx.textAlign = "center";
   ctx.fillStyle = player.overdrive > 0 ? HERO_STRIKE_COLORS.gold : HERO_STRIKE_COLORS.white;
-  ctx.font = `900 ${Math.min(34, 20 + player.combo * 0.16)}px system-ui`;
-  ctx.fillText(`${player.combo} COMBO`, HERO_STRIKE_WIDTH / 2, 150);
-  if (player.overdrive > 0) {
+  ctx.font = `900 ${Math.min(30, 18 + player.combo * 0.14)}px system-ui`;
+  ctx.fillText(`${player.combo} COMBO`, HERO_STRIKE_WIDTH / 2, 166);
+  if (player.overdrive > 0 && !state.bossSpawned) {
     ctx.fillStyle = HERO_STRIKE_COLORS.orange;
-    ctx.font = "900 11px system-ui";
-    ctx.fillText("OVERDRIVE", HERO_STRIKE_WIDTH / 2, 169);
+    ctx.font = "900 9px system-ui";
+    ctx.fillText("OVERDRIVE", HERO_STRIKE_WIDTH / 2, 177);
   }
   ctx.textAlign = "left";
 }
