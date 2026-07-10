@@ -1,3 +1,4 @@
+import { getEliteResearchReward } from "./heroStrikeBalance";
 import {
   HERO_STRIKE_COLORS,
   HERO_STRIKE_HEIGHT,
@@ -5,7 +6,10 @@ import {
   HERO_STRIKE_WIDTH,
 } from "./heroStrikeConfig";
 import { addBurst, addFloatingText, addRing } from "./heroStrikeEffects";
-import { maybeSpawnBonusPickup, spawnEnemyXp } from "./heroStrikePickups";
+import { hasEvolution } from "./heroStrikeEvolutions";
+import { grantResearchData } from "./heroStrikeMetaProgress";
+import { recordStageEnemyDefeat } from "./heroStrikeObjectives";
+import { maybeSpawnBonusPickup, spawnEnemyXp, spawnHeroStrikePickup } from "./heroStrikePickups";
 import { completeHeroStrikeStage } from "./heroStrikeStageRuntime";
 import {
   getChainDamageScale,
@@ -50,6 +54,8 @@ function spawnPlayerBullet(state: HeroStrikeState, angle: number, options: Playe
   const overdriveScale = player.overdrive > 0 ? getOverdriveDamageMultiplier(player.overdriveLevel) : 1;
   const criticalScale = isCritical ? critical.multiplier : 1;
   const explosionScale = options.explosionScale ?? 1;
+  const baseChain = options.chain ?? player.chainCoreLevel;
+  const evolutionChain = hasEvolution(state, "arc-overload") && baseChain > 0 ? 2 : 0;
 
   state.bullets.push({
     id: state.nextId++,
@@ -66,7 +72,7 @@ function spawnPlayerBullet(state: HeroStrikeState, angle: number, options: Playe
     explosionRadius: player.explosiveRoundsLevel > 0
       ? getExplosionRadius(player.explosiveRoundsLevel) * explosionScale
       : undefined,
-    chain: options.chain ?? player.chainCoreLevel,
+    chain: baseChain + evolutionChain,
   });
 }
 
@@ -76,6 +82,11 @@ function fireForwardWeapons(state: HeroStrikeState) {
   for (let index = 0; index < player.bulletCount; index += 1) {
     const position = index - centered;
     spawnPlayerBullet(state, position * player.spread, { xOffset: position * 7 });
+  }
+
+  if (hasEvolution(state, "pulse-storm")) {
+    spawnPlayerBullet(state, -0.42, { xOffset: -18, damageScale: 0.72, pierce: player.pierce + 1 });
+    spawnPlayerBullet(state, 0.42, { xOffset: 18, damageScale: 0.72, pierce: player.pierce + 1 });
   }
 }
 
@@ -118,28 +129,38 @@ export function updatePlayerFire(state: HeroStrikeState, dt: number) {
   fireSideCannons(state);
   fireRearGuard(state);
   const overdriveRate = player.overdrive > 0 ? 0.62 : 1;
-  player.fireCooldown = player.fireInterval * player.campaignFireRateMultiplier * overdriveRate;
+  const evolutionRate = hasEvolution(state, "pulse-storm") ? 0.9 : 1;
+  player.fireCooldown = player.fireInterval * player.campaignFireRateMultiplier * overdriveRate * evolutionRate;
+}
+
+function awardEliteDefeat(state: HeroStrikeState, enemy: HeroStrikeEnemy) {
+  if (!enemy.elite) return;
+  const research = grantResearchData(state, getEliteResearchReward(state.stageIndex));
+  spawnHeroStrikePickup(state, "xp-core", enemy.x, enemy.y, 32 + state.stageIndex * 3);
+  addFloatingText(state, enemy.x, enemy.y + enemy.radius + 22, `ELITE · DATA +${research}`, HERO_STRIKE_COLORS.purple, 15);
+  state.shake = Math.max(state.shake, 0.55);
 }
 
 export function awardEnemyDefeat(state: HeroStrikeState, enemy: HeroStrikeEnemy) {
   state.kills += 1;
   state.player.combo += 1;
   state.player.comboTimer = 2.25;
+  recordStageEnemyDefeat(state, enemy);
   if (state.player.combo >= 25) state.player.overdrive = Math.max(state.player.overdrive, 4.5);
   const comboMultiplier = 1 + Math.min(4, Math.floor(state.player.combo / 10)) * 0.25;
   const awardedScore = Math.round(enemy.score * comboMultiplier * state.player.scoreMultiplier);
   state.score += awardedScore;
-  const baseUltimateGain = enemy.boss ? 35 : 5;
+  const baseUltimateGain = enemy.boss ? 35 : enemy.elite ? 12 : 5;
   const ultimateGain = baseUltimateGain * state.player.ultimateGainMultiplier;
   state.player.ultimate = Math.min(state.player.ultimateMax, state.player.ultimate + ultimateGain);
   addBurst(
     state,
     enemy.x,
     enemy.y,
-    enemy.boss ? HERO_STRIKE_COLORS.gold : HERO_STRIKE_COLORS.orange,
-    enemy.boss ? 30 : 9,
-    enemy.boss ? 240 : 145,
-    enemy.boss ? 5 : 3,
+    enemy.boss ? HERO_STRIKE_COLORS.gold : enemy.elite ? HERO_STRIKE_COLORS.purple : HERO_STRIKE_COLORS.orange,
+    enemy.boss ? 30 : enemy.elite ? 18 : 9,
+    enemy.boss ? 240 : enemy.elite ? 190 : 145,
+    enemy.boss ? 5 : enemy.elite ? 4 : 3,
   );
   addFloatingText(
     state,
@@ -147,10 +168,11 @@ export function awardEnemyDefeat(state: HeroStrikeState, enemy: HeroStrikeEnemy)
     enemy.y - enemy.radius,
     `+${awardedScore}`,
     HERO_STRIKE_COLORS.gold,
-    enemy.boss ? 24 : 14,
+    enemy.boss ? 24 : enemy.elite ? 18 : 14,
   );
 
   spawnEnemyXp(state, enemy);
+  awardEliteDefeat(state, enemy);
   maybeSpawnBonusPickup(state, enemy);
   if (enemy.boss) completeHeroStrikeStage(state);
 }
@@ -181,7 +203,8 @@ function applyExplosion(state: HeroStrikeState, source: HeroStrikeEnemy, bullet:
 function applyChain(state: HeroStrikeState, source: HeroStrikeEnemy, bullet: HeroStrikeBullet) {
   const chainCount = bullet.chain ?? 0;
   if (chainCount <= 0 || state.phase !== "playing") return;
-  const range = getChainRange(chainCount);
+  const arcOverload = hasEvolution(state, "arc-overload");
+  const range = getChainRange(chainCount) * (arcOverload ? 1.18 : 1);
   const candidates = state.enemies
     .filter((enemy) => !enemy.dead && enemy.id !== source.id)
     .map((enemy) => ({ enemy, distance: distanceSquared(source.x, source.y, enemy.x, enemy.y) }))
@@ -191,8 +214,9 @@ function applyChain(state: HeroStrikeState, source: HeroStrikeEnemy, bullet: Her
 
   for (let index = 0; index < candidates.length; index += 1) {
     const target = candidates[index].enemy;
-    addBurst(state, target.x, target.y, HERO_STRIKE_COLORS.lime, 3, 72, 1.8);
-    damageEnemy(state, target, bullet.damage * getChainDamageScale(chainCount, index));
+    addBurst(state, target.x, target.y, HERO_STRIKE_COLORS.lime, arcOverload ? 5 : 3, 72, 1.8);
+    const evolutionScale = arcOverload ? 1.28 : 1;
+    damageEnemy(state, target, bullet.damage * getChainDamageScale(chainCount, index) * evolutionScale);
     if (state.phase !== "playing") return;
   }
 }
