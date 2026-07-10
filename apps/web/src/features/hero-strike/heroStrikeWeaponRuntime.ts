@@ -7,6 +7,17 @@ import {
 import { addBurst, addFloatingText, addRing } from "./heroStrikeEffects";
 import { maybeSpawnBonusPickup, spawnEnemyXp } from "./heroStrikePickups";
 import { completeHeroStrikeStage } from "./heroStrikeStageRuntime";
+import {
+  getChainDamageScale,
+  getChainRange,
+  getExplosionDamageScale,
+  getExplosionRadius,
+  getOverdriveDamageMultiplier,
+  getRearGuardAngles,
+  getRearGuardDamageScale,
+  getSideCannonAngles,
+  getSideCannonDamageScale,
+} from "./heroStrikeUpgradeScaling";
 import type { HeroStrikeBullet, HeroStrikeEnemy, HeroStrikeState } from "./heroStrikeTypes";
 
 function distanceSquared(ax: number, ay: number, bx: number, by: number) {
@@ -28,7 +39,7 @@ function spawnPlayerBullet(state: HeroStrikeState, angle: number, options: Playe
   const player = state.player;
   const critical = Math.random() < player.criticalChance;
   const damageScale = options.damageScale ?? 1;
-  const overdriveScale = player.overdrive > 0 ? 1.25 + player.overdriveLevel * 0.12 : 1;
+  const overdriveScale = player.overdrive > 0 ? getOverdriveDamageMultiplier(player.overdriveLevel) : 1;
   const criticalScale = critical ? player.criticalMultiplier : 1;
   const explosionScale = options.explosionScale ?? 1;
 
@@ -45,7 +56,7 @@ function spawnPlayerBullet(state: HeroStrikeState, angle: number, options: Playe
     life: 1.5,
     color: critical || player.overdrive > 0 ? HERO_STRIKE_COLORS.gold : HERO_STRIKE_COLORS.cyan,
     explosionRadius: player.explosiveRoundsLevel > 0
-      ? (24 + player.explosiveRoundsLevel * 7) * explosionScale
+      ? getExplosionRadius(player.explosiveRoundsLevel) * explosionScale
       : undefined,
     chain: options.chain ?? player.chainCoreLevel,
   });
@@ -63,20 +74,31 @@ function fireForwardWeapons(state: HeroStrikeState) {
 function fireSideCannons(state: HeroStrikeState) {
   const level = state.player.sideCannonLevel;
   if (level <= 0) return;
-  const angle = 0.28 + level * 0.045;
-  const damageScale = 0.48 + level * 0.1;
-  spawnPlayerBullet(state, -angle, { xOffset: -15, damageScale, explosionScale: 0.72, chain: Math.min(1, state.player.chainCoreLevel) });
-  spawnPlayerBullet(state, angle, { xOffset: 15, damageScale, explosionScale: 0.72, chain: Math.min(1, state.player.chainCoreLevel) });
+  const damageScale = getSideCannonDamageScale(level);
+  for (const angle of getSideCannonAngles(level)) {
+    spawnPlayerBullet(state, angle, {
+      xOffset: Math.sign(angle) * 15,
+      damageScale,
+      pierce: state.player.pierce + (level >= 3 ? 1 : 0),
+      explosionScale: 0.72,
+      chain: state.player.chainCoreLevel,
+    });
+  }
 }
 
 function fireRearGuard(state: HeroStrikeState) {
   const level = state.player.rearGuardLevel;
   if (level <= 0) return;
-  const damageScale = 0.42 + level * 0.08;
-  spawnPlayerBullet(state, Math.PI, { yOffset: 48, damageScale, explosionScale: 0.65, chain: 0 });
-  if (level >= 2) {
-    spawnPlayerBullet(state, Math.PI - 0.24, { xOffset: -8, yOffset: 42, damageScale: damageScale * 0.9, explosionScale: 0.55, chain: 0 });
-    spawnPlayerBullet(state, Math.PI + 0.24, { xOffset: 8, yOffset: 42, damageScale: damageScale * 0.9, explosionScale: 0.55, chain: 0 });
+  const damageScale = getRearGuardDamageScale(level);
+  for (const angle of getRearGuardAngles(level)) {
+    spawnPlayerBullet(state, angle, {
+      xOffset: (angle - Math.PI) * 28,
+      yOffset: 48,
+      damageScale,
+      pierce: level >= 3 ? 1 : 0,
+      explosionScale: 0.65,
+      chain: state.player.chainCoreLevel,
+    });
   }
 }
 
@@ -97,7 +119,9 @@ export function awardEnemyDefeat(state: HeroStrikeState, enemy: HeroStrikeEnemy)
   if (state.player.combo >= 25) state.player.overdrive = Math.max(state.player.overdrive, 4.5);
   const multiplier = 1 + Math.min(4, Math.floor(state.player.combo / 10)) * 0.25;
   state.score += Math.round(enemy.score * multiplier);
-  state.player.ultimate = Math.min(state.player.ultimateMax, state.player.ultimate + (enemy.boss ? 35 : 5));
+  const baseUltimateGain = enemy.boss ? 35 : 5;
+  const ultimateGain = baseUltimateGain * state.player.ultimateGainMultiplier;
+  state.player.ultimate = Math.min(state.player.ultimateMax, state.player.ultimate + ultimateGain);
   addBurst(
     state,
     enemy.x,
@@ -132,13 +156,14 @@ function damageEnemy(state: HeroStrikeState, enemy: HeroStrikeEnemy, damage: num
 
 function applyExplosion(state: HeroStrikeState, source: HeroStrikeEnemy, bullet: HeroStrikeBullet) {
   const radius = bullet.explosionRadius ?? 0;
-  if (radius <= 0 || state.phase !== "playing") return;
+  const level = state.player.explosiveRoundsLevel;
+  if (radius <= 0 || level <= 0 || state.phase !== "playing") return;
   const radiusSquared = radius * radius;
   addRing(state, source.x, source.y, HERO_STRIKE_COLORS.orange, Math.min(26, radius * 0.45));
   for (const enemy of [...state.enemies]) {
     if (enemy.id === source.id || enemy.dead) continue;
     if (distanceSquared(source.x, source.y, enemy.x, enemy.y) > radiusSquared) continue;
-    damageEnemy(state, enemy, bullet.damage * 0.42);
+    damageEnemy(state, enemy, bullet.damage * getExplosionDamageScale(level));
     if (state.phase !== "playing") return;
   }
 }
@@ -146,18 +171,18 @@ function applyExplosion(state: HeroStrikeState, source: HeroStrikeEnemy, bullet:
 function applyChain(state: HeroStrikeState, source: HeroStrikeEnemy, bullet: HeroStrikeBullet) {
   const chainCount = bullet.chain ?? 0;
   if (chainCount <= 0 || state.phase !== "playing") return;
+  const range = getChainRange(chainCount);
   const candidates = state.enemies
     .filter((enemy) => !enemy.dead && enemy.id !== source.id)
     .map((enemy) => ({ enemy, distance: distanceSquared(source.x, source.y, enemy.x, enemy.y) }))
-    .filter((entry) => entry.distance <= 160 * 160)
+    .filter((entry) => entry.distance <= range * range)
     .sort((left, right) => left.distance - right.distance)
     .slice(0, chainCount);
 
   for (let index = 0; index < candidates.length; index += 1) {
     const target = candidates[index].enemy;
-    const scale = Math.max(0.22, 0.42 - index * 0.07);
     addBurst(state, target.x, target.y, HERO_STRIKE_COLORS.lime, 3, 72, 1.8);
-    damageEnemy(state, target, bullet.damage * scale);
+    damageEnemy(state, target, bullet.damage * getChainDamageScale(chainCount, index));
     if (state.phase !== "playing") return;
   }
 }
