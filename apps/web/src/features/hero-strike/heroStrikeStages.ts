@@ -45,7 +45,7 @@ export const HERO_STRIKE_STAGES: readonly HeroStrikeStage[] = [
     bottomColor: "#040912",
     glowColor: "rgba(63, 190, 255, .16)",
     gridColor: "rgba(105, 231, 255, .07)",
-    enemyWeights: { runner: 0.55, drone: 0.35, tank: 0.03, sniper: 0.05, weaver: 0.02, bomber: 0 },
+    enemyWeights: { runner: 0.62, drone: 0.35, tank: 0.03, sniper: 0, weaver: 0, bomber: 0 },
     spawnBase: 0.98,
     spawnMin: 0.48,
     spawnDecay: 0.006,
