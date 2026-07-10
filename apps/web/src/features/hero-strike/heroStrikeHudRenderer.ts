@@ -1,11 +1,11 @@
 import {
   HERO_STRIKE_COLORS,
-  HERO_STRIKE_RUN_SECONDS,
   HERO_STRIKE_WIDTH,
   PAUSE_BUTTON,
   ULTIMATE_BUTTON,
 } from "./heroStrikeConfig";
 import { drawHeroStrikeOverlay } from "./heroStrikeOverlayRenderer";
+import { getCurrentHeroStrikeStage, HERO_STRIKE_STAGES } from "./heroStrikeStages";
 import type { HeroStrikeState } from "./heroStrikeTypes";
 
 function roundedRect(ctx: CanvasRenderingContext2D, x: number, y: number, width: number, height: number, radius: number) {
@@ -14,6 +14,7 @@ function roundedRect(ctx: CanvasRenderingContext2D, x: number, y: number, width:
 }
 
 function drawTopHud(ctx: CanvasRenderingContext2D, state: HeroStrikeState) {
+  const stage = getCurrentHeroStrikeStage(state);
   roundedRect(ctx, 12, 12, HERO_STRIKE_WIDTH - 24, 72, 20);
   ctx.fillStyle = "rgba(4, 10, 24, .78)";
   ctx.fill();
@@ -29,10 +30,11 @@ function drawTopHud(ctx: CanvasRenderingContext2D, state: HeroStrikeState) {
   ctx.textAlign = "center";
   ctx.fillStyle = HERO_STRIKE_COLORS.muted;
   ctx.font = "700 10px system-ui";
-  ctx.fillText(state.bossSpawned ? "BOSS" : "ARRIVAL", HERO_STRIKE_WIDTH / 2, 34);
+  ctx.fillText(`STAGE ${state.stageIndex + 1}/${HERO_STRIKE_STAGES.length}`, HERO_STRIKE_WIDTH / 2, 34);
   ctx.fillStyle = state.bossSpawned ? HERO_STRIKE_COLORS.red : HERO_STRIKE_COLORS.cyan;
   ctx.font = "900 21px system-ui";
-  ctx.fillText(state.bossSpawned ? "ENGAGED" : `${Math.max(0, Math.ceil(HERO_STRIKE_RUN_SECONDS - state.elapsed))}s`, HERO_STRIKE_WIDTH / 2, 61);
+  const remaining = Math.max(0, Math.ceil(stage.durationSeconds - state.stageElapsed));
+  ctx.fillText(state.bossSpawned ? "BOSS" : `${remaining}s`, HERO_STRIKE_WIDTH / 2, 61);
 
   ctx.textAlign = "right";
   ctx.fillStyle = HERO_STRIKE_COLORS.muted;
@@ -46,7 +48,7 @@ function drawTopHud(ctx: CanvasRenderingContext2D, state: HeroStrikeState) {
   ctx.fillStyle = "rgba(255,255,255,.08)";
   ctx.fillRect(18, 91, HERO_STRIKE_WIDTH - 36, 7);
   const xpRatio = Math.max(0, Math.min(1, state.player.xp / state.player.nextXp));
-  ctx.fillStyle = HERO_STRIKE_COLORS.cyan;
+  ctx.fillStyle = HERO_STRIKE_COLORS.xp;
   ctx.fillRect(18, 91, (HERO_STRIKE_WIDTH - 36) * xpRatio, 7);
   ctx.fillStyle = HERO_STRIKE_COLORS.white;
   ctx.font = "800 10px system-ui";
@@ -67,7 +69,7 @@ function drawHealthAndCombo(ctx: CanvasRenderingContext2D, state: HeroStrikeStat
     ctx.fill();
   }
   for (let index = 0; index < player.shield; index += 1) {
-    ctx.strokeStyle = HERO_STRIKE_COLORS.cyan;
+    ctx.strokeStyle = HERO_STRIKE_COLORS.shield;
     ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.arc(114 + index * 20, 133, 7, 0, Math.PI * 2);
@@ -116,6 +118,7 @@ function drawUltimate(ctx: CanvasRenderingContext2D, state: HeroStrikeState) {
 function drawBossBar(ctx: CanvasRenderingContext2D, state: HeroStrikeState) {
   const boss = state.enemies.find((enemy) => enemy.boss);
   if (!boss) return;
+  const stage = getCurrentHeroStrikeStage(state);
   roundedRect(ctx, 42, 178, HERO_STRIKE_WIDTH - 84, 30, 12);
   ctx.fillStyle = "rgba(5,7,16,.78)";
   ctx.fill();
@@ -125,7 +128,7 @@ function drawBossBar(ctx: CanvasRenderingContext2D, state: HeroStrikeState) {
   ctx.textAlign = "center";
   ctx.fillStyle = HERO_STRIKE_COLORS.white;
   ctx.font = "900 10px system-ui";
-  ctx.fillText("NULL SECTOR OVERSEER", HERO_STRIKE_WIDTH / 2, 203);
+  ctx.fillText(stage.bossName, HERO_STRIKE_WIDTH / 2, 203);
   ctx.textAlign = "left";
 }
 
