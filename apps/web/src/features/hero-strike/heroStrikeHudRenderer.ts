@@ -55,6 +55,32 @@ function drawTopHud(ctx: CanvasRenderingContext2D, state: HeroStrikeState) {
   ctx.fillText(`LV.${state.player.level}`, 20, 112);
 }
 
+function drawSupportStatus(ctx: CanvasRenderingContext2D, state: HeroStrikeState) {
+  const active = [
+    state.player.homingMissileTime > 0 ? { label: "MISSILE", time: state.player.homingMissileTime, color: HERO_STRIKE_COLORS.orange } : null,
+    state.player.supportDroneTime > 0 ? { label: "DRONE", time: state.player.supportDroneTime, color: HERO_STRIKE_COLORS.lime } : null,
+    state.player.timeWarp > 0 ? { label: "SLOW", time: state.player.timeWarp, color: HERO_STRIKE_COLORS.xp } : null,
+  ].filter((item): item is { label: string; time: number; color: string } => item !== null);
+
+  let x = HERO_STRIKE_WIDTH - 28;
+  ctx.textAlign = "right";
+  ctx.font = "800 9px system-ui";
+  for (const item of active.reverse()) {
+    const text = `${item.label} ${Math.ceil(item.time)}s`;
+    const width = ctx.measureText(text).width + 14;
+    roundedRect(ctx, x - width, 103, width, 18, 8);
+    ctx.fillStyle = "rgba(4,10,24,.72)";
+    ctx.fill();
+    ctx.strokeStyle = item.color;
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.fillStyle = item.color;
+    ctx.fillText(text, x - 7, 116);
+    x -= width + 5;
+  }
+  ctx.textAlign = "left";
+}
+
 function drawHealthAndCombo(ctx: CanvasRenderingContext2D, state: HeroStrikeState) {
   const player = state.player;
   for (let index = 0; index < player.maxHp; index += 1) {
@@ -145,6 +171,7 @@ function drawPauseButton(ctx: CanvasRenderingContext2D) {
 export function drawHeroStrikeHud(ctx: CanvasRenderingContext2D, state: HeroStrikeState) {
   if (state.phase !== "title") {
     drawTopHud(ctx, state);
+    drawSupportStatus(ctx, state);
     drawHealthAndCombo(ctx, state);
     drawUltimate(ctx, state);
     drawBossBar(ctx, state);
