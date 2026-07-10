@@ -97,7 +97,7 @@ function drawEvolutionBanner(ctx: CanvasRenderingContext2D, state: HeroStrikeSta
 }
 
 function drawEvolutionTags(ctx: CanvasRenderingContext2D, state: HeroStrikeState) {
-  if (state.phase !== "playing" || state.evolutions.length === 0) return;
+  if (state.phase !== "playing" || state.evolutions.length === 0 || state.player.combo >= 2 || state.bossSpawned) return;
   const labels = getEvolutionShortLabels(state);
   ctx.textAlign = "left";
   ctx.font = "900 8px system-ui";
