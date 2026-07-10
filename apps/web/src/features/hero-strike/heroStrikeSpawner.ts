@@ -1,4 +1,4 @@
-import { getBossHealth, getNormalEnemyHealthScaleForStage, getSpawnReliefMultiplier } from "./heroStrikeBalance";
+import { getBossHealth, getNormalEnemyHealthScale, getSpawnReliefMultiplier } from "./heroStrikeBalance";
 import { getBossPhaseMovementMultiplier } from "./heroStrikeBossPhases";
 import { HERO_STRIKE_BOSS_Y, HERO_STRIKE_WIDTH } from "./heroStrikeConfig";
 import { chooseEnemyKindForStage, getCurrentHeroStrikeStage } from "./heroStrikeStages";
@@ -59,7 +59,7 @@ export function spawnEnemy(
   const stage = getCurrentHeroStrikeStage(state);
   const kind = requestedKind ?? chooseEnemyKindForStage(stage);
   const base = ENEMY_STATS[kind];
-  const healthScale = getNormalEnemyHealthScaleForStage(state, stage.durationSeconds);
+  const healthScale = getNormalEnemyHealthScale(state, stage.durationSeconds);
   const elite = eliteTrait !== undefined;
   const hpScale = healthScale * (eliteTrait ? eliteHealthMultiplier(eliteTrait) : 1);
   const x = 30 + Math.random() * (HERO_STRIKE_WIDTH - 60);
