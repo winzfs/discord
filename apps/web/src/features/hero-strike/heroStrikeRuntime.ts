@@ -1,3 +1,4 @@
+import { updateBossPhase } from "./heroStrikeBossPhases";
 import {
   HERO_STRIKE_COLORS,
   HERO_STRIKE_HEIGHT,
@@ -7,6 +8,7 @@ import {
 } from "./heroStrikeConfig";
 import { addFloatingText } from "./heroStrikeEffects";
 import { updateEnemyFire } from "./heroStrikeEnemyFire";
+import { finalizeHeroStrikeRun } from "./heroStrikeMetaProgress";
 import { resolvePlayerCollisions, updatePickups } from "./heroStrikePlayerRuntime";
 import { updateEnemyMovement, updateSpawning } from "./heroStrikeSpawner";
 import { tickHeroStrikeStage } from "./heroStrikeStageRuntime";
@@ -40,6 +42,7 @@ function updatePlayer(state: HeroStrikeState, dt: number) {
 
 function updateEnemies(state: HeroStrikeState, dt: number) {
   for (const enemy of state.enemies) {
+    if (enemy.boss) updateBossPhase(state, enemy);
     updateEnemyMovement(enemy, dt);
     updateEnemyFire(state, enemy, dt);
     if (!enemy.boss && enemy.y > HERO_STRIKE_HEIGHT + 50) enemy.dead = true;
@@ -68,6 +71,9 @@ function updateEffects(state: HeroStrikeState, dt: number) {
   state.shake = Math.max(0, state.shake - dt * 2.8);
   state.bossWarning = Math.max(0, state.bossWarning - dt);
   state.stageBanner = Math.max(0, state.stageBanner - dt);
+  state.waveBanner = Math.max(0, state.waveBanner - dt);
+  state.bossPhaseBanner = Math.max(0, state.bossPhaseBanner - dt);
+  state.evolutionBanner = Math.max(0, state.evolutionBanner - dt);
 }
 
 function persistHighScore(state: HeroStrikeState) {
@@ -80,7 +86,10 @@ export function tickHeroStrike(state: HeroStrikeState, dt: number) {
   updateStars(state, dt);
   updateEffects(state, dt);
   if (state.phase !== "playing") {
-    if (state.phase === "game-over" || state.phase === "victory") persistHighScore(state);
+    if (state.phase === "game-over" || state.phase === "victory") {
+      finalizeHeroStrikeRun(state);
+      persistHighScore(state);
+    }
     return;
   }
 
