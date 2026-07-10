@@ -25,27 +25,12 @@ export function resetStageObjective(state: HeroStrikeState, stageIndex: number) 
   state.stageMaxCombo = 0;
   state.objectiveId = objective.id;
   state.objectiveTarget = objective.target;
-  state.objectiveComplete = false;
+  state.objectiveComplete = objective.id === "survivor";
   state.objectiveRewarded = false;
   state.eliteSpawned = false;
   state.eliteDefeated = false;
   state.waveIndex = 1;
   state.waveBanner = 1.6;
-}
-
-export function recordStageEnemyDefeat(state: HeroStrikeState, enemy: HeroStrikeEnemy) {
-  if (!enemy.boss) state.stageKills += 1;
-  if (enemy.elite) state.eliteDefeated = true;
-  state.stageMaxCombo = Math.max(state.stageMaxCombo, state.player.combo);
-  state.maxCombo = Math.max(state.maxCombo, state.player.combo);
-}
-
-export function recordStageHit(state: HeroStrikeState) {
-  state.stageHits += 1;
-}
-
-export function recordStageGraze(state: HeroStrikeState) {
-  state.stageGrazes += 1;
 }
 
 export function getObjectiveProgress(state: HeroStrikeState) {
@@ -59,6 +44,28 @@ export function getObjectiveProgress(state: HeroStrikeState) {
 export function isStageObjectiveComplete(state: HeroStrikeState) {
   if (state.objectiveId === "survivor") return state.stageHits <= state.objectiveTarget;
   return getObjectiveProgress(state) >= state.objectiveTarget;
+}
+
+function refreshObjectiveState(state: HeroStrikeState) {
+  state.objectiveComplete = isStageObjectiveComplete(state);
+}
+
+export function recordStageEnemyDefeat(state: HeroStrikeState, enemy: HeroStrikeEnemy) {
+  if (!enemy.boss) state.stageKills += 1;
+  if (enemy.elite) state.eliteDefeated = true;
+  state.stageMaxCombo = Math.max(state.stageMaxCombo, state.player.combo);
+  state.maxCombo = Math.max(state.maxCombo, state.player.combo);
+  refreshObjectiveState(state);
+}
+
+export function recordStageHit(state: HeroStrikeState) {
+  state.stageHits += 1;
+  refreshObjectiveState(state);
+}
+
+export function recordStageGraze(state: HeroStrikeState) {
+  state.stageGrazes += 1;
+  refreshObjectiveState(state);
 }
 
 export function getObjectiveStatusText(state: HeroStrikeState) {
@@ -75,7 +82,7 @@ export function getObjectiveProgressRatio(state: HeroStrikeState) {
 }
 
 export function resolveStageObjective(state: HeroStrikeState) {
-  state.objectiveComplete = isStageObjectiveComplete(state);
+  refreshObjectiveState(state);
   if (!state.objectiveComplete || state.objectiveRewarded) return false;
   state.objectiveRewarded = true;
   state.score += getStageObjectiveScore(state.stageIndex);
