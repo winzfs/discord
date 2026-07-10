@@ -1,6 +1,7 @@
 export type HeroStrikePhase = "title" | "playing" | "level-up" | "paused" | "game-over" | "victory";
 export type EnemyKind = "runner" | "drone" | "tank" | "boss";
-export type PickupKind = "xp" | "heal" | "charge";
+export type StageId = "kings-row" | "null-sector-factory" | "gibraltar-orbit";
+export type PickupKind = "xp" | "heal" | "charge" | "shield" | "bomb" | "overdrive";
 export type UpgradeId = "rapid-fire" | "twin-shot" | "power-core" | "piercing" | "magnet" | "shield" | "pulse-drive" | "overclock";
 
 export type Vec2 = { x: number; y: number };
@@ -137,6 +138,8 @@ export type HeroStrikeState = {
   texts: FloatingText[];
   stars: HeroStrikeStar[];
   spawnCooldown: number;
+  stageIndex: number;
+  stageBanner: number;
   bossSpawned: boolean;
   bossDefeated: boolean;
   bossWarning: number;
