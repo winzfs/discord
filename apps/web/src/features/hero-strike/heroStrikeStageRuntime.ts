@@ -42,7 +42,8 @@ export function advanceHeroStrikeStage(state: HeroStrikeState) {
   state.enemies = [];
   state.player.hp = Math.min(state.player.maxHp, state.player.hp + 1);
   state.player.shield = Math.min(5, state.player.shield + 1);
-  state.player.ultimate = Math.min(state.player.ultimateMax, state.player.ultimate + 25);
+  const ultimateReward = Math.round(25 * state.player.ultimateGainMultiplier);
+  state.player.ultimate = Math.min(state.player.ultimateMax, state.player.ultimate + ultimateReward);
   state.player.x = HERO_STRIKE_WIDTH / 2;
   state.player.targetX = HERO_STRIKE_WIDTH / 2;
   state.player.y = HERO_STRIKE_PLAYER_Y;
