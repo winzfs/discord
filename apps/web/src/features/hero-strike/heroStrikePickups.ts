@@ -67,13 +67,16 @@ export function maybeSpawnBonusPickup(state: HeroStrikeState, enemy: HeroStrikeE
 }
 
 export function spawnStageReward(state: HeroStrikeState, clearedStageIndex: number) {
-  const rewards: readonly Exclude<PickupKind, "xp" | "heal" | "xp-core">[] = [
+  const rewards: readonly Exclude<PickupKind, "xp" | "heal">[] = [
     "support-drone",
     "shield",
     "time-warp",
     "bomb",
     "charge",
     "overdrive",
+    "xp-core",
+    "support-drone",
+    "time-warp",
   ];
   const kind = rewards[Math.max(0, Math.min(rewards.length - 1, clearedStageIndex))];
   spawnHeroStrikePickup(state, kind, 210, 205);
