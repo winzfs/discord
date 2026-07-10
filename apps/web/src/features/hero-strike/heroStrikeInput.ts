@@ -6,6 +6,7 @@ import {
   UPGRADE_CARD_BOUNDS,
 } from "./heroStrikeConfig";
 import { activateUltimate } from "./heroStrikePlayerRuntime";
+import { advanceHeroStrikeStage } from "./heroStrikeStageRuntime";
 import { resetHeroStrikeState } from "./heroStrikeState";
 import { applyUpgrade } from "./heroStrikeUpgrades";
 import type { HeroStrikeState } from "./heroStrikeTypes";
@@ -32,6 +33,11 @@ export function handleHeroStrikePointer(state: HeroStrikeState, x: number, y: nu
   if (state.phase === "title" || state.phase === "game-over" || state.phase === "victory") {
     resetPointer(state);
     if (pressed) resetHeroStrikeState(state);
+    return;
+  }
+  if (state.phase === "stage-clear") {
+    resetPointer(state);
+    if (pressed) advanceHeroStrikeStage(state);
     return;
   }
   if (state.phase === "paused") {
