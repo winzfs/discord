@@ -27,7 +27,7 @@ function shuffle<T>(items: T[]) {
   return result;
 }
 
-function describeProtocol(id: StageProtocolId, level: number) {
+function describeProtocol(id: StageProtocolId, level: number): string {
   switch (id) {
     case "vital-core": return `최대 체력 +1 · 체력 ${level + 1} 회복`;
     case "reactor-boost": return `전체 무기 피해 누적 +${level * 12}%`;
@@ -37,6 +37,7 @@ function describeProtocol(id: StageProtocolId, level: number) {
     case "salvage-array": return `자석 범위 +${level * 70} · 보호막 ${Math.min(3, level)}칸`;
     case "bounty-network": return `처치 점수 +${level * 20}%`;
   }
+  return "";
 }
 
 function makeProtocolOption(state: HeroStrikeState, metadata: ProtocolMetadata): StageProtocolOption {
