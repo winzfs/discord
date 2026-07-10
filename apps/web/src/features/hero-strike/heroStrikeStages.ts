@@ -6,8 +6,12 @@ export type HeroStrikeStage = {
   id: StageId;
   name: string;
   subtitle: string;
-  startsAt: number;
-  endsAt: number;
+  bossName: string;
+  durationSeconds: number;
+  clearBonus: number;
+  bossHpBase: number;
+  bossHpPerLevel: number;
+  bossScore: number;
   topColor: string;
   middleColor: string;
   bottomColor: string;
@@ -27,8 +31,12 @@ export const HERO_STRIKE_STAGES: readonly HeroStrikeStage[] = [
     id: "kings-row",
     name: "KING'S ROW",
     subtitle: "도시 상공 방어선",
-    startsAt: 0,
-    endsAt: 20,
+    bossName: "SENTRY PRIME",
+    durationSeconds: 24,
+    clearBonus: 1500,
+    bossHpBase: 1500,
+    bossHpPerLevel: 90,
+    bossScore: 3500,
     topColor: "#0b3155",
     middleColor: "#071c35",
     bottomColor: "#040912",
@@ -46,8 +54,12 @@ export const HERO_STRIKE_STAGES: readonly HeroStrikeStage[] = [
     id: "null-sector-factory",
     name: "NULL SECTOR FACTORY",
     subtitle: "생산 구역 돌파",
-    startsAt: 20,
-    endsAt: 40,
+    bossName: "FACTORY WARDEN",
+    durationSeconds: 27,
+    clearBonus: 2500,
+    bossHpBase: 2400,
+    bossHpPerLevel: 120,
+    bossScore: 5200,
     topColor: "#291742",
     middleColor: "#121b38",
     bottomColor: "#050812",
@@ -65,8 +77,12 @@ export const HERO_STRIKE_STAGES: readonly HeroStrikeStage[] = [
     id: "gibraltar-orbit",
     name: "GIBRALTAR ORBIT",
     subtitle: "궤도 방어망 최종전",
-    startsAt: 40,
-    endsAt: 60,
+    bossName: "ORBIT OVERSEER",
+    durationSeconds: 30,
+    clearBonus: 5000,
+    bossHpBase: 3600,
+    bossHpPerLevel: 160,
+    bossScore: 8000,
     topColor: "#442119",
     middleColor: "#171b35",
     bottomColor: "#050810",
@@ -82,17 +98,16 @@ export const HERO_STRIKE_STAGES: readonly HeroStrikeStage[] = [
   },
 ] as const;
 
-export function getHeroStrikeStageIndex(elapsed: number) {
-  const index = HERO_STRIKE_STAGES.findIndex((stage) => elapsed >= stage.startsAt && elapsed < stage.endsAt);
-  return index >= 0 ? index : HERO_STRIKE_STAGES.length - 1;
-}
-
 export function getHeroStrikeStage(index: number) {
   return HERO_STRIKE_STAGES[Math.max(0, Math.min(HERO_STRIKE_STAGES.length - 1, index))];
 }
 
 export function getCurrentHeroStrikeStage(state: Pick<HeroStrikeState, "stageIndex">) {
   return getHeroStrikeStage(state.stageIndex);
+}
+
+export function isFinalHeroStrikeStage(index: number) {
+  return index >= HERO_STRIKE_STAGES.length - 1;
 }
 
 export function chooseEnemyKindForStage(stage: HeroStrikeStage, roll = Math.random()): NormalEnemyKind {
