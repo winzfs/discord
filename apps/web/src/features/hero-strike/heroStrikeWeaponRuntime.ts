@@ -35,12 +35,20 @@ type PlayerBulletOptions = {
   chain?: number;
 };
 
+function criticalStats(state: HeroStrikeState) {
+  return {
+    chance: Math.min(0.75, state.player.criticalChance + state.player.bonusCriticalChance),
+    multiplier: state.player.criticalMultiplier + state.player.bonusCriticalMultiplier,
+  };
+}
+
 function spawnPlayerBullet(state: HeroStrikeState, angle: number, options: PlayerBulletOptions = {}) {
   const player = state.player;
-  const critical = Math.random() < player.criticalChance;
+  const critical = criticalStats(state);
+  const isCritical = Math.random() < critical.chance;
   const damageScale = options.damageScale ?? 1;
   const overdriveScale = player.overdrive > 0 ? getOverdriveDamageMultiplier(player.overdriveLevel) : 1;
-  const criticalScale = critical ? player.criticalMultiplier : 1;
+  const criticalScale = isCritical ? critical.multiplier : 1;
   const explosionScale = options.explosionScale ?? 1;
 
   state.bullets.push({
@@ -50,11 +58,11 @@ function spawnPlayerBullet(state: HeroStrikeState, angle: number, options: Playe
     vx: Math.sin(angle) * player.bulletSpeed,
     vy: -Math.cos(angle) * player.bulletSpeed,
     radius: 4.2,
-    damage: player.damage * damageScale * overdriveScale * criticalScale,
+    damage: player.damage * player.campaignDamageMultiplier * damageScale * overdriveScale * criticalScale,
     pierce: options.pierce ?? player.pierce,
     enemy: false,
     life: 1.5,
-    color: critical || player.overdrive > 0 ? HERO_STRIKE_COLORS.gold : HERO_STRIKE_COLORS.cyan,
+    color: isCritical || player.overdrive > 0 ? HERO_STRIKE_COLORS.gold : HERO_STRIKE_COLORS.cyan,
     explosionRadius: player.explosiveRoundsLevel > 0
       ? getExplosionRadius(player.explosiveRoundsLevel) * explosionScale
       : undefined,
@@ -109,7 +117,8 @@ export function updatePlayerFire(state: HeroStrikeState, dt: number) {
   fireForwardWeapons(state);
   fireSideCannons(state);
   fireRearGuard(state);
-  player.fireCooldown = player.fireInterval * (player.overdrive > 0 ? 0.62 : 1);
+  const overdriveRate = player.overdrive > 0 ? 0.62 : 1;
+  player.fireCooldown = player.fireInterval * player.campaignFireRateMultiplier * overdriveRate;
 }
 
 export function awardEnemyDefeat(state: HeroStrikeState, enemy: HeroStrikeEnemy) {
@@ -117,8 +126,9 @@ export function awardEnemyDefeat(state: HeroStrikeState, enemy: HeroStrikeEnemy)
   state.player.combo += 1;
   state.player.comboTimer = 2.25;
   if (state.player.combo >= 25) state.player.overdrive = Math.max(state.player.overdrive, 4.5);
-  const multiplier = 1 + Math.min(4, Math.floor(state.player.combo / 10)) * 0.25;
-  state.score += Math.round(enemy.score * multiplier);
+  const comboMultiplier = 1 + Math.min(4, Math.floor(state.player.combo / 10)) * 0.25;
+  const awardedScore = Math.round(enemy.score * comboMultiplier * state.player.scoreMultiplier);
+  state.score += awardedScore;
   const baseUltimateGain = enemy.boss ? 35 : 5;
   const ultimateGain = baseUltimateGain * state.player.ultimateGainMultiplier;
   state.player.ultimate = Math.min(state.player.ultimateMax, state.player.ultimate + ultimateGain);
@@ -135,7 +145,7 @@ export function awardEnemyDefeat(state: HeroStrikeState, enemy: HeroStrikeEnemy)
     state,
     enemy.x,
     enemy.y - enemy.radius,
-    `+${Math.round(enemy.score * multiplier)}`,
+    `+${awardedScore}`,
     HERO_STRIKE_COLORS.gold,
     enemy.boss ? 24 : 14,
   );
