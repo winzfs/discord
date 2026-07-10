@@ -232,6 +232,7 @@ export type HeroStrikeState = {
   highScore: number;
   kills: number;
   maxCombo: number;
+  hitsTaken: number;
   nextId: number;
   player: HeroStrikePlayer;
   bullets: HeroStrikeBullet[];
