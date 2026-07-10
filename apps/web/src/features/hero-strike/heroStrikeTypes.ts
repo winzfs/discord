@@ -57,6 +57,7 @@ export type HeroStrikePlayer = {
   magnetRadius: number;
   ultimate: number;
   ultimateMax: number;
+  ultimateGainMultiplier: number;
   level: number;
   xp: number;
   nextXp: number;
@@ -181,6 +182,9 @@ export type UpgradeOption = {
   description: string;
   icon: string;
   rarity: "common" | "rare" | "epic";
+  currentLevel: number;
+  nextLevel: number;
+  maxLevel: number;
 };
 
 export type HeroStrikeState = {
