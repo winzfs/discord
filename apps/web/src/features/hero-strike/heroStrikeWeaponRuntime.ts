@@ -5,6 +5,8 @@ import {
   HERO_STRIKE_WIDTH,
 } from "./heroStrikeConfig";
 import { addBurst, addFloatingText } from "./heroStrikeEffects";
+import { maybeSpawnBonusPickup, spawnEnemyXp } from "./heroStrikePickups";
+import { getCurrentHeroStrikeStage } from "./heroStrikeStages";
 import type { HeroStrikeEnemy, HeroStrikeState } from "./heroStrikeTypes";
 
 function distanceSquared(ax: number, ay: number, bx: number, by: number) {
@@ -16,7 +18,9 @@ function distanceSquared(ax: number, ay: number, bx: number, by: number) {
 function spawnPlayerBullet(state: HeroStrikeState, angle: number, xOffset: number) {
   const player = state.player;
   state.bullets.push({
-    id: state.nextId++, x: player.x + xOffset, y: player.y - 28,
+    id: state.nextId++,
+    x: player.x + xOffset,
+    y: player.y - 28,
     vx: Math.sin(angle) * player.bulletSpeed,
     vy: -Math.cos(angle) * player.bulletSpeed,
     radius: 4.2,
@@ -42,32 +46,71 @@ export function updatePlayerFire(state: HeroStrikeState, dt: number) {
 
 function spawnEnemyBullet(state: HeroStrikeState, enemy: HeroStrikeEnemy, angle: number, speed: number, radius = 5.2) {
   state.bullets.push({
-    id: state.nextId++, x: enemy.x, y: enemy.y + enemy.radius * 0.4,
-    vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed,
-    radius, damage: 1, pierce: 0, enemy: true, life: 5,
-    color: enemy.boss ? HERO_STRIKE_COLORS.red : HERO_STRIKE_COLORS.purple,
+    id: state.nextId++,
+    x: enemy.x,
+    y: enemy.y + enemy.radius * 0.4,
+    vx: Math.cos(angle) * speed,
+    vy: Math.sin(angle) * speed,
+    radius,
+    damage: 1,
+    pierce: 0,
+    enemy: true,
+    life: 5,
+    color: enemy.boss ? HERO_STRIKE_COLORS.red : HERO_STRIKE_COLORS.hostile,
   });
+}
+
+function fireDronePattern(state: HeroStrikeState, enemy: HeroStrikeEnemy, baseAngle: number, speed: number) {
+  const pattern = getCurrentHeroStrikeStage(state).bulletPattern;
+  if (pattern === "aimed") {
+    spawnEnemyBullet(state, enemy, baseAngle, speed);
+    return;
+  }
+  if (pattern === "split") {
+    spawnEnemyBullet(state, enemy, baseAngle - 0.09, speed);
+    spawnEnemyBullet(state, enemy, baseAngle + 0.09, speed);
+    return;
+  }
+  for (let index = -1; index <= 1; index += 1) {
+    spawnEnemyBullet(state, enemy, baseAngle + index * 0.14, speed, 5.4);
+  }
+}
+
+function fireTankPattern(state: HeroStrikeState, enemy: HeroStrikeEnemy, baseAngle: number, speed: number) {
+  const pattern = getCurrentHeroStrikeStage(state).bulletPattern;
+  const spreadCount = pattern === "assault" ? 2 : 1;
+  const gap = pattern === "assault" ? 0.16 : 0.22;
+  for (let index = -spreadCount; index <= spreadCount; index += 1) {
+    spawnEnemyBullet(state, enemy, baseAngle + index * gap, speed, 6);
+  }
 }
 
 export function updateEnemyFire(state: HeroStrikeState, enemy: HeroStrikeEnemy, dt: number) {
   if (enemy.kind === "runner" || enemy.y < 30) return;
   enemy.fireCooldown -= dt;
   if (enemy.fireCooldown > 0) return;
+
+  const stage = getCurrentHeroStrikeStage(state);
   const baseAngle = Math.atan2(state.player.y - enemy.y, state.player.x - enemy.x);
+  const speedMultiplier = stage.bulletSpeedMultiplier;
 
   if (enemy.boss) {
     if (Math.floor(enemy.age / 3) % 2 === 0) {
-      for (let index = -3; index <= 3; index += 1) spawnEnemyBullet(state, enemy, baseAngle + index * 0.15, 165, 6);
+      for (let index = -3; index <= 3; index += 1) {
+        spawnEnemyBullet(state, enemy, baseAngle + index * 0.15, 165 * speedMultiplier, 6);
+      }
     } else {
-      for (let index = 0; index < 12; index += 1) spawnEnemyBullet(state, enemy, enemy.age * 0.7 + index * Math.PI / 6, 125, 5.5);
+      for (let index = 0; index < 12; index += 1) {
+        spawnEnemyBullet(state, enemy, enemy.age * 0.7 + index * Math.PI / 6, 125 * speedMultiplier, 5.5);
+      }
     }
     enemy.fireCooldown = 0.85;
   } else if (enemy.kind === "tank") {
-    for (let index = -1; index <= 1; index += 1) spawnEnemyBullet(state, enemy, baseAngle + index * 0.22, 135, 6);
-    enemy.fireCooldown = 1.55;
+    fireTankPattern(state, enemy, baseAngle, 135 * speedMultiplier);
+    enemy.fireCooldown = stage.bulletPattern === "assault" ? 1.35 : 1.55;
   } else {
-    spawnEnemyBullet(state, enemy, baseAngle, 155);
-    enemy.fireCooldown = 1.35 + Math.random() * 0.55;
+    fireDronePattern(state, enemy, baseAngle, 155 * speedMultiplier);
+    enemy.fireCooldown = stage.bulletPattern === "assault" ? 1.15 + Math.random() * 0.35 : 1.35 + Math.random() * 0.55;
   }
 }
 
@@ -82,17 +125,9 @@ export function awardEnemyDefeat(state: HeroStrikeState, enemy: HeroStrikeEnemy)
   addBurst(state, enemy.x, enemy.y, enemy.boss ? HERO_STRIKE_COLORS.gold : HERO_STRIKE_COLORS.orange, enemy.boss ? 30 : 9, enemy.boss ? 240 : 145, enemy.boss ? 5 : 3);
   addFloatingText(state, enemy.x, enemy.y - enemy.radius, `+${Math.round(enemy.score * multiplier)}`, HERO_STRIKE_COLORS.gold, enemy.boss ? 24 : 14);
 
-  const pickupCount = enemy.boss ? 12 : enemy.kind === "tank" ? 3 : 1;
-  for (let index = 0; index < pickupCount; index += 1) {
-    state.pickups.push({
-      id: state.nextId++, kind: "xp", x: enemy.x, y: enemy.y,
-      vx: (Math.random() - 0.5) * 95, vy: -40 - Math.random() * 75,
-      value: Math.max(2, Math.round(enemy.reward / pickupCount)), radius: 5.5, life: 8,
-    });
-  }
-  if (!enemy.boss && Math.random() < 0.035 && state.player.hp < state.player.maxHp) {
-    state.pickups.push({ id: state.nextId++, kind: "heal", x: enemy.x, y: enemy.y, vx: 0, vy: -55, value: 1, radius: 8, life: 8 });
-  }
+  spawnEnemyXp(state, enemy);
+  maybeSpawnBonusPickup(state, enemy);
+
   if (enemy.boss) {
     state.bossDefeated = true;
     state.phase = "victory";
@@ -110,7 +145,8 @@ export function resolveBulletCollisions(state: HeroStrikeState) {
       if (distanceSquared(bullet.x, bullet.y, enemy.x, enemy.y) > hitRadius * hitRadius) continue;
       enemy.hp -= bullet.damage;
       addBurst(state, bullet.x, bullet.y, bullet.color, 2, 65, 1.5);
-      if (bullet.pierce > 0) bullet.pierce -= 1; else bullet.life = 0;
+      if (bullet.pierce > 0) bullet.pierce -= 1;
+      else bullet.life = 0;
       if (enemy.hp <= 0) {
         enemy.dead = true;
         awardEnemyDefeat(state, enemy);
