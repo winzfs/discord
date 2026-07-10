@@ -14,11 +14,25 @@ export type PickupKind =
   | "shield"
   | "bomb"
   | "overdrive"
-  | "missile"
   | "support-drone"
   | "time-warp"
   | "xp-core";
-export type UpgradeId = "rapid-fire" | "twin-shot" | "power-core" | "piercing" | "magnet" | "shield" | "pulse-drive" | "overclock";
+export type UpgradeId =
+  | "rapid-fire"
+  | "twin-shot"
+  | "power-core"
+  | "piercing"
+  | "magnet"
+  | "shield"
+  | "pulse-drive"
+  | "overclock"
+  | "homing-missile"
+  | "drone-wing"
+  | "side-cannons"
+  | "rear-guard"
+  | "explosive-rounds"
+  | "chain-core"
+  | "critical-core";
 export type EnemyBulletVariant = "orb" | "needle" | "heavy" | "shard";
 
 export type Vec2 = { x: number; y: number };
@@ -50,10 +64,17 @@ export type HeroStrikePlayer = {
   comboTimer: number;
   overdrive: number;
   overdriveLevel: number;
-  homingMissileTime: number;
+  homingMissileLevel: number;
   missileCooldown: number;
+  supportDroneLevel: number;
   supportDroneTime: number;
   supportDroneCooldown: number;
+  sideCannonLevel: number;
+  rearGuardLevel: number;
+  explosiveRoundsLevel: number;
+  chainCoreLevel: number;
+  criticalChance: number;
+  criticalMultiplier: number;
   timeWarp: number;
 };
 
@@ -69,6 +90,8 @@ export type HeroStrikeBullet = {
   enemy: boolean;
   life: number;
   color: string;
+  explosionRadius?: number;
+  chain?: number;
   variant?: EnemyBulletVariant;
   grazed?: boolean;
 };
