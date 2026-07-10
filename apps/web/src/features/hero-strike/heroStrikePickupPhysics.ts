@@ -15,12 +15,13 @@ export function updateHeroStrikePickupMotion(
   const dx = player.x - pickup.x;
   const dy = player.y - pickup.y;
   const distance = Math.hypot(dx, dy) || 1;
+  const magnetRadius = player.magnetRadius + player.campaignMagnetBonus;
   const xpAge = pickup.kind === "xp" ? XP_INITIAL_LIFE - pickup.life : Number.POSITIVE_INFINITY;
   const magnetReady = pickup.kind !== "xp" || xpAge >= XP_FORCED_FALL_SECONDS;
-  const insideMagnet = magnetReady && distance <= player.magnetRadius;
+  const insideMagnet = magnetReady && distance <= magnetRadius;
 
   if (insideMagnet) {
-    const pull = 300 + (player.magnetRadius - Math.min(player.magnetRadius, distance)) * 6;
+    const pull = 300 + (magnetRadius - Math.min(magnetRadius, distance)) * 6;
     pickup.vx += dx / distance * pull * dt;
     pickup.vy += dy / distance * pull * dt;
   } else if (pickup.kind === "xp") {
