@@ -4,6 +4,7 @@ import { AdminPage } from "../pages/AdminPage";
 import { DashboardPage } from "../pages/DashboardPage";
 import { GamePage } from "../pages/GamePage";
 import { GameStartPage } from "../pages/GameStartPage";
+import { HeroStrikePage } from "../pages/HeroStrikePage";
 import { HomePage } from "../pages/HomePage";
 import { LeaderboardPage } from "../pages/LeaderboardPage";
 import { LoginPage } from "../pages/LoginPage";
@@ -23,6 +24,10 @@ export const router = createBrowserRouter([
   {
     path: "/puzzle-bubble",
     element: <PuzzleBubblePage />,
+  },
+  {
+    path: "/hero-strike",
+    element: <HeroStrikePage />,
   },
   {
     path: "/lobby",
