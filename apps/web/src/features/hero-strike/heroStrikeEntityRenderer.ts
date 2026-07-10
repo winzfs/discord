@@ -9,11 +9,9 @@ function drawTracer(ctx: CanvasRenderingContext2D, state: HeroStrikeState) {
 
   ctx.save();
   ctx.translate(player.x, player.y);
-  ctx.shadowColor = player.overdrive > 0 ? HERO_STRIKE_COLORS.gold : HERO_STRIKE_COLORS.cyan;
-  ctx.shadowBlur = player.overdrive > 0 ? 24 : 12;
-  ctx.fillStyle = "rgba(105,231,255,.14)";
+  ctx.fillStyle = player.overdrive > 0 ? "rgba(255,209,102,.24)" : "rgba(105,231,255,.16)";
   ctx.beginPath();
-  ctx.ellipse(0, 20, 26, 9, 0, 0, Math.PI * 2);
+  ctx.ellipse(0, 14, player.overdrive > 0 ? 32 : 26, player.overdrive > 0 ? 13 : 9, 0, 0, Math.PI * 2);
   ctx.fill();
 
   const image = getTracerImage();
@@ -29,7 +27,6 @@ function drawTracer(ctx: CanvasRenderingContext2D, state: HeroStrikeState) {
     ctx.fill();
   }
 
-  ctx.shadowBlur = 0;
   ctx.fillStyle = HERO_STRIKE_COLORS.cyan;
   ctx.beginPath();
   ctx.arc(0, 0, 3.5, 0, Math.PI * 2);
@@ -57,11 +54,10 @@ function drawEnemy(ctx: CanvasRenderingContext2D, enemy: HeroStrikeEnemy) {
   ctx.save();
   ctx.translate(enemy.x, enemy.y);
   ctx.rotate(Math.sin(enemy.age * 4 + enemy.phase) * (enemy.boss ? 0.035 : 0.08));
-  ctx.shadowColor = palette.accent;
-  ctx.shadowBlur = enemy.boss ? 24 : 10;
-  ctx.fillStyle = "rgba(0,0,0,.28)";
+
+  ctx.fillStyle = enemy.boss ? "rgba(255,209,102,.12)" : "rgba(0,0,0,.24)";
   ctx.beginPath();
-  ctx.ellipse(0, radius * 0.65, radius * 0.9, radius * 0.25, 0, 0, Math.PI * 2);
+  ctx.ellipse(0, radius * 0.62, radius * (enemy.boss ? 1.15 : 0.9), radius * (enemy.boss ? 0.42 : 0.25), 0, 0, Math.PI * 2);
   ctx.fill();
   ctx.fillStyle = palette.fill;
   ctx.strokeStyle = "rgba(4,10,18,.85)";
@@ -88,7 +84,6 @@ function drawEnemy(ctx: CanvasRenderingContext2D, enemy: HeroStrikeEnemy) {
     ctx.stroke();
   }
 
-  ctx.shadowBlur = 0;
   ctx.fillStyle = palette.accent;
   const eyeY = enemy.boss ? -8 : -3;
   const eyeGap = enemy.boss ? 19 : 6;
@@ -110,48 +105,55 @@ function drawEnemy(ctx: CanvasRenderingContext2D, enemy: HeroStrikeEnemy) {
 
 function drawBullets(ctx: CanvasRenderingContext2D, state: HeroStrikeState) {
   for (const bullet of state.bullets) {
-    ctx.save();
-    ctx.translate(bullet.x, bullet.y);
-    ctx.shadowColor = bullet.color;
-    ctx.shadowBlur = bullet.enemy ? 10 : 14;
     ctx.fillStyle = bullet.color;
     if (bullet.enemy) {
+      ctx.globalAlpha = 0.22;
       ctx.beginPath();
-      ctx.arc(0, 0, bullet.radius, 0, Math.PI * 2);
+      ctx.arc(bullet.x, bullet.y, bullet.radius * 1.75, 0, Math.PI * 2);
       ctx.fill();
-      ctx.fillStyle = "rgba(255,255,255,.75)";
+      ctx.globalAlpha = 1;
       ctx.beginPath();
-      ctx.arc(-bullet.radius * 0.25, -bullet.radius * 0.25, bullet.radius * 0.28, 0, Math.PI * 2);
+      ctx.arc(bullet.x, bullet.y, bullet.radius, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalAlpha = 0.72;
+      ctx.fillStyle = "#ffffff";
+      ctx.beginPath();
+      ctx.arc(bullet.x - bullet.radius * 0.25, bullet.y - bullet.radius * 0.25, bullet.radius * 0.28, 0, Math.PI * 2);
       ctx.fill();
     } else {
+      ctx.globalAlpha = 0.2;
+      ctx.fillRect(bullet.x - bullet.radius * 1.8, bullet.y - 13, bullet.radius * 3.6, 26);
+      ctx.globalAlpha = 1;
       ctx.beginPath();
-      ctx.roundRect(-bullet.radius, -12, bullet.radius * 2, 24, bullet.radius);
+      ctx.roundRect(bullet.x - bullet.radius, bullet.y - 12, bullet.radius * 2, 24, bullet.radius);
       ctx.fill();
     }
-    ctx.restore();
   }
+  ctx.globalAlpha = 1;
 }
 
 function drawPickups(ctx: CanvasRenderingContext2D, state: HeroStrikeState) {
   for (const pickup of state.pickups) {
     const color = pickup.kind === "heal" ? HERO_STRIKE_COLORS.green : pickup.kind === "charge" ? HERO_STRIKE_COLORS.gold : HERO_STRIKE_COLORS.cyan;
-    ctx.save();
-    ctx.translate(pickup.x, pickup.y);
-    ctx.rotate(state.elapsed * 3 + pickup.id);
-    ctx.shadowColor = color;
-    ctx.shadowBlur = 10;
+    const angle = state.elapsed * 3 + pickup.id;
+    const cos = Math.cos(angle);
+    const sin = Math.sin(angle);
+    const radius = pickup.radius;
+    ctx.globalAlpha = 0.22;
     ctx.fillStyle = color;
     ctx.beginPath();
-    for (let index = 0; index < 6; index += 1) {
-      const angle = index * Math.PI / 3;
-      const x = Math.cos(angle) * pickup.radius;
-      const y = Math.sin(angle) * pickup.radius;
-      if (index === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-    }
+    ctx.arc(pickup.x, pickup.y, radius * 1.7, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+    ctx.beginPath();
+    ctx.moveTo(pickup.x + cos * radius, pickup.y + sin * radius);
+    ctx.lineTo(pickup.x - sin * radius, pickup.y + cos * radius);
+    ctx.lineTo(pickup.x - cos * radius, pickup.y - sin * radius);
+    ctx.lineTo(pickup.x + sin * radius, pickup.y - cos * radius);
     ctx.closePath();
     ctx.fill();
-    ctx.restore();
   }
+  ctx.globalAlpha = 1;
 }
 
 function drawEffects(ctx: CanvasRenderingContext2D, state: HeroStrikeState) {
