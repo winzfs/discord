@@ -156,16 +156,26 @@ function drawBossBar(ctx: CanvasRenderingContext2D, state: HeroStrikeState) {
   const boss = state.enemies.find((enemy) => enemy.boss);
   if (!boss) return;
   const stage = getCurrentHeroStrikeStage(state);
-  roundedRect(ctx, 42, 178, HERO_STRIKE_WIDTH - 84, 30, 12);
-  ctx.fillStyle = "rgba(5,7,16,.78)";
+  const phase = boss.bossPhase ?? 1;
+  roundedRect(ctx, 42, 178, HERO_STRIKE_WIDTH - 84, 34, 12);
+  ctx.fillStyle = "rgba(5,7,16,.82)";
   ctx.fill();
   const ratio = Math.max(0, boss.hp / boss.maxHp);
-  ctx.fillStyle = HERO_STRIKE_COLORS.red;
+  ctx.fillStyle = phase >= 3 ? HERO_STRIKE_COLORS.red : phase >= 2 ? HERO_STRIKE_COLORS.gold : HERO_STRIKE_COLORS.cyan;
   ctx.fillRect(51, 187, (HERO_STRIKE_WIDTH - 102) * ratio, 9);
+  ctx.strokeStyle = "rgba(255,255,255,.28)";
+  ctx.lineWidth = 1;
+  for (const threshold of [1 / 3, 2 / 3]) {
+    const x = 51 + (HERO_STRIKE_WIDTH - 102) * threshold;
+    ctx.beginPath();
+    ctx.moveTo(x, 185);
+    ctx.lineTo(x, 198);
+    ctx.stroke();
+  }
   ctx.textAlign = "center";
   ctx.fillStyle = HERO_STRIKE_COLORS.white;
   ctx.font = "900 10px system-ui";
-  ctx.fillText(stage.bossName, HERO_STRIKE_WIDTH / 2, 203);
+  ctx.fillText(`${stage.bossName} · PHASE ${phase}`, HERO_STRIKE_WIDTH / 2, 207);
   ctx.textAlign = "left";
 }
 
