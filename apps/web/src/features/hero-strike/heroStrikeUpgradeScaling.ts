@@ -139,7 +139,7 @@ export function describeUpgradeLevel(id: UpgradeId, level: number): string {
     case "power-core": return `모든 무기 공격력 x${Math.pow(1.22, level).toFixed(2)}`;
     case "piercing": return `기본탄 관통 ${level}회`;
     case "magnet": return `경험치 흡수 반경 ${getMagnetRadius(level)}`;
-    case "shield": return `보호막 ${getShieldGrant(level)}칸 획득`;
+    case "shield": return `보호막 ${getShieldGrant(level)}칸 · 무적 ${(0.35 + level * 0.12).toFixed(2)}초`;
     case "pulse-drive": return `게이지 획득 +${level * 15}% · 즉시 +${getPulseDriveCharge(level)}`;
     case "overclock": return `오버드라이브 피해 x${getOverdriveDamageMultiplier(level).toFixed(2)}`;
     case "homing-missile": return `발사 ${getMissileFireInterval(level).toFixed(2)}초 · 폭발 ${getMissileExplosionRadius(level)}`;
