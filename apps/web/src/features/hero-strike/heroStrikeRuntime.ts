@@ -81,7 +81,9 @@ export function tickHeroStrike(state: HeroStrikeState, dt: number) {
   updateEnemies(state, dt);
   updateBullets(state, dt);
   resolveBulletCollisions(state);
+  if (state.phase !== "playing") return;
   resolvePlayerCollisions(state);
+  if (state.phase !== "playing") return;
   updatePickups(state, dt);
 
   if (state.player.combo > 0 && state.player.combo % 10 === 0 && state.player.comboTimer > 2.1) {
