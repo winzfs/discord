@@ -28,6 +28,7 @@ export function createInitialHeroStrikeState(): HeroStrikeState {
     phase: "title",
     previousPhase: "playing",
     elapsed: 0,
+    stageElapsed: 0,
     score: 0,
     highScore: readHighScore(),
     kills: 0,
