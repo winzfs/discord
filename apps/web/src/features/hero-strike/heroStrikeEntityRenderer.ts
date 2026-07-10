@@ -1,6 +1,6 @@
 import { getTracerImage } from "./heroStrikeAssets";
 import { HERO_STRIKE_COLORS } from "./heroStrikeConfig";
-import type { HeroStrikeEnemy, HeroStrikeState } from "./heroStrikeTypes";
+import type { HeroStrikeEnemy, HeroStrikePickup, HeroStrikeState } from "./heroStrikeTypes";
 
 function drawTracer(ctx: CanvasRenderingContext2D, state: HeroStrikeState) {
   const player = state.player;
@@ -105,55 +105,138 @@ function drawEnemy(ctx: CanvasRenderingContext2D, enemy: HeroStrikeEnemy) {
 
 function drawBullets(ctx: CanvasRenderingContext2D, state: HeroStrikeState) {
   for (const bullet of state.bullets) {
-    ctx.fillStyle = bullet.color;
     if (bullet.enemy) {
-      ctx.globalAlpha = 0.22;
+      ctx.globalAlpha = 0.28;
+      ctx.fillStyle = HERO_STRIKE_COLORS.hostile;
       ctx.beginPath();
-      ctx.arc(bullet.x, bullet.y, bullet.radius * 1.75, 0, Math.PI * 2);
+      ctx.arc(bullet.x, bullet.y, bullet.radius * 1.9, 0, Math.PI * 2);
       ctx.fill();
       ctx.globalAlpha = 1;
+      ctx.fillStyle = bullet.color;
+      ctx.strokeStyle = "rgba(34,3,15,.95)";
+      ctx.lineWidth = 2;
       ctx.beginPath();
       ctx.arc(bullet.x, bullet.y, bullet.radius, 0, Math.PI * 2);
       ctx.fill();
-      ctx.globalAlpha = 0.72;
-      ctx.fillStyle = "#ffffff";
+      ctx.stroke();
+      ctx.fillStyle = HERO_STRIKE_COLORS.hostileCore;
       ctx.beginPath();
-      ctx.arc(bullet.x - bullet.radius * 0.25, bullet.y - bullet.radius * 0.25, bullet.radius * 0.28, 0, Math.PI * 2);
+      ctx.arc(bullet.x, bullet.y, Math.max(1.8, bullet.radius * 0.32), 0, Math.PI * 2);
       ctx.fill();
-    } else {
-      ctx.globalAlpha = 0.2;
-      ctx.fillRect(bullet.x - bullet.radius * 1.8, bullet.y - 13, bullet.radius * 3.6, 26);
-      ctx.globalAlpha = 1;
-      ctx.beginPath();
-      ctx.roundRect(bullet.x - bullet.radius, bullet.y - 12, bullet.radius * 2, 24, bullet.radius);
-      ctx.fill();
+      continue;
     }
+
+    ctx.fillStyle = bullet.color;
+    ctx.globalAlpha = 0.2;
+    ctx.fillRect(bullet.x - bullet.radius * 1.8, bullet.y - 13, bullet.radius * 3.6, 26);
+    ctx.globalAlpha = 1;
+    ctx.beginPath();
+    ctx.roundRect(bullet.x - bullet.radius, bullet.y - 12, bullet.radius * 2, 24, bullet.radius);
+    ctx.fill();
   }
   ctx.globalAlpha = 1;
 }
 
-function drawPickups(ctx: CanvasRenderingContext2D, state: HeroStrikeState) {
-  for (const pickup of state.pickups) {
-    const color = pickup.kind === "heal" ? HERO_STRIKE_COLORS.green : pickup.kind === "charge" ? HERO_STRIKE_COLORS.gold : HERO_STRIKE_COLORS.cyan;
-    const angle = state.elapsed * 3 + pickup.id;
-    const cos = Math.cos(angle);
-    const sin = Math.sin(angle);
-    const radius = pickup.radius;
-    ctx.globalAlpha = 0.22;
-    ctx.fillStyle = color;
+function diamondPath(ctx: CanvasRenderingContext2D, x: number, y: number, radius: number) {
+  ctx.beginPath();
+  ctx.moveTo(x, y - radius);
+  ctx.lineTo(x + radius, y);
+  ctx.lineTo(x, y + radius);
+  ctx.lineTo(x - radius, y);
+  ctx.closePath();
+}
+
+function drawXpPickup(ctx: CanvasRenderingContext2D, pickup: HeroStrikePickup) {
+  const pulse = 1 + Math.sin(pickup.life * 8 + pickup.id) * 0.08;
+  const radius = pickup.radius * pulse;
+  ctx.globalAlpha = 0.55;
+  ctx.fillStyle = HERO_STRIKE_COLORS.xp;
+  ctx.fillRect(pickup.x - 1.5, pickup.y + radius, 3, 10);
+  ctx.globalAlpha = 1;
+  ctx.fillStyle = "rgba(2,18,34,.96)";
+  diamondPath(ctx, pickup.x, pickup.y, radius + 3);
+  ctx.fill();
+  ctx.fillStyle = HERO_STRIKE_COLORS.xp;
+  diamondPath(ctx, pickup.x, pickup.y, radius);
+  ctx.fill();
+  ctx.fillStyle = HERO_STRIKE_COLORS.white;
+  diamondPath(ctx, pickup.x, pickup.y, radius * 0.34);
+  ctx.fill();
+}
+
+function pickupColor(pickup: HeroStrikePickup) {
+  if (pickup.kind === "heal") return HERO_STRIKE_COLORS.green;
+  if (pickup.kind === "charge") return HERO_STRIKE_COLORS.gold;
+  if (pickup.kind === "shield") return HERO_STRIKE_COLORS.shield;
+  if (pickup.kind === "bomb") return HERO_STRIKE_COLORS.orange;
+  return HERO_STRIKE_COLORS.purple;
+}
+
+function drawSpecialPickup(ctx: CanvasRenderingContext2D, pickup: HeroStrikePickup) {
+  const color = pickupColor(pickup);
+  const radius = pickup.radius + Math.sin(pickup.life * 5 + pickup.id) * 0.8;
+  ctx.fillStyle = "rgba(2,10,24,.94)";
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 2.5;
+  ctx.beginPath();
+  ctx.arc(pickup.x, pickup.y, radius + 3, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = color;
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 3;
+
+  if (pickup.kind === "heal") {
+    ctx.fillRect(pickup.x - 2, pickup.y - 7, 4, 14);
+    ctx.fillRect(pickup.x - 7, pickup.y - 2, 14, 4);
+  } else if (pickup.kind === "charge") {
     ctx.beginPath();
-    ctx.arc(pickup.x, pickup.y, radius * 1.7, 0, Math.PI * 2);
+    ctx.moveTo(pickup.x + 2, pickup.y - 8);
+    ctx.lineTo(pickup.x - 5, pickup.y + 1);
+    ctx.lineTo(pickup.x, pickup.y + 1);
+    ctx.lineTo(pickup.x - 2, pickup.y + 9);
+    ctx.lineTo(pickup.x + 6, pickup.y - 2);
+    ctx.lineTo(pickup.x + 1, pickup.y - 2);
+    ctx.closePath();
     ctx.fill();
-    ctx.globalAlpha = 1;
+  } else if (pickup.kind === "shield") {
     ctx.beginPath();
-    ctx.moveTo(pickup.x + cos * radius, pickup.y + sin * radius);
-    ctx.lineTo(pickup.x - sin * radius, pickup.y + cos * radius);
-    ctx.lineTo(pickup.x - cos * radius, pickup.y - sin * radius);
-    ctx.lineTo(pickup.x + sin * radius, pickup.y - cos * radius);
+    ctx.moveTo(pickup.x, pickup.y - 8);
+    ctx.lineTo(pickup.x + 7, pickup.y - 4);
+    ctx.lineTo(pickup.x + 5, pickup.y + 5);
+    ctx.lineTo(pickup.x, pickup.y + 9);
+    ctx.lineTo(pickup.x - 5, pickup.y + 5);
+    ctx.lineTo(pickup.x - 7, pickup.y - 4);
+    ctx.closePath();
+    ctx.stroke();
+  } else if (pickup.kind === "bomb") {
+    ctx.beginPath();
+    ctx.arc(pickup.x, pickup.y + 2, 6, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(pickup.x + 3, pickup.y - 4);
+    ctx.lineTo(pickup.x + 7, pickup.y - 8);
+    ctx.stroke();
+  } else {
+    ctx.beginPath();
+    ctx.moveTo(pickup.x, pickup.y - 8);
+    ctx.lineTo(pickup.x + 3, pickup.y - 2);
+    ctx.lineTo(pickup.x + 8, pickup.y);
+    ctx.lineTo(pickup.x + 3, pickup.y + 2);
+    ctx.lineTo(pickup.x, pickup.y + 8);
+    ctx.lineTo(pickup.x - 3, pickup.y + 2);
+    ctx.lineTo(pickup.x - 8, pickup.y);
+    ctx.lineTo(pickup.x - 3, pickup.y - 2);
     ctx.closePath();
     ctx.fill();
   }
-  ctx.globalAlpha = 1;
+}
+
+function drawPickups(ctx: CanvasRenderingContext2D, state: HeroStrikeState) {
+  for (const pickup of state.pickups) {
+    if (pickup.kind === "xp") drawXpPickup(ctx, pickup);
+    else drawSpecialPickup(ctx, pickup);
+  }
 }
 
 function drawEffects(ctx: CanvasRenderingContext2D, state: HeroStrikeState) {
