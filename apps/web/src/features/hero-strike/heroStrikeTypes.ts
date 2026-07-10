@@ -6,6 +6,10 @@ export type StageId =
   | "null-sector-factory"
   | "antarctic-base"
   | "junkertown-skyway"
+  | "nepal-monastery"
+  | "numbani-overrun"
+  | "rialto-night"
+  | "horizon-lunar"
   | "gibraltar-orbit";
 export type PickupKind =
   | "xp"
@@ -33,6 +37,14 @@ export type UpgradeId =
   | "explosive-rounds"
   | "chain-core"
   | "critical-core";
+export type StageProtocolId =
+  | "vital-core"
+  | "reactor-boost"
+  | "combat-data"
+  | "precision-link"
+  | "pulse-sync"
+  | "salvage-array"
+  | "bounty-network";
 export type EnemyBulletVariant = "orb" | "needle" | "heavy" | "shard";
 
 export type Vec2 = { x: number; y: number };
@@ -55,12 +67,19 @@ export type HeroStrikePlayer = {
   spread: number;
   pierce: number;
   magnetRadius: number;
+  campaignMagnetBonus: number;
   ultimate: number;
   ultimateMax: number;
   ultimateGainMultiplier: number;
   level: number;
   xp: number;
   nextXp: number;
+  xpGainMultiplier: number;
+  scoreMultiplier: number;
+  campaignDamageMultiplier: number;
+  campaignFireRateMultiplier: number;
+  bonusCriticalChance: number;
+  bonusCriticalMultiplier: number;
   combo: number;
   comboTimer: number;
   overdrive: number;
@@ -187,6 +206,17 @@ export type UpgradeOption = {
   maxLevel: number;
 };
 
+export type StageProtocolOption = {
+  id: StageProtocolId;
+  title: string;
+  description: string;
+  icon: string;
+  rarity: "rare" | "epic";
+  currentLevel: number;
+  nextLevel: number;
+  maxLevel: number;
+};
+
 export type HeroStrikeState = {
   phase: HeroStrikePhase;
   previousPhase: HeroStrikePhase;
@@ -212,8 +242,11 @@ export type HeroStrikeState = {
   bossWarning: number;
   shake: number;
   flash: number;
+  combatRank: number;
   upgradeChoices: UpgradeOption[];
   upgradeLevels: Partial<Record<UpgradeId, number>>;
+  protocolChoices: StageProtocolOption[];
+  protocolLevels: Partial<Record<StageProtocolId, number>>;
   pointerActive: boolean;
   pointerLastX: number | null;
   pointerLastY: number | null;
