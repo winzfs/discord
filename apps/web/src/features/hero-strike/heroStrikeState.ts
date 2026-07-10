@@ -101,7 +101,7 @@ export function createInitialHeroStrikeState(): HeroStrikeState {
     stageIndex: 0,
     stageBanner: 2.4,
     waveIndex: 1,
-    waveBanner: 1.6,
+    waveBanner: 3.5,
     eliteSpawned: false,
     eliteDefeated: false,
     bossSpawned: false,
