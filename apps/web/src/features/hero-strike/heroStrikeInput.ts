@@ -6,6 +6,7 @@ import {
   UPGRADE_CARD_BOUNDS,
 } from "./heroStrikeConfig";
 import { activateUltimate } from "./heroStrikePlayerRuntime";
+import { applyStageProtocol } from "./heroStrikeProtocols";
 import { advanceHeroStrikeStage } from "./heroStrikeStageRuntime";
 import { resetHeroStrikeState } from "./heroStrikeState";
 import { applyUpgrade } from "./heroStrikeUpgrades";
@@ -29,6 +30,15 @@ function clampTargetY(value: number) {
   return Math.max(330, Math.min(HERO_STRIKE_HEIGHT - 62, value));
 }
 
+function selectedCardIndex(x: number, y: number) {
+  return UPGRADE_CARD_BOUNDS.findIndex(
+    (bounds) => x >= bounds.x
+      && x <= bounds.x + bounds.width
+      && y >= bounds.y
+      && y <= bounds.y + bounds.height,
+  );
+}
+
 export function handleHeroStrikePointer(state: HeroStrikeState, x: number, y: number, pressed: boolean) {
   if (state.phase === "title" || state.phase === "game-over" || state.phase === "victory") {
     resetPointer(state);
@@ -37,7 +47,11 @@ export function handleHeroStrikePointer(state: HeroStrikeState, x: number, y: nu
   }
   if (state.phase === "stage-clear") {
     resetPointer(state);
-    if (pressed) advanceHeroStrikeStage(state);
+    if (!pressed) return;
+    const choice = state.protocolChoices[selectedCardIndex(x, y)];
+    if (!choice) return;
+    applyStageProtocol(state, choice.id);
+    advanceHeroStrikeStage(state);
     return;
   }
   if (state.phase === "paused") {
@@ -48,8 +62,7 @@ export function handleHeroStrikePointer(state: HeroStrikeState, x: number, y: nu
   if (state.phase === "level-up") {
     resetPointer(state);
     if (!pressed) return;
-    const index = UPGRADE_CARD_BOUNDS.findIndex((bounds) => x >= bounds.x && x <= bounds.x + bounds.width && y >= bounds.y && y <= bounds.y + bounds.height);
-    const choice = state.upgradeChoices[index];
+    const choice = state.upgradeChoices[selectedCardIndex(x, y)];
     if (choice) applyUpgrade(state, choice.id);
     return;
   }
