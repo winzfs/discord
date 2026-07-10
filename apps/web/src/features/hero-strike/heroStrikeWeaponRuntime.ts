@@ -1,4 +1,9 @@
-import { HERO_STRIKE_COLORS, HERO_STRIKE_HEIGHT, HERO_STRIKE_WIDTH } from "./heroStrikeConfig";
+import {
+  HERO_STRIKE_COLORS,
+  HERO_STRIKE_HEIGHT,
+  HERO_STRIKE_MAX_BULLETS,
+  HERO_STRIKE_WIDTH,
+} from "./heroStrikeConfig";
 import { addBurst, addFloatingText } from "./heroStrikeEffects";
 import type { HeroStrikeEnemy, HeroStrikeState } from "./heroStrikeTypes";
 
@@ -74,7 +79,7 @@ export function awardEnemyDefeat(state: HeroStrikeState, enemy: HeroStrikeEnemy)
   const multiplier = 1 + Math.min(4, Math.floor(state.player.combo / 10)) * 0.25;
   state.score += Math.round(enemy.score * multiplier);
   state.player.ultimate = Math.min(state.player.ultimateMax, state.player.ultimate + (enemy.boss ? 35 : 5));
-  addBurst(state, enemy.x, enemy.y, enemy.boss ? HERO_STRIKE_COLORS.gold : HERO_STRIKE_COLORS.orange, enemy.boss ? 40 : 14, enemy.boss ? 260 : 150, enemy.boss ? 5 : 3);
+  addBurst(state, enemy.x, enemy.y, enemy.boss ? HERO_STRIKE_COLORS.gold : HERO_STRIKE_COLORS.orange, enemy.boss ? 30 : 9, enemy.boss ? 240 : 145, enemy.boss ? 5 : 3);
   addFloatingText(state, enemy.x, enemy.y - enemy.radius, `+${Math.round(enemy.score * multiplier)}`, HERO_STRIKE_COLORS.gold, enemy.boss ? 24 : 14);
 
   const pickupCount = enemy.boss ? 12 : enemy.kind === "tank" ? 3 : 1;
@@ -104,7 +109,7 @@ export function resolveBulletCollisions(state: HeroStrikeState) {
       const hitRadius = bullet.radius + enemy.radius;
       if (distanceSquared(bullet.x, bullet.y, enemy.x, enemy.y) > hitRadius * hitRadius) continue;
       enemy.hp -= bullet.damage;
-      addBurst(state, bullet.x, bullet.y, bullet.color, 4, 70, 1.6);
+      addBurst(state, bullet.x, bullet.y, bullet.color, 2, 65, 1.5);
       if (bullet.pierce > 0) bullet.pierce -= 1; else bullet.life = 0;
       if (enemy.hp <= 0) {
         enemy.dead = true;
@@ -122,5 +127,9 @@ export function updateBullets(state: HeroStrikeState, dt: number) {
     bullet.y += bullet.vy * dt;
     bullet.life -= dt;
   }
-  state.bullets = state.bullets.filter((bullet) => bullet.life > 0 && bullet.x > -40 && bullet.x < HERO_STRIKE_WIDTH + 40 && bullet.y > -60 && bullet.y < HERO_STRIKE_HEIGHT + 60);
+
+  const activeBullets = state.bullets.filter((bullet) => bullet.life > 0 && bullet.x > -40 && bullet.x < HERO_STRIKE_WIDTH + 40 && bullet.y > -60 && bullet.y < HERO_STRIKE_HEIGHT + 60);
+  state.bullets = activeBullets.length > HERO_STRIKE_MAX_BULLETS
+    ? activeBullets.slice(activeBullets.length - HERO_STRIKE_MAX_BULLETS)
+    : activeBullets;
 }
