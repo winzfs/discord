@@ -15,11 +15,15 @@ export const HERO_STRIKE_TRACER_ASSET = "/assets/heroes/tracer.png?v=20260605-tr
 
 export const HERO_STRIKE_COLORS = {
   cyan: "#69e7ff",
+  xp: "#35f1ff",
   blue: "#3b82f6",
+  shield: "#4ea1ff",
   navy: "#071427",
   orange: "#ff9b3d",
   gold: "#ffd166",
   red: "#ff5f6d",
+  hostile: "#ff356d",
+  hostileCore: "#fff4f7",
   green: "#79f29d",
   purple: "#bb86fc",
   white: "#f8fbff",
