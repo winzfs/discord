@@ -114,10 +114,6 @@ function grantPickup(state: HeroStrikeState, kind: PickupKind, value: number) {
   } else if (kind === "overdrive") {
     player.overdrive = Math.min(18, player.overdrive + value);
     addFloatingText(state, player.x, player.y - 30, "OVERDRIVE", HERO_STRIKE_COLORS.purple, 16);
-  } else if (kind === "missile") {
-    player.homingMissileTime = Math.min(30, player.homingMissileTime + value);
-    player.missileCooldown = 0;
-    addFloatingText(state, player.x, player.y - 30, "HOMING MISSILE", HERO_STRIKE_COLORS.orange, 15);
   } else if (kind === "support-drone") {
     player.supportDroneTime = Math.min(36, player.supportDroneTime + value);
     player.supportDroneCooldown = 0;
@@ -137,7 +133,7 @@ function pickupColor(kind: PickupKind) {
   if (kind === "heal") return HERO_STRIKE_COLORS.green;
   if (kind === "charge") return HERO_STRIKE_COLORS.gold;
   if (kind === "shield") return HERO_STRIKE_COLORS.shield;
-  if (kind === "bomb" || kind === "missile") return HERO_STRIKE_COLORS.orange;
+  if (kind === "bomb") return HERO_STRIKE_COLORS.orange;
   if (kind === "support-drone") return HERO_STRIKE_COLORS.lime;
   if (kind === "time-warp" || kind === "xp-core") return HERO_STRIKE_COLORS.xp;
   if (kind === "overdrive") return HERO_STRIKE_COLORS.purple;
