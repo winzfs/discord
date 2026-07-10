@@ -28,6 +28,7 @@ export function completeHeroStrikeStage(state: HeroStrikeState) {
 export function advanceHeroStrikeStage(state: HeroStrikeState) {
   if (isFinalHeroStrikeStage(state.stageIndex)) return false;
 
+  const clearedStageIndex = state.stageIndex;
   state.stageIndex += 1;
   state.stageElapsed = 0;
   state.stageBanner = 2.8;
@@ -46,7 +47,7 @@ export function advanceHeroStrikeStage(state: HeroStrikeState) {
   state.player.targetY = HERO_STRIKE_PLAYER_Y;
   state.phase = "playing";
 
-  spawnStageReward(state, state.stageIndex);
+  spawnStageReward(state, clearedStageIndex);
   const stage = getHeroStrikeStage(state.stageIndex);
   addFloatingText(state, HERO_STRIKE_WIDTH / 2, 250, `STAGE ${state.stageIndex + 1}`, HERO_STRIKE_COLORS.gold, 22);
   addFloatingText(state, HERO_STRIKE_WIDTH / 2, 278, stage.name, HERO_STRIKE_COLORS.white, 14);
