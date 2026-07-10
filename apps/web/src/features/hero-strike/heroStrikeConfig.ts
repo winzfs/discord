@@ -22,7 +22,7 @@ export const HERO_STRIKE_COLORS = {
 } as const;
 
 export const ULTIMATE_BUTTON = { x: 354, y: 680, radius: 43 } as const;
-export const PAUSE_BUTTON = { x: 390, y: 30, radius: 21 } as const;
+export const PAUSE_BUTTON = { x: 390, y: 132, radius: 19 } as const;
 
 export const UPGRADE_CARD_BOUNDS = [
   { x: 20, y: 405, width: 120, height: 210 },
