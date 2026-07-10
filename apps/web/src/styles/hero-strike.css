@@ -1,0 +1,77 @@
+.hero-strike-shell {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  width: 100vw;
+  min-height: 100dvh;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 50% -10%, rgba(56, 189, 248, .22), transparent 40%),
+    linear-gradient(180deg, #09172a, #03060d 72%);
+  touch-action: none;
+  user-select: none;
+}
+
+.hero-strike-stage {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto auto;
+  width: min(100vw, 460px);
+  height: 100dvh;
+  padding: env(safe-area-inset-top) 10px env(safe-area-inset-bottom);
+}
+
+.hero-strike-topbar {
+  display: grid;
+  grid-template-columns: 42px 1fr 42px;
+  align-items: center;
+  min-height: 58px;
+  color: #f8fbff;
+}
+
+.hero-strike-topbar a {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid rgba(105, 231, 255, .2);
+  border-radius: 50%;
+  background: rgba(7, 20, 39, .7);
+  text-decoration: none;
+  font-size: 1.15rem;
+}
+
+.hero-strike-topbar div { text-align: center; }
+.hero-strike-topbar p { margin: 0; color: #69e7ff; font-size: .58rem; font-weight: 900; letter-spacing: .18em; }
+.hero-strike-topbar h1 { margin: .1rem 0 0; font-size: 1.05rem; letter-spacing: .04em; }
+.hero-strike-topbar span { justify-self: end; color: #79f29d; font-size: .62rem; font-weight: 900; }
+
+.hero-strike-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  border: 1px solid rgba(105, 231, 255, .22);
+  border-radius: 22px;
+  background: #071427;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, .46), inset 0 0 32px rgba(105, 231, 255, .04);
+  touch-action: none;
+}
+
+.hero-strike-help,
+.hero-strike-disclaimer {
+  margin: 0;
+  text-align: center;
+}
+.hero-strike-help { padding-top: 7px; color: #b8c7db; font-size: .69rem; }
+.hero-strike-disclaimer { padding: 4px 0 2px; color: #60718c; font-size: .55rem; }
+
+@media (max-height: 720px) {
+  .hero-strike-topbar { min-height: 45px; }
+  .hero-strike-help { display: none; }
+  .hero-strike-disclaimer { padding-top: 3px; }
+}
+
+@media (min-width: 600px) {
+  .hero-strike-stage { padding-inline: 14px; }
+}
