@@ -6,15 +6,7 @@ export function getNextXpRequirement(level: number) {
   return Math.round(24 + safeLevel * 10 + Math.pow(safeLevel, 1.28) * 4.2);
 }
 
-export function getNormalEnemyHealthScale(state: HeroStrikeState) {
-  const stage = Math.max(0, state.stageIndex);
-  const currentStage = Math.max(1, state.stageElapsed);
-  const duration = Math.max(1, state.bossSpawned ? currentStage : currentStage);
-  const stageProgress = state.bossSpawned ? 1 : Math.min(1, state.stageElapsed / Math.max(1, duration));
-  return 1 + stage * 0.16 + stageProgress * 0.34;
-}
-
-export function getNormalEnemyHealthScaleForStage(state: HeroStrikeState, stageDuration: number) {
+export function getNormalEnemyHealthScale(state: HeroStrikeState, stageDuration: number) {
   const stageProgress = Math.min(1, state.stageElapsed / Math.max(1, stageDuration));
   return 1 + state.stageIndex * 0.16 + stageProgress * 0.34;
 }
@@ -58,7 +50,7 @@ export function getRunResearchReward(state: HeroStrikeState) {
 }
 
 export function getRunGrade(state: HeroStrikeState) {
-  if (state.phase === "victory" && state.stageHits <= 2 && state.maxCombo >= 80) return "S";
+  if (state.phase === "victory" && state.hitsTaken <= 4 && state.maxCombo >= 80) return "S";
   if (state.phase === "victory") return "A";
   if (state.stageIndex >= 7) return "B";
   if (state.stageIndex >= 4) return "C";
