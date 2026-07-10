@@ -40,6 +40,7 @@ export function createInitialHeroStrikeState(): HeroStrikeState {
     highScore: readHighScore(),
     kills: 0,
     maxCombo: 0,
+    hitsTaken: 0,
     nextId: 1,
     player: {
       x: HERO_STRIKE_WIDTH / 2,
