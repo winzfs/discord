@@ -104,6 +104,7 @@ export function spawnBoss(state: HeroStrikeState) {
   state.bossWarning = 2.8;
   state.bullets = state.bullets.filter((bullet) => !bullet.enemy);
   state.missiles = [];
+  state.enemies = [];
   const hp = getBossHealth(state, stage);
   state.enemies.push({
     id: state.nextId++,
