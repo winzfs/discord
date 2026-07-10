@@ -1,4 +1,10 @@
-import { HERO_STRIKE_COLORS, HERO_STRIKE_HEIGHT, HERO_STRIKE_HIGH_SCORE_KEY, HERO_STRIKE_WIDTH } from "./heroStrikeConfig";
+import {
+  HERO_STRIKE_COLORS,
+  HERO_STRIKE_HEIGHT,
+  HERO_STRIKE_HIGH_SCORE_KEY,
+  HERO_STRIKE_PLAYER_RESPONSE,
+  HERO_STRIKE_WIDTH,
+} from "./heroStrikeConfig";
 import { addFloatingText } from "./heroStrikeEffects";
 import { resolvePlayerCollisions, updatePickups } from "./heroStrikePlayerRuntime";
 import { updateEnemyMovement, updateSpawning } from "./heroStrikeSpawner";
@@ -18,9 +24,9 @@ function updateStars(state: HeroStrikeState, dt: number) {
 
 function updatePlayer(state: HeroStrikeState, dt: number) {
   const player = state.player;
-  const ease = 1 - Math.pow(0.0008, dt);
-  player.x += (player.targetX - player.x) * ease;
-  player.y += (player.targetY - player.y) * ease;
+  const response = 1 - Math.exp(-HERO_STRIKE_PLAYER_RESPONSE * dt);
+  player.x += (player.targetX - player.x) * response;
+  player.y += (player.targetY - player.y) * response;
   player.x = Math.max(25, Math.min(HERO_STRIKE_WIDTH - 25, player.x));
   player.y = Math.max(330, Math.min(HERO_STRIKE_HEIGHT - 62, player.y));
   player.invulnerable = Math.max(0, player.invulnerable - dt);
