@@ -23,9 +23,12 @@ function pickupColor(kind: PickupKind) {
 function drawXpPickup(ctx: CanvasRenderingContext2D, pickup: HeroStrikePickup) {
   const pulse = 1 + Math.sin(pickup.life * 8 + pickup.id) * 0.08;
   const radius = pickup.radius * pulse;
+  const tailLength = Math.min(15, 7 + Math.abs(pickup.vy) * 0.035);
+  const falling = pickup.vy >= 0;
+  const tailY = falling ? pickup.y - radius - tailLength : pickup.y + radius;
   ctx.globalAlpha = 0.55;
   ctx.fillStyle = HERO_STRIKE_COLORS.xp;
-  ctx.fillRect(pickup.x - 1.5, pickup.y + radius, 3, 10);
+  ctx.fillRect(pickup.x - 1.5, tailY, 3, tailLength);
   ctx.globalAlpha = 1;
   ctx.fillStyle = "rgba(2,18,34,.96)";
   diamondPath(ctx, pickup.x, pickup.y, radius + 3);
