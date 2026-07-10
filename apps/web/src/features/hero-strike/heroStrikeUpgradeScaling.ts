@@ -132,7 +132,7 @@ export function getCriticalMultiplier(level: number) {
   return 1.65 + level * 0.18;
 }
 
-export function describeUpgradeLevel(id: UpgradeId, level: number) {
+export function describeUpgradeLevel(id: UpgradeId, level: number): string {
   switch (id) {
     case "rapid-fire": return `공격 간격 ${getRapidFireInterval(level).toFixed(2)}초`;
     case "twin-shot": return `정면 탄환 ${getForwardBulletCount(level)}발`;
@@ -150,4 +150,5 @@ export function describeUpgradeLevel(id: UpgradeId, level: number) {
     case "chain-core": return `최대 ${level}기 전이 · 범위 ${getChainRange(level)}`;
     case "critical-core": return `치명타 ${Math.round(getCriticalChance(level) * 100)}% · x${getCriticalMultiplier(level).toFixed(2)}`;
   }
+  return "";
 }
