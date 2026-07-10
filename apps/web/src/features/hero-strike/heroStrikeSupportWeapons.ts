@@ -5,6 +5,7 @@ import {
   HERO_STRIKE_WIDTH,
 } from "./heroStrikeConfig";
 import { addBurst, addRing } from "./heroStrikeEffects";
+import { hasEvolution } from "./heroStrikeEvolutions";
 import {
   getDroneDamageScale,
   getDroneFireInterval,
@@ -44,25 +45,28 @@ function criticalDamage(state: HeroStrikeState, damage: number) {
   return Math.random() < chance ? damage * multiplier : damage;
 }
 
-function spawnMissile(state: HeroStrikeState) {
+function spawnMissile(state: HeroStrikeState, forcedSide?: -1 | 1) {
   const target = nearestEnemy(state, state.player.x, state.player.y);
   if (!target) return;
   const level = state.player.homingMissileLevel;
-  const side = state.nextId % 2 === 0 ? -1 : 1;
+  const swarm = hasEvolution(state, "hunter-swarm");
+  const side = forcedSide ?? (state.nextId % 2 === 0 ? -1 : 1);
   state.missiles.push({
     id: state.nextId++,
     x: state.player.x + side * 18,
     y: state.player.y - 12,
     vx: side * 80,
     vy: -280,
-    speed: getMissileSpeed(level),
-    turnRate: getMissileTurnRate(level),
+    speed: getMissileSpeed(level) * (swarm ? 1.08 : 1),
+    turnRate: getMissileTurnRate(level) * (swarm ? 1.12 : 1),
     damage: criticalDamage(
       state,
-      (62 + state.player.damage * getMissileDamageScale(level)) * state.player.campaignDamageMultiplier,
+      (62 + state.player.damage * getMissileDamageScale(level))
+        * state.player.campaignDamageMultiplier
+        * (swarm ? 1.18 : 1),
     ),
     radius: 7,
-    explosionRadius: getMissileExplosionRadius(level),
+    explosionRadius: getMissileExplosionRadius(level) * (swarm ? 1.22 : 1),
     life: 4.5,
     targetId: target.id,
   });
@@ -75,6 +79,7 @@ function spawnDroneVolley(state: HeroStrikeState) {
   const player = state.player;
   const level = Math.max(1, player.supportDroneLevel);
   const timedBoost = player.supportDroneTime > 0;
+  const aegis = hasEvolution(state, "aegis-wing");
   const criticalChance = Math.min(0.75, player.criticalChance + player.bonusCriticalChance);
   const criticalMultiplier = player.criticalMultiplier + player.bonusCriticalMultiplier;
   for (const side of [-1, 1] as const) {
@@ -85,17 +90,18 @@ function spawnDroneVolley(state: HeroStrikeState) {
       y: player.y - 8,
       vx: side * (18 + level * 4),
       vy: -830,
-      radius: 3.4,
+      radius: aegis ? 4 : 3.4,
       damage: player.damage
         * player.campaignDamageMultiplier
         * getDroneDamageScale(level, timedBoost)
+        * (aegis ? 1.38 : 1)
         * (critical ? criticalMultiplier : 1),
-      pierce: level >= 4 ? 1 : 0,
+      pierce: (level >= 4 ? 1 : 0) + (aegis ? 1 : 0),
       enemy: false,
       life: 1.35,
-      color: critical ? HERO_STRIKE_COLORS.gold : HERO_STRIKE_COLORS.lime,
+      color: critical || aegis ? HERO_STRIKE_COLORS.gold : HERO_STRIKE_COLORS.lime,
       explosionRadius: player.explosiveRoundsLevel > 0
-        ? getExplosionRadius(player.explosiveRoundsLevel) * 0.55
+        ? getExplosionRadius(player.explosiveRoundsLevel) * (aegis ? 0.7 : 0.55)
         : undefined,
       chain: player.chainCoreLevel,
     });
@@ -176,9 +182,14 @@ export function updateSupportWeapons(state: HeroStrikeState, dt: number) {
   if (player.homingMissileLevel > 0) {
     player.missileCooldown -= dt;
     if (player.missileCooldown <= 0 && state.enemies.length > 0) {
-      spawnMissile(state);
+      if (hasEvolution(state, "hunter-swarm")) {
+        spawnMissile(state, -1);
+        spawnMissile(state, 1);
+      } else spawnMissile(state);
+      const swarmRate = hasEvolution(state, "hunter-swarm") ? 0.92 : 1;
       player.missileCooldown = getMissileFireInterval(player.homingMissileLevel)
-        * player.campaignFireRateMultiplier;
+        * player.campaignFireRateMultiplier
+        * swarmRate;
     }
   } else player.missileCooldown = 0;
 
@@ -187,8 +198,10 @@ export function updateSupportWeapons(state: HeroStrikeState, dt: number) {
     if (player.supportDroneCooldown <= 0) {
       spawnDroneVolley(state);
       const level = Math.max(1, player.supportDroneLevel);
+      const aegisRate = hasEvolution(state, "aegis-wing") ? 0.86 : 1;
       player.supportDroneCooldown = getDroneFireInterval(level, player.supportDroneTime > 0)
-        * player.campaignFireRateMultiplier;
+        * player.campaignFireRateMultiplier
+        * aegisRate;
     }
   } else player.supportDroneCooldown = 0;
 
