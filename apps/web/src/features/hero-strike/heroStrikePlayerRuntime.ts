@@ -36,7 +36,8 @@ export function resolvePlayerCollisions(state: HeroStrikeState) {
       bullet.grazed = true;
       const gain = 1.5 * player.ultimateGainMultiplier;
       player.ultimate = Math.min(player.ultimateMax, player.ultimate + gain);
-      state.score += 20;
+      const grazeScore = Math.round(20 * player.scoreMultiplier);
+      state.score += grazeScore;
       addFloatingText(state, player.x + 22, player.y - 12, "GRAZE", HERO_STRIKE_COLORS.cyan, 11);
     }
   }
@@ -46,7 +47,7 @@ export function resolvePlayerCollisions(state: HeroStrikeState) {
       const radius = player.radius + enemy.radius * 0.72;
       if (distanceSquared(player.x, player.y, enemy.x, enemy.y) <= radius * radius) {
         hit = true;
-        enemy.hp -= player.damage * 2;
+        enemy.hp -= player.damage * player.campaignDamageMultiplier * 2;
         break;
       }
     }
@@ -70,6 +71,7 @@ export function resolvePlayerCollisions(state: HeroStrikeState) {
 
 function detonateBombPickup(state: HeroStrikeState) {
   const player = state.player;
+  const campaignDamage = player.campaignDamageMultiplier;
   state.bullets = state.bullets.filter((bullet) => !bullet.enemy);
   addRing(state, player.x, player.y - 110, HERO_STRIKE_COLORS.orange, 42);
   addBurst(state, player.x, player.y - 110, HERO_STRIKE_COLORS.orange, 28, 260, 4);
@@ -78,7 +80,8 @@ function detonateBombPickup(state: HeroStrikeState) {
 
   const targets = [...state.enemies];
   for (const enemy of targets) {
-    enemy.hp -= enemy.boss ? 240 + player.damage * 2 : 320 + player.damage * 3;
+    const damage = enemy.boss ? 240 + player.damage * 2 : 320 + player.damage * 3;
+    enemy.hp -= damage * campaignDamage;
     if (enemy.hp <= 0 && !enemy.dead) {
       enemy.dead = true;
       awardEnemyDefeat(state, enemy);
@@ -90,7 +93,7 @@ function detonateBombPickup(state: HeroStrikeState) {
 
 function grantExperience(state: HeroStrikeState, value: number) {
   const player = state.player;
-  player.xp += value;
+  player.xp += value * player.xpGainMultiplier;
   if (player.xp < player.nextXp || state.phase !== "playing") return;
   player.xp -= player.nextXp;
   player.level += 1;
@@ -125,7 +128,8 @@ function grantPickup(state: HeroStrikeState, kind: PickupKind, value: number) {
     player.timeWarp = Math.min(16, player.timeWarp + value);
     addFloatingText(state, player.x, player.y - 30, "TIME WARP", HERO_STRIKE_COLORS.cyan, 15);
   } else if (kind === "xp-core") {
-    addFloatingText(state, player.x, player.y - 30, `XP +${value}`, HERO_STRIKE_COLORS.xp, 15);
+    const gained = Math.round(value * player.xpGainMultiplier);
+    addFloatingText(state, player.x, player.y - 30, `XP +${gained}`, HERO_STRIKE_COLORS.xp, 15);
     grantExperience(state, value);
   } else {
     grantExperience(state, value);
@@ -171,7 +175,8 @@ export function activateUltimate(state: HeroStrikeState) {
 
   const targets = [...state.enemies];
   for (const enemy of targets) {
-    enemy.hp -= enemy.boss ? 680 + player.damage * 5 : 99999;
+    const damage = enemy.boss ? 680 + player.damage * 5 : 99999;
+    enemy.hp -= damage * player.campaignDamageMultiplier;
     if (enemy.hp <= 0 && !enemy.dead) {
       enemy.dead = true;
       awardEnemyDefeat(state, enemy);
