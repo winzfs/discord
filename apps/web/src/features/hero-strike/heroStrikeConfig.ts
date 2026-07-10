@@ -2,11 +2,12 @@ export const HERO_STRIKE_WIDTH = 420;
 export const HERO_STRIKE_HEIGHT = 760;
 export const HERO_STRIKE_PLAYER_Y = 650;
 export const HERO_STRIKE_BOSS_Y = 142;
-export const HERO_STRIKE_PLAYER_RADIUS = 18;
+export const HERO_STRIKE_PLAYER_RADIUS = 9;
 export const HERO_STRIKE_MAX_DT = 0.033;
 export const HERO_STRIKE_RENDER_SCALE_MAX = 1.5;
 export const HERO_STRIKE_PLAYER_RESPONSE = 42;
 export const HERO_STRIKE_MAX_BULLETS = 220;
+export const HERO_STRIKE_MAX_MISSILES = 16;
 export const HERO_STRIKE_MAX_PARTICLES = 140;
 export const HERO_STRIKE_MAX_TEXTS = 10;
 export const HERO_STRIKE_HIGH_SCORE_KEY = "hero-strike-high-score-v1";
@@ -24,6 +25,7 @@ export const HERO_STRIKE_COLORS = {
   hostile: "#ff356d",
   hostileCore: "#fff4f7",
   green: "#79f29d",
+  lime: "#b8ff5a",
   purple: "#bb86fc",
   white: "#f8fbff",
   muted: "#8da4c5",
