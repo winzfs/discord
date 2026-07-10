@@ -1,37 +1,13 @@
 import { HERO_STRIKE_COLORS, HERO_STRIKE_HEIGHT, HERO_STRIKE_WIDTH, UPGRADE_CARD_BOUNDS } from "./heroStrikeConfig";
 import { drawHeroStrikeProtocolReward } from "./heroStrikeProtocolRenderer";
+import { drawHeroStrikeResult } from "./heroStrikeResultRenderer";
 import { getCurrentHeroStrikeStage, HERO_STRIKE_STAGES } from "./heroStrikeStages";
+import { drawHeroStrikeTitle } from "./heroStrikeTitleRenderer";
 import type { HeroStrikeState } from "./heroStrikeTypes";
 
 function roundedRect(ctx: CanvasRenderingContext2D, x: number, y: number, width: number, height: number, radius: number) {
   ctx.beginPath();
   ctx.roundRect(x, y, width, height, radius);
-}
-
-function drawTitle(ctx: CanvasRenderingContext2D, state: HeroStrikeState) {
-  ctx.fillStyle = "rgba(2,6,16,.5)";
-  ctx.fillRect(0, 0, HERO_STRIKE_WIDTH, HERO_STRIKE_HEIGHT);
-  ctx.textAlign = "center";
-  ctx.fillStyle = HERO_STRIKE_COLORS.cyan;
-  ctx.font = "900 12px system-ui";
-  ctx.fillText("10-STAGE ARCADE CAMPAIGN", HERO_STRIKE_WIDTH / 2, 225);
-  ctx.fillStyle = HERO_STRIKE_COLORS.white;
-  ctx.font = "1000 46px system-ui";
-  ctx.fillText("HERO STRIKE", HERO_STRIKE_WIDTH / 2, 278);
-  ctx.fillStyle = HERO_STRIKE_COLORS.muted;
-  ctx.font = "700 15px system-ui";
-  ctx.fillText("드래그로 이동 · 공격은 자동", HERO_STRIKE_WIDTH / 2, 318);
-  ctx.fillText("레벨업·프로토콜로 10개 지역 돌파", HERO_STRIKE_WIDTH / 2, 342);
-  roundedRect(ctx, 88, 390, HERO_STRIKE_WIDTH - 176, 64, 20);
-  ctx.fillStyle = HERO_STRIKE_COLORS.orange;
-  ctx.fill();
-  ctx.fillStyle = "#111827";
-  ctx.font = "900 19px system-ui";
-  ctx.fillText("작전 시작", HERO_STRIKE_WIDTH / 2, 430);
-  ctx.fillStyle = HERO_STRIKE_COLORS.gold;
-  ctx.font = "800 12px system-ui";
-  ctx.fillText(`BEST  ${state.highScore.toLocaleString()}`, HERO_STRIKE_WIDTH / 2, 487);
-  ctx.textAlign = "left";
 }
 
 function drawUpgradeCards(ctx: CanvasRenderingContext2D, state: HeroStrikeState) {
@@ -104,30 +80,6 @@ function drawStageBanner(ctx: CanvasRenderingContext2D, state: HeroStrikeState) 
   ctx.textAlign = "left";
 }
 
-function drawResult(ctx: CanvasRenderingContext2D, state: HeroStrikeState) {
-  const victory = state.phase === "victory";
-  ctx.fillStyle = "rgba(2,6,16,.84)";
-  ctx.fillRect(0, 0, HERO_STRIKE_WIDTH, HERO_STRIKE_HEIGHT);
-  ctx.textAlign = "center";
-  ctx.fillStyle = victory ? HERO_STRIKE_COLORS.gold : HERO_STRIKE_COLORS.red;
-  ctx.font = "900 12px system-ui";
-  ctx.fillText(victory ? "ALL 10 STAGES COMPLETE" : "MISSION FAILED", HERO_STRIKE_WIDTH / 2, 270);
-  ctx.fillStyle = HERO_STRIKE_COLORS.white;
-  ctx.font = "1000 42px system-ui";
-  ctx.fillText(victory ? "완전 승리" : "작전 종료", HERO_STRIKE_WIDTH / 2, 322);
-  ctx.fillStyle = HERO_STRIKE_COLORS.muted;
-  ctx.font = "800 13px system-ui";
-  ctx.fillText(`SCORE  ${state.score.toLocaleString()}`, HERO_STRIKE_WIDTH / 2, 366);
-  ctx.fillText(`KILLS ${state.kills} · LEVEL ${state.player.level} · RANK ${state.combatRank}`, HERO_STRIKE_WIDTH / 2, 390);
-  roundedRect(ctx, 92, 430, HERO_STRIKE_WIDTH - 184, 62, 20);
-  ctx.fillStyle = HERO_STRIKE_COLORS.orange;
-  ctx.fill();
-  ctx.fillStyle = "#111827";
-  ctx.font = "900 18px system-ui";
-  ctx.fillText("다시 출격", HERO_STRIKE_WIDTH / 2, 469);
-  ctx.textAlign = "left";
-}
-
 function drawPaused(ctx: CanvasRenderingContext2D) {
   ctx.fillStyle = "rgba(2,6,16,.78)";
   ctx.fillRect(0, 0, HERO_STRIKE_WIDTH, HERO_STRIKE_HEIGHT);
@@ -159,9 +111,9 @@ function drawBossWarning(ctx: CanvasRenderingContext2D, state: HeroStrikeState) 
 export function drawHeroStrikeOverlay(ctx: CanvasRenderingContext2D, state: HeroStrikeState) {
   drawStageBanner(ctx, state);
   drawBossWarning(ctx, state);
-  if (state.phase === "title") drawTitle(ctx, state);
+  if (state.phase === "title") drawHeroStrikeTitle(ctx, state);
   else if (state.phase === "level-up") drawUpgradeCards(ctx, state);
   else if (state.phase === "stage-clear") drawHeroStrikeProtocolReward(ctx, state);
-  else if (state.phase === "game-over" || state.phase === "victory") drawResult(ctx, state);
+  else if (state.phase === "game-over" || state.phase === "victory") drawHeroStrikeResult(ctx, state);
   else if (state.phase === "paused") drawPaused(ctx);
 }
