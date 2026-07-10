@@ -56,29 +56,29 @@ function drawTopHud(ctx: CanvasRenderingContext2D, state: HeroStrikeState) {
 }
 
 type SupportStatusItem = {
-  label: string;
-  time: number;
+  text: string;
   color: string;
 };
 
 function drawSupportStatus(ctx: CanvasRenderingContext2D, state: HeroStrikeState) {
   const active: SupportStatusItem[] = [];
-  if (state.player.homingMissileTime > 0) {
-    active.push({ label: "MISSILE", time: state.player.homingMissileTime, color: HERO_STRIKE_COLORS.orange });
+  if (state.player.homingMissileLevel > 0) {
+    active.push({ text: `MISSILE L${state.player.homingMissileLevel}`, color: HERO_STRIKE_COLORS.orange });
   }
-  if (state.player.supportDroneTime > 0) {
-    active.push({ label: "DRONE", time: state.player.supportDroneTime, color: HERO_STRIKE_COLORS.lime });
+  if (state.player.supportDroneLevel > 0) {
+    active.push({ text: `DRONE L${state.player.supportDroneLevel}`, color: HERO_STRIKE_COLORS.lime });
+  } else if (state.player.supportDroneTime > 0) {
+    active.push({ text: `DRONE ${Math.ceil(state.player.supportDroneTime)}s`, color: HERO_STRIKE_COLORS.lime });
   }
   if (state.player.timeWarp > 0) {
-    active.push({ label: "SLOW", time: state.player.timeWarp, color: HERO_STRIKE_COLORS.xp });
+    active.push({ text: `SLOW ${Math.ceil(state.player.timeWarp)}s`, color: HERO_STRIKE_COLORS.xp });
   }
 
   let x = HERO_STRIKE_WIDTH - 28;
   ctx.textAlign = "right";
   ctx.font = "800 9px system-ui";
   for (const item of active.reverse()) {
-    const text = `${item.label} ${Math.ceil(item.time)}s`;
-    const width = ctx.measureText(text).width + 14;
+    const width = ctx.measureText(item.text).width + 14;
     roundedRect(ctx, x - width, 103, width, 18, 8);
     ctx.fillStyle = "rgba(4,10,24,.72)";
     ctx.fill();
@@ -86,7 +86,7 @@ function drawSupportStatus(ctx: CanvasRenderingContext2D, state: HeroStrikeState
     ctx.lineWidth = 1;
     ctx.stroke();
     ctx.fillStyle = item.color;
-    ctx.fillText(text, x - 7, 116);
+    ctx.fillText(item.text, x - 7, 116);
     x -= width + 5;
   }
   ctx.textAlign = "left";
