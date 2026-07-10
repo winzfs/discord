@@ -3,7 +3,7 @@ import { HERO_STRIKE_HEIGHT, HERO_STRIKE_WIDTH } from "./heroStrikeConfig";
 import { useHeroStrikeGame } from "./useHeroStrikeGame";
 
 export function HeroStrikeCanvas() {
-  const { canvasRef, pointer } = useHeroStrikeGame();
+  const { canvasRef, pointer, release } = useHeroStrikeGame();
 
   const getPoint = (event: PointerEvent<HTMLCanvasElement>) => {
     const rect = event.currentTarget.getBoundingClientRect();
@@ -27,6 +27,7 @@ export function HeroStrikeCanvas() {
   };
 
   const handlePointerUp = (event: PointerEvent<HTMLCanvasElement>) => {
+    release();
     if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
   };
 
