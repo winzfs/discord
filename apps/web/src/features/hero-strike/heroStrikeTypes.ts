@@ -55,6 +55,7 @@ export type StageProtocolId =
   | "pulse-sync"
   | "blink-capacitor";
 export type EnemyBulletVariant = "orb" | "needle" | "heavy" | "shard";
+export type PlayerBulletStyle = PrimaryWeaponId | "support";
 
 export type Vec2 = { x: number; y: number };
 
@@ -79,6 +80,11 @@ export type HeroStrikePlayer = {
   bulletCount: number;
   spread: number;
   pierce: number;
+  shotCounter: number;
+  flow: number;
+  flowMax: number;
+  flowRush: number;
+  flowDecayDelay: number;
   magnetRadius: number;
   campaignMagnetBonus: number;
   ultimate: number;
@@ -125,6 +131,11 @@ export type HeroStrikeBullet = {
   chain?: number;
   variant?: EnemyBulletVariant;
   grazed?: boolean;
+  style?: PlayerBulletStyle;
+  originY?: number;
+  breakPower?: number;
+  impactForce?: number;
+  critical?: boolean;
 };
 
 export type HeroStrikeMissile = {
@@ -158,7 +169,14 @@ export type HeroStrikeEnemy = {
   reward: number;
   score: number;
   boss: boolean;
+  hitFlash: number;
+  hitPulse: number;
+  recoilX: number;
+  recoilY: number;
   bossPhase?: number;
+  breakGauge?: number;
+  breakMax?: number;
+  breakStun?: number;
   elite?: boolean;
   eliteTrait?: EliteTrait;
   dead?: boolean;
@@ -244,6 +262,8 @@ export type HeroStrikeState = {
   hitsTaken: number;
   damageDealt: number;
   blinksUsed: number;
+  flowActivations: number;
+  bossBreaks: number;
   objectivesCompleted: number;
   perfectStages: number;
   upgradeRerolls: number;
@@ -271,6 +291,9 @@ export type HeroStrikeState = {
   bossWarning: number;
   bossPhaseBanner: number;
   bossPhaseLabel: string;
+  flowBanner: number;
+  bossBreakBanner: number;
+  hitStop: number;
   shake: number;
   flash: number;
   stageKills: number;
