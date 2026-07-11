@@ -16,40 +16,40 @@ import {
 } from "./heroStrikeWaveDirector";
 
 const ENEMY_STATS: Record<NormalEnemyKind, Pick<HeroStrikeEnemy, "radius" | "hp" | "maxHp" | "reward" | "score">> = {
-  runner: { radius: 13, hp: 36, maxHp: 36, reward: 6, score: 110 },
-  drone: { radius: 18, hp: 72, maxHp: 72, reward: 10, score: 180 },
-  tank: { radius: 24, hp: 170, maxHp: 170, reward: 18, score: 330 },
-  sniper: { radius: 15, hp: 96, maxHp: 96, reward: 14, score: 260 },
-  weaver: { radius: 16, hp: 84, maxHp: 84, reward: 12, score: 225 },
-  bomber: { radius: 23, hp: 225, maxHp: 225, reward: 23, score: 430 },
+  runner: { radius: 13, hp: 52, maxHp: 52, reward: 5, score: 125 },
+  drone: { radius: 18, hp: 110, maxHp: 110, reward: 8, score: 205 },
+  tank: { radius: 24, hp: 270, maxHp: 270, reward: 14, score: 390 },
+  sniper: { radius: 15, hp: 135, maxHp: 135, reward: 10, score: 285 },
+  weaver: { radius: 16, hp: 120, maxHp: 120, reward: 9, score: 250 },
+  bomber: { radius: 23, hp: 330, maxHp: 330, reward: 17, score: 485 },
 };
 
 function enemyBaseSpeed(kind: NormalEnemyKind) {
-  if (kind === "runner") return 104;
-  if (kind === "drone") return 62;
-  if (kind === "tank") return 42;
-  if (kind === "sniper") return 54;
-  if (kind === "weaver") return 78;
-  return 38;
+  if (kind === "runner") return 92;
+  if (kind === "drone") return 58;
+  if (kind === "tank") return 38;
+  if (kind === "sniper") return 50;
+  if (kind === "weaver") return 72;
+  return 35;
 }
 
 function enemyFireCooldown(kind: NormalEnemyKind) {
-  if (kind === "runner") return 99;
-  if (kind === "sniper") return 1.7 + Math.random() * 0.5;
-  if (kind === "bomber") return 1.45 + Math.random() * 0.55;
-  if (kind === "tank") return 1.25 + Math.random() * 0.55;
-  return 1.05 + Math.random() * 1.1;
+  if (kind === "runner") return 1.35 + Math.random() * 0.75;
+  if (kind === "sniper") return 1.55 + Math.random() * 0.45;
+  if (kind === "bomber") return 1.5 + Math.random() * 0.5;
+  if (kind === "tank") return 1.35 + Math.random() * 0.5;
+  return 1.15 + Math.random() * 0.95;
 }
 
 function eliteHealthMultiplier(trait: EliteTrait) {
-  if (trait === "armored") return 3;
-  if (trait === "veteran") return 2.45;
-  return 2.1;
+  if (trait === "armored") return 2.7;
+  if (trait === "veteran") return 2.3;
+  return 2;
 }
 
 function eliteSpeedMultiplier(trait: EliteTrait) {
-  if (trait === "rapid") return 1.24;
-  if (trait === "veteran") return 1.12;
+  if (trait === "rapid") return 1.2;
+  if (trait === "veteran") return 1.1;
   return 1;
 }
 
@@ -70,9 +70,9 @@ export function spawnEnemy(
     ? 30 + Math.random() * (HERO_STRIKE_WIDTH - 60)
     : Math.max(30, Math.min(HERO_STRIKE_WIDTH - 30, requestedX));
   const speed = enemyBaseSpeed(kind) * stage.enemySpeedMultiplier * (eliteTrait ? eliteSpeedMultiplier(eliteTrait) : 1);
-  const rewardScale = elite ? 3 : 1;
+  const rewardScale = elite ? 2.4 : 1;
   const scoreScale = elite ? 4 : 1;
-  const cooldownScale = eliteTrait === "rapid" ? 0.58 : eliteTrait === "veteran" ? 0.75 : 1;
+  const cooldownScale = eliteTrait === "rapid" ? 0.62 : eliteTrait === "veteran" ? 0.78 : 1;
 
   state.enemies.push({
     id: state.nextId++,
@@ -80,7 +80,7 @@ export function spawnEnemy(
     x,
     y: requestedY,
     vx: (Math.random() - 0.5) * (kind === "weaver" ? 34 : 18),
-    vy: speed * (0.9 + Math.random() * 0.25),
+    vy: speed * (0.9 + Math.random() * 0.22),
     radius: base.radius * (elite ? 1.16 : 1),
     hp: base.hp * hpScale,
     maxHp: base.maxHp * hpScale,
@@ -108,8 +108,11 @@ function spawnElite(state: HeroStrikeState) {
   spawnEnemy(state, kind, trait);
 }
 
-function spawnFormation(state: HeroStrikeState) {
-  for (const unit of getNextFormation(state)) spawnEnemy(state, unit.kind, undefined, unit.x, unit.y);
+function spawnFormation(state: HeroStrikeState, enemyCap: number) {
+  const remaining = Math.max(0, enemyCap - state.enemies.length);
+  for (const unit of getNextFormation(state).slice(0, remaining)) {
+    spawnEnemy(state, unit.kind, undefined, unit.x, unit.y);
+  }
 }
 
 export function spawnBoss(state: HeroStrikeState) {
@@ -125,15 +128,15 @@ export function spawnBoss(state: HeroStrikeState) {
     kind: "boss",
     x: HERO_STRIKE_WIDTH / 2,
     y: -100,
-    vx: 72 + state.stageIndex * 7,
-    vy: 78,
+    vx: 66 + state.stageIndex * 6,
+    vy: 72,
     radius: 48 + state.stageIndex * 2.4,
     hp,
     maxHp: hp,
-    fireCooldown: 1.25,
+    fireCooldown: 1.35,
     age: 0,
     phase: state.stageIndex,
-    reward: 110 + state.stageIndex * 35,
+    reward: 82 + state.stageIndex * 25,
     score: stage.bossScore,
     boss: true,
     hitFlash: 0,
@@ -158,43 +161,44 @@ export function updateSpawning(state: HeroStrikeState, dt: number) {
   }
   if (state.bossSpawned) return;
 
+  const enemyCap = 10 + Math.min(6, Math.floor(state.stageIndex / 2));
+
   if (waveChanged) {
-    const groupSize = getWaveEntryGroupSize(state.waveIndex);
-    for (let index = 0; index < groupSize; index += 1) spawnEnemy(state);
-    state.spawnCooldown = 0.62 * difficulty.spawnInterval;
-    state.formationCooldown = Math.min(state.formationCooldown, 2.6);
+    const groupSize = Math.min(3, getWaveEntryGroupSize(state.waveIndex));
+    for (let index = 0; index < groupSize && state.enemies.length < enemyCap; index += 1) spawnEnemy(state);
+    state.spawnCooldown = 0.75 * difficulty.spawnInterval;
+    state.formationCooldown = Math.min(state.formationCooldown, 3.1);
     return;
   }
 
   if (shouldSpawnElite(state)) {
     spawnElite(state);
-    state.spawnCooldown = 0.9 * difficulty.spawnInterval;
-    state.formationCooldown = Math.max(state.formationCooldown, 4.5);
+    state.spawnCooldown = 1.05 * difficulty.spawnInterval;
+    state.formationCooldown = Math.max(state.formationCooldown, 5);
     return;
   }
 
-  const enemyCap = 15 + Math.min(9, state.stageIndex);
   state.formationCooldown -= dt;
-  if (state.stageElapsed > 6 && state.formationCooldown <= 0 && state.enemies.length <= enemyCap - 5) {
-    spawnFormation(state);
-    state.formationCooldown = getFormationInterval(state) * difficulty.spawnInterval;
-    state.spawnCooldown = Math.max(state.spawnCooldown, 0.72);
+  if (state.stageElapsed > 7 && state.formationCooldown <= 0 && state.enemies.length <= enemyCap - 4) {
+    spawnFormation(state, enemyCap);
+    state.formationCooldown = getFormationInterval(state) * 1.12 * difficulty.spawnInterval;
+    state.spawnCooldown = Math.max(state.spawnCooldown, 0.86);
     return;
   }
 
   state.spawnCooldown -= dt;
   if (state.spawnCooldown > 0) return;
   if (state.enemies.length >= enemyCap) {
-    state.spawnCooldown = 0.38;
+    state.spawnCooldown = 0.48;
     return;
   }
 
   spawnEnemy(state);
-  state.spawnCooldown = Math.max(stage.spawnMin, stage.spawnBase - state.stageElapsed * stage.spawnDecay)
+  state.spawnCooldown = Math.max(stage.spawnMin * 1.08, stage.spawnBase - state.stageElapsed * stage.spawnDecay)
     * getWaveSpawnMultiplier(state.waveIndex)
     * getSpawnReliefMultiplier(state)
     * difficulty.spawnInterval
-    * (0.78 + Math.random() * 0.46);
+    * (0.9 + Math.random() * 0.42);
 }
 
 function updateBossMovement(enemy: HeroStrikeEnemy, dt: number) {
@@ -210,7 +214,7 @@ function updateBossMovement(enemy: HeroStrikeEnemy, dt: number) {
   }
 
   const stageIndex = Math.round(enemy.phase);
-  const stageSpeed = stageIndex >= 7 ? 1.24 : stageIndex >= 4 ? 1.16 : stageIndex >= 2 ? 1.08 : 1;
+  const stageSpeed = stageIndex >= 7 ? 1.2 : stageIndex >= 4 ? 1.13 : stageIndex >= 2 ? 1.06 : 1;
   enemy.x += enemy.vx * stageSpeed * getBossPhaseMovementMultiplier(enemy) * dt;
   if (enemy.x < 66 || enemy.x > HERO_STRIKE_WIDTH - 66) enemy.vx *= -1;
 
@@ -218,7 +222,38 @@ function updateBossMovement(enemy: HeroStrikeEnemy, dt: number) {
   enemy.y = HERO_STRIKE_BOSS_Y + Math.sin(enemy.age * (1.2 + stageIndex * 0.08)) * bobAmount;
 }
 
-export function updateEnemyMovement(enemy: HeroStrikeEnemy, dt: number) {
+function updateRunnerMovement(state: HeroStrikeState, enemy: HeroStrikeEnemy, dt: number) {
+  enemy.fireCooldown -= dt;
+  if (enemy.y < 112) {
+    enemy.y += enemy.vy * dt;
+    return;
+  }
+
+  if (enemy.fireCooldown <= 0) {
+    const dx = state.player.x - enemy.x;
+    const dy = state.player.y - enemy.y;
+    const length = Math.max(1, Math.hypot(dx, dy));
+    enemy.vx = dx / length * 290;
+    enemy.vy = dy / length * 290;
+    enemy.fireCooldown = 3.35;
+  }
+
+  if (enemy.fireCooldown > 2.82) {
+    enemy.x += enemy.vx * dt;
+    enemy.y += enemy.vy * dt;
+    return;
+  }
+
+  if (enemy.fireCooldown < 0.52) {
+    enemy.x += Math.sin(enemy.age * 8) * 8 * dt;
+    return;
+  }
+
+  enemy.x += Math.sin(enemy.age * 4.2 + enemy.phase) * 26 * dt;
+  enemy.y += Math.max(32, Math.abs(enemy.vy) * 0.24) * dt;
+}
+
+export function updateEnemyMovement(state: HeroStrikeState, enemy: HeroStrikeEnemy, dt: number) {
   enemy.age += dt;
   updateEnemyImpactFeedback(enemy, dt);
   if (enemy.boss) {
@@ -226,7 +261,9 @@ export function updateEnemyMovement(enemy: HeroStrikeEnemy, dt: number) {
     return;
   }
 
-  if (enemy.kind === "sniper") {
+  if (enemy.kind === "runner") {
+    updateRunnerMovement(state, enemy, dt);
+  } else if (enemy.kind === "sniper") {
     const hoverY = 155 + Math.sin(enemy.phase) * 30;
     if (enemy.y < hoverY) enemy.y += enemy.vy * dt;
     else if (enemy.age < 10) enemy.x += Math.sin(enemy.age * 1.8 + enemy.phase) * 42 * dt;
@@ -238,8 +275,8 @@ export function updateEnemyMovement(enemy: HeroStrikeEnemy, dt: number) {
     enemy.x += Math.sin(enemy.age * 1.25 + enemy.phase) * 15 * dt;
     enemy.y += enemy.vy * 0.84 * dt;
   } else {
-    const wave = enemy.kind === "runner" ? 32 : enemy.kind === "drone" ? 18 : 8;
-    enemy.x += (enemy.vx + Math.sin(enemy.age * (enemy.kind === "runner" ? 4.8 : 2.2) + enemy.phase) * wave) * dt;
+    const wave = enemy.kind === "drone" ? 18 : 7;
+    enemy.x += (enemy.vx + Math.sin(enemy.age * 2.2 + enemy.phase) * wave) * dt;
     enemy.y += enemy.vy * dt;
   }
 
