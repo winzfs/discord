@@ -1,6 +1,7 @@
 import { getStageObjectiveResearch, getStageObjectiveScore } from "./heroStrikeBalance";
 import { HERO_STRIKE_COLORS, HERO_STRIKE_WIDTH } from "./heroStrikeConfig";
 import { addFloatingText } from "./heroStrikeEffects";
+import { getDifficultyProfile } from "./heroStrikeLoadout";
 import { grantResearchData } from "./heroStrikeMetaProgress";
 import type { HeroStrikeEnemy, HeroStrikeState, StageObjectiveId } from "./heroStrikeTypes";
 
@@ -99,7 +100,8 @@ export function resolveStageObjective(state: HeroStrikeState) {
   refreshObjectiveState(state);
   if (!state.objectiveComplete || state.objectiveRewarded) return false;
   state.objectiveRewarded = true;
-  state.score += getStageObjectiveScore(state.stageIndex);
+  const difficulty = getDifficultyProfile(state.loadout.difficulty);
+  state.score += Math.round(getStageObjectiveScore(state.stageIndex) * difficulty.score);
   grantResearchData(state, getStageObjectiveResearch(state.stageIndex));
   state.player.shield = Math.min(5, state.player.shield + 1);
   return true;
