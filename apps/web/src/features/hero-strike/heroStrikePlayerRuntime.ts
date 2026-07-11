@@ -1,11 +1,11 @@
 import { getNextXpRequirement } from "./heroStrikeBalance";
-import { HERO_STRIKE_COLORS, HERO_STRIKE_HEIGHT } from "./heroStrikeConfig";
+import { HERO_STRIKE_COLORS, HERO_STRIKE_HEIGHT, HERO_STRIKE_WIDTH } from "./heroStrikeConfig";
 import { addBurst, addFloatingText, addRing } from "./heroStrikeEffects";
 import { recordStageGraze, recordStageHit } from "./heroStrikeObjectives";
 import { updateHeroStrikePickupMotion } from "./heroStrikePickupPhysics";
 import { createUpgradeChoices } from "./heroStrikeUpgrades";
 import { awardEnemyDefeat } from "./heroStrikeWeaponRuntime";
-import type { HeroStrikeState, PickupKind } from "./heroStrikeTypes";
+import type { HeroStrikeEnemy, HeroStrikeState, PickupKind } from "./heroStrikeTypes";
 
 function distanceSquared(ax: number, ay: number, bx: number, by: number) {
   const dx = ax - bx;
@@ -17,6 +17,12 @@ function clearNearbyEnemyBullets(state: HeroStrikeState, radius: number) {
   const { x, y } = state.player;
   const radiusSq = radius * radius;
   state.bullets = state.bullets.filter((bullet) => !bullet.enemy || distanceSquared(bullet.x, bullet.y, x, y) > radiusSq);
+}
+
+function applyDamage(state: HeroStrikeState, enemy: HeroStrikeEnemy, amount: number) {
+  const dealt = Math.min(enemy.hp, Math.max(0, amount));
+  enemy.hp -= amount;
+  state.damageDealt += dealt;
 }
 
 export function resolvePlayerCollisions(state: HeroStrikeState) {
@@ -50,7 +56,7 @@ export function resolvePlayerCollisions(state: HeroStrikeState) {
       const radius = player.radius + enemy.radius * 0.72;
       if (distanceSquared(player.x, player.y, enemy.x, enemy.y) <= radius * radius) {
         hit = true;
-        enemy.hp -= player.damage * player.campaignDamageMultiplier * 2;
+        applyDamage(state, enemy, player.damage * player.campaignDamageMultiplier * 2);
         break;
       }
     }
@@ -85,8 +91,8 @@ function detonateBombPickup(state: HeroStrikeState) {
 
   const targets = [...state.enemies];
   for (const enemy of targets) {
-    const damage = enemy.boss ? 240 + player.damage * 2 : 320 + player.damage * 3;
-    enemy.hp -= damage * campaignDamage;
+    const damage = (enemy.boss ? 240 + player.damage * 2 : 320 + player.damage * 3) * campaignDamage;
+    applyDamage(state, enemy, damage);
     if (enemy.hp <= 0 && !enemy.dead) {
       enemy.dead = true;
       awardEnemyDefeat(state, enemy);
@@ -129,13 +135,6 @@ function grantPickup(state: HeroStrikeState, kind: PickupKind, value: number) {
   } else if (kind === "overdrive") {
     player.overdrive = Math.min(18, player.overdrive + value);
     addFloatingText(state, player.x, player.y - 30, "OVERDRIVE", HERO_STRIKE_COLORS.purple, 16);
-  } else if (kind === "support-drone") {
-    player.supportDroneTime = Math.min(36, player.supportDroneTime + value);
-    player.supportDroneCooldown = 0;
-    addFloatingText(state, player.x, player.y - 30, "SUPPORT DRONE", HERO_STRIKE_COLORS.lime, 15);
-  } else if (kind === "time-warp") {
-    player.timeWarp = Math.min(16, player.timeWarp + value);
-    addFloatingText(state, player.x, player.y - 30, "TIME WARP", HERO_STRIKE_COLORS.cyan, 15);
   } else if (kind === "xp-core") {
     const gained = grantExperience(state, value);
     addFloatingText(state, player.x, player.y - 30, `XP +${gained}`, HERO_STRIKE_COLORS.xp, 15);
@@ -149,8 +148,7 @@ function pickupColor(kind: PickupKind) {
   if (kind === "charge") return HERO_STRIKE_COLORS.gold;
   if (kind === "shield") return HERO_STRIKE_COLORS.shield;
   if (kind === "bomb") return HERO_STRIKE_COLORS.orange;
-  if (kind === "support-drone") return HERO_STRIKE_COLORS.lime;
-  if (kind === "time-warp" || kind === "xp-core") return HERO_STRIKE_COLORS.xp;
+  if (kind === "xp-core") return HERO_STRIKE_COLORS.xp;
   if (kind === "overdrive") return HERO_STRIKE_COLORS.purple;
   return HERO_STRIKE_COLORS.xp;
 }
@@ -171,6 +169,38 @@ export function updatePickups(state: HeroStrikeState, dt: number) {
   state.pickups = state.pickups.filter((pickup) => pickup.life > 0 && pickup.y < HERO_STRIKE_HEIGHT + 40);
 }
 
+export function activateBlink(state: HeroStrikeState) {
+  const player = state.player;
+  if (state.phase !== "playing" || player.blinkCharges <= 0) return false;
+
+  let dx = player.targetX - player.x;
+  let dy = player.targetY - player.y;
+  const length = Math.hypot(dx, dy);
+  if (length < 5) {
+    dx = 0;
+    dy = -1;
+  } else {
+    dx /= length;
+    dy /= length;
+  }
+
+  const startX = player.x;
+  const startY = player.y;
+  player.x = Math.max(25, Math.min(HERO_STRIKE_WIDTH - 25, player.x + dx * 96));
+  player.y = Math.max(330, Math.min(HERO_STRIKE_HEIGHT - 62, player.y + dy * 96));
+  player.targetX = player.x;
+  player.targetY = player.y;
+  player.blinkCharges -= 1;
+  player.blinkRecharge = Math.max(player.blinkRecharge, player.blinkRechargeDuration);
+  player.invulnerable = Math.max(player.invulnerable, 0.55);
+  state.blinksUsed += 1;
+  clearNearbyEnemyBullets(state, 58);
+  addBurst(state, startX, startY, HERO_STRIKE_COLORS.cyan, 12, 155, 3);
+  addRing(state, player.x, player.y, HERO_STRIKE_COLORS.cyan, 20);
+  state.shake = Math.max(state.shake, 0.18);
+  return true;
+}
+
 export function activateUltimate(state: HeroStrikeState) {
   const player = state.player;
   if (state.phase !== "playing" || player.ultimate < player.ultimateMax) return false;
@@ -183,8 +213,8 @@ export function activateUltimate(state: HeroStrikeState) {
 
   const targets = [...state.enemies];
   for (const enemy of targets) {
-    const damage = enemy.boss ? 680 + player.damage * 5 : 99999;
-    enemy.hp -= damage * player.campaignDamageMultiplier;
+    const damage = (enemy.boss ? 680 + player.damage * 5 : 99999) * player.campaignDamageMultiplier;
+    applyDamage(state, enemy, damage);
     if (enemy.hp <= 0 && !enemy.dead) {
       enemy.dead = true;
       awardEnemyDefeat(state, enemy);
