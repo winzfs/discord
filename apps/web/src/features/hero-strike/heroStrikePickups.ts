@@ -5,7 +5,7 @@ const PICKUP_VALUES: Record<Exclude<PickupKind, "xp">, number> = {
   charge: 28,
   shield: 1,
   bomb: 1,
-  overdrive: 6,
+  overdrive: 42,
   "xp-core": 45,
 };
 
@@ -64,13 +64,13 @@ export function maybeSpawnBonusPickup(state: HeroStrikeState, enemy: HeroStrikeE
 
 export function spawnStageReward(state: HeroStrikeState, clearedStageIndex: number) {
   const rewards: readonly Exclude<PickupKind, "xp" | "heal">[] = [
+    "overdrive",
     "shield",
     "charge",
     "xp-core",
     "bomb",
     "overdrive",
     "shield",
-    "charge",
     "xp-core",
     "bomb",
   ];
