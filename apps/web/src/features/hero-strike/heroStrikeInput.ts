@@ -5,10 +5,23 @@ import {
   ULTIMATE_BUTTON,
   UPGRADE_CARD_BOUNDS,
 } from "./heroStrikeConfig";
+import {
+  DIFFICULTY_OPTIONS,
+  PRIMARY_WEAPON_OPTIONS,
+  saveHeroStrikeLoadout,
+  SUPPORT_LOADOUT_OPTIONS,
+  TACTICAL_LOADOUT_OPTIONS,
+} from "./heroStrikeLoadout";
+import {
+  getHeroStrikeLoadoutCardIndex,
+  HERO_STRIKE_LOADOUT_BACK_BOUNDS,
+  HERO_STRIKE_LOADOUT_DEPLOY_BOUNDS,
+  isInsideHeroStrikeRect,
+} from "./heroStrikeLoadoutLayout";
 import { activateUltimate } from "./heroStrikePlayerRuntime";
 import { applyStageProtocol } from "./heroStrikeProtocols";
 import { advanceHeroStrikeStage } from "./heroStrikeStageRuntime";
-import { resetHeroStrikeState } from "./heroStrikeState";
+import { openHeroStrikeLoadout, resetHeroStrikeState } from "./heroStrikeState";
 import { applyUpgrade } from "./heroStrikeUpgrades";
 import type { HeroStrikeState } from "./heroStrikeTypes";
 
@@ -39,10 +52,42 @@ function selectedCardIndex(x: number, y: number) {
   );
 }
 
+function handleLoadoutPointer(state: HeroStrikeState, x: number, y: number) {
+  if (isInsideHeroStrikeRect(x, y, HERO_STRIKE_LOADOUT_BACK_BOUNDS)) {
+    state.phase = "title";
+    return;
+  }
+  if (isInsideHeroStrikeRect(x, y, HERO_STRIKE_LOADOUT_DEPLOY_BOUNDS)) {
+    resetHeroStrikeState(state);
+    return;
+  }
+
+  const primary = PRIMARY_WEAPON_OPTIONS[getHeroStrikeLoadoutCardIndex("primary", x, y)];
+  const support = SUPPORT_LOADOUT_OPTIONS[getHeroStrikeLoadoutCardIndex("support", x, y)];
+  const tactical = TACTICAL_LOADOUT_OPTIONS[getHeroStrikeLoadoutCardIndex("tactical", x, y)];
+  const difficulty = DIFFICULTY_OPTIONS[getHeroStrikeLoadoutCardIndex("difficulty", x, y)];
+  if (primary) state.loadout.primary = primary.id;
+  else if (support) state.loadout.support = support.id;
+  else if (tactical) state.loadout.tactical = tactical.id;
+  else if (difficulty) state.loadout.difficulty = difficulty.id;
+  else return;
+  saveHeroStrikeLoadout(state.loadout);
+}
+
 export function handleHeroStrikePointer(state: HeroStrikeState, x: number, y: number, pressed: boolean) {
-  if (state.phase === "title" || state.phase === "game-over" || state.phase === "victory") {
+  if (state.phase === "title") {
     resetPointer(state);
-    if (pressed) resetHeroStrikeState(state);
+    if (pressed) openHeroStrikeLoadout(state);
+    return;
+  }
+  if (state.phase === "game-over" || state.phase === "victory") {
+    resetPointer(state);
+    if (pressed) openHeroStrikeLoadout(state);
+    return;
+  }
+  if (state.phase === "loadout") {
+    resetPointer(state);
+    if (pressed) handleLoadoutPointer(state, x, y);
     return;
   }
   if (state.phase === "stage-clear") {
