@@ -1,6 +1,7 @@
 import { getBossHealth, getNormalEnemyHealthScale, getSpawnReliefMultiplier } from "./heroStrikeBalance";
 import { getBossPhaseMovementMultiplier } from "./heroStrikeBossPhases";
 import { HERO_STRIKE_BOSS_Y, HERO_STRIKE_WIDTH } from "./heroStrikeConfig";
+import { getDifficultyProfile } from "./heroStrikeLoadout";
 import { chooseEnemyKindForStage, getCurrentHeroStrikeStage } from "./heroStrikeStages";
 import type { EliteTrait, EnemyKind, HeroStrikeEnemy, HeroStrikeState } from "./heroStrikeTypes";
 import {
@@ -128,6 +129,7 @@ export function spawnBoss(state: HeroStrikeState) {
 
 export function updateSpawning(state: HeroStrikeState, dt: number) {
   const stage = getCurrentHeroStrikeStage(state);
+  const difficulty = getDifficultyProfile(state.loadout.difficulty);
   const waveChanged = updateHeroStrikeWave(state, stage.durationSeconds);
 
   if (!state.bossSpawned && state.stageElapsed >= stage.durationSeconds) {
@@ -139,13 +141,13 @@ export function updateSpawning(state: HeroStrikeState, dt: number) {
   if (waveChanged) {
     const groupSize = getWaveEntryGroupSize(state.waveIndex);
     for (let index = 0; index < groupSize; index += 1) spawnEnemy(state);
-    state.spawnCooldown = 0.62;
+    state.spawnCooldown = 0.62 * difficulty.spawnInterval;
     return;
   }
 
   if (shouldSpawnElite(state)) {
     spawnElite(state);
-    state.spawnCooldown = 0.9;
+    state.spawnCooldown = 0.9 * difficulty.spawnInterval;
     return;
   }
 
@@ -161,6 +163,7 @@ export function updateSpawning(state: HeroStrikeState, dt: number) {
   state.spawnCooldown = Math.max(stage.spawnMin, stage.spawnBase - state.stageElapsed * stage.spawnDecay)
     * getWaveSpawnMultiplier(state.waveIndex)
     * getSpawnReliefMultiplier(state)
+    * difficulty.spawnInterval
     * (0.78 + Math.random() * 0.46);
 }
 
