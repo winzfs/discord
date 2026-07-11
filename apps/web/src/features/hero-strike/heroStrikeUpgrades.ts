@@ -78,9 +78,9 @@ export function createUpgradeChoices(state: HeroStrikeState) {
     .map((upgrade) => makeUpgradeOption(state, upgrade));
 
   let choices = shuffle(available).slice(0, 3);
-  const missile = available.find((upgrade) => upgrade.id === "homing-missile");
-  if (state.player.level <= 2 && missile && (state.upgradeLevels["homing-missile"] ?? 0) === 0) {
-    choices = replaceLastChoice(choices, missile);
+  const selectedSupport = available.find((upgrade) => upgrade.id === state.loadout.support);
+  if (state.player.level <= 2 && selectedSupport && (state.upgradeLevels[state.loadout.support] ?? 0) === 1) {
+    choices = replaceLastChoice(choices, selectedSupport);
   } else if (!choices.some((choice) => HERO_STRIKE_WEAPON_UPGRADES.has(choice.id))) {
     const weapon = shuffle(available.filter((upgrade) => HERO_STRIKE_WEAPON_UPGRADES.has(upgrade.id)))[0];
     if (weapon) choices = replaceLastChoice(choices, weapon);
