@@ -25,7 +25,7 @@ function drawDrone(ctx: CanvasRenderingContext2D, x: number, y: number, side: nu
 }
 
 function drawSupportDrones(ctx: CanvasRenderingContext2D, state: HeroStrikeState) {
-  if (state.player.supportDroneLevel <= 0 && state.player.supportDroneTime <= 0) return;
+  if (state.player.supportDroneLevel <= 0) return;
   const pulse = Math.sin(state.elapsed * 7) * 0.5 + 0.5;
   drawDrone(ctx, state.player.x - 31, state.player.y + 4, -1, pulse);
   drawDrone(ctx, state.player.x + 31, state.player.y + 4, 1, pulse);
@@ -57,20 +57,7 @@ function drawMissiles(ctx: CanvasRenderingContext2D, state: HeroStrikeState) {
   ctx.globalAlpha = 1;
 }
 
-function drawTimeWarpAura(ctx: CanvasRenderingContext2D, state: HeroStrikeState) {
-  if (state.player.timeWarp <= 0) return;
-  ctx.strokeStyle = "rgba(53,241,255,.32)";
-  ctx.lineWidth = 2;
-  for (let index = 0; index < 2; index += 1) {
-    const radius = 38 + index * 12 + Math.sin(state.elapsed * 4 + index) * 4;
-    ctx.beginPath();
-    ctx.arc(state.player.x, state.player.y, radius, 0, Math.PI * 2);
-    ctx.stroke();
-  }
-}
-
 export function drawHeroStrikeSupportWeapons(ctx: CanvasRenderingContext2D, state: HeroStrikeState) {
-  drawTimeWarpAura(ctx, state);
   drawSupportDrones(ctx, state);
   drawMissiles(ctx, state);
 }

@@ -15,8 +15,7 @@ function pickupColor(kind: PickupKind) {
   if (kind === "charge") return HERO_STRIKE_COLORS.gold;
   if (kind === "shield") return HERO_STRIKE_COLORS.shield;
   if (kind === "bomb") return HERO_STRIKE_COLORS.orange;
-  if (kind === "support-drone") return HERO_STRIKE_COLORS.lime;
-  if (kind === "time-warp" || kind === "xp-core") return HERO_STRIKE_COLORS.xp;
+  if (kind === "xp-core") return HERO_STRIKE_COLORS.xp;
   return HERO_STRIKE_COLORS.purple;
 }
 
@@ -94,26 +93,6 @@ function drawOverdrive(ctx: CanvasRenderingContext2D, pickup: HeroStrikePickup) 
   ctx.fill();
 }
 
-function drawSupportDrone(ctx: CanvasRenderingContext2D, pickup: HeroStrikePickup) {
-  ctx.fillRect(pickup.x - 4, pickup.y - 4, 8, 8);
-  ctx.fillRect(pickup.x - 10, pickup.y - 2, 5, 4);
-  ctx.fillRect(pickup.x + 5, pickup.y - 2, 5, 4);
-  ctx.fillStyle = HERO_STRIKE_COLORS.white;
-  ctx.fillRect(pickup.x - 1, pickup.y - 1, 2, 2);
-}
-
-function drawTimeWarp(ctx: CanvasRenderingContext2D, pickup: HeroStrikePickup) {
-  ctx.beginPath();
-  ctx.arc(pickup.x, pickup.y, 7, 0, Math.PI * 2);
-  ctx.stroke();
-  ctx.beginPath();
-  ctx.moveTo(pickup.x, pickup.y);
-  ctx.lineTo(pickup.x, pickup.y - 5);
-  ctx.moveTo(pickup.x, pickup.y);
-  ctx.lineTo(pickup.x + 4, pickup.y + 2);
-  ctx.stroke();
-}
-
 function drawXpCore(ctx: CanvasRenderingContext2D, pickup: HeroStrikePickup) {
   diamondPath(ctx, pickup.x, pickup.y, 8);
   ctx.stroke();
@@ -128,8 +107,6 @@ function drawSpecialIcon(ctx: CanvasRenderingContext2D, pickup: HeroStrikePickup
   else if (pickup.kind === "shield") drawShield(ctx, pickup);
   else if (pickup.kind === "bomb") drawBomb(ctx, pickup);
   else if (pickup.kind === "overdrive") drawOverdrive(ctx, pickup);
-  else if (pickup.kind === "support-drone") drawSupportDrone(ctx, pickup);
-  else if (pickup.kind === "time-warp") drawTimeWarp(ctx, pickup);
   else drawXpCore(ctx, pickup);
 }
 

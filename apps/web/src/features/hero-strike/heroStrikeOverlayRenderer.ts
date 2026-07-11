@@ -1,4 +1,10 @@
-import { HERO_STRIKE_COLORS, HERO_STRIKE_HEIGHT, HERO_STRIKE_WIDTH, UPGRADE_CARD_BOUNDS } from "./heroStrikeConfig";
+import {
+  HERO_STRIKE_COLORS,
+  HERO_STRIKE_HEIGHT,
+  HERO_STRIKE_WIDTH,
+  UPGRADE_CARD_BOUNDS,
+  UPGRADE_REROLL_BOUNDS,
+} from "./heroStrikeConfig";
 import { drawHeroStrikeLoadout } from "./heroStrikeLoadoutRenderer";
 import { drawHeroStrikeProtocolReward } from "./heroStrikeProtocolRenderer";
 import { drawHeroStrikeResult } from "./heroStrikeResultRenderer";
@@ -57,6 +63,27 @@ function drawUpgradeCards(ctx: CanvasRenderingContext2D, state: HeroStrikeState)
     ctx.font = "900 10px system-ui";
     ctx.fillText(`LV.${upgrade.currentLevel} → ${upgrade.nextLevel} / ${upgrade.maxLevel}`, bounds.x + bounds.width / 2, bounds.y + bounds.height - 15);
   });
+
+  const rerollEnabled = state.upgradeRerolls > 0;
+  roundedRect(
+    ctx,
+    UPGRADE_REROLL_BOUNDS.x,
+    UPGRADE_REROLL_BOUNDS.y,
+    UPGRADE_REROLL_BOUNDS.width,
+    UPGRADE_REROLL_BOUNDS.height,
+    14,
+  );
+  ctx.fillStyle = rerollEnabled ? "rgba(14,41,61,.96)" : "rgba(45,52,65,.72)";
+  ctx.fill();
+  ctx.strokeStyle = rerollEnabled ? HERO_STRIKE_COLORS.cyan : HERO_STRIKE_COLORS.muted;
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+  ctx.fillStyle = rerollEnabled ? HERO_STRIKE_COLORS.cyan : HERO_STRIKE_COLORS.muted;
+  ctx.font = "900 12px system-ui";
+  ctx.fillText(`↻ 재추첨  ${state.upgradeRerolls}`, HERO_STRIKE_WIDTH / 2, UPGRADE_REROLL_BOUNDS.y + 26);
+  ctx.fillStyle = HERO_STRIKE_COLORS.muted;
+  ctx.font = "700 9px system-ui";
+  ctx.fillText("현재 세 장을 제외하고 다시 제안", HERO_STRIKE_WIDTH / 2, 705);
   ctx.textAlign = "left";
 }
 

@@ -1,9 +1,11 @@
 import {
+  BLINK_BUTTON,
   HERO_STRIKE_HEIGHT,
   HERO_STRIKE_WIDTH,
   PAUSE_BUTTON,
   ULTIMATE_BUTTON,
   UPGRADE_CARD_BOUNDS,
+  UPGRADE_REROLL_BOUNDS,
 } from "./heroStrikeConfig";
 import {
   DIFFICULTY_OPTIONS,
@@ -18,15 +20,19 @@ import {
   HERO_STRIKE_LOADOUT_DEPLOY_BOUNDS,
   isInsideHeroStrikeRect,
 } from "./heroStrikeLoadoutLayout";
-import { activateUltimate } from "./heroStrikePlayerRuntime";
+import { activateBlink, activateUltimate } from "./heroStrikePlayerRuntime";
 import { applyStageProtocol } from "./heroStrikeProtocols";
 import { advanceHeroStrikeStage } from "./heroStrikeStageRuntime";
 import { openHeroStrikeLoadout, resetHeroStrikeState } from "./heroStrikeState";
-import { applyUpgrade } from "./heroStrikeUpgrades";
+import { applyUpgrade, rerollUpgradeChoices } from "./heroStrikeUpgrades";
 import type { HeroStrikeState } from "./heroStrikeTypes";
 
 function insideCircle(x: number, y: number, target: { x: number; y: number; radius: number }) {
   return Math.hypot(x - target.x, y - target.y) <= target.radius;
+}
+
+function insideRect(x: number, y: number, target: { x: number; y: number; width: number; height: number }) {
+  return x >= target.x && x <= target.x + target.width && y >= target.y && y <= target.y + target.height;
 }
 
 function resetPointer(state: HeroStrikeState) {
@@ -107,6 +113,10 @@ export function handleHeroStrikePointer(state: HeroStrikeState, x: number, y: nu
   if (state.phase === "level-up") {
     resetPointer(state);
     if (!pressed) return;
+    if (insideRect(x, y, UPGRADE_REROLL_BOUNDS)) {
+      rerollUpgradeChoices(state);
+      return;
+    }
     const choice = state.upgradeChoices[selectedCardIndex(x, y)];
     if (choice) applyUpgrade(state, choice.id);
     return;
@@ -115,6 +125,11 @@ export function handleHeroStrikePointer(state: HeroStrikeState, x: number, y: nu
     resetPointer(state);
     state.previousPhase = state.phase;
     state.phase = "paused";
+    return;
+  }
+  if (pressed && insideCircle(x, y, BLINK_BUTTON)) {
+    resetPointer(state);
+    activateBlink(state);
     return;
   }
   if (pressed && insideCircle(x, y, ULTIMATE_BUTTON)) {

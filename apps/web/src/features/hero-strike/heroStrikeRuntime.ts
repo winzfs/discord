@@ -27,6 +27,19 @@ function updateStars(state: HeroStrikeState, dt: number) {
   }
 }
 
+function updateBlinkRecharge(state: HeroStrikeState, dt: number) {
+  const player = state.player;
+  if (player.blinkCharges >= player.blinkMaxCharges) {
+    player.blinkRecharge = 0;
+    return;
+  }
+  player.blinkRecharge -= dt;
+  if (player.blinkRecharge > 0) return;
+  player.blinkCharges = Math.min(player.blinkMaxCharges, player.blinkCharges + 1);
+  player.blinkRecharge = player.blinkCharges < player.blinkMaxCharges ? player.blinkRechargeDuration : 0;
+  addFloatingText(state, player.x, player.y - 48, "BLINK READY", HERO_STRIKE_COLORS.cyan, 11);
+}
+
 function updatePlayer(state: HeroStrikeState, dt: number) {
   const player = state.player;
   const response = 1 - Math.exp(-HERO_STRIKE_PLAYER_RESPONSE * dt);
@@ -38,6 +51,7 @@ function updatePlayer(state: HeroStrikeState, dt: number) {
   player.comboTimer = Math.max(0, player.comboTimer - dt);
   player.overdrive = Math.max(0, player.overdrive - dt);
   if (player.comboTimer <= 0) player.combo = 0;
+  updateBlinkRecharge(state, dt);
 }
 
 function updateEnemies(state: HeroStrikeState, dt: number) {
@@ -97,10 +111,8 @@ export function tickHeroStrike(state: HeroStrikeState, dt: number) {
   tickHeroStrikeStage(state, dt);
   updatePlayer(state, dt);
   updatePlayerFire(state, dt);
-
-  const hazardTimeScale = state.player.timeWarp > 0 ? 0.48 : 1;
-  updateSpawning(state, dt * hazardTimeScale);
-  updateEnemies(state, dt * hazardTimeScale);
+  updateSpawning(state, dt);
+  updateEnemies(state, dt);
   updateSupportWeapons(state, dt);
   if (state.phase !== "playing") return;
 

@@ -6,8 +6,6 @@ const PICKUP_VALUES: Record<Exclude<PickupKind, "xp">, number> = {
   shield: 1,
   bomb: 1,
   overdrive: 6,
-  "support-drone": 18,
-  "time-warp": 9,
   "xp-core": 45,
 };
 
@@ -54,29 +52,27 @@ export function maybeSpawnBonusPickup(state: HeroStrikeState, enemy: HeroStrikeE
   const roll = Math.random() / rarityMultiplier;
 
   let kind: Exclude<PickupKind, "xp"> | null = null;
-  if (state.player.hp < state.player.maxHp && roll < 0.025) kind = "heal";
+  if (state.player.hp < state.player.maxHp && roll < 0.024) kind = "heal";
   else if (roll < 0.058) kind = "charge";
   else if (roll < 0.082) kind = "shield";
-  else if (roll < 0.104) kind = "overdrive";
-  else if (roll < 0.126) kind = "support-drone";
-  else if (roll < 0.142) kind = "time-warp";
-  else if (roll < 0.162) kind = "xp-core";
-  else if (roll < 0.174) kind = "bomb";
+  else if (roll < 0.108) kind = "overdrive";
+  else if (roll < 0.142) kind = "xp-core";
+  else if (roll < 0.154) kind = "bomb";
 
   if (kind) spawnHeroStrikePickup(state, kind, enemy.x, enemy.y);
 }
 
 export function spawnStageReward(state: HeroStrikeState, clearedStageIndex: number) {
   const rewards: readonly Exclude<PickupKind, "xp" | "heal">[] = [
-    "support-drone",
     "shield",
-    "time-warp",
-    "bomb",
     "charge",
-    "overdrive",
     "xp-core",
-    "support-drone",
-    "time-warp",
+    "bomb",
+    "overdrive",
+    "shield",
+    "charge",
+    "xp-core",
+    "bomb",
   ];
   const kind = rewards[Math.max(0, Math.min(rewards.length - 1, clearedStageIndex))];
   spawnHeroStrikePickup(state, kind, 210, 205);

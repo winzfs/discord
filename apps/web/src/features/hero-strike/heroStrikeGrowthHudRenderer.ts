@@ -14,7 +14,7 @@ export function drawHeroStrikeGrowthHud(ctx: CanvasRenderingContext2D, state: He
   ctx.fillStyle = state.loadout.difficulty === "legend" ? HERO_STRIKE_COLORS.red : HERO_STRIKE_COLORS.cyan;
   ctx.font = "800 8px system-ui";
   ctx.fillText(
-    `${difficultyLabel(state)} · R${state.combatRank} · P${protocolCount} · LAB${state.researchRank}`,
+    `${difficultyLabel(state)} · P${protocolCount} · LAB${state.researchRank} · ↻${state.upgradeRerolls}`,
     HERO_STRIKE_WIDTH - 28,
     77,
   );

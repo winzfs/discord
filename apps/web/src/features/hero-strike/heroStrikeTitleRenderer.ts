@@ -15,14 +15,14 @@ export function drawHeroStrikeTitle(ctx: CanvasRenderingContext2D, state: HeroSt
   ctx.textAlign = "center";
   ctx.fillStyle = HERO_STRIKE_COLORS.cyan;
   ctx.font = "900 12px system-ui";
-  ctx.fillText("10-STAGE ARCADE CAMPAIGN", HERO_STRIKE_WIDTH / 2, 208);
+  ctx.fillText("10-STAGE ROGUELITE STRIKE", HERO_STRIKE_WIDTH / 2, 208);
   ctx.fillStyle = HERO_STRIKE_COLORS.white;
   ctx.font = "1000 46px system-ui";
   ctx.fillText("HERO STRIKE", HERO_STRIKE_WIDTH / 2, 260);
   ctx.fillStyle = HERO_STRIKE_COLORS.muted;
   ctx.font = "700 14px system-ui";
-  ctx.fillText("4웨이브 · 엘리트 · 보스 페이즈", HERO_STRIKE_WIDTH / 2, 298);
-  ctx.fillText("레벨업과 진화 무기로 10개 지역 돌파", HERO_STRIKE_WIDTH / 2, 322);
+  ctx.fillText("편대 공세 · 블링크 회피 · 보스 3페이즈", HERO_STRIKE_WIDTH / 2, 298);
+  ctx.fillText("빌드를 완성해 10개 지역을 돌파하세요", HERO_STRIKE_WIDTH / 2, 322);
 
   roundedRect(ctx, 72, 350, HERO_STRIKE_WIDTH - 144, 62, 18);
   ctx.fillStyle = "rgba(7,20,39,.86)";
@@ -54,6 +54,6 @@ export function drawHeroStrikeTitle(ctx: CanvasRenderingContext2D, state: HeroSt
   ctx.fillText(getLoadoutSummary(state.loadout), HERO_STRIKE_WIDTH / 2, 530);
   ctx.fillStyle = HERO_STRIKE_COLORS.muted;
   ctx.font = "700 10px system-ui";
-  ctx.fillText(`BEST ${state.highScore.toLocaleString()} · 장비와 난이도를 선택하세요`, HERO_STRIKE_WIDTH / 2, 555);
+  ctx.fillText(`BEST ${state.highScore.toLocaleString()} · 드래그 이동 · 블링크 · 펄스 폭탄`, HERO_STRIKE_WIDTH / 2, 555);
   ctx.textAlign = "left";
 }

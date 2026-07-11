@@ -78,7 +78,6 @@ function spawnMissile(state: HeroStrikeState, forcedSide?: -1 | 1) {
 function spawnDroneVolley(state: HeroStrikeState) {
   const player = state.player;
   const level = Math.max(1, player.supportDroneLevel);
-  const timedBoost = player.supportDroneTime > 0;
   const aegis = hasEvolution(state, "aegis-wing");
   const criticalChance = Math.min(0.75, player.criticalChance + player.bonusCriticalChance);
   const criticalMultiplier = player.criticalMultiplier + player.bonusCriticalMultiplier;
@@ -93,7 +92,7 @@ function spawnDroneVolley(state: HeroStrikeState) {
       radius: aegis ? 4 : 3.4,
       damage: player.damage
         * player.campaignDamageMultiplier
-        * getDroneDamageScale(level, timedBoost)
+        * getDroneDamageScale(level, false)
         * (aegis ? 1.38 : 1)
         * (critical ? criticalMultiplier : 1),
       pierce: (level >= 4 ? 1 : 0) + (aegis ? 1 : 0),
@@ -139,7 +138,9 @@ function explodeMissile(state: HeroStrikeState, missile: HeroStrikeMissile) {
   const targets = [...state.enemies];
   for (const enemy of targets) {
     if (enemy.dead || distanceSquared(missile.x, missile.y, enemy.x, enemy.y) > radiusSquared) continue;
-    enemy.hp -= missile.damage * (enemy.boss ? 0.72 : 1);
+    const damage = missile.damage * (enemy.boss ? 0.72 : 1);
+    state.damageDealt += Math.min(enemy.hp, Math.max(0, damage));
+    enemy.hp -= damage;
     if (enemy.hp <= 0) {
       enemy.dead = true;
       awardEnemyDefeat(state, enemy);
@@ -176,8 +177,6 @@ function updateMissiles(state: HeroStrikeState, dt: number) {
 
 export function updateSupportWeapons(state: HeroStrikeState, dt: number) {
   const player = state.player;
-  player.supportDroneTime = Math.max(0, player.supportDroneTime - dt);
-  player.timeWarp = Math.max(0, player.timeWarp - dt);
 
   if (player.homingMissileLevel > 0) {
     player.missileCooldown -= dt;
@@ -193,13 +192,12 @@ export function updateSupportWeapons(state: HeroStrikeState, dt: number) {
     }
   } else player.missileCooldown = 0;
 
-  if (player.supportDroneLevel > 0 || player.supportDroneTime > 0) {
+  if (player.supportDroneLevel > 0) {
     player.supportDroneCooldown -= dt;
     if (player.supportDroneCooldown <= 0) {
       spawnDroneVolley(state);
-      const level = Math.max(1, player.supportDroneLevel);
       const aegisRate = hasEvolution(state, "aegis-wing") ? 0.86 : 1;
-      player.supportDroneCooldown = getDroneFireInterval(level, player.supportDroneTime > 0)
+      player.supportDroneCooldown = getDroneFireInterval(player.supportDroneLevel, false)
         * player.campaignFireRateMultiplier
         * aegisRate;
     }

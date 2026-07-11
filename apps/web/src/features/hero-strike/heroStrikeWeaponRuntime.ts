@@ -7,7 +7,6 @@ import {
 } from "./heroStrikeConfig";
 import { addBurst, addFloatingText, addRing } from "./heroStrikeEffects";
 import { hasEvolution } from "./heroStrikeEvolutions";
-import { getDifficultyProfile } from "./heroStrikeLoadout";
 import { grantResearchData } from "./heroStrikeMetaProgress";
 import { recordStageEnemyDefeat } from "./heroStrikeObjectives";
 import { maybeSpawnBonusPickup, spawnEnemyXp, spawnHeroStrikePickup } from "./heroStrikePickups";
@@ -149,8 +148,7 @@ export function awardEnemyDefeat(state: HeroStrikeState, enemy: HeroStrikeEnemy)
   recordStageEnemyDefeat(state, enemy);
   if (state.player.combo >= 25) state.player.overdrive = Math.max(state.player.overdrive, 4.5);
   const comboMultiplier = 1 + Math.min(4, Math.floor(state.player.combo / 10)) * 0.25;
-  const difficulty = getDifficultyProfile(state.loadout.difficulty);
-  const awardedScore = Math.round(enemy.score * comboMultiplier * state.player.scoreMultiplier * difficulty.score);
+  const awardedScore = Math.round(enemy.score * comboMultiplier * state.player.scoreMultiplier);
   state.score += awardedScore;
   const baseUltimateGain = enemy.boss ? 35 : enemy.elite ? 12 : 5;
   const ultimateGain = baseUltimateGain * state.player.ultimateGainMultiplier;
@@ -181,6 +179,7 @@ export function awardEnemyDefeat(state: HeroStrikeState, enemy: HeroStrikeEnemy)
 
 function damageEnemy(state: HeroStrikeState, enemy: HeroStrikeEnemy, damage: number) {
   if (enemy.dead || state.phase !== "playing") return;
+  state.damageDealt += Math.min(enemy.hp, Math.max(0, damage));
   enemy.hp -= damage;
   if (enemy.hp <= 0) {
     enemy.dead = true;
@@ -247,11 +246,9 @@ export function resolveBulletCollisions(state: HeroStrikeState) {
 }
 
 export function updateBullets(state: HeroStrikeState, dt: number) {
-  const enemyTimeScale = state.player.timeWarp > 0 ? 0.48 : 1;
   for (const bullet of state.bullets) {
-    const movementScale = bullet.enemy ? enemyTimeScale : 1;
-    bullet.x += bullet.vx * dt * movementScale;
-    bullet.y += bullet.vy * dt * movementScale;
+    bullet.x += bullet.vx * dt;
+    bullet.y += bullet.vy * dt;
     bullet.life -= dt;
   }
 

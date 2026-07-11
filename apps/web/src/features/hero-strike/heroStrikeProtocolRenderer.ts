@@ -5,6 +5,7 @@ import {
   HERO_STRIKE_WIDTH,
   UPGRADE_CARD_BOUNDS,
 } from "./heroStrikeConfig";
+import { getDifficultyProfile } from "./heroStrikeLoadout";
 import { getCurrentHeroStrikeStage, getHeroStrikeStage } from "./heroStrikeStages";
 import type { HeroStrikeState, StageProtocolOption } from "./heroStrikeTypes";
 
@@ -76,7 +77,8 @@ function drawProtocolCard(
 export function drawHeroStrikeProtocolReward(ctx: CanvasRenderingContext2D, state: HeroStrikeState) {
   const stage = getCurrentHeroStrikeStage(state);
   const nextStage = getHeroStrikeStage(state.stageIndex + 1);
-  const rankUp = (state.stageIndex + 1) % 3 === 0;
+  const difficulty = getDifficultyProfile(state.loadout.difficulty);
+  const clearScore = Math.round(stage.clearBonus * difficulty.score);
 
   ctx.fillStyle = "rgba(2,6,16,.9)";
   ctx.fillRect(0, 0, HERO_STRIKE_WIDTH, HERO_STRIKE_HEIGHT);
@@ -89,18 +91,18 @@ export function drawHeroStrikeProtocolReward(ctx: CanvasRenderingContext2D, stat
   ctx.fillText(stage.name, HERO_STRIKE_WIDTH / 2, 226);
   ctx.fillStyle = HERO_STRIKE_COLORS.muted;
   ctx.font = "800 12px system-ui";
-  ctx.fillText(`COMBAT RANK ${state.combatRank} · SCORE +${stage.clearBonus.toLocaleString()}`, HERO_STRIKE_WIDTH / 2, 258);
+  ctx.fillText(`SCORE +${clearScore.toLocaleString()} · PERFECT ${state.stageHits === 0 ? "YES" : "NO"}`, HERO_STRIKE_WIDTH / 2, 258);
 
   ctx.fillStyle = state.objectiveComplete ? HERO_STRIKE_COLORS.green : HERO_STRIKE_COLORS.red;
   ctx.font = "900 12px system-ui";
   const objectiveText = state.objectiveComplete
-    ? `OBJECTIVE CLEAR · +${getStageObjectiveScore(state.stageIndex)} · DATA +${getStageObjectiveResearch(state.stageIndex)}`
+    ? `OBJECTIVE CLEAR · +${Math.round(getStageObjectiveScore(state.stageIndex) * difficulty.score)} · DATA +${Math.round(getStageObjectiveResearch(state.stageIndex) * difficulty.research)}`
     : "OBJECTIVE FAILED · 기본 보상만 획득";
   ctx.fillText(objectiveText, HERO_STRIKE_WIDTH / 2, 286);
 
-  ctx.fillStyle = rankUp ? HERO_STRIKE_COLORS.cyan : HERO_STRIKE_COLORS.orange;
+  ctx.fillStyle = HERO_STRIKE_COLORS.orange;
   ctx.font = "900 13px system-ui";
-  ctx.fillText(rankUp ? "프로토콜 선택 후 전투 등급 상승" : "다음 작전 프로토콜을 선택하세요", HERO_STRIKE_WIDTH / 2, 316);
+  ctx.fillText("다음 작전 프로토콜을 선택하세요", HERO_STRIKE_WIDTH / 2, 316);
   ctx.fillStyle = HERO_STRIKE_COLORS.muted;
   ctx.font = "700 11px system-ui";
   ctx.fillText(`NEXT · ${nextStage.name}`, HERO_STRIKE_WIDTH / 2, 340);

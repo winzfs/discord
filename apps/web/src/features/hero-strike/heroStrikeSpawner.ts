@@ -1,9 +1,10 @@
 import { getBossHealth, getNormalEnemyHealthScale, getSpawnReliefMultiplier } from "./heroStrikeBalance";
 import { getBossPhaseMovementMultiplier } from "./heroStrikeBossPhases";
 import { HERO_STRIKE_BOSS_Y, HERO_STRIKE_WIDTH } from "./heroStrikeConfig";
+import { getFormationInterval, getNextFormation } from "./heroStrikeFormations";
 import { getDifficultyProfile } from "./heroStrikeLoadout";
-import { chooseEnemyKindForStage, getCurrentHeroStrikeStage } from "./heroStrikeStages";
-import type { EliteTrait, EnemyKind, HeroStrikeEnemy, HeroStrikeState } from "./heroStrikeTypes";
+import { chooseEnemyKindForStage, getCurrentHeroStrikeStage, type NormalEnemyKind } from "./heroStrikeStages";
+import type { EliteTrait, HeroStrikeEnemy, HeroStrikeState } from "./heroStrikeTypes";
 import {
   getEliteTraitForStage,
   getWaveEntryGroupSize,
@@ -11,8 +12,6 @@ import {
   shouldSpawnElite,
   updateHeroStrikeWave,
 } from "./heroStrikeWaveDirector";
-
-type NormalEnemyKind = Exclude<EnemyKind, "boss">;
 
 const ENEMY_STATS: Record<NormalEnemyKind, Pick<HeroStrikeEnemy, "radius" | "hp" | "maxHp" | "reward" | "score">> = {
   runner: { radius: 13, hp: 36, maxHp: 36, reward: 6, score: 110 },
@@ -56,6 +55,8 @@ export function spawnEnemy(
   state: HeroStrikeState,
   requestedKind?: NormalEnemyKind,
   eliteTrait?: EliteTrait,
+  requestedX?: number,
+  requestedY = -36,
 ) {
   const stage = getCurrentHeroStrikeStage(state);
   const kind = requestedKind ?? chooseEnemyKindForStage(stage);
@@ -63,7 +64,9 @@ export function spawnEnemy(
   const healthScale = getNormalEnemyHealthScale(state, stage.durationSeconds);
   const elite = eliteTrait !== undefined;
   const hpScale = healthScale * (eliteTrait ? eliteHealthMultiplier(eliteTrait) : 1);
-  const x = 30 + Math.random() * (HERO_STRIKE_WIDTH - 60);
+  const x = requestedX === undefined
+    ? 30 + Math.random() * (HERO_STRIKE_WIDTH - 60)
+    : Math.max(30, Math.min(HERO_STRIKE_WIDTH - 30, requestedX));
   const speed = enemyBaseSpeed(kind) * stage.enemySpeedMultiplier * (eliteTrait ? eliteSpeedMultiplier(eliteTrait) : 1);
   const rewardScale = elite ? 3 : 1;
   const scoreScale = elite ? 4 : 1;
@@ -73,7 +76,7 @@ export function spawnEnemy(
     id: state.nextId++,
     kind,
     x,
-    y: -36,
+    y: requestedY,
     vx: (Math.random() - 0.5) * (kind === "weaver" ? 34 : 18),
     vy: speed * (0.9 + Math.random() * 0.25),
     radius: base.radius * (elite ? 1.16 : 1),
@@ -97,6 +100,10 @@ function spawnElite(state: HeroStrikeState) {
   state.eliteSpawned = true;
   state.waveBanner = 2.1;
   spawnEnemy(state, kind, trait);
+}
+
+function spawnFormation(state: HeroStrikeState) {
+  for (const unit of getNextFormation(state)) spawnEnemy(state, unit.kind, undefined, unit.x, unit.y);
 }
 
 export function spawnBoss(state: HeroStrikeState) {
@@ -142,18 +149,28 @@ export function updateSpawning(state: HeroStrikeState, dt: number) {
     const groupSize = getWaveEntryGroupSize(state.waveIndex);
     for (let index = 0; index < groupSize; index += 1) spawnEnemy(state);
     state.spawnCooldown = 0.62 * difficulty.spawnInterval;
+    state.formationCooldown = Math.min(state.formationCooldown, 2.6);
     return;
   }
 
   if (shouldSpawnElite(state)) {
     spawnElite(state);
     state.spawnCooldown = 0.9 * difficulty.spawnInterval;
+    state.formationCooldown = Math.max(state.formationCooldown, 4.5);
+    return;
+  }
+
+  const enemyCap = 15 + Math.min(9, state.stageIndex);
+  state.formationCooldown -= dt;
+  if (state.stageElapsed > 6 && state.formationCooldown <= 0 && state.enemies.length <= enemyCap - 5) {
+    spawnFormation(state);
+    state.formationCooldown = getFormationInterval(state) * difficulty.spawnInterval;
+    state.spawnCooldown = Math.max(state.spawnCooldown, 0.72);
     return;
   }
 
   state.spawnCooldown -= dt;
   if (state.spawnCooldown > 0) return;
-  const enemyCap = 16 + Math.min(10, state.stageIndex);
   if (state.enemies.length >= enemyCap) {
     state.spawnCooldown = 0.38;
     return;
