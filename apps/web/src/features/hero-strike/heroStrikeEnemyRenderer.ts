@@ -149,7 +149,24 @@ function drawBossPhaseMark(ctx: CanvasRenderingContext2D, enemy: HeroStrikeEnemy
 }
 
 function drawAttackTelegraph(ctx: CanvasRenderingContext2D, enemy: HeroStrikeEnemy) {
-  if (enemy.kind === "runner" || enemy.y < 28 || enemy.fireCooldown > 0.32 || (enemy.breakStun ?? 0) > 0) return;
+  if (enemy.y < 28 || (enemy.breakStun ?? 0) > 0) return;
+  if (enemy.kind === "runner") {
+    if (enemy.fireCooldown <= 0 || enemy.fireCooldown > 0.52) return;
+    const ratio = 1 - enemy.fireCooldown / 0.52;
+    ctx.globalAlpha = 0.35 + ratio * 0.6;
+    ctx.strokeStyle = "#ff5f6d";
+    ctx.lineWidth = 2 + ratio * 2;
+    ctx.beginPath();
+    ctx.arc(0, 0, enemy.radius + 5 + ratio * 10, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(0, enemy.radius + 5);
+    ctx.lineTo(0, enemy.radius + 20 + ratio * 12);
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+    return;
+  }
+  if (enemy.fireCooldown > 0.32) return;
   const ratio = Math.max(0, Math.min(1, 1 - enemy.fireCooldown / 0.32));
   ctx.globalAlpha = 0.25 + ratio * 0.6;
   ctx.strokeStyle = enemy.boss ? "#ff5f6d" : enemy.kind === "sniper" ? "#ff9fc6" : "#ffd166";
@@ -158,6 +175,47 @@ function drawAttackTelegraph(ctx: CanvasRenderingContext2D, enemy: HeroStrikeEne
   ctx.arc(0, 0, enemy.radius + 5 + ratio * 8, 0, Math.PI * 2);
   ctx.stroke();
   ctx.globalAlpha = 1;
+}
+
+function drawTankShield(ctx: CanvasRenderingContext2D, enemy: HeroStrikeEnemy) {
+  if (enemy.kind !== "tank") return;
+  ctx.save();
+  ctx.globalAlpha = 0.72 + Math.sin(enemy.age * 4) * 0.08;
+  ctx.strokeStyle = "#8fc7ff";
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  ctx.arc(0, enemy.radius * 0.1, enemy.radius * 1.18, Math.PI * 0.15, Math.PI * 0.85);
+  ctx.stroke();
+  ctx.globalAlpha = 0.16;
+  ctx.fillStyle = "#8fc7ff";
+  ctx.beginPath();
+  ctx.arc(0, enemy.radius * 0.1, enemy.radius * 1.08, Math.PI * 0.15, Math.PI * 0.85);
+  ctx.lineTo(0, enemy.radius * 0.1);
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+}
+
+function drawBossWeakPoint(ctx: CanvasRenderingContext2D, enemy: HeroStrikeEnemy) {
+  if (!enemy.boss) return;
+  const x = Math.sin(enemy.age * 1.15 + enemy.phase) * enemy.radius * 0.72;
+  const pulse = 1 + Math.sin(enemy.age * 8) * 0.16;
+  ctx.save();
+  ctx.translate(x, 0);
+  ctx.fillStyle = "rgba(255,209,102,.24)";
+  ctx.beginPath();
+  ctx.arc(0, 0, 12 * pulse, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = "#ffd166";
+  ctx.lineWidth = 2.5;
+  ctx.beginPath();
+  ctx.arc(0, 0, 7 * pulse, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.fillStyle = "#fff4bd";
+  ctx.beginPath();
+  ctx.arc(0, 0, 2.8, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
 }
 
 function drawBossBreakCracks(ctx: CanvasRenderingContext2D, enemy: HeroStrikeEnemy) {
@@ -215,6 +273,8 @@ export function drawHeroStrikeEnemy(ctx: CanvasRenderingContext2D, enemy: HeroSt
   else drawNormalBody(ctx, enemy, palette.accent);
   ctx.shadowBlur = 0;
 
+  drawTankShield(ctx, enemy);
+  drawBossWeakPoint(ctx, enemy);
   drawBossBreakCracks(ctx, enemy);
   ctx.fillStyle = broken ? "#ffd166" : palette.accent;
   const eyeY = enemy.boss ? -8 : -3;
