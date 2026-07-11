@@ -1,4 +1,5 @@
 import {
+  BLINK_BUTTON,
   HERO_STRIKE_COLORS,
   HERO_STRIKE_WIDTH,
   PAUSE_BUTTON,
@@ -39,10 +40,10 @@ function drawTopHud(ctx: CanvasRenderingContext2D, state: HeroStrikeState) {
   ctx.textAlign = "right";
   ctx.fillStyle = HERO_STRIKE_COLORS.muted;
   ctx.font = "700 10px system-ui";
-  ctx.fillText("BEST", HERO_STRIKE_WIDTH - 28, 34);
+  ctx.fillText("WAVE", HERO_STRIKE_WIDTH - 28, 34);
   ctx.fillStyle = HERO_STRIKE_COLORS.gold;
   ctx.font = "900 19px system-ui";
-  ctx.fillText(state.highScore.toLocaleString(), HERO_STRIKE_WIDTH - 28, 61);
+  ctx.fillText(state.bossSpawned ? "FINAL" : `${state.waveIndex}/4`, HERO_STRIKE_WIDTH - 28, 61);
   ctx.textAlign = "left";
 
   ctx.fillStyle = "rgba(255,255,255,.08)";
@@ -55,29 +56,18 @@ function drawTopHud(ctx: CanvasRenderingContext2D, state: HeroStrikeState) {
   ctx.fillText(`LV.${state.player.level}`, 20, 112);
 }
 
-type SupportStatusItem = {
-  text: string;
-  color: string;
-};
+type SupportStatusItem = { text: string; color: string };
 
 function drawSupportStatus(ctx: CanvasRenderingContext2D, state: HeroStrikeState) {
   const active: SupportStatusItem[] = [];
-  if (state.player.homingMissileLevel > 0) {
-    active.push({ text: `MISSILE L${state.player.homingMissileLevel}`, color: HERO_STRIKE_COLORS.orange });
-  }
-  if (state.player.supportDroneLevel > 0) {
-    active.push({ text: `DRONE L${state.player.supportDroneLevel}`, color: HERO_STRIKE_COLORS.lime });
-  } else if (state.player.supportDroneTime > 0) {
-    active.push({ text: `DRONE ${Math.ceil(state.player.supportDroneTime)}s`, color: HERO_STRIKE_COLORS.lime });
-  }
-  if (state.player.timeWarp > 0) {
-    active.push({ text: `SLOW ${Math.ceil(state.player.timeWarp)}s`, color: HERO_STRIKE_COLORS.xp });
-  }
+  if (state.player.homingMissileLevel > 0) active.push({ text: `MISSILE L${state.player.homingMissileLevel}`, color: HERO_STRIKE_COLORS.orange });
+  if (state.player.supportDroneLevel > 0) active.push({ text: `DRONE L${state.player.supportDroneLevel}`, color: HERO_STRIKE_COLORS.lime });
+  if (state.player.sideCannonLevel > 0) active.push({ text: `SIDE L${state.player.sideCannonLevel}`, color: HERO_STRIKE_COLORS.cyan });
 
   let x = HERO_STRIKE_WIDTH - 28;
   ctx.textAlign = "right";
   ctx.font = "800 9px system-ui";
-  for (const item of active.reverse()) {
+  for (const item of active.slice(0, 2).reverse()) {
     const width = ctx.measureText(item.text).width + 14;
     roundedRect(ctx, x - width, 103, width, 18, 8);
     ctx.fillStyle = "rgba(4,10,24,.72)";
@@ -124,6 +114,38 @@ function drawHealthAndCombo(ctx: CanvasRenderingContext2D, state: HeroStrikeStat
     ctx.font = "900 9px system-ui";
     ctx.fillText("OVERDRIVE", HERO_STRIKE_WIDTH / 2, 177);
   }
+  ctx.textAlign = "left";
+}
+
+function drawBlink(ctx: CanvasRenderingContext2D, state: HeroStrikeState) {
+  const { x, y, radius } = BLINK_BUTTON;
+  const player = state.player;
+  const ratio = player.blinkCharges >= player.blinkMaxCharges || player.blinkRechargeDuration <= 0
+    ? 1
+    : 1 - Math.max(0, player.blinkRecharge) / player.blinkRechargeDuration;
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.fillStyle = "rgba(4,10,24,.78)";
+  ctx.beginPath();
+  ctx.arc(0, 0, radius, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = player.blinkCharges > 0 ? HERO_STRIKE_COLORS.cyan : "rgba(255,255,255,.18)";
+  ctx.lineWidth = 4;
+  ctx.stroke();
+  if (player.blinkCharges < player.blinkMaxCharges) {
+    ctx.strokeStyle = HERO_STRIKE_COLORS.cyan;
+    ctx.lineWidth = 5;
+    ctx.beginPath();
+    ctx.arc(0, 0, radius - 4, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * ratio);
+    ctx.stroke();
+  }
+  ctx.fillStyle = player.blinkCharges > 0 ? HERO_STRIKE_COLORS.cyan : HERO_STRIKE_COLORS.muted;
+  ctx.textAlign = "center";
+  ctx.font = "1000 20px system-ui";
+  ctx.fillText("»", 0, 6);
+  ctx.font = "900 9px system-ui";
+  ctx.fillText(`${player.blinkCharges}/${player.blinkMaxCharges}`, 0, 23);
+  ctx.restore();
   ctx.textAlign = "left";
 }
 
@@ -191,14 +213,19 @@ function drawPauseButton(ctx: CanvasRenderingContext2D) {
   ctx.fillRect(PAUSE_BUTTON.x + 2, PAUSE_BUTTON.y - 8, 4, 16);
 }
 
+function showsCombatHud(state: HeroStrikeState) {
+  return state.phase === "playing" || state.phase === "paused" || state.phase === "level-up" || state.phase === "stage-clear";
+}
+
 export function drawHeroStrikeHud(ctx: CanvasRenderingContext2D, state: HeroStrikeState) {
-  if (state.phase !== "title") {
+  if (showsCombatHud(state)) {
     drawTopHud(ctx, state);
     drawSupportStatus(ctx, state);
     drawHealthAndCombo(ctx, state);
+    drawBlink(ctx, state);
     drawUltimate(ctx, state);
     drawBossBar(ctx, state);
-    drawPauseButton(ctx);
+    if (state.phase === "playing") drawPauseButton(ctx);
   }
   drawHeroStrikeOverlay(ctx, state);
 }
