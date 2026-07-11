@@ -1,5 +1,6 @@
 import { HERO_STRIKE_COLORS, HERO_STRIKE_PLAYER_Y, HERO_STRIKE_WIDTH } from "./heroStrikeConfig";
 import { addFloatingText } from "./heroStrikeEffects";
+import { getDifficultyProfile } from "./heroStrikeLoadout";
 import { grantResearchData } from "./heroStrikeMetaProgress";
 import { resetStageObjective, resolveStageObjective } from "./heroStrikeObjectives";
 import { spawnStageReward } from "./heroStrikePickups";
@@ -13,8 +14,9 @@ export function tickHeroStrikeStage(state: HeroStrikeState, dt: number) {
 
 export function completeHeroStrikeStage(state: HeroStrikeState) {
   const stage = getHeroStrikeStage(state.stageIndex);
+  const difficulty = getDifficultyProfile(state.loadout.difficulty);
   state.bossDefeated = true;
-  state.score += stage.clearBonus;
+  state.score += Math.round(stage.clearBonus * difficulty.score);
   state.bullets = state.bullets.filter((bullet) => !bullet.enemy);
   state.missiles = [];
   state.enemies = [];
