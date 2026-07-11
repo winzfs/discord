@@ -1,14 +1,25 @@
 name: Verify Web
 
 on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "apps/web/**"
+      - "packages/**"
+      - "docs/**"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
+      - ".github/workflows/verify-web.yml"
   push:
     branches:
       - main
     paths:
       - "apps/web/**"
       - "packages/**"
-      - "pnpm-lock.yaml"
       - "package.json"
+      - "pnpm-lock.yaml"
       - "pnpm-workspace.yaml"
       - ".github/workflows/verify-web.yml"
   workflow_dispatch:
