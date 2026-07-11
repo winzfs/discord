@@ -74,11 +74,30 @@ function drawProtocolCard(
   );
 }
 
+function drawContinueCard(ctx: CanvasRenderingContext2D, nextStageName: string) {
+  roundedRect(ctx, 76, 405, HERO_STRIKE_WIDTH - 152, 156, 24);
+  ctx.fillStyle = "rgba(13,26,48,.97)";
+  ctx.fill();
+  ctx.strokeStyle = HERO_STRIKE_COLORS.orange;
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  ctx.fillStyle = HERO_STRIKE_COLORS.orange;
+  ctx.font = "900 36px system-ui";
+  ctx.fillText("▶", HERO_STRIKE_WIDTH / 2, 460);
+  ctx.fillStyle = HERO_STRIKE_COLORS.white;
+  ctx.font = "1000 21px system-ui";
+  ctx.fillText("다음 작전", HERO_STRIKE_WIDTH / 2, 499);
+  ctx.fillStyle = HERO_STRIKE_COLORS.muted;
+  ctx.font = "800 11px system-ui";
+  ctx.fillText(nextStageName, HERO_STRIKE_WIDTH / 2, 526);
+}
+
 export function drawHeroStrikeProtocolReward(ctx: CanvasRenderingContext2D, state: HeroStrikeState) {
   const stage = getCurrentHeroStrikeStage(state);
   const nextStage = getHeroStrikeStage(state.stageIndex + 1);
   const difficulty = getDifficultyProfile(state.loadout.difficulty);
   const clearScore = Math.round(stage.clearBonus * difficulty.score);
+  const hasProtocol = state.protocolChoices.length > 0;
 
   ctx.fillStyle = "rgba(2,6,16,.9)";
   ctx.fillRect(0, 0, HERO_STRIKE_WIDTH, HERO_STRIKE_HEIGHT);
@@ -102,14 +121,18 @@ export function drawHeroStrikeProtocolReward(ctx: CanvasRenderingContext2D, stat
 
   ctx.fillStyle = HERO_STRIKE_COLORS.orange;
   ctx.font = "900 13px system-ui";
-  ctx.fillText("다음 작전 프로토콜을 선택하세요", HERO_STRIKE_WIDTH / 2, 316);
+  ctx.fillText(hasProtocol ? "작전 프로토콜을 선택하세요" : "정비 완료 · 다음 작전으로 이동", HERO_STRIKE_WIDTH / 2, 316);
   ctx.fillStyle = HERO_STRIKE_COLORS.muted;
   ctx.font = "700 11px system-ui";
   ctx.fillText(`NEXT · ${nextStage.name}`, HERO_STRIKE_WIDTH / 2, 340);
 
-  state.protocolChoices.forEach((protocol, index) => drawProtocolCard(ctx, protocol, index));
+  if (hasProtocol) {
+    state.protocolChoices.forEach((protocol, index) => drawProtocolCard(ctx, protocol, index));
+  } else {
+    drawContinueCard(ctx, nextStage.name);
+  }
   ctx.fillStyle = HERO_STRIKE_COLORS.muted;
   ctx.font = "700 10px system-ui";
-  ctx.fillText("카드를 선택하면 다음 스테이지가 시작됩니다", HERO_STRIKE_WIDTH / 2, 654);
+  ctx.fillText(hasProtocol ? "카드를 선택하면 다음 스테이지가 시작됩니다" : "화면을 눌러 다음 스테이지 시작", HERO_STRIKE_WIDTH / 2, 654);
   ctx.textAlign = "left";
 }
