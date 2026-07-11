@@ -5,6 +5,7 @@ import {
   HERO_STRIKE_PLAYER_Y,
   HERO_STRIKE_WIDTH,
 } from "./heroStrikeConfig";
+import { applyHeroStrikeLoadout, readHeroStrikeLoadout, saveHeroStrikeLoadout } from "./heroStrikeLoadout";
 import { getResearchBonuses, getResearchRank, readResearchData } from "./heroStrikeMetaProgress";
 import { getStageObjective } from "./heroStrikeObjectives";
 import type { HeroStrikeStar, HeroStrikeState } from "./heroStrikeTypes";
@@ -34,6 +35,7 @@ export function createInitialHeroStrikeState(): HeroStrikeState {
   return {
     phase: "title",
     previousPhase: "playing",
+    loadout: readHeroStrikeLoadout(),
     elapsed: 0,
     stageElapsed: 0,
     score: 0,
@@ -137,9 +139,22 @@ export function createInitialHeroStrikeState(): HeroStrikeState {
   };
 }
 
+export function openHeroStrikeLoadout(state: HeroStrikeState) {
+  const selectedLoadout = { ...state.loadout };
+  const fresh = createInitialHeroStrikeState();
+  fresh.phase = "loadout";
+  fresh.highScore = state.highScore;
+  fresh.loadout = selectedLoadout;
+  Object.assign(state, fresh);
+}
+
 export function resetHeroStrikeState(state: HeroStrikeState) {
+  const selectedLoadout = { ...state.loadout };
+  saveHeroStrikeLoadout(selectedLoadout);
   const fresh = createInitialHeroStrikeState();
   fresh.phase = "playing";
   fresh.highScore = state.highScore;
+  fresh.loadout = selectedLoadout;
+  applyHeroStrikeLoadout(fresh);
   Object.assign(state, fresh);
 }
