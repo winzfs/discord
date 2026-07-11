@@ -104,7 +104,6 @@ function spawnElite(state: HeroStrikeState) {
 
 function spawnFormation(state: HeroStrikeState) {
   for (const unit of getNextFormation(state)) spawnEnemy(state, unit.kind, undefined, unit.x, unit.y);
-  state.waveBanner = Math.max(state.waveBanner, 0.8);
 }
 
 export function spawnBoss(state: HeroStrikeState) {
@@ -163,7 +162,7 @@ export function updateSpawning(state: HeroStrikeState, dt: number) {
 
   const enemyCap = 15 + Math.min(9, state.stageIndex);
   state.formationCooldown -= dt;
-  if (state.stageElapsed > 6 && state.formationCooldown <= 0 && state.enemies.length <= enemyCap - 4) {
+  if (state.stageElapsed > 6 && state.formationCooldown <= 0 && state.enemies.length <= enemyCap - 5) {
     spawnFormation(state);
     state.formationCooldown = getFormationInterval(state) * difficulty.spawnInterval;
     state.spawnCooldown = Math.max(state.spawnCooldown, 0.72);
