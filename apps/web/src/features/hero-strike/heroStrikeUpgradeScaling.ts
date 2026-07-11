@@ -28,16 +28,16 @@ export const HERO_STRIKE_WEAPON_UPGRADES = new Set<UpgradeId>([
   "critical-core",
 ]);
 
-export function getRapidFireInterval(level: number) {
-  return Math.max(0.07, 0.18 * Math.pow(0.84, level));
+export function getRapidFireInterval(level: number, baseInterval = 0.18) {
+  return Math.max(0.07, baseInterval * Math.pow(0.84, level));
 }
 
-export function getForwardBulletCount(level: number) {
-  return 1 + Math.max(0, level);
+export function getForwardBulletCount(level: number, baseCount = 1) {
+  return baseCount + Math.max(0, level);
 }
 
-export function getPowerCoreDamage(level: number) {
-  return 24 * Math.pow(1.22, Math.max(0, level));
+export function getPowerCoreDamage(level: number, baseDamage = 24) {
+  return baseDamage * Math.pow(1.22, Math.max(0, level));
 }
 
 export function getMagnetRadius(level: number) {
