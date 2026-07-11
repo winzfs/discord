@@ -1,3 +1,4 @@
+import { drawHeroStrikeAgencyWorld } from "./heroStrikeAgencyRenderer";
 import { getTracerImage } from "./heroStrikeAssets";
 import { HERO_STRIKE_COLORS } from "./heroStrikeConfig";
 import { drawHeroStrikeEnemy } from "./heroStrikeEnemyRenderer";
@@ -8,7 +9,6 @@ import type { HeroStrikeBullet, HeroStrikeState } from "./heroStrikeTypes";
 
 function drawFlowAura(ctx: CanvasRenderingContext2D, state: HeroStrikeState) {
   if (!isHeroStrikeFlowRush(state)) return;
-  const player = state.player;
   const pulse = Math.sin(state.elapsed * 14) * 0.5 + 0.5;
   ctx.strokeStyle = `rgba(255,209,102,${0.34 + pulse * 0.28})`;
   ctx.lineWidth = 2.5;
@@ -30,7 +30,6 @@ function drawFlowAura(ctx: CanvasRenderingContext2D, state: HeroStrikeState) {
   ctx.beginPath();
   ctx.ellipse(0, 14, 34, 14, 0, 0, Math.PI * 2);
   ctx.fill();
-  player.flowRush = Math.max(0, player.flowRush);
 }
 
 function drawTracer(ctx: CanvasRenderingContext2D, state: HeroStrikeState) {
@@ -249,6 +248,7 @@ function drawEffects(ctx: CanvasRenderingContext2D, state: HeroStrikeState) {
 }
 
 export function drawHeroStrikeEntities(ctx: CanvasRenderingContext2D, state: HeroStrikeState) {
+  drawHeroStrikeAgencyWorld(ctx, state);
   drawHeroStrikePickups(ctx, state);
   drawBullets(ctx, state);
   state.enemies.forEach((enemy) => drawHeroStrikeEnemy(ctx, enemy));
