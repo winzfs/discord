@@ -29,27 +29,27 @@ type LoadoutOption<T extends string> = {
 };
 
 export const PRIMARY_WEAPON_OPTIONS: readonly LoadoutOption<PrimaryWeaponId>[] = [
-  { id: "pulse-blasters", title: "펄스", icon: "✦", description: "고속 연사 · 6회마다 버스트" },
-  { id: "scatter-array", title: "산탄", icon: "≋", description: "근접 1.55배 · 넓은 확산" },
-  { id: "rail-driver", title: "레일", icon: "➤", description: "강한 관통 · BREAK 특화" },
+  { id: "pulse-blasters", title: "펄스", icon: "✦", description: "정렬 유지 · 연속 버스트" },
+  { id: "scatter-array", title: "산탄", icon: "≋", description: "근접 이동 · 높은 순간화력" },
+  { id: "rail-driver", title: "레일", icon: "➤", description: "약점 조준 · 관통과 BREAK" },
 ];
 
 export const SUPPORT_LOADOUT_OPTIONS: readonly LoadoutOption<SupportLoadoutId>[] = [
-  { id: "homing-missile", title: "미사일", icon: "◆", description: "추적 폭발탄 1단계" },
-  { id: "drone-wing", title: "드론", icon: "⌁", description: "양측 자동사격 1단계" },
-  { id: "side-cannons", title: "측면포", icon: "⋘", description: "대각 보조탄 1단계" },
+  { id: "homing-missile", title: "미사일", icon: "◆", description: "TEMPO 연동 추적 폭발" },
+  { id: "drone-wing", title: "드론", icon: "⌁", description: "이동 중 양측 보조사격" },
+  { id: "side-cannons", title: "측면포", icon: "⋘", description: "측면 정렬 보조탄" },
 ];
 
 export const TACTICAL_LOADOUT_OPTIONS: readonly LoadoutOption<TacticalLoadoutId>[] = [
   { id: "shield-matrix", title: "방벽", icon: "⬡", description: "보호막 2칸 추가" },
-  { id: "salvage-magnet", title: "자석", icon: "◎", description: "회수 범위 1단계" },
-  { id: "pulse-battery", title: "배터리", icon: "◉", description: "궁극기 성장 1단계" },
+  { id: "salvage-magnet", title: "자석", icon: "◎", description: "이동 회수 범위 강화" },
+  { id: "pulse-battery", title: "배터리", icon: "◉", description: "궁극기 획득 강화" },
 ];
 
 export const DIFFICULTY_OPTIONS: readonly LoadoutOption<HeroStrikeDifficulty>[] = [
   { id: "recruit", title: "신병", icon: "Ⅰ", description: "적 약화 · 보상 85%" },
-  { id: "agent", title: "요원", icon: "Ⅱ", description: "표준 난이도와 보상" },
-  { id: "legend", title: "전설", icon: "Ⅲ", description: "적 강화 · 보상 증가" },
+  { id: "agent", title: "요원", icon: "Ⅱ", description: "표준 패턴과 보상" },
+  { id: "legend", title: "전설", icon: "Ⅲ", description: "빠른 압박 · 보상 증가" },
 ];
 
 export type HeroStrikeDifficultyProfile = {
@@ -72,12 +72,12 @@ export function getDifficultyProfile(difficulty: HeroStrikeDifficulty) {
 
 export function getPrimaryWeaponProfile(primary: PrimaryWeaponId) {
   if (primary === "scatter-array") {
-    return { damage: 12, fireInterval: 0.25, bulletSpeed: 720, bulletCount: 3, spread: 0.2, pierce: 0 };
+    return { damage: 12, fireInterval: 0.25, bulletSpeed: 700, bulletCount: 3, spread: 0.2, pierce: 0 };
   }
   if (primary === "rail-driver") {
-    return { damage: 52, fireInterval: 0.42, bulletSpeed: 1050, bulletCount: 1, spread: 0.04, pierce: 1 };
+    return { damage: 52, fireInterval: 0.42, bulletSpeed: 950, bulletCount: 1, spread: 0.07, pierce: 1 };
   }
-  return { damage: 22, fireInterval: 0.17, bulletSpeed: 820, bulletCount: 1, spread: 0.1, pierce: 0 };
+  return { damage: 22, fireInterval: 0.17, bulletSpeed: 790, bulletCount: 1, spread: 0.11, pierce: 0 };
 }
 
 function isLoadout(value: unknown): value is HeroStrikeLoadout {
