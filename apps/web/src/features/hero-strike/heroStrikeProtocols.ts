@@ -6,7 +6,7 @@ import type {
 
 type ProtocolMetadata = Omit<StageProtocolOption, "description" | "currentLevel" | "nextLevel" | "maxLevel">;
 
-const MAX_PROTOCOL_LEVEL = 3;
+const MAX_PROTOCOL_LEVEL = 2;
 
 const PROTOCOL_POOL: ProtocolMetadata[] = [
   { id: "vital-core", title: "생체 코어", icon: "♥", rarity: "rare" },
@@ -28,10 +28,10 @@ function shuffle<T>(items: T[]) {
 function describeProtocol(id: StageProtocolId, level: number): string {
   switch (id) {
     case "vital-core": return `최대 체력 +1 · 체력 ${level + 1} 회복`;
-    case "reactor-boost": return `전체 무기 피해 누적 +${level * 10}%`;
-    case "precision-link": return `치명타 +${level * 6}% · 배율 +${(level * 0.12).toFixed(2)}`;
-    case "pulse-sync": return `모든 자동사격 간격 누적 -${level * 7}%`;
-    case "blink-capacitor": return level >= 3 ? "블링크 최대 4회 · 재충전 3.8초" : `블링크 최대 ${2 + level}회 · 재충전 단축`;
+    case "reactor-boost": return `전체 무기 피해 누적 +${level * 7}%`;
+    case "precision-link": return `치명타 +${level * 4}% · 배율 +${(level * 0.08).toFixed(2)}`;
+    case "pulse-sync": return `모든 자동사격 간격 누적 -${level * 4}%`;
+    case "blink-capacitor": return level >= 2 ? "블링크 최대 3회 · 재충전 4.4초" : "블링크 최대 3회 · 재충전 단축";
   }
   return "";
 }
@@ -67,19 +67,19 @@ export function applyStageProtocol(state: HeroStrikeState, id: StageProtocolId) 
       player.hp = Math.min(player.maxHp, player.hp + nextLevel + 1);
       break;
     case "reactor-boost":
-      player.campaignDamageMultiplier *= 1.1;
+      player.campaignDamageMultiplier *= 1.07;
       break;
     case "precision-link":
-      player.bonusCriticalChance = nextLevel * 0.06;
-      player.bonusCriticalMultiplier = nextLevel * 0.12;
+      player.bonusCriticalChance = nextLevel * 0.04;
+      player.bonusCriticalMultiplier = nextLevel * 0.08;
       break;
     case "pulse-sync":
-      player.campaignFireRateMultiplier *= 0.93;
+      player.campaignFireRateMultiplier *= 0.96;
       break;
     case "blink-capacitor":
-      player.blinkMaxCharges = Math.min(4, 2 + nextLevel);
+      player.blinkMaxCharges = 3;
       player.blinkCharges = player.blinkMaxCharges;
-      player.blinkRechargeDuration = Math.max(3.8, 5.5 - nextLevel * 0.55);
+      player.blinkRechargeDuration = Math.max(4.4, 5.5 - nextLevel * 0.55);
       player.blinkRecharge = 0;
       break;
   }

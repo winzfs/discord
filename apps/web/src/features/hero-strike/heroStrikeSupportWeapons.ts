@@ -1,3 +1,7 @@
+import {
+  getHeroStrikeSupportDamageMultiplier,
+  getHeroStrikeSupportIntervalMultiplier,
+} from "./heroStrikeAgency";
 import { applyBossBreakPressure, getBossBreakDamageMultiplier } from "./heroStrikeBossBreak";
 import {
   HERO_STRIKE_COLORS,
@@ -45,7 +49,7 @@ function nearestEnemy(state: HeroStrikeState, x: number, y: number) {
 }
 
 function criticalDamage(state: HeroStrikeState, damage: number) {
-  const chance = Math.min(0.75, state.player.criticalChance + state.player.bonusCriticalChance);
+  const chance = Math.min(0.45, state.player.criticalChance + state.player.bonusCriticalChance);
   const multiplier = state.player.criticalMultiplier + state.player.bonusCriticalMultiplier;
   return Math.random() < chance ? damage * multiplier : damage;
 }
@@ -56,23 +60,25 @@ function spawnMissile(state: HeroStrikeState, forcedSide?: -1 | 1) {
   const level = state.player.homingMissileLevel;
   const swarm = hasEvolution(state, "hunter-swarm");
   const side = forcedSide ?? (state.nextId % 2 === 0 ? -1 : 1);
+  const agencyDamage = getHeroStrikeSupportDamageMultiplier(state);
   state.missiles.push({
     id: state.nextId++,
     x: state.player.x + side * 18,
     y: state.player.y - 12,
-    vx: side * 80,
-    vy: -280,
-    speed: getMissileSpeed(level) * (swarm ? 1.08 : 1),
-    turnRate: getMissileTurnRate(level) * (swarm ? 1.12 : 1),
+    vx: side * 70,
+    vy: -250,
+    speed: getMissileSpeed(level) * (swarm ? 1.05 : 1),
+    turnRate: getMissileTurnRate(level) * (swarm ? 1.08 : 1),
     damage: criticalDamage(
       state,
-      (62 + state.player.damage * getMissileDamageScale(level))
+      (40 + state.player.damage * getMissileDamageScale(level))
         * state.player.campaignDamageMultiplier
+        * agencyDamage
         * getHeroStrikeFlowDamageMultiplier(state)
-        * (swarm ? 1.18 : 1),
+        * (swarm ? 1.1 : 1),
     ),
     radius: 7,
-    explosionRadius: getMissileExplosionRadius(level) * (swarm ? 1.22 : 1),
+    explosionRadius: getMissileExplosionRadius(level) * (swarm ? 1.15 : 1),
     life: 4.5,
     targetId: target.id,
   });
@@ -85,35 +91,37 @@ function spawnDroneVolley(state: HeroStrikeState) {
   const player = state.player;
   const level = Math.max(1, player.supportDroneLevel);
   const aegis = hasEvolution(state, "aegis-wing");
-  const criticalChance = Math.min(0.75, player.criticalChance + player.bonusCriticalChance);
+  const criticalChance = Math.min(0.45, player.criticalChance + player.bonusCriticalChance);
   const criticalMultiplier = player.criticalMultiplier + player.bonusCriticalMultiplier;
+  const agencyDamage = getHeroStrikeSupportDamageMultiplier(state);
   for (const side of [-1, 1] as const) {
     const critical = Math.random() < criticalChance;
     state.bullets.push({
       id: state.nextId++,
       x: player.x + side * 30,
       y: player.y - 8,
-      vx: side * (18 + level * 4),
-      vy: -830,
-      radius: aegis ? 4 : 3.4,
+      vx: side * (16 + level * 3),
+      vy: -810,
+      radius: aegis ? 3.8 : 3.2,
       damage: player.damage
         * player.campaignDamageMultiplier
+        * agencyDamage
         * getHeroStrikeFlowDamageMultiplier(state)
         * getDroneDamageScale(level, false)
-        * (aegis ? 1.38 : 1)
+        * (aegis ? 1.2 : 1)
         * (critical ? criticalMultiplier : 1),
-      pierce: (level >= 4 ? 1 : 0) + (aegis ? 1 : 0),
+      pierce: (level >= 3 ? 1 : 0) + (aegis ? 1 : 0),
       enemy: false,
-      life: 1.35,
+      life: 1.3,
       color: critical || aegis ? HERO_STRIKE_COLORS.gold : HERO_STRIKE_COLORS.lime,
       explosionRadius: player.explosiveRoundsLevel > 0
-        ? getExplosionRadius(player.explosiveRoundsLevel) * (aegis ? 0.7 : 0.55)
+        ? getExplosionRadius(player.explosiveRoundsLevel) * (aegis ? 0.62 : 0.48)
         : undefined,
-      chain: player.chainCoreLevel,
+      chain: Math.min(1, player.chainCoreLevel),
       style: "support",
       originY: player.y,
-      breakPower: 0.55,
-      impactForce: 11,
+      breakPower: 0.42,
+      impactForce: 9,
       critical,
     });
   }
@@ -145,26 +153,26 @@ function updateMissileHeading(state: HeroStrikeState, missile: HeroStrikeMissile
 
 function explodeMissile(state: HeroStrikeState, missile: HeroStrikeMissile) {
   addRing(state, missile.x, missile.y, HERO_STRIKE_COLORS.orange, 18);
-  addBurst(state, missile.x, missile.y, HERO_STRIKE_COLORS.orange, 12, 175, 3);
+  addBurst(state, missile.x, missile.y, HERO_STRIKE_COLORS.orange, 10, 165, 3);
   const radiusSquared = missile.explosionRadius * missile.explosionRadius;
   const targets = [...state.enemies];
   for (const enemy of targets) {
     if (enemy.dead || distanceSquared(missile.x, missile.y, enemy.x, enemy.y) > radiusSquared) continue;
-    const baseDamage = missile.damage * (enemy.boss ? 0.72 : 1);
+    const baseDamage = missile.damage * (enemy.boss ? 0.65 : 1);
     const damage = baseDamage * getBossBreakDamageMultiplier(enemy);
     state.damageDealt += Math.min(enemy.hp, Math.max(0, damage));
     enemy.hp -= damage;
     enemy.hitFlash = Math.max(enemy.hitFlash, 0.1);
     enemy.hitPulse = Math.max(enemy.hitPulse, 0.1);
-    enemy.recoilY += -18;
-    applyBossBreakPressure(state, enemy, damage, 0.72);
+    enemy.recoilY += -14;
+    applyBossBreakPressure(state, enemy, damage, 0.58);
     if (enemy.hp <= 0) {
       enemy.dead = true;
       awardEnemyDefeat(state, enemy);
       if (state.phase !== "playing") break;
     }
   }
-  state.hitStop = Math.max(state.hitStop, 0.018);
+  state.hitStop = Math.max(state.hitStop, 0.014);
   state.enemies = state.enemies.filter((enemy) => !enemy.dead);
   missile.life = 0;
 }
@@ -196,6 +204,7 @@ function updateMissiles(state: HeroStrikeState, dt: number) {
 export function updateSupportWeapons(state: HeroStrikeState, dt: number) {
   const player = state.player;
   const flowRate = getHeroStrikeFlowFireRateMultiplier(state);
+  const agencyInterval = getHeroStrikeSupportIntervalMultiplier(state);
 
   if (player.homingMissileLevel > 0) {
     player.missileCooldown -= dt;
@@ -204,10 +213,11 @@ export function updateSupportWeapons(state: HeroStrikeState, dt: number) {
         spawnMissile(state, -1);
         spawnMissile(state, 1);
       } else spawnMissile(state);
-      const swarmRate = hasEvolution(state, "hunter-swarm") ? 0.92 : 1;
+      const swarmRate = hasEvolution(state, "hunter-swarm") ? 0.95 : 1;
       player.missileCooldown = getMissileFireInterval(player.homingMissileLevel)
         * player.campaignFireRateMultiplier
         * flowRate
+        * agencyInterval
         * swarmRate;
     }
   } else player.missileCooldown = 0;
@@ -216,10 +226,11 @@ export function updateSupportWeapons(state: HeroStrikeState, dt: number) {
     player.supportDroneCooldown -= dt;
     if (player.supportDroneCooldown <= 0) {
       spawnDroneVolley(state);
-      const aegisRate = hasEvolution(state, "aegis-wing") ? 0.86 : 1;
+      const aegisRate = hasEvolution(state, "aegis-wing") ? 0.92 : 1;
       player.supportDroneCooldown = getDroneFireInterval(player.supportDroneLevel, false)
         * player.campaignFireRateMultiplier
         * flowRate
+        * agencyInterval
         * aegisRate;
     }
   } else player.supportDroneCooldown = 0;

@@ -2,35 +2,37 @@ import { getDifficultyProfile } from "./heroStrikeLoadout";
 import type { HeroStrikeStage } from "./heroStrikeStages";
 import type { HeroStrikeState } from "./heroStrikeTypes";
 
+export const HERO_STRIKE_LEVEL_CAP = 18;
+
 export function getNextXpRequirement(level: number) {
   const safeLevel = Math.max(1, level);
-  return Math.round(24 + safeLevel * 10 + Math.pow(safeLevel, 1.28) * 4.2);
+  return Math.round(72 + safeLevel * 18 + Math.pow(safeLevel, 1.35) * 8);
 }
 
 export function getNormalEnemyHealthScale(state: HeroStrikeState, stageDuration: number) {
   const stageProgress = Math.min(1, state.stageElapsed / Math.max(1, stageDuration));
   const difficulty = getDifficultyProfile(state.loadout.difficulty);
-  return (1 + state.stageIndex * 0.15 + stageProgress * 0.3) * difficulty.enemyHealth;
+  return (1.12 + state.stageIndex * 0.22 + stageProgress * 0.45) * difficulty.enemyHealth;
 }
 
 export function getBossHealth(state: HeroStrikeState, stage: HeroStrikeStage) {
-  const expectedLevel = 4 + state.stageIndex * 2.1;
+  const expectedLevel = 3 + state.stageIndex * 1.35;
   const overLevel = Math.max(0, state.player.level - expectedLevel);
-  const overLevelScale = 1 + Math.min(0.16, overLevel * 0.02);
+  const overLevelScale = 1 + Math.min(0.28, overLevel * 0.035);
   const difficulty = getDifficultyProfile(state.loadout.difficulty);
-  return Math.round(stage.bossHpBase * overLevelScale * difficulty.enemyHealth);
+  return Math.round(stage.bossHpBase * 1.12 * overLevelScale * difficulty.enemyHealth);
 }
 
 export function getEnemyBulletCap(state: HeroStrikeState) {
   const lowHealthRelief = state.player.hp <= 1 ? 14 : state.player.hp <= 2 ? 7 : 0;
-  const bossBonus = state.bossSpawned ? 18 : 0;
-  const difficultyOffset = state.loadout.difficulty === "legend" ? 8 : state.loadout.difficulty === "recruit" ? -6 : 0;
-  return Math.max(48, Math.min(136, 62 + state.stageIndex * 5 + bossBonus + difficultyOffset - lowHealthRelief));
+  const bossBonus = state.bossSpawned ? 14 : 0;
+  const difficultyOffset = state.loadout.difficulty === "legend" ? 7 : state.loadout.difficulty === "recruit" ? -6 : 0;
+  return Math.max(44, Math.min(112, 54 + state.stageIndex * 4 + bossBonus + difficultyOffset - lowHealthRelief));
 }
 
 export function getSpawnReliefMultiplier(state: HeroStrikeState) {
-  if (state.player.hp <= 1) return 1.2;
-  if (state.player.hp <= 2) return 1.1;
+  if (state.player.hp <= 1) return 1.18;
+  if (state.player.hp <= 2) return 1.09;
   return 1;
 }
 

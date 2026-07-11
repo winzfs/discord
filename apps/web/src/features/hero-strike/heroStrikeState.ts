@@ -1,3 +1,5 @@
+import { resetHeroStrikeAgency } from "./heroStrikeAgency";
+import { getNextXpRequirement } from "./heroStrikeBalance";
 import {
   HERO_STRIKE_HEIGHT,
   HERO_STRIKE_HIGH_SCORE_KEY,
@@ -85,7 +87,7 @@ export function createInitialHeroStrikeState(): HeroStrikeState {
       ultimateGainMultiplier: 1,
       level: 1,
       xp: 0,
-      nextXp: 38,
+      nextXp: getNextXpRequirement(1),
       xpGainMultiplier: research.xpMultiplier,
       scoreMultiplier: 1,
       campaignDamageMultiplier: research.damageMultiplier,
@@ -165,6 +167,7 @@ export function openHeroStrikeLoadout(state: HeroStrikeState) {
   fresh.highScore = state.highScore;
   fresh.loadout = selectedLoadout;
   Object.assign(state, fresh);
+  resetHeroStrikeAgency(state);
 }
 
 export function resetHeroStrikeState(state: HeroStrikeState) {
@@ -176,4 +179,5 @@ export function resetHeroStrikeState(state: HeroStrikeState) {
   fresh.loadout = selectedLoadout;
   applyHeroStrikeLoadout(fresh);
   Object.assign(state, fresh);
+  resetHeroStrikeAgency(state);
 }

@@ -1,3 +1,4 @@
+import { updateHeroStrikeAgencyMovement, updateHeroStrikeArtillery } from "./heroStrikeAgency";
 import { updateBossPhase } from "./heroStrikeBossPhases";
 import {
   HERO_STRIKE_COLORS,
@@ -50,12 +51,16 @@ function updateBlinkRecharge(state: HeroStrikeState, dt: number) {
 
 function updatePlayer(state: HeroStrikeState, dt: number) {
   const player = state.player;
+  const beforeX = player.x;
+  const beforeY = player.y;
   const responseRate = getHeroStrikeFlowMovementResponse(state, HERO_STRIKE_PLAYER_RESPONSE);
   const response = 1 - Math.exp(-responseRate * dt);
   player.x += (player.targetX - player.x) * response;
   player.y += (player.targetY - player.y) * response;
   player.x = Math.max(25, Math.min(HERO_STRIKE_WIDTH - 25, player.x));
   player.y = Math.max(330, Math.min(HERO_STRIKE_HEIGHT - 62, player.y));
+  const movedDistance = Math.hypot(player.x - beforeX, player.y - beforeY);
+  updateHeroStrikeAgencyMovement(state, movedDistance, dt);
   player.invulnerable = Math.max(0, player.invulnerable - dt);
   player.comboTimer = Math.max(0, player.comboTimer - dt);
   if (player.comboTimer <= 0) player.combo = 0;
@@ -65,7 +70,7 @@ function updatePlayer(state: HeroStrikeState, dt: number) {
 function updateEnemies(state: HeroStrikeState, dt: number) {
   for (const enemy of state.enemies) {
     if (enemy.boss) updateBossPhase(state, enemy);
-    updateEnemyMovement(enemy, dt);
+    updateEnemyMovement(state, enemy, dt);
     if ((enemy.breakStun ?? 0) <= 0) updateEnemyFire(state, enemy, dt);
     if (!enemy.boss && enemy.y > HERO_STRIKE_HEIGHT + 50) enemy.dead = true;
   }
@@ -126,6 +131,7 @@ export function tickHeroStrike(state: HeroStrikeState, dt: number) {
   updateHeroStrikeFlow(state, dt);
   tickHeroStrikeStage(state, dt);
   updatePlayer(state, dt);
+  updateHeroStrikeArtillery(state, dt);
   updatePlayerFire(state, dt);
   updateSpawning(state, dt);
   updateEnemies(state, dt);
