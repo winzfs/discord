@@ -1,5 +1,6 @@
 import { getNextXpRequirement } from "./heroStrikeBalance";
 import { unlockEligibleEvolutions } from "./heroStrikeEvolutions";
+import { getPrimaryWeaponProfile } from "./heroStrikeLoadout";
 import {
   describeUpgradeLevel,
   getCriticalChance,
@@ -45,12 +46,21 @@ function shuffle<T>(items: T[]) {
   return result;
 }
 
+function describeUpgradeForLoadout(state: HeroStrikeState, id: UpgradeId, level: number) {
+  const primary = getPrimaryWeaponProfile(state.loadout.primary);
+  if (id === "rapid-fire") return `공격 간격 ${getRapidFireInterval(level, primary.fireInterval).toFixed(2)}초`;
+  if (id === "twin-shot") return `정면 탄환 ${getForwardBulletCount(level, primary.bulletCount)}발`;
+  if (id === "power-core") return `기본 공격력 ${Math.round(getPowerCoreDamage(level, primary.damage))}`;
+  if (id === "piercing") return `기본탄 관통 ${primary.pierce + level}회`;
+  return describeUpgradeLevel(id, level);
+}
+
 function makeUpgradeOption(state: HeroStrikeState, metadata: UpgradeMetadata): UpgradeOption {
   const currentLevel = state.upgradeLevels[metadata.id] ?? 0;
   const nextLevel = currentLevel + 1;
   return {
     ...metadata,
-    description: describeUpgradeLevel(metadata.id, nextLevel),
+    description: describeUpgradeForLoadout(state, metadata.id, nextLevel),
     currentLevel,
     nextLevel,
     maxLevel: HERO_STRIKE_UPGRADE_MAX_LEVELS[metadata.id],
@@ -96,14 +106,15 @@ function continuePendingLevelUps(state: HeroStrikeState) {
 
 export function applyUpgrade(state: HeroStrikeState, id: UpgradeId) {
   const player = state.player;
+  const primary = getPrimaryWeaponProfile(state.loadout.primary);
   const nextLevel = (state.upgradeLevels[id] ?? 0) + 1;
   state.upgradeLevels[id] = nextLevel;
 
   switch (id) {
-    case "rapid-fire": player.fireInterval = getRapidFireInterval(nextLevel); break;
-    case "twin-shot": player.bulletCount = getForwardBulletCount(nextLevel); break;
-    case "power-core": player.damage = getPowerCoreDamage(nextLevel); break;
-    case "piercing": player.pierce = nextLevel; break;
+    case "rapid-fire": player.fireInterval = getRapidFireInterval(nextLevel, primary.fireInterval); break;
+    case "twin-shot": player.bulletCount = getForwardBulletCount(nextLevel, primary.bulletCount); break;
+    case "power-core": player.damage = getPowerCoreDamage(nextLevel, primary.damage); break;
+    case "piercing": player.pierce = primary.pierce + nextLevel; break;
     case "magnet": player.magnetRadius = getMagnetRadius(nextLevel); break;
     case "shield":
       player.shield = Math.min(5, player.shield + getShieldGrant(nextLevel));
