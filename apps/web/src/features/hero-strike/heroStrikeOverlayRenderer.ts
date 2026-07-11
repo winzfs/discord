@@ -1,4 +1,5 @@
 import { HERO_STRIKE_COLORS, HERO_STRIKE_HEIGHT, HERO_STRIKE_WIDTH, UPGRADE_CARD_BOUNDS } from "./heroStrikeConfig";
+import { drawHeroStrikeLoadout } from "./heroStrikeLoadoutRenderer";
 import { drawHeroStrikeProtocolReward } from "./heroStrikeProtocolRenderer";
 import { drawHeroStrikeResult } from "./heroStrikeResultRenderer";
 import { getCurrentHeroStrikeStage, HERO_STRIKE_STAGES } from "./heroStrikeStages";
@@ -112,6 +113,7 @@ export function drawHeroStrikeOverlay(ctx: CanvasRenderingContext2D, state: Hero
   drawStageBanner(ctx, state);
   drawBossWarning(ctx, state);
   if (state.phase === "title") drawHeroStrikeTitle(ctx, state);
+  else if (state.phase === "loadout") drawHeroStrikeLoadout(ctx, state);
   else if (state.phase === "level-up") drawUpgradeCards(ctx, state);
   else if (state.phase === "stage-clear") drawHeroStrikeProtocolReward(ctx, state);
   else if (state.phase === "game-over" || state.phase === "victory") drawHeroStrikeResult(ctx, state);
