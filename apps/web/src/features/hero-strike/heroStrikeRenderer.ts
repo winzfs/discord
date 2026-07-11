@@ -1,3 +1,4 @@
+import { drawHeroStrikeAgencyHud } from "./heroStrikeAgencyRenderer";
 import { drawHeroStrikeCombatProgress } from "./heroStrikeCombatProgressRenderer";
 import { HERO_STRIKE_HEIGHT, HERO_STRIKE_WIDTH } from "./heroStrikeConfig";
 import { drawHeroStrikeBackdrop } from "./heroStrikeBackdropRenderer";
@@ -15,6 +16,7 @@ export function renderHeroStrike(ctx: CanvasRenderingContext2D, state: HeroStrik
   drawHeroStrikeEntities(ctx, state);
   drawHeroStrikeCombatProgress(ctx, state);
   drawHeroStrikeHud(ctx, state);
+  drawHeroStrikeAgencyHud(ctx, state);
   drawHeroStrikeGrowthHud(ctx, state);
   if (state.flash > 0) {
     ctx.fillStyle = `rgba(255,255,255,${Math.min(0.45, state.flash)})`;
