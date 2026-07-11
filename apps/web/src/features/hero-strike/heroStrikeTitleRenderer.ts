@@ -1,4 +1,5 @@
 import { HERO_STRIKE_COLORS, HERO_STRIKE_HEIGHT, HERO_STRIKE_WIDTH } from "./heroStrikeConfig";
+import { getLoadoutSummary } from "./heroStrikeLoadout";
 import { getResearchProgress } from "./heroStrikeMetaProgress";
 import type { HeroStrikeState } from "./heroStrikeTypes";
 
@@ -47,12 +48,12 @@ export function drawHeroStrikeTitle(ctx: CanvasRenderingContext2D, state: HeroSt
   ctx.fill();
   ctx.fillStyle = "#111827";
   ctx.font = "900 19px system-ui";
-  ctx.fillText("작전 시작", HERO_STRIKE_WIDTH / 2, 480);
+  ctx.fillText("출격 준비", HERO_STRIKE_WIDTH / 2, 480);
   ctx.fillStyle = HERO_STRIKE_COLORS.gold;
-  ctx.font = "800 12px system-ui";
-  ctx.fillText(`BEST  ${state.highScore.toLocaleString()}`, HERO_STRIKE_WIDTH / 2, 535);
+  ctx.font = "800 11px system-ui";
+  ctx.fillText(getLoadoutSummary(state.loadout), HERO_STRIKE_WIDTH / 2, 530);
   ctx.fillStyle = HERO_STRIKE_COLORS.muted;
   ctx.font = "700 10px system-ui";
-  ctx.fillText("드래그 이동 · 자동 사격 · 궁극기 버튼", HERO_STRIKE_WIDTH / 2, 560);
+  ctx.fillText(`BEST ${state.highScore.toLocaleString()} · 장비와 난이도를 선택하세요`, HERO_STRIKE_WIDTH / 2, 555);
   ctx.textAlign = "left";
 }
