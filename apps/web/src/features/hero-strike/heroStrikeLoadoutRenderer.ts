@@ -69,7 +69,7 @@ function drawOptionRow(
 }
 
 export function drawHeroStrikeLoadout(ctx: CanvasRenderingContext2D, state: HeroStrikeState) {
-  ctx.fillStyle = "rgba(2,6,16,.94)";
+  ctx.fillStyle = "#020610";
   ctx.fillRect(0, 0, HERO_STRIKE_WIDTH, HERO_STRIKE_HEIGHT);
 
   roundedRect(ctx, HERO_STRIKE_LOADOUT_BACK_BOUNDS, 10);
