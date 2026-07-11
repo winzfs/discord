@@ -101,6 +101,10 @@ export function handleHeroStrikePointer(state: HeroStrikeState, x: number, y: nu
   if (state.phase === "stage-clear") {
     resetPointer(state);
     if (!pressed) return;
+    if (state.protocolChoices.length === 0) {
+      advanceHeroStrikeStage(state);
+      return;
+    }
     const choice = state.protocolChoices[selectedCardIndex(x, y)];
     if (!choice) return;
     applyStageProtocol(state, choice.id);
