@@ -32,7 +32,7 @@ export const HERO_STRIKE_COLORS = {
 } as const;
 
 export const ULTIMATE_BUTTON = { x: 354, y: 680, radius: 43 } as const;
-export const BLINK_BUTTON = { x: 282, y: 686, radius: 34 } as const;
+export const BLINK_BUTTON = { x: 270, y: 686, radius: 34 } as const;
 export const PAUSE_BUTTON = { x: 390, y: 132, radius: 19 } as const;
 
 export const UPGRADE_CARD_BOUNDS = [
