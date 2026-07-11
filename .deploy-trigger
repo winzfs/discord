@@ -1,2 +1,3 @@
-deploy trigger: 2026-06-08T00:50:00Z
-reason: enable API CORS for Cloudflare Pages web app
+deploy trigger: 2026-07-11T07:50:00Z
+reason: force Cloudflare Pages to rebuild latest Hero Strike main commit
+source commit: 0e7e28560eca76925cf319775532b2a27f016c65
