@@ -1,6 +1,7 @@
 import { prepareHeroStrikeAgencyStage } from "./heroStrikeAgency";
 import { HERO_STRIKE_COLORS, HERO_STRIKE_PLAYER_Y, HERO_STRIKE_WIDTH } from "./heroStrikeConfig";
 import { addFloatingText } from "./heroStrikeEffects";
+import { unlockEligibleEvolutions } from "./heroStrikeEvolutions";
 import { getDifficultyProfile } from "./heroStrikeLoadout";
 import { grantResearchData } from "./heroStrikeMetaProgress";
 import { resetStageObjective, resolveStageObjective } from "./heroStrikeObjectives";
@@ -79,6 +80,7 @@ export function advanceHeroStrikeStage(state: HeroStrikeState) {
   state.phase = "playing";
   resetStageObjective(state, state.stageIndex);
   prepareHeroStrikeAgencyStage(state);
+  unlockEligibleEvolutions(state);
 
   spawnStageReward(state, clearedStageIndex);
   const stage = getHeroStrikeStage(state.stageIndex);
