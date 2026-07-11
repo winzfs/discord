@@ -77,10 +77,34 @@ function drawBossPhaseBanner(ctx: CanvasRenderingContext2D, state: HeroStrikeSta
   drawCenteredBanner(
     ctx,
     state.bossPhaseLabel,
-    "탄막 재구성 · 잠시 후 공격 재개",
+    "탄막 재구성 · BREAK 게이지 초기화",
     HERO_STRIKE_COLORS.red,
     290,
     Math.min(1, state.bossPhaseBanner * 1.8),
+  );
+}
+
+function drawFlowBanner(ctx: CanvasRenderingContext2D, state: HeroStrikeState) {
+  if (state.flowBanner <= 0) return;
+  drawCenteredBanner(
+    ctx,
+    "PULSE RUSH",
+    "화력·연사·기동력 상승 · 처치로 지속시간 연장",
+    HERO_STRIKE_COLORS.gold,
+    350,
+    Math.min(1, state.flowBanner * 1.7),
+  );
+}
+
+function drawBossBreakBanner(ctx: CanvasRenderingContext2D, state: HeroStrikeState) {
+  if (state.bossBreakBanner <= 0) return;
+  drawCenteredBanner(
+    ctx,
+    "BOSS BREAK",
+    "취약 상태 · 공격 집중!",
+    HERO_STRIKE_COLORS.gold,
+    300,
+    Math.min(1, state.bossBreakBanner * 1.8),
   );
 }
 
@@ -91,7 +115,7 @@ function drawEvolutionBanner(ctx: CanvasRenderingContext2D, state: HeroStrikeSta
     "WEAPON EVOLUTION",
     state.evolutionLabel,
     HERO_STRIKE_COLORS.gold,
-    365,
+    410,
     Math.min(1, state.evolutionBanner * 1.5),
   );
 }
@@ -120,5 +144,7 @@ export function drawHeroStrikeCombatProgress(ctx: CanvasRenderingContext2D, stat
   drawEvolutionTags(ctx, state);
   drawWaveBanner(ctx, state);
   drawBossPhaseBanner(ctx, state);
+  drawBossBreakBanner(ctx, state);
+  drawFlowBanner(ctx, state);
   drawEvolutionBanner(ctx, state);
 }
