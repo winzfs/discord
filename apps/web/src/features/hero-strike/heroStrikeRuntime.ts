@@ -66,7 +66,7 @@ function updateEnemies(state: HeroStrikeState, dt: number) {
   for (const enemy of state.enemies) {
     if (enemy.boss) updateBossPhase(state, enemy);
     updateEnemyMovement(enemy, dt);
-    updateEnemyFire(state, enemy, dt);
+    if ((enemy.breakStun ?? 0) <= 0) updateEnemyFire(state, enemy, dt);
     if (!enemy.boss && enemy.y > HERO_STRIKE_HEIGHT + 50) enemy.dead = true;
   }
   state.enemies = state.enemies.filter((enemy) => !enemy.dead);
