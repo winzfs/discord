@@ -37,14 +37,22 @@ const UPGRADE_POOL: UpgradeMetadata[] = [
   { id: "critical-core", title: "치명 코어", icon: "✧", rarity: "rare" },
 ];
 
-function shuffle<T>(items: T[]) {
-  const result = [...items];
-  for (let index = result.length - 1; index > 0; index -= 1) {
-    const target = Math.floor(Math.random() * (index + 1));
-    [result[index], result[target]] = [result[target], result[index]];
-  }
-  return result;
-}
+const PRIMARY_SYNERGY: Record<HeroStrikeState["loadout"]["primary"], readonly UpgradeId[]> = {
+  "pulse-blasters": ["rapid-fire", "twin-shot", "critical-core", "overclock"],
+  "scatter-array": ["twin-shot", "explosive-rounds", "power-core", "rapid-fire"],
+  "rail-driver": ["power-core", "piercing", "critical-core", "chain-core"],
+};
+
+const EVOLUTION_PARTNERS: Partial<Record<UpgradeId, UpgradeId>> = {
+  "rapid-fire": "twin-shot",
+  "twin-shot": "rapid-fire",
+  "homing-missile": "explosive-rounds",
+  "explosive-rounds": "homing-missile",
+  "chain-core": "critical-core",
+  "critical-core": "chain-core",
+  "drone-wing": "shield",
+  shield: "drone-wing",
+};
 
 function describeUpgradeForLoadout(state: HeroStrikeState, id: UpgradeId, level: number) {
   const primary = getPrimaryWeaponProfile(state.loadout.primary);
@@ -67,25 +75,73 @@ function makeUpgradeOption(state: HeroStrikeState, metadata: UpgradeMetadata): U
   };
 }
 
+function upgradeWeight(state: HeroStrikeState, upgrade: UpgradeOption) {
+  let weight = upgrade.rarity === "common" ? 6 : upgrade.rarity === "rare" ? 4 : 2.4;
+  const currentLevel = state.upgradeLevels[upgrade.id] ?? 0;
+  if (currentLevel > 0) weight += 3 + currentLevel * 0.7;
+  if (PRIMARY_SYNERGY[state.loadout.primary].includes(upgrade.id)) weight += 2.5;
+  if (upgrade.id === state.loadout.support) weight += 4;
+  const partner = EVOLUTION_PARTNERS[upgrade.id];
+  if (partner && (state.upgradeLevels[partner] ?? 0) > 0) weight += 3.5;
+  if (state.player.hp <= 2 && (upgrade.id === "shield" || upgrade.id === "magnet")) weight += 2;
+  return weight;
+}
+
+function weightedPick(state: HeroStrikeState, pool: UpgradeOption[]) {
+  const total = pool.reduce((sum, option) => sum + upgradeWeight(state, option), 0);
+  let roll = Math.random() * total;
+  for (const option of pool) {
+    roll -= upgradeWeight(state, option);
+    if (roll <= 0) return option;
+  }
+  return pool[pool.length - 1];
+}
+
+function pickUnique(state: HeroStrikeState, pool: UpgradeOption[], count: number) {
+  const remaining = [...pool];
+  const result: UpgradeOption[] = [];
+  while (remaining.length > 0 && result.length < count) {
+    const picked = weightedPick(state, remaining);
+    result.push(picked);
+    remaining.splice(remaining.indexOf(picked), 1);
+  }
+  return result;
+}
+
 function replaceLastChoice(choices: UpgradeOption[], upgrade: UpgradeOption) {
   const withoutDuplicate = choices.filter((choice) => choice.id !== upgrade.id);
   return [...withoutDuplicate.slice(0, 2), upgrade];
 }
 
-export function createUpgradeChoices(state: HeroStrikeState) {
-  const available = UPGRADE_POOL
+export function createUpgradeChoices(state: HeroStrikeState, excludedIds: readonly UpgradeId[] = []) {
+  const excluded = new Set(excludedIds);
+  const allAvailable = UPGRADE_POOL
     .filter((upgrade) => (state.upgradeLevels[upgrade.id] ?? 0) < HERO_STRIKE_UPGRADE_MAX_LEVELS[upgrade.id])
     .map((upgrade) => makeUpgradeOption(state, upgrade));
+  const preferred = allAvailable.filter((upgrade) => !excluded.has(upgrade.id));
+  const available = preferred.length >= 3 ? preferred : allAvailable;
 
-  let choices = shuffle(available).slice(0, 3);
-  const selectedSupport = available.find((upgrade) => upgrade.id === state.loadout.support);
+  let choices = pickUnique(state, available, 3);
+  const selectedSupport = allAvailable.find((upgrade) => upgrade.id === state.loadout.support);
   if (state.player.level <= 2 && selectedSupport && (state.upgradeLevels[state.loadout.support] ?? 0) === 1) {
     choices = replaceLastChoice(choices, selectedSupport);
   } else if (!choices.some((choice) => HERO_STRIKE_WEAPON_UPGRADES.has(choice.id))) {
-    const weapon = shuffle(available.filter((upgrade) => HERO_STRIKE_WEAPON_UPGRADES.has(upgrade.id)))[0];
+    const weaponPool = allAvailable.filter((upgrade) => HERO_STRIKE_WEAPON_UPGRADES.has(upgrade.id));
+    const weapon = weaponPool.length > 0 ? weightedPick(state, weaponPool) : undefined;
     if (weapon) choices = replaceLastChoice(choices, weapon);
   }
   return choices;
+}
+
+export function rerollUpgradeChoices(state: HeroStrikeState) {
+  if (state.phase !== "level-up" || state.upgradeRerolls <= 0) return false;
+  const previousIds = state.upgradeChoices.map((choice) => choice.id);
+  const choices = createUpgradeChoices(state, previousIds);
+  if (choices.length === 0) return false;
+  state.upgradeChoices = choices;
+  state.upgradeRerolls -= 1;
+  state.rerollsUsed += 1;
+  return true;
 }
 
 function continuePendingLevelUps(state: HeroStrikeState) {
