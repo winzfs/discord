@@ -1,6 +1,7 @@
 import { getRunGrade } from "./heroStrikeBalance";
 import { HERO_STRIKE_COLORS, HERO_STRIKE_HEIGHT, HERO_STRIKE_WIDTH } from "./heroStrikeConfig";
 import { getEvolutionShortLabels } from "./heroStrikeEvolutions";
+import { getLoadoutSummary } from "./heroStrikeLoadout";
 import type { HeroStrikeState } from "./heroStrikeTypes";
 
 function roundedRect(ctx: CanvasRenderingContext2D, x: number, y: number, width: number, height: number, radius: number) {
@@ -59,21 +60,23 @@ export function drawHeroStrikeResult(ctx: CanvasRenderingContext2D, state: HeroS
   ctx.fillText(`RESEARCH DATA +${state.runResearchEarned} · RANK ${state.researchRank}`, HERO_STRIKE_WIDTH / 2, 484);
 
   ctx.fillStyle = evolutions.length > 0 ? HERO_STRIKE_COLORS.gold : HERO_STRIKE_COLORS.muted;
-  ctx.font = "800 11px system-ui";
+  ctx.font = "800 10px system-ui";
   ctx.fillText(
     evolutions.length > 0 ? `EVOLUTION · ${evolutions.join(" · ")}` : "EVOLUTION · 없음",
     HERO_STRIKE_WIDTH / 2,
-    530,
+    526,
   );
+  ctx.fillStyle = HERO_STRIKE_COLORS.cyan;
+  ctx.fillText(getLoadoutSummary(state.loadout), HERO_STRIKE_WIDTH / 2, 550);
 
-  roundedRect(ctx, 92, 566, HERO_STRIKE_WIDTH - 184, 64, 20);
+  roundedRect(ctx, 92, 574, HERO_STRIKE_WIDTH - 184, 64, 20);
   ctx.fillStyle = HERO_STRIKE_COLORS.orange;
   ctx.fill();
   ctx.fillStyle = "#111827";
   ctx.font = "900 18px system-ui";
-  ctx.fillText("다시 출격", HERO_STRIKE_WIDTH / 2, 605);
+  ctx.fillText("장비 재정비", HERO_STRIKE_WIDTH / 2, 613);
   ctx.fillStyle = HERO_STRIKE_COLORS.muted;
   ctx.font = "700 10px system-ui";
-  ctx.fillText("화면을 눌러 새 작전 시작", HERO_STRIKE_WIDTH / 2, 657);
+  ctx.fillText("화면을 눌러 출격 준비로 이동", HERO_STRIKE_WIDTH / 2, 664);
   ctx.textAlign = "left";
 }
