@@ -56,8 +56,16 @@ export function getUltimateGainMultiplier(level: number) {
   return 1 + level * 0.15;
 }
 
-export function getOverdriveDamageMultiplier(level: number) {
-  return 1.25 + level * 0.15;
+export function getFlowRushDuration(level: number) {
+  return 5.6 + Math.max(0, level) * 0.65;
+}
+
+export function getFlowRushDamageMultiplier(level: number) {
+  return 1.18 + Math.max(0, level) * 0.06;
+}
+
+export function getFlowRushFireRateMultiplier(level: number) {
+  return Math.max(0.5, 0.66 - Math.max(0, level) * 0.025);
 }
 
 export function getMissileFireInterval(level: number) {
@@ -141,7 +149,7 @@ export function describeUpgradeLevel(id: UpgradeId, level: number): string {
     case "magnet": return `경험치 흡수 반경 ${getMagnetRadius(level)}`;
     case "shield": return `보호막 ${getShieldGrant(level)}칸 · 무적 ${(0.35 + level * 0.12).toFixed(2)}초`;
     case "pulse-drive": return `게이지 획득 +${level * 15}% · 즉시 +${getPulseDriveCharge(level)}`;
-    case "overclock": return `오버드라이브 피해 x${getOverdriveDamageMultiplier(level).toFixed(2)}`;
+    case "overclock": return `FLOW ${getFlowRushDuration(level).toFixed(1)}초 · 피해 x${getFlowRushDamageMultiplier(level).toFixed(2)}`;
     case "homing-missile": return `발사 ${getMissileFireInterval(level).toFixed(2)}초 · 폭발 ${getMissileExplosionRadius(level)}`;
     case "drone-wing": return `드론 연사 ${getDroneFireInterval(level, false).toFixed(2)}초 · 피해 강화`;
     case "side-cannons": return `측면 보조탄 ${getSideCannonAngles(level).length}발`;
