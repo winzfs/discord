@@ -33,6 +33,7 @@ function describeProtocol(id: StageProtocolId, level: number): string {
     case "pulse-sync": return `모든 자동사격 간격 누적 -${level * 7}%`;
     case "blink-capacitor": return level >= 3 ? "블링크 최대 4회 · 재충전 3.8초" : `블링크 최대 ${2 + level}회 · 재충전 단축`;
   }
+  return "";
 }
 
 function makeProtocolOption(state: HeroStrikeState, metadata: ProtocolMetadata): StageProtocolOption {
