@@ -1,4 +1,5 @@
 import { getRunResearchReward } from "./heroStrikeBalance";
+import { getDifficultyProfile } from "./heroStrikeLoadout";
 import type { HeroStrikeState } from "./heroStrikeTypes";
 
 const HERO_STRIKE_RESEARCH_KEY = "hero-strike-research-v1";
@@ -42,7 +43,8 @@ export function getResearchProgress(data: number) {
 }
 
 export function grantResearchData(state: HeroStrikeState, amount: number) {
-  const granted = Math.max(0, Math.floor(amount));
+  const difficulty = getDifficultyProfile(state.loadout.difficulty);
+  const granted = Math.max(0, Math.floor(amount * difficulty.research));
   if (granted <= 0) return 0;
   state.researchData += granted;
   state.runResearchEarned += granted;
