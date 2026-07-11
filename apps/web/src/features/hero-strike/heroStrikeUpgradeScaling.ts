@@ -19,6 +19,10 @@ export const HERO_STRIKE_UPGRADE_MAX_LEVELS: Record<UpgradeId, number> = {
 };
 
 export const HERO_STRIKE_WEAPON_UPGRADES = new Set<UpgradeId>([
+  "rapid-fire",
+  "twin-shot",
+  "power-core",
+  "piercing",
   "homing-missile",
   "drone-wing",
   "side-cannons",
