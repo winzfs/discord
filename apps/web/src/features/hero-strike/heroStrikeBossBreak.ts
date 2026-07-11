@@ -18,7 +18,7 @@ export function applyBossBreakPressure(
   damage: number,
   breakPower = 1,
 ) {
-  if (!enemy.boss || enemy.dead || (enemy.breakStun ?? 0) > 0) return false;
+  if (!enemy.boss || enemy.dead || enemy.hp <= 0 || (enemy.breakStun ?? 0) > 0) return false;
   const maximum = enemy.breakMax ?? getBossBreakMax(enemy.maxHp);
   enemy.breakMax = maximum;
   enemy.breakGauge = Math.min(maximum, (enemy.breakGauge ?? 0) + damage * Math.max(0.35, breakPower));
