@@ -148,11 +148,40 @@ function drawBossPhaseMark(ctx: CanvasRenderingContext2D, enemy: HeroStrikeEnemy
   }
 }
 
+function drawAttackTelegraph(ctx: CanvasRenderingContext2D, enemy: HeroStrikeEnemy) {
+  if (enemy.kind === "runner" || enemy.y < 28 || enemy.fireCooldown > 0.32 || (enemy.breakStun ?? 0) > 0) return;
+  const ratio = Math.max(0, Math.min(1, 1 - enemy.fireCooldown / 0.32));
+  ctx.globalAlpha = 0.25 + ratio * 0.6;
+  ctx.strokeStyle = enemy.boss ? "#ff5f6d" : enemy.kind === "sniper" ? "#ff9fc6" : "#ffd166";
+  ctx.lineWidth = 1.5 + ratio * 2;
+  ctx.beginPath();
+  ctx.arc(0, 0, enemy.radius + 5 + ratio * 8, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.globalAlpha = 1;
+}
+
+function drawBossBreakCracks(ctx: CanvasRenderingContext2D, enemy: HeroStrikeEnemy) {
+  if (!enemy.boss || (enemy.breakStun ?? 0) <= 0) return;
+  ctx.strokeStyle = "#ffd166";
+  ctx.lineWidth = 3;
+  ctx.globalAlpha = 0.7 + Math.sin(enemy.age * 18) * 0.25;
+  for (let index = 0; index < 5; index += 1) {
+    const angle = index * Math.PI * 2 / 5 + 0.3;
+    ctx.beginPath();
+    ctx.moveTo(Math.cos(angle) * enemy.radius * 0.2, Math.sin(angle) * enemy.radius * 0.2);
+    ctx.lineTo(Math.cos(angle) * enemy.radius * 0.85, Math.sin(angle) * enemy.radius * 0.85);
+    ctx.stroke();
+  }
+  ctx.globalAlpha = 1;
+}
+
 export function drawHeroStrikeEnemy(ctx: CanvasRenderingContext2D, enemy: HeroStrikeEnemy) {
   const palette = enemyPalette(enemy);
   const radius = enemy.radius;
   ctx.save();
   ctx.translate(enemy.x, enemy.y);
+  const pulseScale = 1 + enemy.hitPulse;
+  ctx.scale(pulseScale, Math.max(0.84, 1 - enemy.hitPulse * 0.5));
   ctx.rotate(Math.sin(enemy.age * 4 + enemy.phase) * (enemy.boss ? 0.035 : enemy.kind === "weaver" ? 0.16 : 0.08));
 
   ctx.fillStyle = enemy.boss ? "rgba(255,209,102,.12)" : "rgba(0,0,0,.24)";
@@ -160,16 +189,34 @@ export function drawHeroStrikeEnemy(ctx: CanvasRenderingContext2D, enemy: HeroSt
   ctx.ellipse(0, radius * 0.62, radius * (enemy.boss ? 1.15 : 0.9), radius * (enemy.boss ? 0.42 : 0.25), 0, 0, Math.PI * 2);
   ctx.fill();
 
+  drawAttackTelegraph(ctx, enemy);
   drawEliteAura(ctx, enemy);
   drawBossPhaseMark(ctx, enemy);
 
-  ctx.fillStyle = palette.fill;
-  ctx.strokeStyle = enemy.elite ? eliteAccent(enemy) : "rgba(4,10,18,.88)";
+  const broken = (enemy.breakStun ?? 0) > 0;
+  ctx.fillStyle = enemy.hitFlash > 0
+    ? "#ffffff"
+    : broken
+      ? "#5f4920"
+      : palette.fill;
+  ctx.strokeStyle = enemy.hitFlash > 0
+    ? "#ffffff"
+    : broken
+      ? "#ffd166"
+      : enemy.elite
+        ? eliteAccent(enemy)
+        : "rgba(4,10,18,.88)";
   ctx.lineWidth = enemy.boss ? 4 : enemy.elite ? 3.5 : 2.5;
+  if (enemy.hitFlash > 0) {
+    ctx.shadowColor = "rgba(255,255,255,.85)";
+    ctx.shadowBlur = enemy.boss ? 18 : 10;
+  }
   if (enemy.boss) drawBossBody(ctx, radius, palette.accent);
   else drawNormalBody(ctx, enemy, palette.accent);
+  ctx.shadowBlur = 0;
 
-  ctx.fillStyle = palette.accent;
+  drawBossBreakCracks(ctx, enemy);
+  ctx.fillStyle = broken ? "#ffd166" : palette.accent;
   const eyeY = enemy.boss ? -8 : -3;
   const eyeGap = enemy.boss ? 19 : enemy.kind === "sniper" ? 0 : 6;
   const eyeSize = enemy.boss ? 5 : enemy.kind === "sniper" ? 3.4 : 2.6;
