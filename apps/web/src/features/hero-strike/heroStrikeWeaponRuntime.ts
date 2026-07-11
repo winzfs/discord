@@ -7,6 +7,7 @@ import {
 } from "./heroStrikeConfig";
 import { addBurst, addFloatingText, addRing } from "./heroStrikeEffects";
 import { hasEvolution } from "./heroStrikeEvolutions";
+import { getDifficultyProfile } from "./heroStrikeLoadout";
 import { grantResearchData } from "./heroStrikeMetaProgress";
 import { recordStageEnemyDefeat } from "./heroStrikeObjectives";
 import { maybeSpawnBonusPickup, spawnEnemyXp, spawnHeroStrikePickup } from "./heroStrikePickups";
@@ -148,7 +149,8 @@ export function awardEnemyDefeat(state: HeroStrikeState, enemy: HeroStrikeEnemy)
   recordStageEnemyDefeat(state, enemy);
   if (state.player.combo >= 25) state.player.overdrive = Math.max(state.player.overdrive, 4.5);
   const comboMultiplier = 1 + Math.min(4, Math.floor(state.player.combo / 10)) * 0.25;
-  const awardedScore = Math.round(enemy.score * comboMultiplier * state.player.scoreMultiplier);
+  const difficulty = getDifficultyProfile(state.loadout.difficulty);
+  const awardedScore = Math.round(enemy.score * comboMultiplier * state.player.scoreMultiplier * difficulty.score);
   state.score += awardedScore;
   const baseUltimateGain = enemy.boss ? 35 : enemy.elite ? 12 : 5;
   const ultimateGain = baseUltimateGain * state.player.ultimateGainMultiplier;
