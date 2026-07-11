@@ -16,6 +16,8 @@ export function updateBossPhase(state: HeroStrikeState, boss: HeroStrikeEnemy) {
 
   boss.bossPhase = nextPhase;
   boss.fireCooldown = 1.15;
+  boss.breakGauge = 0;
+  boss.breakStun = 0;
   state.bullets = state.bullets.filter((bullet) => !bullet.enemy);
   state.bossPhaseLabel = `BOSS PHASE ${nextPhase}`;
   state.bossPhaseBanner = 1.9;
