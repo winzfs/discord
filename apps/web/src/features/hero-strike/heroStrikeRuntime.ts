@@ -8,6 +8,11 @@ import {
 } from "./heroStrikeConfig";
 import { addFloatingText } from "./heroStrikeEffects";
 import { updateEnemyFire } from "./heroStrikeEnemyFire";
+import {
+  getHeroStrikeFlowMovementResponse,
+  isHeroStrikeFlowRush,
+  updateHeroStrikeFlow,
+} from "./heroStrikeFlow";
 import { finalizeHeroStrikeRun } from "./heroStrikeMetaProgress";
 import { resolvePlayerCollisions, updatePickups } from "./heroStrikePlayerRuntime";
 import { updateEnemyMovement, updateSpawning } from "./heroStrikeSpawner";
@@ -17,7 +22,10 @@ import type { HeroStrikeState } from "./heroStrikeTypes";
 import { resolveBulletCollisions, updateBullets, updatePlayerFire } from "./heroStrikeWeaponRuntime";
 
 function updateStars(state: HeroStrikeState, dt: number) {
-  const speedMultiplier = state.phase === "playing" ? 1 + Math.min(1.5, state.player.combo / 50) : 0.35;
+  const rushBoost = isHeroStrikeFlowRush(state) ? 1.65 : 1;
+  const speedMultiplier = state.phase === "playing"
+    ? (1 + Math.min(1.2, state.player.combo / 60)) * rushBoost
+    : 0.35;
   for (const star of state.stars) {
     star.y += star.speed * speedMultiplier * dt;
     if (star.y > HERO_STRIKE_HEIGHT + 4) {
@@ -42,14 +50,14 @@ function updateBlinkRecharge(state: HeroStrikeState, dt: number) {
 
 function updatePlayer(state: HeroStrikeState, dt: number) {
   const player = state.player;
-  const response = 1 - Math.exp(-HERO_STRIKE_PLAYER_RESPONSE * dt);
+  const responseRate = getHeroStrikeFlowMovementResponse(state, HERO_STRIKE_PLAYER_RESPONSE);
+  const response = 1 - Math.exp(-responseRate * dt);
   player.x += (player.targetX - player.x) * response;
   player.y += (player.targetY - player.y) * response;
   player.x = Math.max(25, Math.min(HERO_STRIKE_WIDTH - 25, player.x));
   player.y = Math.max(330, Math.min(HERO_STRIKE_HEIGHT - 62, player.y));
   player.invulnerable = Math.max(0, player.invulnerable - dt);
   player.comboTimer = Math.max(0, player.comboTimer - dt);
-  player.overdrive = Math.max(0, player.overdrive - dt);
   if (player.comboTimer <= 0) player.combo = 0;
   updateBlinkRecharge(state, dt);
 }
@@ -58,7 +66,7 @@ function updateEnemies(state: HeroStrikeState, dt: number) {
   for (const enemy of state.enemies) {
     if (enemy.boss) updateBossPhase(state, enemy);
     updateEnemyMovement(enemy, dt);
-    updateEnemyFire(state, enemy, dt);
+    if ((enemy.breakStun ?? 0) <= 0) updateEnemyFire(state, enemy, dt);
     if (!enemy.boss && enemy.y > HERO_STRIKE_HEIGHT + 50) enemy.dead = true;
   }
   state.enemies = state.enemies.filter((enemy) => !enemy.dead);
@@ -88,6 +96,8 @@ function updateEffects(state: HeroStrikeState, dt: number) {
   state.waveBanner = Math.max(0, state.waveBanner - dt);
   state.bossPhaseBanner = Math.max(0, state.bossPhaseBanner - dt);
   state.evolutionBanner = Math.max(0, state.evolutionBanner - dt);
+  state.flowBanner = Math.max(0, state.flowBanner - dt);
+  state.bossBreakBanner = Math.max(0, state.bossBreakBanner - dt);
 }
 
 function persistHighScore(state: HeroStrikeState) {
@@ -107,7 +117,13 @@ export function tickHeroStrike(state: HeroStrikeState, dt: number) {
     return;
   }
 
+  if (state.hitStop > 0) {
+    state.hitStop = Math.max(0, state.hitStop - dt);
+    return;
+  }
+
   state.elapsed += dt;
+  updateHeroStrikeFlow(state, dt);
   tickHeroStrikeStage(state, dt);
   updatePlayer(state, dt);
   updatePlayerFire(state, dt);

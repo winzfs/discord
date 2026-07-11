@@ -1,3 +1,4 @@
+import { applyBossBreakPressure, getBossBreakDamageMultiplier } from "./heroStrikeBossBreak";
 import {
   HERO_STRIKE_COLORS,
   HERO_STRIKE_HEIGHT,
@@ -6,6 +7,10 @@ import {
 } from "./heroStrikeConfig";
 import { addBurst, addRing } from "./heroStrikeEffects";
 import { hasEvolution } from "./heroStrikeEvolutions";
+import {
+  getHeroStrikeFlowDamageMultiplier,
+  getHeroStrikeFlowFireRateMultiplier,
+} from "./heroStrikeFlow";
 import {
   getDroneDamageScale,
   getDroneFireInterval,
@@ -63,6 +68,7 @@ function spawnMissile(state: HeroStrikeState, forcedSide?: -1 | 1) {
       state,
       (62 + state.player.damage * getMissileDamageScale(level))
         * state.player.campaignDamageMultiplier
+        * getHeroStrikeFlowDamageMultiplier(state)
         * (swarm ? 1.18 : 1),
     ),
     radius: 7,
@@ -92,6 +98,7 @@ function spawnDroneVolley(state: HeroStrikeState) {
       radius: aegis ? 4 : 3.4,
       damage: player.damage
         * player.campaignDamageMultiplier
+        * getHeroStrikeFlowDamageMultiplier(state)
         * getDroneDamageScale(level, false)
         * (aegis ? 1.38 : 1)
         * (critical ? criticalMultiplier : 1),
@@ -103,6 +110,11 @@ function spawnDroneVolley(state: HeroStrikeState) {
         ? getExplosionRadius(player.explosiveRoundsLevel) * (aegis ? 0.7 : 0.55)
         : undefined,
       chain: player.chainCoreLevel,
+      style: "support",
+      originY: player.y,
+      breakPower: 0.55,
+      impactForce: 11,
+      critical,
     });
   }
 }
@@ -138,15 +150,21 @@ function explodeMissile(state: HeroStrikeState, missile: HeroStrikeMissile) {
   const targets = [...state.enemies];
   for (const enemy of targets) {
     if (enemy.dead || distanceSquared(missile.x, missile.y, enemy.x, enemy.y) > radiusSquared) continue;
-    const damage = missile.damage * (enemy.boss ? 0.72 : 1);
+    const baseDamage = missile.damage * (enemy.boss ? 0.72 : 1);
+    const damage = baseDamage * getBossBreakDamageMultiplier(enemy);
     state.damageDealt += Math.min(enemy.hp, Math.max(0, damage));
     enemy.hp -= damage;
+    enemy.hitFlash = Math.max(enemy.hitFlash, 0.1);
+    enemy.hitPulse = Math.max(enemy.hitPulse, 0.1);
+    enemy.recoilY += -18;
+    applyBossBreakPressure(state, enemy, damage, 0.72);
     if (enemy.hp <= 0) {
       enemy.dead = true;
       awardEnemyDefeat(state, enemy);
       if (state.phase !== "playing") break;
     }
   }
+  state.hitStop = Math.max(state.hitStop, 0.018);
   state.enemies = state.enemies.filter((enemy) => !enemy.dead);
   missile.life = 0;
 }
@@ -177,6 +195,7 @@ function updateMissiles(state: HeroStrikeState, dt: number) {
 
 export function updateSupportWeapons(state: HeroStrikeState, dt: number) {
   const player = state.player;
+  const flowRate = getHeroStrikeFlowFireRateMultiplier(state);
 
   if (player.homingMissileLevel > 0) {
     player.missileCooldown -= dt;
@@ -188,6 +207,7 @@ export function updateSupportWeapons(state: HeroStrikeState, dt: number) {
       const swarmRate = hasEvolution(state, "hunter-swarm") ? 0.92 : 1;
       player.missileCooldown = getMissileFireInterval(player.homingMissileLevel)
         * player.campaignFireRateMultiplier
+        * flowRate
         * swarmRate;
     }
   } else player.missileCooldown = 0;
@@ -199,6 +219,7 @@ export function updateSupportWeapons(state: HeroStrikeState, dt: number) {
       const aegisRate = hasEvolution(state, "aegis-wing") ? 0.86 : 1;
       player.supportDroneCooldown = getDroneFireInterval(player.supportDroneLevel, false)
         * player.campaignFireRateMultiplier
+        * flowRate
         * aegisRate;
     }
   } else player.supportDroneCooldown = 0;

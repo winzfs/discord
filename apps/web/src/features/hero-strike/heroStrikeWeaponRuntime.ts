@@ -1,4 +1,7 @@
+import { playHeroStrikeSound } from "./heroStrikeAudio";
 import { getEliteResearchReward } from "./heroStrikeBalance";
+import { applyBossBreakPressure, getBossBreakDamageMultiplier } from "./heroStrikeBossBreak";
+import { applyEnemyHitFeedback, playEnemyDefeatFeedback } from "./heroStrikeCombatFeedback";
 import {
   HERO_STRIKE_COLORS,
   HERO_STRIKE_HEIGHT,
@@ -7,6 +10,12 @@ import {
 } from "./heroStrikeConfig";
 import { addBurst, addFloatingText, addRing } from "./heroStrikeEffects";
 import { hasEvolution } from "./heroStrikeEvolutions";
+import {
+  addHeroStrikeFlow,
+  getHeroStrikeFlowDamageMultiplier,
+  getHeroStrikeFlowFireRateMultiplier,
+  isHeroStrikeFlowRush,
+} from "./heroStrikeFlow";
 import { grantResearchData } from "./heroStrikeMetaProgress";
 import { recordStageEnemyDefeat } from "./heroStrikeObjectives";
 import { maybeSpawnBonusPickup, spawnEnemyXp, spawnHeroStrikePickup } from "./heroStrikePickups";
@@ -16,13 +25,18 @@ import {
   getChainRange,
   getExplosionDamageScale,
   getExplosionRadius,
-  getOverdriveDamageMultiplier,
   getRearGuardAngles,
   getRearGuardDamageScale,
   getSideCannonAngles,
   getSideCannonDamageScale,
 } from "./heroStrikeUpgradeScaling";
-import type { HeroStrikeBullet, HeroStrikeEnemy, HeroStrikeState } from "./heroStrikeTypes";
+import type {
+  HeroStrikeBullet,
+  HeroStrikeEnemy,
+  HeroStrikeState,
+  PlayerBulletStyle,
+  PrimaryWeaponId,
+} from "./heroStrikeTypes";
 
 function distanceSquared(ax: number, ay: number, bx: number, by: number) {
   const dx = ax - bx;
@@ -37,6 +51,13 @@ type PlayerBulletOptions = {
   pierce?: number;
   explosionScale?: number;
   chain?: number;
+  style?: PlayerBulletStyle;
+  radius?: number;
+  speedScale?: number;
+  life?: number;
+  color?: string;
+  breakPower?: number;
+  impactForce?: number;
 };
 
 function criticalStats(state: HeroStrikeState) {
@@ -46,47 +67,141 @@ function criticalStats(state: HeroStrikeState) {
   };
 }
 
+function primaryBulletColor(primary: PrimaryWeaponId, critical: boolean, rush: boolean) {
+  if (critical || rush) return HERO_STRIKE_COLORS.gold;
+  if (primary === "scatter-array") return HERO_STRIKE_COLORS.orange;
+  if (primary === "rail-driver") return HERO_STRIKE_COLORS.white;
+  return HERO_STRIKE_COLORS.cyan;
+}
+
 function spawnPlayerBullet(state: HeroStrikeState, angle: number, options: PlayerBulletOptions = {}) {
   const player = state.player;
   const critical = criticalStats(state);
   const isCritical = Math.random() < critical.chance;
   const damageScale = options.damageScale ?? 1;
-  const overdriveScale = player.overdrive > 0 ? getOverdriveDamageMultiplier(player.overdriveLevel) : 1;
   const criticalScale = isCritical ? critical.multiplier : 1;
   const explosionScale = options.explosionScale ?? 1;
   const baseChain = options.chain ?? player.chainCoreLevel;
   const evolutionChain = hasEvolution(state, "arc-overload") && baseChain > 0 ? 2 : 0;
+  const rush = isHeroStrikeFlowRush(state);
+  const style = options.style ?? state.loadout.primary;
+  const speed = player.bulletSpeed * (options.speedScale ?? 1);
 
   state.bullets.push({
     id: state.nextId++,
     x: player.x + (options.xOffset ?? 0),
     y: player.y - 28 + (options.yOffset ?? 0),
-    vx: Math.sin(angle) * player.bulletSpeed,
-    vy: -Math.cos(angle) * player.bulletSpeed,
-    radius: 4.2,
-    damage: player.damage * player.campaignDamageMultiplier * damageScale * overdriveScale * criticalScale,
+    vx: Math.sin(angle) * speed,
+    vy: -Math.cos(angle) * speed,
+    radius: options.radius ?? 4.2,
+    damage: player.damage
+      * player.campaignDamageMultiplier
+      * damageScale
+      * criticalScale
+      * getHeroStrikeFlowDamageMultiplier(state),
     pierce: options.pierce ?? player.pierce,
     enemy: false,
-    life: 1.5,
-    color: isCritical || player.overdrive > 0 ? HERO_STRIKE_COLORS.gold : HERO_STRIKE_COLORS.cyan,
+    life: options.life ?? 1.5,
+    color: options.color ?? primaryBulletColor(state.loadout.primary, isCritical, rush),
     explosionRadius: player.explosiveRoundsLevel > 0
       ? getExplosionRadius(player.explosiveRoundsLevel) * explosionScale
       : undefined,
     chain: baseChain + evolutionChain,
+    style,
+    originY: player.y,
+    breakPower: options.breakPower ?? 1,
+    impactForce: options.impactForce ?? 18,
+    critical: isCritical,
   });
 }
 
-function fireForwardWeapons(state: HeroStrikeState) {
+function firePulseWeapons(state: HeroStrikeState) {
+  const player = state.player;
+  const centered = (player.bulletCount - 1) / 2;
+  const burstInterval = isHeroStrikeFlowRush(state) ? 3 : 6;
+  const burst = player.shotCounter % burstInterval === 0;
+  for (let index = 0; index < player.bulletCount; index += 1) {
+    const position = index - centered;
+    spawnPlayerBullet(state, position * player.spread, {
+      xOffset: position * 7,
+      damageScale: burst ? 1.18 : 1,
+      style: "pulse-blasters",
+      impactForce: burst ? 24 : 17,
+    });
+  }
+  if (burst) {
+    spawnPlayerBullet(state, -0.23, { xOffset: -13, damageScale: 0.7, style: "pulse-blasters" });
+    spawnPlayerBullet(state, 0.23, { xOffset: 13, damageScale: 0.7, style: "pulse-blasters" });
+  }
+  playHeroStrikeSound("pulse-shot", burst ? 1.2 : 0.8);
+}
+
+function fireScatterWeapons(state: HeroStrikeState) {
+  const player = state.player;
+  const centered = (player.bulletCount - 1) / 2;
+  const spread = Math.max(0.16, player.spread * 1.35);
+  for (let index = 0; index < player.bulletCount; index += 1) {
+    const position = index - centered;
+    spawnPlayerBullet(state, position * spread, {
+      xOffset: position * 8,
+      style: "scatter-array",
+      radius: 4.8,
+      life: 0.88,
+      speedScale: 0.92,
+      impactForce: 27,
+      breakPower: 1.12,
+    });
+  }
+  playHeroStrikeSound("scatter-shot", 1);
+}
+
+function fireRailWeapons(state: HeroStrikeState) {
   const player = state.player;
   const centered = (player.bulletCount - 1) / 2;
   for (let index = 0; index < player.bulletCount; index += 1) {
     const position = index - centered;
-    spawnPlayerBullet(state, position * player.spread, { xOffset: position * 7 });
+    spawnPlayerBullet(state, position * Math.min(0.055, player.spread * 0.35), {
+      xOffset: position * 8,
+      damageScale: 1.08,
+      pierce: player.pierce + 2,
+      style: "rail-driver",
+      radius: 6.4,
+      speedScale: 1.18,
+      life: 1.35,
+      color: HERO_STRIKE_COLORS.white,
+      breakPower: 2.35,
+      impactForce: 42,
+      explosionScale: 0.55,
+    });
   }
+  state.shake = Math.max(state.shake, 0.13);
+  playHeroStrikeSound("rail-shot", 1.05);
+}
+
+function fireForwardWeapons(state: HeroStrikeState) {
+  state.player.shotCounter += 1;
+  if (state.loadout.primary === "scatter-array") fireScatterWeapons(state);
+  else if (state.loadout.primary === "rail-driver") fireRailWeapons(state);
+  else firePulseWeapons(state);
 
   if (hasEvolution(state, "pulse-storm")) {
-    spawnPlayerBullet(state, -0.42, { xOffset: -18, damageScale: 0.72, pierce: player.pierce + 1 });
-    spawnPlayerBullet(state, 0.42, { xOffset: 18, damageScale: 0.72, pierce: player.pierce + 1 });
+    spawnPlayerBullet(state, -0.42, {
+      xOffset: -18,
+      damageScale: 0.72,
+      pierce: state.player.pierce + 1,
+      style: "support",
+    });
+    spawnPlayerBullet(state, 0.42, {
+      xOffset: 18,
+      damageScale: 0.72,
+      pierce: state.player.pierce + 1,
+      style: "support",
+    });
+  }
+
+  if (isHeroStrikeFlowRush(state) && state.player.shotCounter % 2 === 0) {
+    spawnPlayerBullet(state, -0.3, { xOffset: -16, damageScale: 0.5, style: "support" });
+    spawnPlayerBullet(state, 0.3, { xOffset: 16, damageScale: 0.5, style: "support" });
   }
 }
 
@@ -101,6 +216,9 @@ function fireSideCannons(state: HeroStrikeState) {
       pierce: state.player.pierce + (level >= 3 ? 1 : 0),
       explosionScale: 0.72,
       chain: state.player.chainCoreLevel,
+      style: "support",
+      radius: 3.5,
+      impactForce: 13,
     });
   }
 }
@@ -117,6 +235,9 @@ function fireRearGuard(state: HeroStrikeState) {
       pierce: level >= 3 ? 1 : 0,
       explosionScale: 0.65,
       chain: state.player.chainCoreLevel,
+      style: "support",
+      radius: 3.5,
+      impactForce: 12,
     });
   }
 }
@@ -128,9 +249,11 @@ export function updatePlayerFire(state: HeroStrikeState, dt: number) {
   fireForwardWeapons(state);
   fireSideCannons(state);
   fireRearGuard(state);
-  const overdriveRate = player.overdrive > 0 ? 0.62 : 1;
   const evolutionRate = hasEvolution(state, "pulse-storm") ? 0.9 : 1;
-  player.fireCooldown = player.fireInterval * player.campaignFireRateMultiplier * overdriveRate * evolutionRate;
+  player.fireCooldown = player.fireInterval
+    * player.campaignFireRateMultiplier
+    * getHeroStrikeFlowFireRateMultiplier(state)
+    * evolutionRate;
 }
 
 function awardEliteDefeat(state: HeroStrikeState, enemy: HeroStrikeEnemy) {
@@ -146,21 +269,22 @@ export function awardEnemyDefeat(state: HeroStrikeState, enemy: HeroStrikeEnemy)
   state.player.combo += 1;
   state.player.comboTimer = 2.25;
   recordStageEnemyDefeat(state, enemy);
-  if (state.player.combo >= 25) state.player.overdrive = Math.max(state.player.overdrive, 4.5);
   const comboMultiplier = 1 + Math.min(4, Math.floor(state.player.combo / 10)) * 0.25;
   const awardedScore = Math.round(enemy.score * comboMultiplier * state.player.scoreMultiplier);
   state.score += awardedScore;
   const baseUltimateGain = enemy.boss ? 35 : enemy.elite ? 12 : 5;
   const ultimateGain = baseUltimateGain * state.player.ultimateGainMultiplier;
   state.player.ultimate = Math.min(state.player.ultimateMax, state.player.ultimate + ultimateGain);
+  addHeroStrikeFlow(state, enemy.boss ? 30 : enemy.elite ? 18 : 7);
+  playEnemyDefeatFeedback(enemy);
   addBurst(
     state,
     enemy.x,
     enemy.y,
     enemy.boss ? HERO_STRIKE_COLORS.gold : enemy.elite ? HERO_STRIKE_COLORS.purple : HERO_STRIKE_COLORS.orange,
-    enemy.boss ? 30 : enemy.elite ? 18 : 9,
-    enemy.boss ? 240 : enemy.elite ? 190 : 145,
-    enemy.boss ? 5 : enemy.elite ? 4 : 3,
+    enemy.boss ? 36 : enemy.elite ? 22 : 12,
+    enemy.boss ? 280 : enemy.elite ? 210 : 165,
+    enemy.boss ? 6 : enemy.elite ? 5 : 3.5,
   );
   addFloatingText(
     state,
@@ -177,10 +301,29 @@ export function awardEnemyDefeat(state: HeroStrikeState, enemy: HeroStrikeEnemy)
   if (enemy.boss) completeHeroStrikeStage(state);
 }
 
-function damageEnemy(state: HeroStrikeState, enemy: HeroStrikeEnemy, damage: number) {
+function scatterDistanceMultiplier(bullet: HeroStrikeBullet, enemy: HeroStrikeEnemy) {
+  if (bullet.style !== "scatter-array" || bullet.originY === undefined) return 1;
+  const distance = Math.abs(bullet.originY - enemy.y);
+  const closeness = Math.max(0, Math.min(1, 1 - distance / 430));
+  return 0.65 + closeness * 0.9;
+}
+
+function damageEnemy(
+  state: HeroStrikeState,
+  enemy: HeroStrikeEnemy,
+  damage: number,
+  bullet?: HeroStrikeBullet,
+) {
   if (enemy.dead || state.phase !== "playing") return;
-  state.damageDealt += Math.min(enemy.hp, Math.max(0, damage));
-  enemy.hp -= damage;
+  const styleScale = bullet ? scatterDistanceMultiplier(bullet, enemy) : 1;
+  const actualDamage = damage * styleScale * getBossBreakDamageMultiplier(enemy);
+  const previousHp = enemy.hp;
+  state.damageDealt += Math.min(previousHp, Math.max(0, actualDamage));
+  enemy.hp -= actualDamage;
+  if (bullet) {
+    applyBossBreakPressure(state, enemy, actualDamage, bullet.breakPower ?? 1);
+    applyEnemyHitFeedback(state, enemy, bullet, actualDamage, enemy.hp <= 0);
+  }
   if (enemy.hp <= 0) {
     enemy.dead = true;
     awardEnemyDefeat(state, enemy);
@@ -230,8 +373,16 @@ export function resolveBulletCollisions(state: HeroStrikeState) {
       const hitRadius = bullet.radius + enemy.radius;
       if (distanceSquared(bullet.x, bullet.y, enemy.x, enemy.y) > hitRadius * hitRadius) continue;
 
-      damageEnemy(state, enemy, bullet.damage);
-      addBurst(state, bullet.x, bullet.y, bullet.color, 2, 65, 1.5);
+      damageEnemy(state, enemy, bullet.damage, bullet);
+      addBurst(
+        state,
+        bullet.x,
+        bullet.y,
+        bullet.color,
+        bullet.style === "rail-driver" ? 7 : bullet.style === "scatter-array" ? 4 : 2,
+        bullet.style === "rail-driver" ? 110 : 70,
+        bullet.style === "rail-driver" ? 2.8 : 1.6,
+      );
       if (state.phase !== "playing") break;
       applyExplosion(state, enemy, bullet);
       applyChain(state, enemy, bullet);

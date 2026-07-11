@@ -20,6 +20,10 @@ export function completeHeroStrikeStage(state: HeroStrikeState) {
   state.bullets = state.bullets.filter((bullet) => !bullet.enemy);
   state.missiles = [];
   state.enemies = [];
+  state.player.flowRush = 0;
+  state.player.flow = Math.min(60, state.player.flow + 20);
+  state.flowBanner = 0;
+  state.bossBreakBanner = 0;
   state.flash = 0.65;
   state.shake = 1;
   if (resolveStageObjective(state)) state.objectivesCompleted += 1;

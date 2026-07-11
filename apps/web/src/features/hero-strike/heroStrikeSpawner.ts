@@ -1,5 +1,7 @@
 import { getBossHealth, getNormalEnemyHealthScale, getSpawnReliefMultiplier } from "./heroStrikeBalance";
+import { getBossBreakMax, updateBossBreakState } from "./heroStrikeBossBreak";
 import { getBossPhaseMovementMultiplier } from "./heroStrikeBossPhases";
+import { updateEnemyImpactFeedback } from "./heroStrikeCombatFeedback";
 import { HERO_STRIKE_BOSS_Y, HERO_STRIKE_WIDTH } from "./heroStrikeConfig";
 import { getFormationInterval, getNextFormation } from "./heroStrikeFormations";
 import { getDifficultyProfile } from "./heroStrikeLoadout";
@@ -88,6 +90,10 @@ export function spawnEnemy(
     reward: Math.round(base.reward * rewardScale),
     score: Math.round(base.score * healthScale * scoreScale),
     boss: false,
+    hitFlash: 0,
+    hitPulse: 0,
+    recoilX: 0,
+    recoilY: 0,
     elite,
     eliteTrait,
   });
@@ -130,7 +136,14 @@ export function spawnBoss(state: HeroStrikeState) {
     reward: 110 + state.stageIndex * 35,
     score: stage.bossScore,
     boss: true,
+    hitFlash: 0,
+    hitPulse: 0,
+    recoilX: 0,
+    recoilY: 0,
     bossPhase: 1,
+    breakGauge: 0,
+    breakMax: getBossBreakMax(hp),
+    breakStun: 0,
   });
 }
 
@@ -185,6 +198,12 @@ export function updateSpawning(state: HeroStrikeState, dt: number) {
 }
 
 function updateBossMovement(enemy: HeroStrikeEnemy, dt: number) {
+  updateBossBreakState(enemy, dt);
+  if ((enemy.breakStun ?? 0) > 0) {
+    enemy.x += enemy.recoilX * dt;
+    enemy.y += enemy.recoilY * dt;
+    return;
+  }
   if (enemy.y < HERO_STRIKE_BOSS_Y) {
     enemy.y = Math.min(HERO_STRIKE_BOSS_Y, enemy.y + enemy.vy * dt);
     return;
@@ -201,6 +220,7 @@ function updateBossMovement(enemy: HeroStrikeEnemy, dt: number) {
 
 export function updateEnemyMovement(enemy: HeroStrikeEnemy, dt: number) {
   enemy.age += dt;
+  updateEnemyImpactFeedback(enemy, dt);
   if (enemy.boss) {
     updateBossMovement(enemy, dt);
     return;
@@ -223,5 +243,7 @@ export function updateEnemyMovement(enemy: HeroStrikeEnemy, dt: number) {
     enemy.y += enemy.vy * dt;
   }
 
+  enemy.x += enemy.recoilX * dt;
+  enemy.y += enemy.recoilY * dt;
   enemy.x = Math.max(enemy.radius, Math.min(HERO_STRIKE_WIDTH - enemy.radius, enemy.x));
 }

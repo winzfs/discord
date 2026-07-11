@@ -1,6 +1,9 @@
+import { playHeroStrikeSound } from "./heroStrikeAudio";
 import { getNextXpRequirement } from "./heroStrikeBalance";
+import { applyBossBreakPressure, getBossBreakDamageMultiplier } from "./heroStrikeBossBreak";
 import { HERO_STRIKE_COLORS, HERO_STRIKE_HEIGHT, HERO_STRIKE_WIDTH } from "./heroStrikeConfig";
 import { addBurst, addFloatingText, addRing } from "./heroStrikeEffects";
+import { addHeroStrikeFlow, reduceHeroStrikeFlow } from "./heroStrikeFlow";
 import { recordStageGraze, recordStageHit } from "./heroStrikeObjectives";
 import { updateHeroStrikePickupMotion } from "./heroStrikePickupPhysics";
 import { createUpgradeChoices } from "./heroStrikeUpgrades";
@@ -19,10 +22,12 @@ function clearNearbyEnemyBullets(state: HeroStrikeState, radius: number) {
   state.bullets = state.bullets.filter((bullet) => !bullet.enemy || distanceSquared(bullet.x, bullet.y, x, y) > radiusSq);
 }
 
-function applyDamage(state: HeroStrikeState, enemy: HeroStrikeEnemy, amount: number) {
-  const dealt = Math.min(enemy.hp, Math.max(0, amount));
-  enemy.hp -= amount;
+function applyDamage(state: HeroStrikeState, enemy: HeroStrikeEnemy, amount: number, breakPower = 0.5) {
+  const actual = amount * getBossBreakDamageMultiplier(enemy);
+  const dealt = Math.min(enemy.hp, Math.max(0, actual));
+  enemy.hp -= actual;
   state.damageDealt += dealt;
+  applyBossBreakPressure(state, enemy, actual, breakPower);
 }
 
 export function resolvePlayerCollisions(state: HeroStrikeState) {
@@ -43,6 +48,7 @@ export function resolvePlayerCollisions(state: HeroStrikeState) {
     if (!bullet.grazed && distanceSq <= grazeRadius * grazeRadius) {
       bullet.grazed = true;
       recordStageGraze(state);
+      addHeroStrikeFlow(state, 3.2);
       const gain = 1.5 * player.ultimateGainMultiplier;
       player.ultimate = Math.min(player.ultimateMax, player.ultimate + gain);
       const grazeScore = Math.round(20 * player.scoreMultiplier);
@@ -56,7 +62,7 @@ export function resolvePlayerCollisions(state: HeroStrikeState) {
       const radius = player.radius + enemy.radius * 0.72;
       if (distanceSquared(player.x, player.y, enemy.x, enemy.y) <= radius * radius) {
         hit = true;
-        applyDamage(state, enemy, player.damage * player.campaignDamageMultiplier * 2);
+        applyDamage(state, enemy, player.damage * player.campaignDamageMultiplier * 2, 0.9);
         break;
       }
     }
@@ -65,6 +71,7 @@ export function resolvePlayerCollisions(state: HeroStrikeState) {
 
   recordStageHit(state);
   state.hitsTaken += 1;
+  reduceHeroStrikeFlow(state, 38);
   if (player.shield > 0) {
     player.shield -= 1;
     addFloatingText(state, player.x, player.y - 34, "SHIELD", HERO_STRIKE_COLORS.shield, 16);
@@ -72,11 +79,13 @@ export function resolvePlayerCollisions(state: HeroStrikeState) {
   player.invulnerable = 1.25;
   player.combo = 0;
   player.comboTimer = 0;
+  state.hitStop = Math.max(state.hitStop, 0.055);
   state.flash = 0.42;
   state.shake = 0.8;
   clearNearbyEnemyBullets(state, 92);
   addBurst(state, player.x, player.y, HERO_STRIKE_COLORS.red, 22, 210, 4);
   addRing(state, player.x, player.y, HERO_STRIKE_COLORS.red, 28);
+  playHeroStrikeSound("player-hit");
   if (player.hp <= 0) state.phase = "game-over";
 }
 
@@ -92,7 +101,7 @@ function detonateBombPickup(state: HeroStrikeState) {
   const targets = [...state.enemies];
   for (const enemy of targets) {
     const damage = (enemy.boss ? 240 + player.damage * 2 : 320 + player.damage * 3) * campaignDamage;
-    applyDamage(state, enemy, damage);
+    applyDamage(state, enemy, damage, enemy.boss ? 0.8 : 0.4);
     if (enemy.hp <= 0 && !enemy.dead) {
       enemy.dead = true;
       awardEnemyDefeat(state, enemy);
@@ -115,6 +124,7 @@ function grantExperience(state: HeroStrikeState, value: number) {
   state.phase = choices.length > 0 ? "level-up" : "playing";
   if (choices.length === 0) player.xp = 0;
   state.flash = 0.24;
+  playHeroStrikeSound("level-up");
   return gained;
 }
 
@@ -133,8 +143,8 @@ function grantPickup(state: HeroStrikeState, kind: PickupKind, value: number) {
   } else if (kind === "bomb") {
     detonateBombPickup(state);
   } else if (kind === "overdrive") {
-    player.overdrive = Math.min(18, player.overdrive + value);
-    addFloatingText(state, player.x, player.y - 30, "OVERDRIVE", HERO_STRIKE_COLORS.purple, 16);
+    addHeroStrikeFlow(state, value);
+    addFloatingText(state, player.x, player.y - 30, `FLOW +${value}`, HERO_STRIKE_COLORS.purple, 16);
   } else if (kind === "xp-core") {
     const gained = grantExperience(state, value);
     addFloatingText(state, player.x, player.y - 30, `XP +${gained}`, HERO_STRIKE_COLORS.xp, 15);
@@ -198,6 +208,7 @@ export function activateBlink(state: HeroStrikeState) {
   addBurst(state, startX, startY, HERO_STRIKE_COLORS.cyan, 12, 155, 3);
   addRing(state, player.x, player.y, HERO_STRIKE_COLORS.cyan, 20);
   state.shake = Math.max(state.shake, 0.18);
+  playHeroStrikeSound("blink");
   return true;
 }
 
@@ -214,7 +225,7 @@ export function activateUltimate(state: HeroStrikeState) {
   const targets = [...state.enemies];
   for (const enemy of targets) {
     const damage = (enemy.boss ? 680 + player.damage * 5 : 99999) * player.campaignDamageMultiplier;
-    applyDamage(state, enemy, damage);
+    applyDamage(state, enemy, damage, enemy.boss ? 1.45 : 0.5);
     if (enemy.hp <= 0 && !enemy.dead) {
       enemy.dead = true;
       awardEnemyDefeat(state, enemy);

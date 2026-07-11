@@ -1,9 +1,37 @@
 import { getTracerImage } from "./heroStrikeAssets";
 import { HERO_STRIKE_COLORS } from "./heroStrikeConfig";
 import { drawHeroStrikeEnemy } from "./heroStrikeEnemyRenderer";
+import { isHeroStrikeFlowRush } from "./heroStrikeFlow";
 import { drawHeroStrikePickups } from "./heroStrikePickupRenderer";
 import { drawHeroStrikeSupportWeapons } from "./heroStrikeSupportRenderer";
 import type { HeroStrikeBullet, HeroStrikeState } from "./heroStrikeTypes";
+
+function drawFlowAura(ctx: CanvasRenderingContext2D, state: HeroStrikeState) {
+  if (!isHeroStrikeFlowRush(state)) return;
+  const player = state.player;
+  const pulse = Math.sin(state.elapsed * 14) * 0.5 + 0.5;
+  ctx.strokeStyle = `rgba(255,209,102,${0.34 + pulse * 0.28})`;
+  ctx.lineWidth = 2.5;
+  for (let index = 0; index < 2; index += 1) {
+    ctx.beginPath();
+    ctx.arc(0, 0, 31 + index * 9 + pulse * 4, -Math.PI * 0.85, Math.PI * 0.85);
+    ctx.stroke();
+  }
+  ctx.strokeStyle = "rgba(255,209,102,.55)";
+  ctx.lineWidth = 2;
+  for (let index = 0; index < 5; index += 1) {
+    const x = -26 + index * 13 + Math.sin(state.elapsed * 9 + index) * 5;
+    ctx.beginPath();
+    ctx.moveTo(x, 28 + index % 2 * 5);
+    ctx.lineTo(x - 5, 50 + pulse * 10);
+    ctx.stroke();
+  }
+  ctx.fillStyle = "rgba(255,209,102,.24)";
+  ctx.beginPath();
+  ctx.ellipse(0, 14, 34, 14, 0, 0, Math.PI * 2);
+  ctx.fill();
+  player.flowRush = Math.max(0, player.flowRush);
+}
 
 function drawTracer(ctx: CanvasRenderingContext2D, state: HeroStrikeState) {
   const player = state.player;
@@ -12,10 +40,13 @@ function drawTracer(ctx: CanvasRenderingContext2D, state: HeroStrikeState) {
 
   ctx.save();
   ctx.translate(player.x, player.y);
-  ctx.fillStyle = player.overdrive > 0 ? "rgba(255,209,102,.24)" : "rgba(105,231,255,.16)";
-  ctx.beginPath();
-  ctx.ellipse(0, 14, player.overdrive > 0 ? 32 : 26, player.overdrive > 0 ? 13 : 9, 0, 0, Math.PI * 2);
-  ctx.fill();
+  drawFlowAura(ctx, state);
+  if (!isHeroStrikeFlowRush(state)) {
+    ctx.fillStyle = "rgba(105,231,255,.16)";
+    ctx.beginPath();
+    ctx.ellipse(0, 14, 26, 9, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
 
   const image = getTracerImage();
   if (image?.complete && image.naturalWidth > 0) {
@@ -30,12 +61,12 @@ function drawTracer(ctx: CanvasRenderingContext2D, state: HeroStrikeState) {
     ctx.fill();
   }
 
-  ctx.strokeStyle = "rgba(105,231,255,.42)";
-  ctx.lineWidth = 1;
+  ctx.strokeStyle = isHeroStrikeFlowRush(state) ? "rgba(255,209,102,.8)" : "rgba(105,231,255,.42)";
+  ctx.lineWidth = isHeroStrikeFlowRush(state) ? 2 : 1;
   ctx.beginPath();
   ctx.arc(0, 0, player.radius, 0, Math.PI * 2);
   ctx.stroke();
-  ctx.fillStyle = HERO_STRIKE_COLORS.cyan;
+  ctx.fillStyle = isHeroStrikeFlowRush(state) ? HERO_STRIKE_COLORS.gold : HERO_STRIKE_COLORS.cyan;
   ctx.beginPath();
   ctx.arc(0, 0, 2.6, 0, Math.PI * 2);
   ctx.fill();
@@ -120,6 +151,57 @@ function drawEnemyHeavy(ctx: CanvasRenderingContext2D, bullet: HeroStrikeBullet)
   ctx.stroke();
 }
 
+function drawPulseBullet(ctx: CanvasRenderingContext2D, bullet: HeroStrikeBullet) {
+  const angle = Math.atan2(bullet.vy, bullet.vx) + Math.PI / 2;
+  ctx.save();
+  ctx.translate(bullet.x, bullet.y);
+  ctx.rotate(angle);
+  ctx.globalAlpha = 0.24;
+  ctx.fillStyle = bullet.color;
+  ctx.fillRect(-bullet.radius * 1.7, -18, bullet.radius * 3.4, 34);
+  ctx.globalAlpha = 1;
+  ctx.beginPath();
+  ctx.roundRect(-bullet.radius, -12, bullet.radius * 2, 24, bullet.radius);
+  ctx.fill();
+  ctx.restore();
+}
+
+function drawScatterBullet(ctx: CanvasRenderingContext2D, bullet: HeroStrikeBullet) {
+  const angle = Math.atan2(bullet.vy, bullet.vx) + Math.PI / 2;
+  ctx.save();
+  ctx.translate(bullet.x, bullet.y);
+  ctx.rotate(angle);
+  ctx.globalAlpha = 0.3;
+  ctx.fillStyle = bullet.color;
+  ctx.fillRect(-bullet.radius * 1.7, 2, bullet.radius * 3.4, 16);
+  ctx.globalAlpha = 1;
+  ctx.beginPath();
+  ctx.moveTo(0, -bullet.radius * 1.5);
+  ctx.lineTo(bullet.radius, bullet.radius * 0.8);
+  ctx.lineTo(0, bullet.radius * 1.4);
+  ctx.lineTo(-bullet.radius, bullet.radius * 0.8);
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+}
+
+function drawRailBullet(ctx: CanvasRenderingContext2D, bullet: HeroStrikeBullet) {
+  const angle = Math.atan2(bullet.vy, bullet.vx) + Math.PI / 2;
+  ctx.save();
+  ctx.translate(bullet.x, bullet.y);
+  ctx.rotate(angle);
+  ctx.globalAlpha = 0.22;
+  ctx.fillStyle = HERO_STRIKE_COLORS.purple;
+  ctx.fillRect(-bullet.radius * 2, -30, bullet.radius * 4, 60);
+  ctx.globalAlpha = 0.85;
+  ctx.fillStyle = HERO_STRIKE_COLORS.cyan;
+  ctx.fillRect(-bullet.radius * 0.7, -24, bullet.radius * 1.4, 48);
+  ctx.globalAlpha = 1;
+  ctx.fillStyle = HERO_STRIKE_COLORS.white;
+  ctx.fillRect(-1.5, -27, 3, 54);
+  ctx.restore();
+}
+
 function drawBullets(ctx: CanvasRenderingContext2D, state: HeroStrikeState) {
   for (const bullet of state.bullets) {
     if (bullet.enemy) {
@@ -131,12 +213,9 @@ function drawBullets(ctx: CanvasRenderingContext2D, state: HeroStrikeState) {
     }
 
     ctx.fillStyle = bullet.color;
-    ctx.globalAlpha = 0.2;
-    ctx.fillRect(bullet.x - bullet.radius * 1.8, bullet.y - 13, bullet.radius * 3.6, 26);
-    ctx.globalAlpha = 1;
-    ctx.beginPath();
-    ctx.roundRect(bullet.x - bullet.radius, bullet.y - 12, bullet.radius * 2, 24, bullet.radius);
-    ctx.fill();
+    if (bullet.style === "rail-driver") drawRailBullet(ctx, bullet);
+    else if (bullet.style === "scatter-array") drawScatterBullet(ctx, bullet);
+    else drawPulseBullet(ctx, bullet);
   }
   ctx.globalAlpha = 1;
 }

@@ -29,9 +29,9 @@ type LoadoutOption<T extends string> = {
 };
 
 export const PRIMARY_WEAPON_OPTIONS: readonly LoadoutOption<PrimaryWeaponId>[] = [
-  { id: "pulse-blasters", title: "펄스", icon: "✦", description: "균형 잡힌 고속 연사" },
-  { id: "scatter-array", title: "산탄", icon: "≋", description: "3발 확산 · 근접 화력" },
-  { id: "rail-driver", title: "레일", icon: "➤", description: "고위력 · 기본 관통" },
+  { id: "pulse-blasters", title: "펄스", icon: "✦", description: "고속 연사 · 6회마다 버스트" },
+  { id: "scatter-array", title: "산탄", icon: "≋", description: "근접 1.55배 · 넓은 확산" },
+  { id: "rail-driver", title: "레일", icon: "➤", description: "강한 관통 · BREAK 특화" },
 ];
 
 export const SUPPORT_LOADOUT_OPTIONS: readonly LoadoutOption<SupportLoadoutId>[] = [
@@ -72,12 +72,12 @@ export function getDifficultyProfile(difficulty: HeroStrikeDifficulty) {
 
 export function getPrimaryWeaponProfile(primary: PrimaryWeaponId) {
   if (primary === "scatter-array") {
-    return { damage: 18, fireInterval: 0.22, bulletSpeed: 720, bulletCount: 3, spread: 0.18, pierce: 0 };
+    return { damage: 12, fireInterval: 0.25, bulletSpeed: 720, bulletCount: 3, spread: 0.2, pierce: 0 };
   }
   if (primary === "rail-driver") {
-    return { damage: 43, fireInterval: 0.34, bulletSpeed: 920, bulletCount: 1, spread: 0.08, pierce: 1 };
+    return { damage: 52, fireInterval: 0.42, bulletSpeed: 1050, bulletCount: 1, spread: 0.04, pierce: 1 };
   }
-  return { damage: 24, fireInterval: 0.18, bulletSpeed: 760, bulletCount: 1, spread: 0.12, pierce: 0 };
+  return { damage: 22, fireInterval: 0.17, bulletSpeed: 820, bulletCount: 1, spread: 0.1, pierce: 0 };
 }
 
 function isLoadout(value: unknown): value is HeroStrikeLoadout {
