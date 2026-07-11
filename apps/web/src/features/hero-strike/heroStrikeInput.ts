@@ -1,3 +1,4 @@
+import { unlockHeroStrikeAudio } from "./heroStrikeAudio";
 import {
   BLINK_BUTTON,
   HERO_STRIKE_HEIGHT,
@@ -81,6 +82,7 @@ function handleLoadoutPointer(state: HeroStrikeState, x: number, y: number) {
 }
 
 export function handleHeroStrikePointer(state: HeroStrikeState, x: number, y: number, pressed: boolean) {
+  if (pressed) unlockHeroStrikeAudio();
   if (state.phase === "title") {
     resetPointer(state);
     if (pressed) openHeroStrikeLoadout(state);
