@@ -124,23 +124,36 @@ function spawnPlayerBullet(state: HeroStrikeState, angle: number, options: Playe
   });
 }
 
+function pulseVolleyDamageScale(count: number) {
+  if (count <= 1) return 1;
+  if (count === 2) return 0.62;
+  return 0.48;
+}
+
+function scatterVolleyDamageScale(count: number) {
+  if (count <= 3) return 1;
+  if (count === 4) return 0.82;
+  return 0.72;
+}
+
 function firePulseWeapons(state: HeroStrikeState) {
   const player = state.player;
   const centered = (player.bulletCount - 1) / 2;
   const burstInterval = isHeroStrikeFlowRush(state) ? 4 : 7;
   const burst = player.shotCounter % burstInterval === 0;
+  const volleyScale = pulseVolleyDamageScale(player.bulletCount);
   for (let index = 0; index < player.bulletCount; index += 1) {
     const position = index - centered;
     spawnPlayerBullet(state, position * player.spread, {
       xOffset: position * 7,
-      damageScale: burst ? 1.14 : 1,
+      damageScale: (burst ? 1.14 : 1) * volleyScale,
       style: "pulse-blasters",
       impactForce: burst ? 22 : 16,
     });
   }
   if (burst) {
-    spawnPlayerBullet(state, -0.22, { xOffset: -13, damageScale: 0.55, style: "pulse-blasters" });
-    spawnPlayerBullet(state, 0.22, { xOffset: 13, damageScale: 0.55, style: "pulse-blasters" });
+    spawnPlayerBullet(state, -0.22, { xOffset: -13, damageScale: 0.45, style: "pulse-blasters" });
+    spawnPlayerBullet(state, 0.22, { xOffset: 13, damageScale: 0.45, style: "pulse-blasters" });
   }
   playHeroStrikeSound("pulse-shot", burst ? 1.12 : 0.75);
 }
@@ -149,10 +162,12 @@ function fireScatterWeapons(state: HeroStrikeState) {
   const player = state.player;
   const centered = (player.bulletCount - 1) / 2;
   const spread = Math.max(0.16, player.spread * 1.35);
+  const pelletScale = scatterVolleyDamageScale(player.bulletCount);
   for (let index = 0; index < player.bulletCount; index += 1) {
     const position = index - centered;
     spawnPlayerBullet(state, position * spread, {
       xOffset: position * 8,
+      damageScale: pelletScale,
       style: "scatter-array",
       radius: 4.8,
       life: 0.84,
