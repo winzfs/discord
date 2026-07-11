@@ -5,7 +5,7 @@ import { addHeroStrikeFlow } from "./heroStrikeFlow";
 import type { HeroStrikeEnemy, HeroStrikeState } from "./heroStrikeTypes";
 
 export function getBossBreakMax(maxHp: number) {
-  return Math.max(360, maxHp * 0.16);
+  return Math.max(420, maxHp * 0.18);
 }
 
 export function getBossBreakDamageMultiplier(enemy: HeroStrikeEnemy) {
@@ -24,7 +24,8 @@ export function applyBossBreakPressure(
   enemy.breakGauge = Math.min(maximum, (enemy.breakGauge ?? 0) + damage * Math.max(0.35, breakPower));
   if (enemy.breakGauge < maximum) return false;
 
-  enemy.breakGauge = 0;
+  // 음수 게이지는 BREAK 종료 후 곧바로 다시 기절시키는 연속 잠금을 막는 회복 구간이다.
+  enemy.breakGauge = -maximum * 0.75;
   enemy.breakStun = 2.35;
   enemy.fireCooldown = Math.max(enemy.fireCooldown, 2.35);
   state.bullets = state.bullets.filter((bullet) => !bullet.enemy);
