@@ -4,6 +4,7 @@ import {
   getBossPhaseCooldownMultiplier,
 } from "./heroStrikeBossPhases";
 import { HERO_STRIKE_COLORS } from "./heroStrikeConfig";
+import { getDifficultyProfile } from "./heroStrikeLoadout";
 import { getCurrentHeroStrikeStage } from "./heroStrikeStages";
 import type { EnemyBulletVariant, HeroStrikeEnemy, HeroStrikeState } from "./heroStrikeTypes";
 
@@ -217,7 +218,8 @@ export function updateEnemyFire(state: HeroStrikeState, enemy: HeroStrikeEnemy, 
   if (enemy.fireCooldown > 0) return;
 
   const stage = getCurrentHeroStrikeStage(state);
-  const baseSpeed = 150 * stage.bulletSpeedMultiplier;
+  const difficulty = getDifficultyProfile(state.loadout.difficulty);
+  const baseSpeed = 150 * stage.bulletSpeedMultiplier * difficulty.enemyBulletSpeed;
   if (enemy.boss) {
     fireBossPattern(state, enemy, baseSpeed * 0.92 * getBossPhaseBulletSpeedMultiplier(enemy));
   } else {
