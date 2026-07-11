@@ -1,8 +1,18 @@
-export type HeroStrikePhase = "title" | "playing" | "level-up" | "stage-clear" | "paused" | "game-over" | "victory";
+export type HeroStrikePhase = "title" | "loadout" | "playing" | "level-up" | "stage-clear" | "paused" | "game-over" | "victory";
 export type EnemyKind = "runner" | "drone" | "tank" | "sniper" | "weaver" | "bomber" | "boss";
 export type EliteTrait = "armored" | "rapid" | "scatter" | "veteran";
 export type EvolutionId = "pulse-storm" | "hunter-swarm" | "arc-overload" | "aegis-wing";
 export type StageObjectiveId = "kills" | "graze" | "combo" | "survivor" | "elite";
+export type PrimaryWeaponId = "pulse-blasters" | "scatter-array" | "rail-driver";
+export type SupportLoadoutId = "homing-missile" | "drone-wing" | "side-cannons";
+export type TacticalLoadoutId = "shield-matrix" | "salvage-magnet" | "pulse-battery";
+export type HeroStrikeDifficulty = "recruit" | "agent" | "legend";
+export type HeroStrikeLoadout = {
+  primary: PrimaryWeaponId;
+  support: SupportLoadoutId;
+  tactical: TacticalLoadoutId;
+  difficulty: HeroStrikeDifficulty;
+};
 export type StageId =
   | "kings-row"
   | "hanamura-ruins"
@@ -226,6 +236,7 @@ export type StageProtocolOption = {
 export type HeroStrikeState = {
   phase: HeroStrikePhase;
   previousPhase: HeroStrikePhase;
+  loadout: HeroStrikeLoadout;
   elapsed: number;
   stageElapsed: number;
   score: number;
