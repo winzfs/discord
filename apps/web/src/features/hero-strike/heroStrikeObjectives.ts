@@ -104,5 +104,11 @@ export function resolveStageObjective(state: HeroStrikeState) {
   state.score += Math.round(getStageObjectiveScore(state.stageIndex) * difficulty.score);
   grantResearchData(state, getStageObjectiveResearch(state.stageIndex));
   state.player.shield = Math.min(5, state.player.shield + 1);
+
+  const completedAfterReward = state.objectivesCompleted + 1;
+  if (completedAfterReward % 3 === 0) {
+    state.upgradeRerolls += 1;
+    addFloatingText(state, HERO_STRIKE_WIDTH / 2, 232, "REROLL +1", HERO_STRIKE_COLORS.cyan, 14);
+  }
   return true;
 }
