@@ -13,25 +13,25 @@ export const HERO_STRIKE_EVOLUTIONS: readonly EvolutionDefinition[] = [
     id: "pulse-storm",
     title: "펄스 스톰",
     shortLabel: "STORM",
-    requirements: { "rapid-fire": 4, "twin-shot": 3 },
+    requirements: { "rapid-fire": 3, "twin-shot": 2 },
   },
   {
     id: "hunter-swarm",
     title: "헌터 스웜",
     shortLabel: "SWARM",
-    requirements: { "homing-missile": 4, "explosive-rounds": 3 },
+    requirements: { "homing-missile": 3, "explosive-rounds": 2 },
   },
   {
     id: "arc-overload",
     title: "아크 오버로드",
     shortLabel: "ARC",
-    requirements: { "chain-core": 3, "critical-core": 4 },
+    requirements: { "chain-core": 2, "critical-core": 3 },
   },
   {
     id: "aegis-wing",
     title: "이지스 윙",
     shortLabel: "AEGIS",
-    requirements: { "drone-wing": 4, shield: 3 },
+    requirements: { "drone-wing": 3, shield: 2 },
   },
 ] as const;
 
@@ -46,6 +46,7 @@ function requirementsMet(state: HeroStrikeState, definition: EvolutionDefinition
 }
 
 export function unlockEligibleEvolutions(state: HeroStrikeState) {
+  if (state.stageIndex < 4) return [];
   const unlocked: EvolutionDefinition[] = [];
   for (const definition of HERO_STRIKE_EVOLUTIONS) {
     if (hasEvolution(state, definition.id) || !requirementsMet(state, definition)) continue;
@@ -53,9 +54,9 @@ export function unlockEligibleEvolutions(state: HeroStrikeState) {
     unlocked.push(definition);
     grantResearchData(state, 4);
     if (definition.id === "aegis-wing") {
-      state.player.shield = Math.min(5, state.player.shield + 2);
+      state.player.shield = Math.min(5, state.player.shield + 1);
     } else if (definition.id === "pulse-storm") {
-      state.player.ultimate = Math.min(state.player.ultimateMax, state.player.ultimate + 25);
+      state.player.ultimate = Math.min(state.player.ultimateMax, state.player.ultimate + 18);
     }
   }
 
