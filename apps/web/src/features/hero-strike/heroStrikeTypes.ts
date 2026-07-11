@@ -31,8 +31,6 @@ export type PickupKind =
   | "shield"
   | "bomb"
   | "overdrive"
-  | "support-drone"
-  | "time-warp"
   | "xp-core";
 export type UpgradeId =
   | "rapid-fire"
@@ -53,11 +51,9 @@ export type UpgradeId =
 export type StageProtocolId =
   | "vital-core"
   | "reactor-boost"
-  | "combat-data"
   | "precision-link"
   | "pulse-sync"
-  | "salvage-array"
-  | "bounty-network";
+  | "blink-capacitor";
 export type EnemyBulletVariant = "orb" | "needle" | "heavy" | "shard";
 
 export type Vec2 = { x: number; y: number };
@@ -72,6 +68,10 @@ export type HeroStrikePlayer = {
   maxHp: number;
   shield: number;
   invulnerable: number;
+  blinkCharges: number;
+  blinkMaxCharges: number;
+  blinkRecharge: number;
+  blinkRechargeDuration: number;
   fireCooldown: number;
   fireInterval: number;
   damage: number;
@@ -100,7 +100,6 @@ export type HeroStrikePlayer = {
   homingMissileLevel: number;
   missileCooldown: number;
   supportDroneLevel: number;
-  supportDroneTime: number;
   supportDroneCooldown: number;
   sideCannonLevel: number;
   rearGuardLevel: number;
@@ -108,7 +107,6 @@ export type HeroStrikePlayer = {
   chainCoreLevel: number;
   criticalChance: number;
   criticalMultiplier: number;
-  timeWarp: number;
 };
 
 export type HeroStrikeBullet = {
@@ -244,6 +242,12 @@ export type HeroStrikeState = {
   kills: number;
   maxCombo: number;
   hitsTaken: number;
+  damageDealt: number;
+  blinksUsed: number;
+  objectivesCompleted: number;
+  perfectStages: number;
+  upgradeRerolls: number;
+  rerollsUsed: number;
   nextId: number;
   player: HeroStrikePlayer;
   bullets: HeroStrikeBullet[];
@@ -254,6 +258,8 @@ export type HeroStrikeState = {
   texts: FloatingText[];
   stars: HeroStrikeStar[];
   spawnCooldown: number;
+  formationCooldown: number;
+  formationIndex: number;
   stageIndex: number;
   stageBanner: number;
   waveIndex: number;
@@ -267,7 +273,6 @@ export type HeroStrikeState = {
   bossPhaseLabel: string;
   shake: number;
   flash: number;
-  combatRank: number;
   stageKills: number;
   stageHits: number;
   stageGrazes: number;
