@@ -29,6 +29,14 @@ export function resetHeroStrikeAgency(state: HeroStrikeState) {
   runtimeByState.set(state, createRuntime());
 }
 
+export function prepareHeroStrikeAgencyStage(state: HeroStrikeState) {
+  const runtime = getHeroStrikeAgency(state);
+  runtime.tempo = Math.max(42, Math.min(72, runtime.tempo));
+  runtime.stationaryTime = 0;
+  runtime.artilleryCooldown = 2.8;
+  runtime.artilleryWarning = 0;
+}
+
 export function getHeroStrikeAgency(state: HeroStrikeState) {
   let runtime = runtimeByState.get(state);
   if (!runtime) {
