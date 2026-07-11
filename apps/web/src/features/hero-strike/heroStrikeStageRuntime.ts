@@ -1,3 +1,4 @@
+import { prepareHeroStrikeAgencyStage } from "./heroStrikeAgency";
 import { HERO_STRIKE_COLORS, HERO_STRIKE_PLAYER_Y, HERO_STRIKE_WIDTH } from "./heroStrikeConfig";
 import { addFloatingText } from "./heroStrikeEffects";
 import { getDifficultyProfile } from "./heroStrikeLoadout";
@@ -7,6 +8,10 @@ import { spawnStageReward } from "./heroStrikePickups";
 import { createStageProtocolChoices } from "./heroStrikeProtocols";
 import { getHeroStrikeStage, isFinalHeroStrikeStage } from "./heroStrikeStages";
 import type { HeroStrikeState } from "./heroStrikeTypes";
+
+function offersProtocolAfterStage(stageIndex: number) {
+  return stageIndex === 1 || stageIndex === 3 || stageIndex === 5 || stageIndex === 7;
+}
 
 export function tickHeroStrikeStage(state: HeroStrikeState, dt: number) {
   state.stageElapsed += dt;
@@ -21,7 +26,7 @@ export function completeHeroStrikeStage(state: HeroStrikeState) {
   state.missiles = [];
   state.enemies = [];
   state.player.flowRush = 0;
-  state.player.flow = Math.min(60, state.player.flow + 20);
+  state.player.flow = Math.min(45, state.player.flow + 12);
   state.flowBanner = 0;
   state.bossBreakBanner = 0;
   state.flash = 0.65;
@@ -35,11 +40,9 @@ export function completeHeroStrikeStage(state: HeroStrikeState) {
     return;
   }
 
-  state.protocolChoices = createStageProtocolChoices(state);
-  if (state.protocolChoices.length === 0) {
-    advanceHeroStrikeStage(state);
-    return;
-  }
+  state.protocolChoices = offersProtocolAfterStage(state.stageIndex)
+    ? createStageProtocolChoices(state)
+    : [];
   state.phase = "stage-clear";
 }
 
@@ -51,8 +54,8 @@ export function advanceHeroStrikeStage(state: HeroStrikeState) {
   state.stageIndex += 1;
   state.stageElapsed = 0;
   state.stageBanner = 2.8;
-  state.spawnCooldown = 0.55;
-  state.formationCooldown = 6.5;
+  state.spawnCooldown = 0.65;
+  state.formationCooldown = 6.8;
   state.formationIndex = 0;
   state.bossSpawned = false;
   state.bossDefeated = false;
@@ -64,10 +67,10 @@ export function advanceHeroStrikeStage(state: HeroStrikeState) {
   state.enemies = [];
   state.protocolChoices = [];
   state.player.hp = Math.min(state.player.maxHp, state.player.hp + 1);
-  if (clearedStageNumber % 3 === 0) state.player.shield = Math.min(5, state.player.shield + 1);
+  if (clearedStageNumber % 4 === 0) state.player.shield = Math.min(5, state.player.shield + 1);
   state.player.blinkCharges = Math.min(state.player.blinkMaxCharges, state.player.blinkCharges + 1);
   state.player.blinkRecharge = 0;
-  const ultimateReward = Math.round(20 * state.player.ultimateGainMultiplier);
+  const ultimateReward = Math.round(14 * state.player.ultimateGainMultiplier);
   state.player.ultimate = Math.min(state.player.ultimateMax, state.player.ultimate + ultimateReward);
   state.player.x = HERO_STRIKE_WIDTH / 2;
   state.player.targetX = HERO_STRIKE_WIDTH / 2;
@@ -75,6 +78,7 @@ export function advanceHeroStrikeStage(state: HeroStrikeState) {
   state.player.targetY = HERO_STRIKE_PLAYER_Y;
   state.phase = "playing";
   resetStageObjective(state, state.stageIndex);
+  prepareHeroStrikeAgencyStage(state);
 
   spawnStageReward(state, clearedStageIndex);
   const stage = getHeroStrikeStage(state.stageIndex);
