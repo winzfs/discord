@@ -117,10 +117,11 @@ export function updateHeroStrikeBossDirector(
     return true;
   }
 
-  if ((boss.breakStun ?? 0) > 0) {
+  const breakStun = boss.breakStun ?? 0;
+  if (breakStun > 0) {
     runtime.phase = "exposed";
-    runtime.duration = Math.max(runtime.duration, boss.breakStun ?? 0);
-    runtime.timer = Math.max(runtime.timer, boss.breakStun ?? 0);
+    runtime.duration = Math.max(runtime.duration, breakStun);
+    runtime.timer = breakStun;
     return true;
   }
 
@@ -153,12 +154,9 @@ export function getHeroStrikeBossActionSnapshot(
   };
 }
 
-export function getHeroStrikeBossActionDamageMultiplier(
-  state: HeroStrikeState,
-  boss: HeroStrikeEnemy,
-) {
-  const phase = getRuntime(state, boss).phase;
-  if ((boss.breakStun ?? 0) > 0) return 1.38;
+export function getHeroStrikeBossActionDamageMultiplier(boss: HeroStrikeEnemy) {
+  if ((boss.breakStun ?? 0) > 0) return 1;
+  const phase = runtimeByBoss.get(boss)?.phase;
   if (phase === "exposed") return 1.22;
   if (phase === "guard") return 0.78;
   return 1;
