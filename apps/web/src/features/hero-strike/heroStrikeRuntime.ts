@@ -3,6 +3,7 @@ import {
   getHeroStrikeMovementResponseScale,
   updateHeroStrikeCombatControl,
 } from "./heroStrikeCombatControl";
+import { updateHeroStrikeCombatRank } from "./heroStrikeCombatRank";
 import {
   HERO_STRIKE_COLORS,
   HERO_STRIKE_HEIGHT,
@@ -136,6 +137,7 @@ export function tickHeroStrike(state: HeroStrikeState, dt: number) {
   updateHeroStrikeCombatControl(state, dt);
   updatePlayer(state, dt);
   updateHeroStrikeEncounter(state, dt);
+  updateHeroStrikeCombatRank(state, dt);
   updatePlayerFire(state, dt);
   updateSpawning(state, dt);
   if (state.phase !== "playing") return;
