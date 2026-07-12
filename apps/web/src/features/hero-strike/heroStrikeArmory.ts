@@ -9,6 +9,8 @@ export type HeroStrikeArmoryOption = {
   icon: string;
   description: string;
   cost: number;
+  available: boolean;
+  unavailableReason: string | null;
 };
 
 type HeroStrikeArmoryRuntime = {
@@ -40,8 +42,19 @@ export function resetHeroStrikeArmory(state: HeroStrikeState) {
   runtimeByState.set(state, createRuntime(state));
 }
 
+function selectedSupportLevel(state: HeroStrikeState) {
+  if (state.loadout.support === "homing-missile") return state.player.homingMissileLevel;
+  if (state.loadout.support === "drone-wing") return state.player.supportDroneLevel;
+  return state.player.sideCannonLevel;
+}
+
 export function getHeroStrikeArmoryOptions(state: HeroStrikeState): readonly HeroStrikeArmoryOption[] {
   const stageScale = Math.floor(state.stageIndex / 2) * 3;
+  const canRepair = state.player.hp < state.player.maxHp;
+  const canTuneSupport = selectedSupportLevel(state) < 4;
+  const canChargeTactical = state.player.shield < 5
+    || state.player.ultimate < state.player.ultimateMax;
+
   return [
     {
       id: "repair",
@@ -49,6 +62,8 @@ export function getHeroStrikeArmoryOptions(state: HeroStrikeState): readonly Her
       icon: "♥",
       description: "체력을 2 회복합니다",
       cost: 24 + stageScale,
+      available: canRepair,
+      unavailableReason: canRepair ? null : "체력 최대",
     },
     {
       id: "support-tune",
@@ -56,6 +71,8 @@ export function getHeroStrikeArmoryOptions(state: HeroStrikeState): readonly Her
       icon: "⌁",
       description: "선택 보조무기 레벨 +1",
       cost: 34 + stageScale,
+      available: canTuneSupport,
+      unavailableReason: canTuneSupport ? null : "보조무기 최대",
     },
     {
       id: "tactical-charge",
@@ -63,6 +80,8 @@ export function getHeroStrikeArmoryOptions(state: HeroStrikeState): readonly Her
       icon: "◉",
       description: "보호막 +1 · 궁극기 +35%",
       cost: 27 + stageScale,
+      available: canChargeTactical,
+      unavailableReason: canChargeTactical ? null : "전술 자원 최대",
     },
   ];
 }
@@ -104,7 +123,8 @@ export function purchaseHeroStrikeArmoryOption(
   const runtime = getRuntime(state);
   if (runtime.purchaseMade) return false;
   const option = getHeroStrikeArmoryOptions(state).find((entry) => entry.id === id);
-  if (!option || !spendHeroStrikeSalvage(state, option.cost)) return false;
+  if (!option || !option.available) return false;
+  if (!spendHeroStrikeSalvage(state, option.cost)) return false;
   applyArmoryOption(state, id);
   runtime.purchaseMade = true;
   runtime.purchasedId = id;
