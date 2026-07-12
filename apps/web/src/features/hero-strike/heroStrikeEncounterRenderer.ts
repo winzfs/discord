@@ -1,5 +1,6 @@
 import { getHeroStrikeMissionSnapshot } from "./heroStrikeEncounterDirector";
 import { HERO_STRIKE_COLORS, HERO_STRIKE_WIDTH } from "./heroStrikeConfig";
+import { getHeroStrikeSalvageBalance } from "./heroStrikeSalvage";
 import type { HeroStrikeState } from "./heroStrikeTypes";
 
 function roundedRect(
@@ -102,6 +103,7 @@ export function drawHeroStrikeEncounterHud(
   if (state.phase !== "playing" && state.phase !== "paused") return;
   if (state.bossSpawned) return;
   const snapshot = getHeroStrikeMissionSnapshot(state);
+  const salvage = getHeroStrikeSalvageBalance(state);
   const x = 30;
   const y = 126;
   const width = HERO_STRIKE_WIDTH - 60;
@@ -150,6 +152,6 @@ export function drawHeroStrikeEncounterHud(
   ctx.fillText(progressText(state), x + width - 12, y + 44);
   ctx.fillStyle = HERO_STRIKE_COLORS.gold;
   ctx.font = "900 8px system-ui";
-  ctx.fillText(`SALVAGE ${snapshot.salvage}`, x + width - 12, y + 17);
+  ctx.fillText(`SALVAGE ${salvage}`, x + width - 12, y + 17);
   ctx.textAlign = "left";
 }
