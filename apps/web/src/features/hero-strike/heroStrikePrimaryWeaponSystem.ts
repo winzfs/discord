@@ -24,6 +24,7 @@ export type HeroStrikePrimaryAction =
     }
   | {
       kind: "rail";
+      mode: "discharge" | "drive-pulse" | "focus-pulse";
       charge: number;
       fullCharge: boolean;
       sideBeams: number;
@@ -40,6 +41,7 @@ type PrimaryWeaponRuntime = {
   shells: number;
   reloadTimer: number;
   railCharge: number;
+  railPulseTimer: number;
   railFiredInFocus: boolean;
   railReadyNotified: boolean;
   lastFocus: boolean;
@@ -61,6 +63,7 @@ function createRuntime(weapon: PrimaryWeaponId): PrimaryWeaponRuntime {
     shells: 5,
     reloadTimer: 0,
     railCharge: 0.28,
+    railPulseTimer: 0,
     railFiredInFocus: false,
     railReadyNotified: false,
     lastFocus: false,
@@ -115,7 +118,7 @@ function updatePulse(state: HeroStrikeState, dt: number, runtime: PrimaryWeaponR
   if (runtime.heat >= 1) {
     runtime.overheated = true;
     runtime.burstRemaining = 0;
-    runtime.cycleTimer = 0.5;
+    runtime.cycleTimer = 0.45;
     playHeroStrikeSound("weapon-vent", 1);
   }
   runtime.muzzleFlash = 0.08;
@@ -135,7 +138,7 @@ function updateScatter(state: HeroStrikeState, dt: number, runtime: PrimaryWeapo
   runtime.cycleTimer = Math.max(0, runtime.cycleTimer - dt);
 
   if (runtime.reloadTimer > 0) {
-    const reloadScale = focus ? 1 : 1.14;
+    const reloadScale = focus ? 1 : 1.08;
     runtime.reloadTimer = Math.max(0, runtime.reloadTimer - dt * reloadScale);
     if (runtime.reloadTimer <= 0) {
       runtime.shells = profile.magazine;
@@ -162,9 +165,26 @@ function updateScatter(state: HeroStrikeState, dt: number, runtime: PrimaryWeapo
   } satisfies HeroStrikePrimaryAction];
 }
 
+function railPulseAction(
+  mode: "drive-pulse" | "focus-pulse",
+  runtime: PrimaryWeaponRuntime,
+): HeroStrikePrimaryAction[] {
+  runtime.muzzleFlash = mode === "focus-pulse" ? 0.1 : 0.07;
+  runtime.recoil = Math.max(runtime.recoil, mode === "focus-pulse" ? 0.5 : 0.3);
+  return [{
+    kind: "rail",
+    mode,
+    charge: 0,
+    fullCharge: false,
+    sideBeams: 0,
+  }];
+}
+
 function updateRail(state: HeroStrikeState, dt: number, runtime: PrimaryWeaponRuntime) {
   const profile = getArcRailProfile(state);
   const focus = isHeroStrikeFocus(state);
+  runtime.railPulseTimer = Math.max(0, runtime.railPulseTimer - dt);
+
   if (!focus) {
     const previousCharge = runtime.railCharge;
     runtime.railCharge = Math.min(1, runtime.railCharge + dt * profile.chargeRate);
@@ -174,25 +194,33 @@ function updateRail(state: HeroStrikeState, dt: number, runtime: PrimaryWeaponRu
       runtime.railReadyNotified = true;
       playHeroStrikeSound("weapon-ready", 1.05);
     }
-    return [];
+    if (runtime.railPulseTimer > 0) return [];
+    runtime.railPulseTimer = profile.drivePulseInterval;
+    return railPulseAction("drive-pulse", runtime);
   }
 
   const enteringFocus = !runtime.lastFocus;
   runtime.lastFocus = true;
-  if (!enteringFocus || runtime.railFiredInFocus || runtime.railCharge < profile.minimumCharge) return [];
+  if (enteringFocus && !runtime.railFiredInFocus && runtime.railCharge >= profile.minimumCharge) {
+    const charge = runtime.railCharge;
+    runtime.railCharge = 0;
+    runtime.railFiredInFocus = true;
+    runtime.railReadyNotified = false;
+    runtime.railPulseTimer = profile.focusPulseInterval * 0.8;
+    runtime.muzzleFlash = 0.18;
+    runtime.recoil = 1;
+    return [{
+      kind: "rail",
+      mode: "discharge",
+      charge,
+      fullCharge: charge >= profile.fullCharge,
+      sideBeams: profile.sideBeams,
+    } satisfies HeroStrikePrimaryAction];
+  }
 
-  const charge = runtime.railCharge;
-  runtime.railCharge = 0;
-  runtime.railFiredInFocus = true;
-  runtime.railReadyNotified = false;
-  runtime.muzzleFlash = 0.18;
-  runtime.recoil = 1;
-  return [{
-    kind: "rail",
-    charge,
-    fullCharge: charge >= profile.fullCharge,
-    sideBeams: profile.sideBeams,
-  } satisfies HeroStrikePrimaryAction];
+  if (runtime.railPulseTimer > 0) return [];
+  runtime.railPulseTimer = profile.focusPulseInterval;
+  return railPulseAction("focus-pulse", runtime);
 }
 
 export function updateHeroStrikePrimaryWeaponSystem(state: HeroStrikeState, dt: number) {
@@ -222,9 +250,13 @@ export function getHeroStrikePrimaryWeaponStatus(state: HeroStrikeState) {
   }
   if (state.loadout.primary === "rail-driver") {
     const profile = getArcRailProfile(state);
+    const focus = isHeroStrikeFocus(state);
+    const chargeLabel = runtime.railCharge >= profile.fullCharge
+      ? "CAPACITOR READY"
+      : `CHARGE ${Math.round(runtime.railCharge * 100)}%`;
     return {
       kind: "rail" as const,
-      label: runtime.railCharge >= profile.fullCharge ? "CAPACITOR READY" : `CHARGE ${Math.round(runtime.railCharge * 100)}%`,
+      label: focus && runtime.railCharge < profile.minimumCharge ? "FOCUS PULSE" : chargeLabel,
       ratio: runtime.railCharge,
       warning: false,
       muzzleFlash: runtime.muzzleFlash,
