@@ -1,3 +1,4 @@
+import { recordHeroStrikeCombatRankMission } from "./heroStrikeCombatRank";
 import { HERO_STRIKE_HEIGHT, HERO_STRIKE_WIDTH } from "./heroStrikeConfig";
 import { getHeroStrikeMissionDefinition } from "./heroStrikeEncounterCatalog";
 import {
@@ -60,6 +61,7 @@ function succeedMission(state: HeroStrikeState, operation: HeroStrikeOperationRu
   operation.salvage += reward.salvage;
   operation.missionsSucceeded += 1;
   if (state.stageHits === 0) operation.perfectMissions += 1;
+  recordHeroStrikeCombatRankMission(state, true);
   presentHeroStrikeMissionSuccess(state, mission.definition, reward);
   return true;
 }
@@ -69,6 +71,7 @@ function failMission(state: HeroStrikeState, operation: HeroStrikeOperationRunti
   if (mission.status !== "active") return false;
   mission.status = "failed";
   operation.missionsFailed += 1;
+  recordHeroStrikeCombatRankMission(state, false);
   presentHeroStrikeMissionFailure(state, mission.definition);
   return true;
 }
