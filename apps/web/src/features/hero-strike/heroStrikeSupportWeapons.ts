@@ -1,8 +1,10 @@
-import {
-  getHeroStrikeSupportDamageMultiplier,
-  getHeroStrikeSupportIntervalMultiplier,
-} from "./heroStrikeAgency";
 import { applyBossBreakPressure, getBossBreakDamageMultiplier } from "./heroStrikeBossBreak";
+import {
+  getHeroStrikeAimAngle,
+  getHeroStrikeLockTarget,
+  getHeroStrikeSupportDamageScale,
+  getHeroStrikeSupportIntervalScale,
+} from "./heroStrikeCombatControl";
 import {
   HERO_STRIKE_COLORS,
   HERO_STRIKE_HEIGHT,
@@ -48,6 +50,10 @@ function nearestEnemy(state: HeroStrikeState, x: number, y: number) {
   return nearest;
 }
 
+function supportTarget(state: HeroStrikeState, x: number, y: number) {
+  return getHeroStrikeLockTarget(state) ?? nearestEnemy(state, x, y);
+}
+
 function criticalDamage(state: HeroStrikeState, damage: number) {
   const chance = Math.min(0.45, state.player.criticalChance + state.player.bonusCriticalChance);
   const multiplier = state.player.criticalMultiplier + state.player.bonusCriticalMultiplier;
@@ -55,12 +61,12 @@ function criticalDamage(state: HeroStrikeState, damage: number) {
 }
 
 function spawnMissile(state: HeroStrikeState, forcedSide?: -1 | 1) {
-  const target = nearestEnemy(state, state.player.x, state.player.y);
+  const target = supportTarget(state, state.player.x, state.player.y);
   if (!target) return;
   const level = state.player.homingMissileLevel;
   const swarm = hasEvolution(state, "hunter-swarm");
   const side = forcedSide ?? (state.nextId % 2 === 0 ? -1 : 1);
-  const agencyDamage = getHeroStrikeSupportDamageMultiplier(state);
+  const controlDamage = getHeroStrikeSupportDamageScale(state);
   state.missiles.push({
     id: state.nextId++,
     x: state.player.x + side * 18,
@@ -73,7 +79,7 @@ function spawnMissile(state: HeroStrikeState, forcedSide?: -1 | 1) {
       state,
       (40 + state.player.damage * getMissileDamageScale(level))
         * state.player.campaignDamageMultiplier
-        * agencyDamage
+        * controlDamage
         * getHeroStrikeFlowDamageMultiplier(state)
         * (swarm ? 1.1 : 1),
     ),
@@ -93,19 +99,22 @@ function spawnDroneVolley(state: HeroStrikeState) {
   const aegis = hasEvolution(state, "aegis-wing");
   const criticalChance = Math.min(0.45, player.criticalChance + player.bonusCriticalChance);
   const criticalMultiplier = player.criticalMultiplier + player.bonusCriticalMultiplier;
-  const agencyDamage = getHeroStrikeSupportDamageMultiplier(state);
+  const controlDamage = getHeroStrikeSupportDamageScale(state);
+  const aim = getHeroStrikeAimAngle(state);
+  const speed = 810;
   for (const side of [-1, 1] as const) {
     const critical = Math.random() < criticalChance;
+    const angle = aim + side * 0.025;
     state.bullets.push({
       id: state.nextId++,
       x: player.x + side * 30,
       y: player.y - 8,
-      vx: side * (16 + level * 3),
-      vy: -810,
+      vx: Math.sin(angle) * speed,
+      vy: -Math.cos(angle) * speed,
       radius: aegis ? 3.8 : 3.2,
       damage: player.damage
         * player.campaignDamageMultiplier
-        * agencyDamage
+        * controlDamage
         * getHeroStrikeFlowDamageMultiplier(state)
         * getDroneDamageScale(level, false)
         * (aegis ? 1.2 : 1)
@@ -137,7 +146,7 @@ function normalizeAngle(angle: number) {
 function updateMissileHeading(state: HeroStrikeState, missile: HeroStrikeMissile, dt: number) {
   let target = state.enemies.find((enemy) => enemy.id === missile.targetId && !enemy.dead) ?? null;
   if (!target) {
-    target = nearestEnemy(state, missile.x, missile.y);
+    target = supportTarget(state, missile.x, missile.y);
     missile.targetId = target?.id ?? null;
   }
   if (!target) return;
@@ -204,7 +213,7 @@ function updateMissiles(state: HeroStrikeState, dt: number) {
 export function updateSupportWeapons(state: HeroStrikeState, dt: number) {
   const player = state.player;
   const flowRate = getHeroStrikeFlowFireRateMultiplier(state);
-  const agencyInterval = getHeroStrikeSupportIntervalMultiplier(state);
+  const controlInterval = getHeroStrikeSupportIntervalScale(state);
 
   if (player.homingMissileLevel > 0) {
     player.missileCooldown -= dt;
@@ -217,7 +226,7 @@ export function updateSupportWeapons(state: HeroStrikeState, dt: number) {
       player.missileCooldown = getMissileFireInterval(player.homingMissileLevel)
         * player.campaignFireRateMultiplier
         * flowRate
-        * agencyInterval
+        * controlInterval
         * swarmRate;
     }
   } else player.missileCooldown = 0;
@@ -230,7 +239,7 @@ export function updateSupportWeapons(state: HeroStrikeState, dt: number) {
       player.supportDroneCooldown = getDroneFireInterval(player.supportDroneLevel, false)
         * player.campaignFireRateMultiplier
         * flowRate
-        * agencyInterval
+        * controlInterval
         * aegisRate;
     }
   } else player.supportDroneCooldown = 0;
