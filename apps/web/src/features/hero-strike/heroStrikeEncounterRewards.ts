@@ -1,3 +1,4 @@
+import { getHeroStrikeCombatRankRewardMultiplier } from "./heroStrikeCombatRank";
 import { HERO_STRIKE_COLORS, HERO_STRIKE_WIDTH } from "./heroStrikeConfig";
 import { addFloatingText, addRing } from "./heroStrikeEffects";
 import { getDifficultyProfile } from "./heroStrikeLoadout";
@@ -14,9 +15,10 @@ export function calculateHeroStrikeMissionReward(
   definition: HeroStrikeMissionDefinition,
 ): HeroStrikeMissionReward {
   const difficulty = getDifficultyProfile(state.loadout.difficulty);
+  const rankMultiplier = getHeroStrikeCombatRankRewardMultiplier(state);
   return {
-    salvage: Math.max(1, Math.round(definition.rewardSalvage * difficulty.research)),
-    score: Math.max(1, Math.round(definition.rewardScore * difficulty.score)),
+    salvage: Math.max(1, Math.round(definition.rewardSalvage * difficulty.research * rankMultiplier)),
+    score: Math.max(1, Math.round(definition.rewardScore * difficulty.score * rankMultiplier)),
   };
 }
 
