@@ -1,4 +1,4 @@
-import { prepareHeroStrikeAgencyStage } from "./heroStrikeAgency";
+import { prepareHeroStrikeCombatStage } from "./heroStrikeCombatControl";
 import { HERO_STRIKE_COLORS, HERO_STRIKE_PLAYER_Y, HERO_STRIKE_WIDTH } from "./heroStrikeConfig";
 import { addFloatingText } from "./heroStrikeEffects";
 import { unlockEligibleEvolutions } from "./heroStrikeEvolutions";
@@ -55,9 +55,13 @@ export function advanceHeroStrikeStage(state: HeroStrikeState) {
   state.stageIndex += 1;
   state.stageElapsed = 0;
   state.stageBanner = 2.8;
+  state.waveIndex = 1;
+  state.waveBanner = 2.2;
   state.spawnCooldown = 0.65;
   state.formationCooldown = 6.8;
   state.formationIndex = 0;
+  state.eliteSpawned = false;
+  state.eliteDefeated = false;
   state.bossSpawned = false;
   state.bossDefeated = false;
   state.bossWarning = 0;
@@ -79,7 +83,7 @@ export function advanceHeroStrikeStage(state: HeroStrikeState) {
   state.player.targetY = HERO_STRIKE_PLAYER_Y;
   state.phase = "playing";
   resetStageObjective(state, state.stageIndex);
-  prepareHeroStrikeAgencyStage(state);
+  prepareHeroStrikeCombatStage(state);
   unlockEligibleEvolutions(state);
 
   spawnStageReward(state, clearedStageIndex);

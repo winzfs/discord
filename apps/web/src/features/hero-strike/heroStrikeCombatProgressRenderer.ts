@@ -1,8 +1,9 @@
 import { HERO_STRIKE_COLORS, HERO_STRIKE_WIDTH } from "./heroStrikeConfig";
+import { getHeroStrikeEncounter } from "./heroStrikeEncounters";
 import { getEvolutionShortLabels } from "./heroStrikeEvolutions";
 import { getObjectiveProgressRatio, getObjectiveStatusText } from "./heroStrikeObjectives";
 import type { HeroStrikeState } from "./heroStrikeTypes";
-import { getEliteTraitForStage, getEliteTraitLabel, getWaveLabel } from "./heroStrikeWaveDirector";
+import { getEliteTraitForStage, getEliteTraitLabel } from "./heroStrikeWaveDirector";
 
 function roundedRect(ctx: CanvasRenderingContext2D, x: number, y: number, width: number, height: number, radius: number) {
   ctx.beginPath();
@@ -28,7 +29,7 @@ function drawObjective(ctx: CanvasRenderingContext2D, state: HeroStrikeState) {
   ctx.fillStyle = state.objectiveComplete ? HERO_STRIKE_COLORS.green : HERO_STRIKE_COLORS.white;
   ctx.font = "800 9px system-ui";
   ctx.textAlign = "center";
-  ctx.fillText(state.objectiveComplete ? "목표 완료" : getObjectiveStatusText(state), x + width / 2, y + 12);
+  ctx.fillText(state.objectiveComplete ? "OBJECTIVE CLEAR" : getObjectiveStatusText(state), x + width / 2, y + 12);
   ctx.textAlign = "left";
 }
 
@@ -57,16 +58,17 @@ function drawCenteredBanner(
 
 function drawWaveBanner(ctx: CanvasRenderingContext2D, state: HeroStrikeState) {
   if (state.phase !== "playing" || state.waveBanner <= 0 || state.bossSpawned || state.stageBanner > 0.2) return;
+  const encounter = getHeroStrikeEncounter(state.waveIndex);
   const elite = state.waveIndex === 3;
   const trait = getEliteTraitForStage(state.stageIndex);
   const subtitle = elite
-    ? `${getWaveLabel(state.waveIndex)} · ${getEliteTraitLabel(trait)} 특성`
-    : getWaveLabel(state.waveIndex);
+    ? `${encounter.subtitle} · ${getEliteTraitLabel(trait)} ELITE`
+    : encounter.subtitle;
   drawCenteredBanner(
     ctx,
-    `WAVE ${state.waveIndex} / 4`,
+    encounter.label,
     subtitle,
-    elite ? HERO_STRIKE_COLORS.purple : HERO_STRIKE_COLORS.cyan,
+    elite ? HERO_STRIKE_COLORS.purple : encounter.accent,
     245,
     Math.min(1, state.waveBanner * 1.6),
   );
@@ -89,7 +91,7 @@ function drawFlowBanner(ctx: CanvasRenderingContext2D, state: HeroStrikeState) {
   drawCenteredBanner(
     ctx,
     "PULSE RUSH",
-    "화력·연사·기동력 상승 · 처치로 지속시간 연장",
+    "화력·연사 상승 · 처치로 지속시간 연장",
     HERO_STRIKE_COLORS.gold,
     350,
     Math.min(1, state.flowBanner * 1.7),
@@ -101,7 +103,7 @@ function drawBossBreakBanner(ctx: CanvasRenderingContext2D, state: HeroStrikeSta
   drawCenteredBanner(
     ctx,
     "BOSS BREAK",
-    "취약 상태 · 공격 집중!",
+    "취약 상태 · FOCUS FIRE!",
     HERO_STRIKE_COLORS.gold,
     300,
     Math.min(1, state.bossBreakBanner * 1.8),
@@ -128,13 +130,13 @@ function drawEvolutionTags(ctx: CanvasRenderingContext2D, state: HeroStrikeState
   let x = 20;
   for (const label of labels) {
     const width = ctx.measureText(label).width + 14;
-    roundedRect(ctx, x, 154, width, 17, 7);
+    roundedRect(ctx, x, 178, width, 17, 7);
     ctx.fillStyle = "rgba(4,10,24,.74)";
     ctx.fill();
     ctx.strokeStyle = HERO_STRIKE_COLORS.gold;
     ctx.stroke();
     ctx.fillStyle = HERO_STRIKE_COLORS.gold;
-    ctx.fillText(label, x + 7, 166);
+    ctx.fillText(label, x + 7, 190);
     x += width + 5;
   }
 }

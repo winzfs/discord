@@ -1,4 +1,3 @@
-import { drawHeroStrikeAgencyWorld } from "./heroStrikeAgencyRenderer";
 import { getTracerImage } from "./heroStrikeAssets";
 import { HERO_STRIKE_COLORS } from "./heroStrikeConfig";
 import { drawHeroStrikeEnemy } from "./heroStrikeEnemyRenderer";
@@ -248,7 +247,6 @@ function drawEffects(ctx: CanvasRenderingContext2D, state: HeroStrikeState) {
 }
 
 export function drawHeroStrikeEntities(ctx: CanvasRenderingContext2D, state: HeroStrikeState) {
-  drawHeroStrikeAgencyWorld(ctx, state);
   drawHeroStrikePickups(ctx, state);
   drawBullets(ctx, state);
   state.enemies.forEach((enemy) => drawHeroStrikeEnemy(ctx, enemy));

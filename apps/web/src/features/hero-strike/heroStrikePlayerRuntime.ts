@@ -1,17 +1,16 @@
-import {
-  addHeroStrikeTempo,
-  getHeroStrikeFlowGainMultiplier,
-  reduceHeroStrikeTempo,
-} from "./heroStrikeAgency";
 import { playHeroStrikeSound } from "./heroStrikeAudio";
 import { getNextXpRequirement, HERO_STRIKE_LEVEL_CAP } from "./heroStrikeBalance";
 import { applyBossBreakPressure, getBossBreakDamageMultiplier } from "./heroStrikeBossBreak";
+import {
+  beginHeroStrikeDrive,
+  getPendingHeroStrikeUpgrades,
+  queueHeroStrikeUpgrade,
+} from "./heroStrikeCombatControl";
 import { HERO_STRIKE_COLORS, HERO_STRIKE_HEIGHT, HERO_STRIKE_WIDTH } from "./heroStrikeConfig";
 import { addBurst, addFloatingText, addRing } from "./heroStrikeEffects";
 import { addHeroStrikeFlow, reduceHeroStrikeFlow } from "./heroStrikeFlow";
 import { recordStageGraze, recordStageHit } from "./heroStrikeObjectives";
 import { updateHeroStrikePickupMotion } from "./heroStrikePickupPhysics";
-import { createUpgradeChoices } from "./heroStrikeUpgrades";
 import { awardEnemyDefeat } from "./heroStrikeWeaponRuntime";
 import type { HeroStrikeEnemy, HeroStrikeState, PickupKind } from "./heroStrikeTypes";
 
@@ -53,13 +52,10 @@ export function resolvePlayerCollisions(state: HeroStrikeState) {
     if (!bullet.grazed && distanceSq <= grazeRadius * grazeRadius) {
       bullet.grazed = true;
       recordStageGraze(state);
-      const tempoScale = getHeroStrikeFlowGainMultiplier(state);
-      addHeroStrikeFlow(state, 3.2 * tempoScale);
-      addHeroStrikeTempo(state, 2.5);
+      addHeroStrikeFlow(state, 3.2);
       const gain = 1.5 * player.ultimateGainMultiplier;
       player.ultimate = Math.min(player.ultimateMax, player.ultimate + gain);
-      const grazeScore = Math.round(20 * player.scoreMultiplier);
-      state.score += grazeScore;
+      state.score += Math.round(20 * player.scoreMultiplier);
       addFloatingText(state, player.x + 22, player.y - 12, "GRAZE", HERO_STRIKE_COLORS.cyan, 11);
     }
   }
@@ -79,7 +75,7 @@ export function resolvePlayerCollisions(state: HeroStrikeState) {
   recordStageHit(state);
   state.hitsTaken += 1;
   reduceHeroStrikeFlow(state, 38);
-  reduceHeroStrikeTempo(state, 34);
+  beginHeroStrikeDrive(state);
   if (player.shield > 0) {
     player.shield -= 1;
     addFloatingText(state, player.x, player.y - 34, "SHIELD", HERO_STRIKE_COLORS.shield, 16);
@@ -128,16 +124,32 @@ function grantExperience(state: HeroStrikeState, value: number) {
   }
 
   player.xp += gained;
-  if (player.xp < player.nextXp || state.phase !== "playing") return gained;
-  player.xp -= player.nextXp;
-  player.level += 1;
-  player.nextXp = getNextXpRequirement(player.level);
-  const choices = createUpgradeChoices(state);
-  state.upgradeChoices = choices;
-  state.phase = choices.length > 0 ? "level-up" : "playing";
-  if (choices.length === 0) player.xp = 0;
-  state.flash = 0.24;
-  playHeroStrikeSound("level-up");
+  let queued = 0;
+  while (
+    player.level < HERO_STRIKE_LEVEL_CAP
+    && player.xp >= player.nextXp
+    && getPendingHeroStrikeUpgrades(state) < 2
+  ) {
+    player.xp -= player.nextXp;
+    player.level += 1;
+    player.nextXp = getNextXpRequirement(player.level);
+    queueHeroStrikeUpgrade(state);
+    queued += 1;
+  }
+
+  if (queued > 0) {
+    player.xp = Math.min(player.xp, player.nextXp * 0.75);
+    state.flash = Math.max(state.flash, 0.16);
+    addFloatingText(
+      state,
+      player.x,
+      player.y - 48,
+      queued > 1 ? `UPGRADE READY ×${queued}` : "UPGRADE READY",
+      HERO_STRIKE_COLORS.xp,
+      13,
+    );
+    playHeroStrikeSound("level-up");
+  }
   return gained;
 }
 
@@ -157,7 +169,6 @@ function grantPickup(state: HeroStrikeState, kind: PickupKind, value: number) {
     detonateBombPickup(state);
   } else if (kind === "overdrive") {
     addHeroStrikeFlow(state, value);
-    addHeroStrikeTempo(state, value * 0.45);
     addFloatingText(state, player.x, player.y - 30, `FLOW +${value}`, HERO_STRIKE_COLORS.purple, 16);
   } else if (kind === "xp-core") {
     const gained = grantExperience(state, value);
@@ -218,7 +229,6 @@ export function activateBlink(state: HeroStrikeState) {
   player.blinkRecharge = Math.max(player.blinkRecharge, player.blinkRechargeDuration);
   player.invulnerable = Math.max(player.invulnerable, 0.55);
   state.blinksUsed += 1;
-  addHeroStrikeTempo(state, 32);
   clearNearbyEnemyBullets(state, 58);
   addBurst(state, startX, startY, HERO_STRIKE_COLORS.cyan, 12, 155, 3);
   addRing(state, player.x, player.y, HERO_STRIKE_COLORS.cyan, 20);
