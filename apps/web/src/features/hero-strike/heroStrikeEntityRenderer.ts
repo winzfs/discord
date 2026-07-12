@@ -1,10 +1,11 @@
 import { getTracerImage } from "./heroStrikeAssets";
+import { drawHeroStrikeBullets } from "./heroStrikeBulletRenderer";
 import { HERO_STRIKE_COLORS } from "./heroStrikeConfig";
 import { drawHeroStrikeEnemy } from "./heroStrikeEnemyRenderer";
 import { isHeroStrikeFlowRush } from "./heroStrikeFlow";
 import { drawHeroStrikePickups } from "./heroStrikePickupRenderer";
 import { drawHeroStrikeSupportWeapons } from "./heroStrikeSupportRenderer";
-import type { HeroStrikeBullet, HeroStrikeState } from "./heroStrikeTypes";
+import type { HeroStrikeState } from "./heroStrikeTypes";
 
 function drawFlowAura(ctx: CanvasRenderingContext2D, state: HeroStrikeState) {
   if (!isHeroStrikeFlowRush(state)) return;
@@ -79,145 +80,6 @@ function drawTracer(ctx: CanvasRenderingContext2D, state: HeroStrikeState) {
   ctx.restore();
 }
 
-function drawEnemyOrb(ctx: CanvasRenderingContext2D, bullet: HeroStrikeBullet) {
-  ctx.globalAlpha = 0.28;
-  ctx.fillStyle = HERO_STRIKE_COLORS.hostile;
-  ctx.beginPath();
-  ctx.arc(bullet.x, bullet.y, bullet.radius * 1.9, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.globalAlpha = 1;
-  ctx.fillStyle = bullet.color;
-  ctx.strokeStyle = "rgba(34,3,15,.95)";
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.arc(bullet.x, bullet.y, bullet.radius, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.stroke();
-  ctx.fillStyle = HERO_STRIKE_COLORS.hostileCore;
-  ctx.beginPath();
-  ctx.arc(bullet.x, bullet.y, Math.max(1.8, bullet.radius * 0.32), 0, Math.PI * 2);
-  ctx.fill();
-}
-
-function drawEnemyNeedle(ctx: CanvasRenderingContext2D, bullet: HeroStrikeBullet) {
-  const angle = Math.atan2(bullet.vy, bullet.vx);
-  ctx.save();
-  ctx.translate(bullet.x, bullet.y);
-  ctx.rotate(angle);
-  ctx.fillStyle = HERO_STRIKE_COLORS.hostile;
-  ctx.strokeStyle = "rgba(34,3,15,.95)";
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.moveTo(bullet.radius * 2.6, 0);
-  ctx.lineTo(-bullet.radius * 1.8, bullet.radius * 0.72);
-  ctx.lineTo(-bullet.radius * 1.8, -bullet.radius * 0.72);
-  ctx.closePath();
-  ctx.fill();
-  ctx.stroke();
-  ctx.fillStyle = HERO_STRIKE_COLORS.hostileCore;
-  ctx.fillRect(-1, -1, 4, 2);
-  ctx.restore();
-}
-
-function drawEnemyShard(ctx: CanvasRenderingContext2D, bullet: HeroStrikeBullet) {
-  ctx.fillStyle = HERO_STRIKE_COLORS.hostile;
-  ctx.strokeStyle = "rgba(34,3,15,.95)";
-  ctx.lineWidth = 1.5;
-  ctx.beginPath();
-  ctx.moveTo(bullet.x, bullet.y - bullet.radius * 1.35);
-  ctx.lineTo(bullet.x + bullet.radius, bullet.y);
-  ctx.lineTo(bullet.x, bullet.y + bullet.radius * 1.35);
-  ctx.lineTo(bullet.x - bullet.radius, bullet.y);
-  ctx.closePath();
-  ctx.fill();
-  ctx.stroke();
-}
-
-function drawEnemyHeavy(ctx: CanvasRenderingContext2D, bullet: HeroStrikeBullet) {
-  ctx.globalAlpha = 0.22;
-  ctx.fillStyle = HERO_STRIKE_COLORS.hostile;
-  ctx.beginPath();
-  ctx.arc(bullet.x, bullet.y, bullet.radius * 2.1, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.globalAlpha = 1;
-  ctx.fillStyle = "#7c173c";
-  ctx.strokeStyle = HERO_STRIKE_COLORS.hostileCore;
-  ctx.lineWidth = 2.5;
-  ctx.beginPath();
-  ctx.arc(bullet.x, bullet.y, bullet.radius, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.stroke();
-}
-
-function drawPulseBullet(ctx: CanvasRenderingContext2D, bullet: HeroStrikeBullet) {
-  const angle = Math.atan2(bullet.vy, bullet.vx) + Math.PI / 2;
-  ctx.save();
-  ctx.translate(bullet.x, bullet.y);
-  ctx.rotate(angle);
-  ctx.globalAlpha = 0.24;
-  ctx.fillStyle = bullet.color;
-  ctx.fillRect(-bullet.radius * 1.7, -18, bullet.radius * 3.4, 34);
-  ctx.globalAlpha = 1;
-  ctx.beginPath();
-  ctx.roundRect(-bullet.radius, -12, bullet.radius * 2, 24, bullet.radius);
-  ctx.fill();
-  ctx.restore();
-}
-
-function drawScatterBullet(ctx: CanvasRenderingContext2D, bullet: HeroStrikeBullet) {
-  const angle = Math.atan2(bullet.vy, bullet.vx) + Math.PI / 2;
-  ctx.save();
-  ctx.translate(bullet.x, bullet.y);
-  ctx.rotate(angle);
-  ctx.globalAlpha = 0.3;
-  ctx.fillStyle = bullet.color;
-  ctx.fillRect(-bullet.radius * 1.7, 2, bullet.radius * 3.4, 16);
-  ctx.globalAlpha = 1;
-  ctx.beginPath();
-  ctx.moveTo(0, -bullet.radius * 1.5);
-  ctx.lineTo(bullet.radius, bullet.radius * 0.8);
-  ctx.lineTo(0, bullet.radius * 1.4);
-  ctx.lineTo(-bullet.radius, bullet.radius * 0.8);
-  ctx.closePath();
-  ctx.fill();
-  ctx.restore();
-}
-
-function drawRailBullet(ctx: CanvasRenderingContext2D, bullet: HeroStrikeBullet) {
-  const angle = Math.atan2(bullet.vy, bullet.vx) + Math.PI / 2;
-  ctx.save();
-  ctx.translate(bullet.x, bullet.y);
-  ctx.rotate(angle);
-  ctx.globalAlpha = 0.22;
-  ctx.fillStyle = HERO_STRIKE_COLORS.purple;
-  ctx.fillRect(-bullet.radius * 2, -30, bullet.radius * 4, 60);
-  ctx.globalAlpha = 0.85;
-  ctx.fillStyle = HERO_STRIKE_COLORS.cyan;
-  ctx.fillRect(-bullet.radius * 0.7, -24, bullet.radius * 1.4, 48);
-  ctx.globalAlpha = 1;
-  ctx.fillStyle = HERO_STRIKE_COLORS.white;
-  ctx.fillRect(-1.5, -27, 3, 54);
-  ctx.restore();
-}
-
-function drawBullets(ctx: CanvasRenderingContext2D, state: HeroStrikeState) {
-  for (const bullet of state.bullets) {
-    if (bullet.enemy) {
-      if (bullet.variant === "needle") drawEnemyNeedle(ctx, bullet);
-      else if (bullet.variant === "shard") drawEnemyShard(ctx, bullet);
-      else if (bullet.variant === "heavy") drawEnemyHeavy(ctx, bullet);
-      else drawEnemyOrb(ctx, bullet);
-      continue;
-    }
-
-    ctx.fillStyle = bullet.color;
-    if (bullet.style === "rail-driver") drawRailBullet(ctx, bullet);
-    else if (bullet.style === "scatter-array") drawScatterBullet(ctx, bullet);
-    else drawPulseBullet(ctx, bullet);
-  }
-  ctx.globalAlpha = 1;
-}
-
 function drawEffects(ctx: CanvasRenderingContext2D, state: HeroStrikeState) {
   for (const particle of state.particles) {
     ctx.globalAlpha = particle.alpha;
@@ -248,8 +110,8 @@ function drawEffects(ctx: CanvasRenderingContext2D, state: HeroStrikeState) {
 
 export function drawHeroStrikeEntities(ctx: CanvasRenderingContext2D, state: HeroStrikeState) {
   drawHeroStrikePickups(ctx, state);
-  drawBullets(ctx, state);
-  state.enemies.forEach((enemy) => drawHeroStrikeEnemy(ctx, enemy));
+  drawHeroStrikeBullets(ctx, state);
+  for (const enemy of state.enemies) drawHeroStrikeEnemy(ctx, enemy);
   drawHeroStrikeSupportWeapons(ctx, state);
   drawTracer(ctx, state);
   drawEffects(ctx, state);

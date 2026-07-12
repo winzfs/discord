@@ -1,4 +1,5 @@
 import { HERO_STRIKE_HEIGHT, HERO_STRIKE_WIDTH } from "./heroStrikeConfig";
+import { getHeroStrikeEffectStride } from "./heroStrikePerformance";
 import { getCurrentHeroStrikeStage, type HeroStrikeStage } from "./heroStrikeStages";
 import type { HeroStrikeState } from "./heroStrikeTypes";
 
@@ -61,8 +62,10 @@ export function drawHeroStrikeBackdrop(ctx: CanvasRenderingContext2D, state: Her
   ctx.drawImage(getBackdrop(stage, overdrive), 0, 0, HERO_STRIKE_WIDTH, HERO_STRIKE_HEIGHT);
   ctx.imageSmoothingEnabled = smoothing;
 
+  const stride = getHeroStrikeEffectStride();
   ctx.fillStyle = overdrive ? "#ffd166" : "#f8fbff";
-  for (const star of state.stars) {
+  for (let index = 0; index < state.stars.length; index += stride) {
+    const star = state.stars[index];
     ctx.globalAlpha = star.alpha;
     ctx.fillRect(star.x, star.y, star.size, star.size * (overdrive ? 4 : 2.2));
   }

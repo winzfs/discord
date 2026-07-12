@@ -1,12 +1,14 @@
+import { removeOldestInPlace } from "./heroStrikeArrayUtils";
 import {
   HERO_STRIKE_MAX_PARTICLES,
   HERO_STRIKE_MAX_TEXTS,
 } from "./heroStrikeConfig";
+import { getHeroStrikeEffectStride } from "./heroStrikePerformance";
 import type { HeroStrikeState } from "./heroStrikeTypes";
 
 function makeParticleRoom(state: HeroStrikeState, incoming: number) {
   const overflow = state.particles.length + incoming - HERO_STRIKE_MAX_PARTICLES;
-  if (overflow > 0) state.particles.splice(0, overflow);
+  if (overflow > 0) removeOldestInPlace(state.particles, overflow);
 }
 
 export function addBurst(
@@ -18,7 +20,8 @@ export function addBurst(
   speed = 130,
   size = 3,
 ) {
-  const safeCount = Math.min(count, HERO_STRIKE_MAX_PARTICLES);
+  const stride = getHeroStrikeEffectStride();
+  const safeCount = Math.min(Math.ceil(count / stride), HERO_STRIKE_MAX_PARTICLES);
   makeParticleRoom(state, safeCount);
 
   for (let index = 0; index < safeCount; index += 1) {
@@ -65,7 +68,7 @@ export function addFloatingText(
   size = 16,
 ) {
   if (state.texts.length >= HERO_STRIKE_MAX_TEXTS) {
-    state.texts.splice(0, state.texts.length - HERO_STRIKE_MAX_TEXTS + 1);
+    removeOldestInPlace(state.texts, state.texts.length - HERO_STRIKE_MAX_TEXTS + 1);
   }
   state.texts.push({
     id: state.nextId++,

@@ -1,5 +1,7 @@
+import { compactInPlace } from "./heroStrikeArrayUtils";
 import { updateHeroStrikeBossDirector } from "./heroStrikeBossDirector";
 import { updateBossPhase } from "./heroStrikeBossPhases";
+import { updateHeroStrikeBullets } from "./heroStrikeBulletRuntime";
 import {
   getHeroStrikeMovementResponseScale,
   updateHeroStrikeCombatControl,
@@ -30,7 +32,7 @@ import { updateEnemyMovement, updateSpawning } from "./heroStrikeSpawner";
 import { tickHeroStrikeStage } from "./heroStrikeStageRuntime";
 import { updateSupportWeapons } from "./heroStrikeSupportWeapons";
 import type { HeroStrikeState } from "./heroStrikeTypes";
-import { resolveBulletCollisions, updateBullets, updatePlayerFire } from "./heroStrikeWeaponRuntime";
+import { resolveBulletCollisions, updatePlayerFire } from "./heroStrikeWeaponRuntime";
 
 function updateStars(state: HeroStrikeState, dt: number) {
   const rushBoost = isHeroStrikeFlowRush(state) ? 1.65 : 1;
@@ -85,7 +87,7 @@ function updateEnemies(state: HeroStrikeState, dt: number) {
     }
     if (!enemy.boss && enemy.y > HERO_STRIKE_HEIGHT + 50) enemy.dead = true;
   }
-  state.enemies = state.enemies.filter((enemy) => !enemy.dead);
+  compactInPlace(state.enemies, (enemy) => !enemy.dead);
 }
 
 function updateEffects(state: HeroStrikeState, dt: number) {
@@ -98,13 +100,13 @@ function updateEffects(state: HeroStrikeState, dt: number) {
     particle.alpha = Math.max(0, particle.life / particle.maxLife);
     if (particle.ring) particle.size += 150 * dt;
   }
-  state.particles = state.particles.filter((particle) => particle.life > 0);
+  compactInPlace(state.particles, (particle) => particle.life > 0);
 
   for (const text of state.texts) {
     text.life -= dt;
     text.y -= 42 * dt;
   }
-  state.texts = state.texts.filter((text) => text.life > 0);
+  compactInPlace(state.texts, (text) => text.life > 0);
   state.flash = Math.max(0, state.flash - dt * 1.7);
   state.shake = Math.max(0, state.shake - dt * 2.8);
   state.bossWarning = Math.max(0, state.bossWarning - dt);
@@ -153,7 +155,7 @@ export function tickHeroStrike(state: HeroStrikeState, dt: number) {
   updateSupportWeapons(state, dt);
   if (state.phase !== "playing") return;
 
-  updateBullets(state, dt);
+  updateHeroStrikeBullets(state, dt);
   resolveBulletCollisions(state);
   if (state.phase !== "playing") return;
   resolvePlayerCollisions(state);
