@@ -7,8 +7,6 @@ type CombatControlRuntime = {
   focusDelay: number;
   lockTargetId: number | null;
   lockRefresh: number;
-  railCharge: number;
-  railShotReady: boolean;
   pendingUpgrades: number;
 };
 
@@ -22,8 +20,6 @@ function createRuntime(): CombatControlRuntime {
     focusDelay: HERO_STRIKE_FOCUS_ENTRY_DELAY,
     lockTargetId: null,
     lockRefresh: 0,
-    railCharge: 0.28,
-    railShotReady: false,
     pendingUpgrades: 0,
   };
 }
@@ -47,8 +43,6 @@ export function prepareHeroStrikeCombatStage(state: HeroStrikeState) {
   runtime.focusDelay = HERO_STRIKE_FOCUS_ENTRY_DELAY;
   runtime.lockTargetId = null;
   runtime.lockRefresh = 0;
-  runtime.railCharge = Math.max(0.28, runtime.railCharge);
-  runtime.railShotReady = false;
 }
 
 export function beginHeroStrikeDrive(state: HeroStrikeState) {
@@ -57,7 +51,6 @@ export function beginHeroStrikeDrive(state: HeroStrikeState) {
   runtime.focusDelay = HERO_STRIKE_FOCUS_ENTRY_DELAY;
   runtime.lockTargetId = null;
   runtime.lockRefresh = 0;
-  runtime.railShotReady = false;
 }
 
 export function releaseHeroStrikeFocus(state: HeroStrikeState) {
@@ -66,7 +59,6 @@ export function releaseHeroStrikeFocus(state: HeroStrikeState) {
   runtime.focusDelay = HERO_STRIKE_FOCUS_ENTRY_DELAY;
   runtime.lockTargetId = null;
   runtime.lockRefresh = 0;
-  runtime.railShotReady = false;
   state.player.targetX = state.player.x;
   state.player.targetY = state.player.y;
 }
@@ -111,8 +103,6 @@ export function updateHeroStrikeCombatControl(state: HeroStrikeState, dt: number
     runtime.mode = "drive";
     runtime.focusDelay = HERO_STRIKE_FOCUS_ENTRY_DELAY;
     runtime.lockTargetId = null;
-    runtime.railShotReady = false;
-    runtime.railCharge = Math.min(1, runtime.railCharge + dt * 0.56);
     return;
   }
 
@@ -120,7 +110,6 @@ export function updateHeroStrikeCombatControl(state: HeroStrikeState, dt: number
     runtime.focusDelay = Math.max(0, runtime.focusDelay - dt);
     if (runtime.focusDelay <= 0) {
       runtime.mode = "focus";
-      runtime.railShotReady = true;
       runtime.lockRefresh = 0;
     }
   }
@@ -189,19 +178,6 @@ export function getHeroStrikePrimaryIntervalScale(state: HeroStrikeState) {
 
 export function getHeroStrikeMovementResponseScale(state: HeroStrikeState) {
   return isHeroStrikeFocus(state) ? 0.48 : 1.12;
-}
-
-export function getHeroStrikeRailCharge(state: HeroStrikeState) {
-  return getHeroStrikeCombatControl(state).railCharge;
-}
-
-export function consumeHeroStrikeRailShot(state: HeroStrikeState) {
-  const runtime = getHeroStrikeCombatControl(state);
-  if (!isHeroStrikeFocus(state) || !runtime.railShotReady || runtime.railCharge < 0.18) return 0;
-  const charge = runtime.railCharge;
-  runtime.railCharge = 0;
-  runtime.railShotReady = false;
-  return charge;
 }
 
 export function queueHeroStrikeUpgrade(state: HeroStrikeState) {
