@@ -1,4 +1,7 @@
-import { getNextXpRequirement } from "./heroStrikeBalance";
+import {
+  consumePendingHeroStrikeUpgrade,
+  getPendingHeroStrikeUpgrades,
+} from "./heroStrikeCombatControl";
 import { unlockEligibleEvolutions } from "./heroStrikeEvolutions";
 import { getPrimaryWeaponProfile } from "./heroStrikeLoadout";
 import {
@@ -139,6 +142,19 @@ export function createUpgradeChoices(state: HeroStrikeState, excludedIds: readon
   return choices;
 }
 
+export function openQueuedHeroStrikeUpgrade(state: HeroStrikeState) {
+  if (state.phase !== "playing" || getPendingHeroStrikeUpgrades(state) <= 0) return false;
+  const choices = createUpgradeChoices(state);
+  if (choices.length === 0) {
+    consumePendingHeroStrikeUpgrade(state);
+    return false;
+  }
+  consumePendingHeroStrikeUpgrade(state);
+  state.upgradeChoices = choices;
+  state.phase = "level-up";
+  return true;
+}
+
 export function rerollUpgradeChoices(state: HeroStrikeState) {
   if (state.phase !== "level-up" || state.upgradeRerolls <= 0) return false;
   const previousIds = state.upgradeChoices.map((choice) => choice.id);
@@ -151,7 +167,6 @@ export function rerollUpgradeChoices(state: HeroStrikeState) {
 }
 
 function finishLevelUp(state: HeroStrikeState) {
-  state.player.xp = Math.min(state.player.xp, state.player.nextXp * 0.75);
   state.upgradeChoices = [];
   state.phase = "playing";
 }
@@ -195,7 +210,6 @@ export function applyUpgrade(state: HeroStrikeState, id: UpgradeId) {
       break;
   }
 
-  player.nextXp = getNextXpRequirement(player.level);
   unlockEligibleEvolutions(state);
   finishLevelUp(state);
 }
