@@ -4,6 +4,7 @@ import { getBossPhaseMovementMultiplier } from "./heroStrikeBossPhases";
 import { updateEnemyImpactFeedback } from "./heroStrikeCombatFeedback";
 import { HERO_STRIKE_BOSS_Y, HERO_STRIKE_WIDTH } from "./heroStrikeConfig";
 import { applyHeroStrikeEnemyActionMovement } from "./heroStrikeEnemyActions";
+import { resolveHeroStrikeEncounterBoundary } from "./heroStrikeEncounterDirector";
 import { getHeroStrikeEncounterEnemy } from "./heroStrikeEncounters";
 import { getFormationInterval, getNextFormation } from "./heroStrikeFormations";
 import { getDifficultyProfile } from "./heroStrikeLoadout";
@@ -182,6 +183,7 @@ export function updateSpawning(state: HeroStrikeState, dt: number) {
 
   const waveChanged = updateHeroStrikeWave(state, stage.durationSeconds);
   if (!state.bossSpawned && state.stageElapsed >= stage.durationSeconds) {
+    resolveHeroStrikeEncounterBoundary(state);
     softenEncounterTransition(state);
     if (openQueuedHeroStrikeUpgrade(state)) {
       state.bossSpawned = true;
