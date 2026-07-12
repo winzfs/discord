@@ -48,18 +48,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Typecheck
-        run: pnpm typecheck 2>&1 | tee typecheck.log
+        run: pnpm typecheck
 
       - name: Build web
-        run: pnpm build:web 2>&1 | tee build-web.log
-
-      - name: Upload verification diagnostics
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: web-verification-diagnostics
-          path: |
-            typecheck.log
-            build-web.log
-          if-no-files-found: ignore
-          retention-days: 1
+        run: pnpm build:web
