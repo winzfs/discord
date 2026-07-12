@@ -2,7 +2,6 @@ import { playHeroStrikeSound } from "./heroStrikeAudio";
 import { getEliteResearchReward } from "./heroStrikeBalance";
 import { applyBossBreakPressure, getBossBreakDamageMultiplier } from "./heroStrikeBossBreak";
 import {
-  consumeHeroStrikeRailShot,
   getHeroStrikeAimAngle,
   getHeroStrikePrimaryDamageScale,
   getHeroStrikePrimaryIntervalScale,
@@ -27,6 +26,14 @@ import {
 import { grantResearchData } from "./heroStrikeMetaProgress";
 import { recordStageEnemyDefeat } from "./heroStrikeObjectives";
 import { maybeSpawnBonusPickup, spawnEnemyXp, spawnHeroStrikePickup } from "./heroStrikePickups";
+import {
+  getArcRailProfile,
+  getBreacherScatterProfile,
+} from "./heroStrikePrimaryWeaponProfiles";
+import {
+  type HeroStrikePrimaryAction,
+  updateHeroStrikePrimaryWeaponSystem,
+} from "./heroStrikePrimaryWeaponSystem";
 import { completeHeroStrikeStage } from "./heroStrikeStageRuntime";
 import {
   getChainDamageScale,
@@ -127,162 +134,105 @@ function spawnPlayerBullet(state: HeroStrikeState, angle: number, options: Playe
   });
 }
 
-function pulseVolleyDamageScale(count: number) {
-  if (count <= 1) return 1;
-  if (count === 2) return 0.62;
-  return 0.48;
-}
-
-function scatterVolleyDamageScale(count: number) {
-  if (count <= 3) return 1;
-  if (count === 4) return 0.82;
-  return 0.72;
-}
-
-function firePulseWeapons(state: HeroStrikeState) {
-  const player = state.player;
-  const focus = isHeroStrikeFocus(state);
+function firePulseAction(state: HeroStrikeState, action: Extract<HeroStrikePrimaryAction, { kind: "pulse" }>) {
   const aim = getHeroStrikeAimAngle(state);
-  const count = focus ? player.bulletCount : Math.min(2, player.bulletCount);
-  const centered = (count - 1) / 2;
-  const burstInterval = isHeroStrikeFlowRush(state) ? 2 : 3;
-  const burst = focus && player.shotCounter % burstInterval === 0;
-  const volleyScale = pulseVolleyDamageScale(count);
-
-  for (let index = 0; index < count; index += 1) {
-    const position = index - centered;
-    spawnPlayerBullet(state, aim + position * player.spread * (focus ? 0.72 : 1), {
-      xOffset: position * 7,
-      damageScale: (focus ? 1.05 : 0.86) * volleyScale * (burst ? 1.16 : 1),
-      style: "pulse-blasters",
-      impactForce: burst ? 24 : focus ? 18 : 13,
-    });
-  }
-
-  if (burst) {
-    spawnPlayerBullet(state, aim - 0.12, {
-      xOffset: -10,
-      damageScale: 0.48,
-      style: "pulse-blasters",
-      impactForce: 20,
-    });
-    spawnPlayerBullet(state, aim + 0.12, {
-      xOffset: 10,
-      damageScale: 0.48,
-      style: "pulse-blasters",
-      impactForce: 20,
-    });
-  }
-  playHeroStrikeSound("pulse-shot", focus ? (burst ? 1.2 : 0.95) : 0.58);
-  return true;
+  const barrel = action.shotIndex % 2 === 0 ? -1 : 1;
+  const hotFinal = action.finalShot && action.heat >= 0.72;
+  spawnPlayerBullet(state, aim + barrel * 0.012, {
+    xOffset: barrel * 7,
+    damageScale: (action.focus ? 1.02 : 0.78) * (hotFinal ? 1.22 : 1),
+    style: "pulse-blasters",
+    radius: hotFinal ? 5 : 4,
+    impactForce: hotFinal ? 27 : action.focus ? 19 : 13,
+    breakPower: hotFinal ? 1.22 : action.focus ? 1 : 0.72,
+  });
+  playHeroStrikeSound("pulse-shot", hotFinal ? 1.18 : action.focus ? 0.9 : 0.58);
+  if (hotFinal) state.shake = Math.max(state.shake, 0.08);
 }
 
-function fireScatterWeapons(state: HeroStrikeState) {
-  const player = state.player;
-  const focus = isHeroStrikeFocus(state);
+function fireScatterAction(state: HeroStrikeState, action: Extract<HeroStrikePrimaryAction, { kind: "scatter" }>) {
+  const profile = getBreacherScatterProfile(state);
   const aim = getHeroStrikeAimAngle(state);
-  const count = focus ? player.bulletCount : Math.min(2, player.bulletCount);
-  const centered = (count - 1) / 2;
-  const spread = focus ? Math.max(0.1, player.spread * 0.78) : Math.max(0.2, player.spread * 1.55);
-  const pelletScale = scatterVolleyDamageScale(count);
+  const centered = (action.pellets - 1) / 2;
+  const spread = action.focus ? profile.focusSpread : profile.driveSpread;
+  const damageScale = action.focus ? profile.focusDamageScale : profile.driveDamageScale;
 
-  for (let index = 0; index < count; index += 1) {
+  for (let index = 0; index < action.pellets; index += 1) {
     const position = index - centered;
     spawnPlayerBullet(state, aim + position * spread, {
-      xOffset: position * 8,
-      damageScale: pelletScale * (focus ? 1.18 : 0.74),
+      xOffset: Math.max(-13, Math.min(13, position * 3.2)),
+      damageScale,
       style: "scatter-array",
-      radius: focus ? 5.2 : 4.2,
-      life: focus ? 0.88 : 0.72,
-      speedScale: 0.92,
-      impactForce: focus ? 31 : 17,
-      breakPower: focus ? 1.18 : 0.62,
+      radius: action.focus ? 5.1 : 4.1,
+      life: action.focus ? 0.72 : 0.58,
+      speedScale: action.focus ? 0.96 : 0.86,
+      impactForce: action.focus ? 33 : 17,
+      breakPower: action.focus ? 1.3 : 0.58,
+      explosionScale: 0.48,
     });
   }
-  playHeroStrikeSound("scatter-shot", focus ? 1.08 : 0.58);
-  return true;
+  state.shake = Math.max(state.shake, action.focus ? 0.2 : 0.1);
+  playHeroStrikeSound("scatter-shot", action.focus ? 1.18 : 0.68);
 }
 
-function fireRailWeapons(state: HeroStrikeState) {
-  const player = state.player;
-  const focus = isHeroStrikeFocus(state);
+function fireRailAction(state: HeroStrikeState, action: Extract<HeroStrikePrimaryAction, { kind: "rail" }>) {
+  const profile = getArcRailProfile(state);
   const aim = getHeroStrikeAimAngle(state);
+  const chargeScale = profile.minimumDamageScale
+    + (profile.maximumDamageScale - profile.minimumDamageScale) * action.charge;
 
-  if (!focus) {
-    spawnPlayerBullet(state, 0, {
-      damageScale: 0.34,
-      pierce: player.pierce,
-      style: "rail-driver",
-      radius: 3.4,
-      speedScale: 1.12,
-      life: 1.2,
-      color: HERO_STRIKE_COLORS.cyan,
-      breakPower: 0.42,
-      impactForce: 13,
-      explosionScale: 0.22,
-    });
-    playHeroStrikeSound("rail-shot", 0.42);
-    return true;
+  spawnPlayerBullet(state, aim, {
+    damageScale: chargeScale,
+    pierce: state.player.pierce + 3 + (action.fullCharge ? 2 : 0),
+    style: "rail-driver",
+    radius: action.fullCharge ? 8 : 6.2,
+    speedScale: 1.28,
+    life: 1.4,
+    color: action.fullCharge ? HERO_STRIKE_COLORS.gold : HERO_STRIKE_COLORS.white,
+    breakPower: 1.7 + action.charge * 2.1,
+    impactForce: 38 + action.charge * 26,
+    explosionScale: 0.38,
+  });
+
+  for (let index = 0; index < action.sideBeams; index += 1) {
+    const offset = 0.035 + index * 0.024;
+    for (const direction of [-1, 1]) {
+      spawnPlayerBullet(state, aim + offset * direction, {
+        xOffset: direction * (10 + index * 4),
+        damageScale: chargeScale * 0.2,
+        pierce: state.player.pierce + 1,
+        style: "rail-driver",
+        radius: 3.4,
+        speedScale: 1.22,
+        life: 1.3,
+        color: HERO_STRIKE_COLORS.cyan,
+        breakPower: 0.5,
+        impactForce: 17,
+        explosionScale: 0.16,
+      });
+    }
   }
 
-  const charge = consumeHeroStrikeRailShot(state);
-  if (charge <= 0) return false;
-  const count = player.bulletCount;
-  const centered = (count - 1) / 2;
-  const fullCharge = charge >= 0.92;
-
-  for (let index = 0; index < count; index += 1) {
-    const position = index - centered;
-    const centerShot = Math.abs(position) < 0.25;
-    const chargeScale = 0.72 + charge * 1.48;
-    spawnPlayerBullet(state, aim + position * Math.min(0.045, player.spread * 0.28), {
-      xOffset: position * 8,
-      damageScale: chargeScale * (centerShot ? 1 : 0.34),
-      pierce: player.pierce + (centerShot ? 3 : 1),
-      style: "rail-driver",
-      radius: centerShot ? (fullCharge ? 7.4 : 6.2) : 4.1,
-      speedScale: 1.24,
-      life: 1.4,
-      color: fullCharge ? HERO_STRIKE_COLORS.gold : HERO_STRIKE_COLORS.white,
-      breakPower: centerShot ? 1.6 + charge * 1.75 : 0.72,
-      impactForce: centerShot ? 34 + charge * 22 : 18,
-      explosionScale: 0.42,
-    });
-  }
-  state.shake = Math.max(state.shake, 0.12 + charge * 0.18);
-  playHeroStrikeSound("rail-shot", 0.75 + charge * 0.5);
-  return true;
+  state.shake = Math.max(state.shake, 0.22 + action.charge * 0.3);
+  state.hitStop = Math.max(state.hitStop, 0.022 + action.charge * 0.035);
+  playHeroStrikeSound("rail-shot", 0.78 + action.charge * 0.55);
 }
 
-function fireForwardWeapons(state: HeroStrikeState) {
+function firePrimaryAction(state: HeroStrikeState, action: HeroStrikePrimaryAction) {
   state.player.shotCounter += 1;
-  let fired = false;
-  if (state.loadout.primary === "scatter-array") fired = fireScatterWeapons(state);
-  else if (state.loadout.primary === "rail-driver") fired = fireRailWeapons(state);
-  else fired = firePulseWeapons(state);
-  if (!fired) return false;
+  if (action.kind === "scatter") fireScatterAction(state, action);
+  else if (action.kind === "rail") fireRailAction(state, action);
+  else firePulseAction(state, action);
 
   const aim = getHeroStrikeAimAngle(state);
-  if (hasEvolution(state, "pulse-storm")) {
-    spawnPlayerBullet(state, aim - 0.32, {
-      xOffset: -18,
-      damageScale: 0.42,
-      pierce: state.player.pierce + 1,
-      style: "support",
-    });
-    spawnPlayerBullet(state, aim + 0.32, {
-      xOffset: 18,
-      damageScale: 0.42,
-      pierce: state.player.pierce + 1,
-      style: "support",
-    });
+  if (hasEvolution(state, "pulse-storm") && action.kind !== "rail") {
+    spawnPlayerBullet(state, aim - 0.3, { xOffset: -18, damageScale: 0.26, pierce: state.player.pierce + 1, style: "support" });
+    spawnPlayerBullet(state, aim + 0.3, { xOffset: 18, damageScale: 0.26, pierce: state.player.pierce + 1, style: "support" });
   }
-
-  if (isHeroStrikeFlowRush(state) && state.player.shotCounter % 3 === 0) {
-    spawnPlayerBullet(state, aim - 0.24, { xOffset: -16, damageScale: 0.34, style: "support" });
-    spawnPlayerBullet(state, aim + 0.24, { xOffset: 16, damageScale: 0.34, style: "support" });
+  if (isHeroStrikeFlowRush(state) && state.player.shotCounter % 4 === 0) {
+    spawnPlayerBullet(state, aim - 0.22, { xOffset: -15, damageScale: 0.28, style: "support" });
+    spawnPlayerBullet(state, aim + 0.22, { xOffset: 15, damageScale: 0.28, style: "support" });
   }
-  return true;
 }
 
 function fireSideCannons(state: HeroStrikeState) {
@@ -321,26 +271,26 @@ function fireRearGuard(state: HeroStrikeState) {
   }
 }
 
+function endsPrimaryCycle(action: HeroStrikePrimaryAction) {
+  if (action.kind === "pulse") return action.finalShot;
+  return true;
+}
+
 export function updatePlayerFire(state: HeroStrikeState, dt: number) {
-  const player = state.player;
-  player.fireCooldown -= dt;
-  if (player.fireCooldown > 0) return;
-
-  const fired = fireForwardWeapons(state);
-  if (fired) {
-    fireSideCannons(state);
-    fireRearGuard(state);
-  }
-
-  const evolutionRate = hasEvolution(state, "pulse-storm") ? 0.94 : 1;
-  const retryRate = state.loadout.primary === "rail-driver" && isHeroStrikeFocus(state) && !fired ? 0.08 : 1;
-  player.fireCooldown = retryRate === 0.08
-    ? retryRate
-    : player.fireInterval
-      * player.campaignFireRateMultiplier
+  const timingScale = Math.max(
+    0.42,
+    state.player.campaignFireRateMultiplier
       * getHeroStrikeFlowFireRateMultiplier(state)
-      * getHeroStrikePrimaryIntervalScale(state)
-      * evolutionRate;
+      * getHeroStrikePrimaryIntervalScale(state),
+  );
+  const actions = updateHeroStrikePrimaryWeaponSystem(state, dt / timingScale);
+  for (const action of actions) {
+    firePrimaryAction(state, action);
+    if (endsPrimaryCycle(action)) {
+      fireSideCannons(state);
+      fireRearGuard(state);
+    }
+  }
 }
 
 function awardEliteDefeat(state: HeroStrikeState, enemy: HeroStrikeEnemy) {

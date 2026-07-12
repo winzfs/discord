@@ -3,7 +3,6 @@ import {
   getHeroStrikeFocusProgress,
   getHeroStrikeLockTarget,
   getHeroStrikeLockWidth,
-  getHeroStrikeRailCharge,
   getPendingHeroStrikeUpgrades,
 } from "./heroStrikeCombatControl";
 import { HERO_STRIKE_COLORS } from "./heroStrikeConfig";
@@ -89,15 +88,7 @@ function drawControlStatus(ctx: CanvasRenderingContext2D, state: HeroStrikeState
   ctx.fillText(focus ? "FOCUS FIRE" : "DRIVE", centerX, y + 14);
   ctx.fillStyle = HERO_STRIKE_COLORS.muted;
   ctx.font = "700 8px system-ui";
-  ctx.fillText(focus ? "LOCKED PRECISION" : "MOVE · CHARGE · SUPPRESS", centerX, y + 26);
-
-  if (state.loadout.primary === "rail-driver") {
-    const charge = getHeroStrikeRailCharge(state);
-    ctx.fillStyle = "rgba(255,255,255,.1)";
-    ctx.fillRect(x + 8, y - 7, width - 16, 3);
-    ctx.fillStyle = charge >= 0.92 ? HERO_STRIKE_COLORS.gold : HERO_STRIKE_COLORS.cyan;
-    ctx.fillRect(x + 8, y - 7, (width - 16) * charge, 3);
-  }
+  ctx.fillText(focus ? "LOCK · COMMIT · FIRE" : "MOVE · EVADE · PREPARE", centerX, y + 26);
 
   if (pending > 0) {
     ctx.textAlign = "right";

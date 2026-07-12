@@ -2,6 +2,9 @@ export type HeroStrikeSound =
   | "pulse-shot"
   | "scatter-shot"
   | "rail-shot"
+  | "weapon-vent"
+  | "weapon-reload"
+  | "weapon-ready"
   | "hit"
   | "critical"
   | "kill"
@@ -16,10 +19,13 @@ let context: AudioContext | null = null;
 const lastPlayed = new Map<HeroStrikeSound, number>();
 
 const SOUND_GAPS: Partial<Record<HeroStrikeSound, number>> = {
-  "pulse-shot": 0.055,
+  "pulse-shot": 0.04,
   "scatter-shot": 0.09,
-  "hit": 0.035,
-  "critical": 0.055,
+  "weapon-vent": 0.35,
+  "weapon-reload": 0.3,
+  "weapon-ready": 0.22,
+  hit: 0.035,
+  critical: 0.055,
 };
 
 function getContext() {
@@ -93,13 +99,24 @@ export function playHeroStrikeSound(sound: HeroStrikeSound, intensity = 1) {
   const strength = Math.max(0.35, Math.min(1.4, intensity));
 
   if (sound === "pulse-shot") {
-    tone(audio, 420, 0.045, 0.018 * strength, 230, "square");
+    tone(audio, 470, 0.04, 0.018 * strength, 210, "square");
+    tone(audio, 920, 0.025, 0.008 * strength, 480, "triangle", 0.008);
   } else if (sound === "scatter-shot") {
-    noise(audio, 0.075, 0.032 * strength);
-    tone(audio, 180, 0.08, 0.018 * strength, 90, "sawtooth");
+    noise(audio, 0.085, 0.036 * strength);
+    tone(audio, 170, 0.1, 0.02 * strength, 75, "sawtooth");
   } else if (sound === "rail-shot") {
-    tone(audio, 1120, 0.14, 0.035 * strength, 150, "sawtooth");
-    tone(audio, 220, 0.18, 0.026 * strength, 70, "square");
+    tone(audio, 1320, 0.16, 0.038 * strength, 145, "sawtooth");
+    tone(audio, 210, 0.2, 0.03 * strength, 62, "square");
+  } else if (sound === "weapon-vent") {
+    noise(audio, 0.26, 0.028 * strength);
+    tone(audio, 520, 0.18, 0.012 * strength, 120, "sine");
+  } else if (sound === "weapon-reload") {
+    noise(audio, 0.045, 0.018 * strength);
+    tone(audio, 120, 0.06, 0.018 * strength, 82, "square");
+    tone(audio, 185, 0.05, 0.015 * strength, 105, "square", 0.1);
+  } else if (sound === "weapon-ready") {
+    tone(audio, 440, 0.07, 0.018 * strength, 720, "triangle");
+    tone(audio, 720, 0.08, 0.013 * strength, 980, "sine", 0.045);
   } else if (sound === "hit") {
     tone(audio, 250, 0.032, 0.012 * strength, 145, "square");
   } else if (sound === "critical") {

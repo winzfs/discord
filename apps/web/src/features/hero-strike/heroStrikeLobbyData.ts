@@ -8,13 +8,17 @@ import {
 import {
   DIFFICULTY_OPTIONS,
   getDifficultyProfile,
-  getPrimaryWeaponProfile,
   PRIMARY_WEAPON_OPTIONS,
   SUPPORT_LOADOUT_OPTIONS,
   TACTICAL_LOADOUT_OPTIONS,
 } from "./heroStrikeLoadout";
 import type { HeroStrikeLoadoutRow } from "./heroStrikeLoadoutLayout";
 import { getResearchProgress } from "./heroStrikeMetaProgress";
+import {
+  getArcRailProfile,
+  getBreacherScatterProfile,
+  getPulseRepeaterProfile,
+} from "./heroStrikePrimaryWeaponProfiles";
 import { getHeroStrikeStage } from "./heroStrikeStages";
 import {
   getMagnetRadius,
@@ -52,7 +56,7 @@ const CATEGORY_META: Record<HeroStrikeLoadoutRow, Omit<HeroStrikeLobbyCategory, 
   primary: {
     label: "PRIMARY ARMAMENT",
     shortLabel: "PRIMARY",
-    subtitle: "DRIVE와 FOCUS의 기본 공격 규칙",
+    subtitle: "열·탄창·축전을 관리하는 주무기",
     accent: "#ff9b3d",
   },
   support: {
@@ -89,18 +93,34 @@ function selectedIdFor(state: HeroStrikeState, row: HeroStrikeLoadoutRow) {
   return state.loadout.difficulty;
 }
 
-function metricFor(row: HeroStrikeLoadoutRow, id: string) {
-  if (row === "primary") {
-    const profile = getPrimaryWeaponProfile(id as HeroStrikeState["loadout"]["primary"]);
+function primaryMetric(state: HeroStrikeState, id: string) {
+  if (id === "scatter-array") {
+    const profile = getBreacherScatterProfile(state);
     return {
-      metric: `DMG ${Math.round(profile.damage)}`,
-      detail: `${(1 / profile.fireInterval).toFixed(1)}/s · ${profile.bulletCount} SHOT · P${profile.pierce}`,
+      metric: `${profile.magazine} SHELL`,
+      detail: `PUMP ${profile.pumpTime.toFixed(2)}s · RELOAD ${profile.reloadTime.toFixed(2)}s`,
     };
   }
+  if (id === "rail-driver") {
+    const profile = getArcRailProfile(state);
+    return {
+      metric: "CAPACITOR",
+      detail: `CHARGE ${Math.round(profile.chargeRate * 100)}%/s · FOCUS RELEASE`,
+    };
+  }
+  const profile = getPulseRepeaterProfile(state);
+  return {
+    metric: `${profile.driveBurst}/${profile.focusBurst} BURST`,
+    detail: `HEAT ${Math.round(profile.heatPerShot * 100)} · COOL ${Math.round(profile.driveCooling * 100)}%/s`,
+  };
+}
+
+function metricFor(state: HeroStrikeState, row: HeroStrikeLoadoutRow, id: string) {
+  if (row === "primary") return primaryMetric(state, id);
   if (row === "support") {
     if (id === "homing-missile") return { metric: "LOCK-ON", detail: "추적 · 범위 폭발" };
     if (id === "drone-wing") return { metric: "TWIN WING", detail: "양측 · 자동 사격" };
-    return { metric: "DRIVE LINK", detail: "측면 · 억제 사격" };
+    return { metric: "CYCLE LINK", detail: "주무기 사이클 연동" };
   }
   if (row === "tactical") {
     if (id === "shield-matrix") return { metric: "SHIELD +2", detail: "출격 보호막 추가" };
@@ -128,7 +148,7 @@ export function getHeroStrikeLobbyCategory(
     ...meta,
     selectedId,
     options: optionsFor(row).map((option) => {
-      const metric = metricFor(row, option.id);
+      const metric = metricFor(state, row, option.id);
       return {
         ...option,
         ...metric,

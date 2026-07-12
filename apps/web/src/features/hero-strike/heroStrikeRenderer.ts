@@ -11,6 +11,10 @@ import {
 import { drawHeroStrikeEnemyTelegraphs } from "./heroStrikeEnemyTelegraphRenderer";
 import { drawHeroStrikeEntities } from "./heroStrikeEntityRenderer";
 import { drawHeroStrikeHud } from "./heroStrikeHudRenderer";
+import {
+  drawHeroStrikePrimaryWeaponHud,
+  drawHeroStrikePrimaryWeaponWorld,
+} from "./heroStrikePrimaryWeaponRenderer";
 import type { HeroStrikeState } from "./heroStrikeTypes";
 
 export function renderHeroStrike(ctx: CanvasRenderingContext2D, state: HeroStrikeState) {
@@ -23,7 +27,9 @@ export function renderHeroStrike(ctx: CanvasRenderingContext2D, state: HeroStrik
   drawHeroStrikeEnemyTelegraphs(ctx, state);
   drawHeroStrikeBossTelegraph(ctx, state);
   drawHeroStrikeEntities(ctx, state);
+  drawHeroStrikePrimaryWeaponWorld(ctx, state);
   drawHeroStrikeCombatControl(ctx, state);
+  drawHeroStrikePrimaryWeaponHud(ctx, state);
   drawHeroStrikeEncounterHud(ctx, state);
   drawHeroStrikeCombatRank(ctx, state);
   drawHeroStrikeCombatProgress(ctx, state);

@@ -7,6 +7,11 @@ import { draftHeroStrikeUpgradeChoices } from "./heroStrikeBuildDraft";
 import { unlockEligibleEvolutions } from "./heroStrikeEvolutions";
 import { getPrimaryWeaponProfile } from "./heroStrikeLoadout";
 import {
+  getArcRailProfile,
+  getBreacherScatterProfile,
+  getPulseRepeaterProfile,
+} from "./heroStrikePrimaryWeaponProfiles";
+import {
   describeUpgradeLevel,
   getCriticalChance,
   getCriticalMultiplier,
@@ -24,8 +29,8 @@ import type { HeroStrikeState, UpgradeId, UpgradeOption } from "./heroStrikeType
 type UpgradeMetadata = Omit<UpgradeOption, "description" | "currentLevel" | "nextLevel" | "maxLevel">;
 
 const UPGRADE_POOL: UpgradeMetadata[] = [
-  { id: "rapid-fire", title: "속사 모듈", icon: "⚡", rarity: "common" },
-  { id: "twin-shot", title: "펄스 확장", icon: "✦", rarity: "rare" },
+  { id: "rapid-fire", title: "사이클 튜닝", icon: "⚡", rarity: "common" },
+  { id: "twin-shot", title: "발사 구조 확장", icon: "✦", rarity: "rare" },
   { id: "power-core", title: "고출력 코어", icon: "◆", rarity: "common" },
   { id: "piercing", title: "관통 탄환", icon: "➤", rarity: "rare" },
   { id: "magnet", title: "회수 자석", icon: "◎", rarity: "common" },
@@ -43,7 +48,7 @@ const UPGRADE_POOL: UpgradeMetadata[] = [
 const PRIMARY_SYNERGY: Record<HeroStrikeState["loadout"]["primary"], readonly UpgradeId[]> = {
   "pulse-blasters": ["rapid-fire", "twin-shot", "critical-core", "overclock"],
   "scatter-array": ["twin-shot", "explosive-rounds", "power-core", "rapid-fire"],
-  "rail-driver": ["power-core", "piercing", "critical-core", "chain-core"],
+  "rail-driver": ["rapid-fire", "power-core", "piercing", "critical-core", "chain-core"],
 };
 
 const EVOLUTION_PARTNERS: Partial<Record<UpgradeId, UpgradeId>> = {
@@ -63,10 +68,36 @@ function unlockedAtStage(id: UpgradeId) {
   return 0;
 }
 
+function describeWeaponCycleUpgrade(state: HeroStrikeState, rapidLevel: number) {
+  if (state.loadout.primary === "scatter-array") {
+    const profile = getBreacherScatterProfile(state, { rapid: rapidLevel });
+    return `펌프 ${profile.pumpTime.toFixed(2)}초 · 재장전 ${profile.reloadTime.toFixed(2)}초`;
+  }
+  if (state.loadout.primary === "rail-driver") {
+    const profile = getArcRailProfile(state, { rapid: rapidLevel });
+    return `축전 속도 ${Math.round(profile.chargeRate * 100)}%/초`;
+  }
+  const profile = getPulseRepeaterProfile(state, { rapid: rapidLevel });
+  return `점사 간격 ${profile.shotGap.toFixed(2)}초 · 냉각 ${Math.round(profile.driveCooling * 100)}%/초`;
+}
+
+function describeWeaponStructureUpgrade(state: HeroStrikeState, twinLevel: number) {
+  if (state.loadout.primary === "scatter-array") {
+    const profile = getBreacherScatterProfile(state, { twin: twinLevel });
+    return `FOCUS ${profile.focusPellets}펠릿 · DRIVE ${profile.drivePellets}펠릿`;
+  }
+  if (state.loadout.primary === "rail-driver") {
+    const profile = getArcRailProfile(state, { twin: twinLevel });
+    return `주 광선 + 보조 광선 ${profile.sideBeams}쌍`;
+  }
+  const profile = getPulseRepeaterProfile(state, { twin: twinLevel });
+  return `DRIVE ${profile.driveBurst}점사 · FOCUS ${profile.focusBurst}점사`;
+}
+
 function describeUpgradeForLoadout(state: HeroStrikeState, id: UpgradeId, level: number) {
   const primary = getPrimaryWeaponProfile(state.loadout.primary);
-  if (id === "rapid-fire") return `공격 간격 ${getRapidFireInterval(level, primary.fireInterval).toFixed(2)}초`;
-  if (id === "twin-shot") return `정면 탄환 ${getForwardBulletCount(level, primary.bulletCount)}발`;
+  if (id === "rapid-fire") return describeWeaponCycleUpgrade(state, level);
+  if (id === "twin-shot") return describeWeaponStructureUpgrade(state, level);
   if (id === "power-core") return `기본 공격력 ${Math.round(getPowerCoreDamage(level, primary.damage))}`;
   if (id === "piercing") return `기본탄 관통 ${primary.pierce + level}회`;
   return describeUpgradeLevel(id, level);
