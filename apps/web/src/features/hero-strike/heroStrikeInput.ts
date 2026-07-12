@@ -5,6 +5,7 @@ import {
   isInsideHeroStrikeArmoryRect,
 } from "./heroStrikeArmoryLayout";
 import { unlockHeroStrikeAudio } from "./heroStrikeAudio";
+import { isHeroStrikeBlueprintUnlocked } from "./heroStrikeBlueprints";
 import { beginHeroStrikeDrive, releaseHeroStrikeFocus } from "./heroStrikeCombatControl";
 import {
   BLINK_BUTTON,
@@ -80,11 +81,18 @@ function handleLoadoutPointer(state: HeroStrikeState, x: number, y: number) {
   const support = SUPPORT_LOADOUT_OPTIONS[getHeroStrikeLoadoutCardIndex("support", x, y)];
   const tactical = TACTICAL_LOADOUT_OPTIONS[getHeroStrikeLoadoutCardIndex("tactical", x, y)];
   const difficulty = DIFFICULTY_OPTIONS[getHeroStrikeLoadoutCardIndex("difficulty", x, y)];
-  if (primary) state.loadout.primary = primary.id;
-  else if (support) state.loadout.support = support.id;
-  else if (tactical) state.loadout.tactical = tactical.id;
-  else if (difficulty) state.loadout.difficulty = difficulty.id;
-  else return;
+
+  if (primary && isHeroStrikeBlueprintUnlocked(state.researchRank, "primary", primary.id)) {
+    state.loadout.primary = primary.id;
+  } else if (support && isHeroStrikeBlueprintUnlocked(state.researchRank, "support", support.id)) {
+    state.loadout.support = support.id;
+  } else if (tactical && isHeroStrikeBlueprintUnlocked(state.researchRank, "tactical", tactical.id)) {
+    state.loadout.tactical = tactical.id;
+  } else if (difficulty && isHeroStrikeBlueprintUnlocked(state.researchRank, "difficulty", difficulty.id)) {
+    state.loadout.difficulty = difficulty.id;
+  } else {
+    return;
+  }
   saveHeroStrikeLoadout(state.loadout);
 }
 
