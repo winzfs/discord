@@ -13,7 +13,7 @@ function roundedRect(ctx: CanvasRenderingContext2D, x: number, y: number, width:
 function drawObjective(ctx: CanvasRenderingContext2D, state: HeroStrikeState) {
   if (state.phase !== "playing") return;
   const x = 203;
-  const y = 112;
+  const y = 124;
   const width = 158;
   const ratio = getObjectiveProgressRatio(state);
   roundedRect(ctx, x, y, width, 25, 9);
@@ -130,13 +130,13 @@ function drawEvolutionTags(ctx: CanvasRenderingContext2D, state: HeroStrikeState
   let x = 20;
   for (const label of labels) {
     const width = ctx.measureText(label).width + 14;
-    roundedRect(ctx, x, 146, width, 17, 7);
+    roundedRect(ctx, x, 178, width, 17, 7);
     ctx.fillStyle = "rgba(4,10,24,.74)";
     ctx.fill();
     ctx.strokeStyle = HERO_STRIKE_COLORS.gold;
     ctx.stroke();
     ctx.fillStyle = HERO_STRIKE_COLORS.gold;
-    ctx.fillText(label, x + 7, 158);
+    ctx.fillText(label, x + 7, 190);
     x += width + 5;
   }
 }
