@@ -15,7 +15,10 @@ import {
 import { addFloatingText } from "./heroStrikeEffects";
 import { updateHeroStrikeEnemyAction } from "./heroStrikeEnemyActions";
 import { updateEnemyFire } from "./heroStrikeEnemyFire";
-import { updateHeroStrikeEncounter } from "./heroStrikeEncounterDirector";
+import {
+  resolveHeroStrikeEncounterBoundary,
+  updateHeroStrikeEncounter,
+} from "./heroStrikeEncounterDirector";
 import {
   getHeroStrikeFlowMovementResponse,
   isHeroStrikeFlowRush,
@@ -124,6 +127,7 @@ export function tickHeroStrike(state: HeroStrikeState, dt: number) {
   updateEffects(state, dt);
   if (state.phase !== "playing") {
     if (state.phase === "game-over" || state.phase === "victory") {
+      resolveHeroStrikeEncounterBoundary(state);
       finalizeHeroStrikeRun(state);
       persistHighScore(state);
     }
