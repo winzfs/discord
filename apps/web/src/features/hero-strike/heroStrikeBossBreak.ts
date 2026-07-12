@@ -1,5 +1,8 @@
 import { playHeroStrikeSound } from "./heroStrikeAudio";
-import { getHeroStrikeBossBreakPressureMultiplier } from "./heroStrikeBossDirector";
+import {
+  getHeroStrikeBossActionDamageMultiplier,
+  getHeroStrikeBossBreakPressureMultiplier,
+} from "./heroStrikeBossDirector";
 import { HERO_STRIKE_COLORS, HERO_STRIKE_WIDTH } from "./heroStrikeConfig";
 import { addBurst, addFloatingText, addRing } from "./heroStrikeEffects";
 import { addHeroStrikeFlow } from "./heroStrikeFlow";
@@ -10,7 +13,8 @@ export function getBossBreakMax(maxHp: number) {
 }
 
 export function getBossBreakDamageMultiplier(enemy: HeroStrikeEnemy) {
-  return (enemy.breakStun ?? 0) > 0 ? 1.38 : 1;
+  const breakScale = (enemy.breakStun ?? 0) > 0 ? 1.38 : 1;
+  return breakScale * getHeroStrikeBossActionDamageMultiplier(enemy);
 }
 
 export function applyBossBreakPressure(
