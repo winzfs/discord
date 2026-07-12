@@ -25,10 +25,14 @@ import {
 } from "./heroStrikeLoadout";
 import {
   getHeroStrikeLoadoutCardIndex,
+  getHeroStrikeLobbyTabIndex,
   HERO_STRIKE_LOADOUT_BACK_BOUNDS,
   HERO_STRIKE_LOADOUT_DEPLOY_BOUNDS,
+  HERO_STRIKE_LOBBY_TABS,
   isInsideHeroStrikeRect,
+  type HeroStrikeLoadoutRow,
 } from "./heroStrikeLoadoutLayout";
+import { getHeroStrikeLobbyTab, setHeroStrikeLobbyTab } from "./heroStrikeLobbyRuntime";
 import { activateBlink, activateUltimate } from "./heroStrikePlayerRuntime";
 import { applyStageProtocol } from "./heroStrikeProtocols";
 import { advanceHeroStrikeStage } from "./heroStrikeStageRuntime";
@@ -67,6 +71,26 @@ function selectedCardIndex(x: number, y: number) {
   );
 }
 
+function optionForTab(tab: HeroStrikeLoadoutRow, index: number) {
+  if (tab === "primary") return PRIMARY_WEAPON_OPTIONS[index];
+  if (tab === "support") return SUPPORT_LOADOUT_OPTIONS[index];
+  if (tab === "tactical") return TACTICAL_LOADOUT_OPTIONS[index];
+  return DIFFICULTY_OPTIONS[index];
+}
+
+function applyLobbyOption(state: HeroStrikeState, tab: HeroStrikeLoadoutRow, index: number) {
+  const option = optionForTab(tab, index);
+  if (!option || !isHeroStrikeBlueprintUnlocked(state.researchRank, tab, option.id)) return false;
+
+  if (tab === "primary") state.loadout.primary = option.id as HeroStrikeState["loadout"]["primary"];
+  else if (tab === "support") state.loadout.support = option.id as HeroStrikeState["loadout"]["support"];
+  else if (tab === "tactical") state.loadout.tactical = option.id as HeroStrikeState["loadout"]["tactical"];
+  else state.loadout.difficulty = option.id as HeroStrikeState["loadout"]["difficulty"];
+
+  saveHeroStrikeLoadout(state.loadout);
+  return true;
+}
+
 function handleLoadoutPointer(state: HeroStrikeState, x: number, y: number) {
   if (isInsideHeroStrikeRect(x, y, HERO_STRIKE_LOADOUT_BACK_BOUNDS)) {
     state.phase = "title";
@@ -77,23 +101,15 @@ function handleLoadoutPointer(state: HeroStrikeState, x: number, y: number) {
     return;
   }
 
-  const primary = PRIMARY_WEAPON_OPTIONS[getHeroStrikeLoadoutCardIndex("primary", x, y)];
-  const support = SUPPORT_LOADOUT_OPTIONS[getHeroStrikeLoadoutCardIndex("support", x, y)];
-  const tactical = TACTICAL_LOADOUT_OPTIONS[getHeroStrikeLoadoutCardIndex("tactical", x, y)];
-  const difficulty = DIFFICULTY_OPTIONS[getHeroStrikeLoadoutCardIndex("difficulty", x, y)];
-
-  if (primary && isHeroStrikeBlueprintUnlocked(state.researchRank, "primary", primary.id)) {
-    state.loadout.primary = primary.id;
-  } else if (support && isHeroStrikeBlueprintUnlocked(state.researchRank, "support", support.id)) {
-    state.loadout.support = support.id;
-  } else if (tactical && isHeroStrikeBlueprintUnlocked(state.researchRank, "tactical", tactical.id)) {
-    state.loadout.tactical = tactical.id;
-  } else if (difficulty && isHeroStrikeBlueprintUnlocked(state.researchRank, "difficulty", difficulty.id)) {
-    state.loadout.difficulty = difficulty.id;
-  } else {
+  const tabIndex = getHeroStrikeLobbyTabIndex(x, y);
+  if (tabIndex >= 0) {
+    setHeroStrikeLobbyTab(state, HERO_STRIKE_LOBBY_TABS[tabIndex]);
     return;
   }
-  saveHeroStrikeLoadout(state.loadout);
+
+  const activeTab = getHeroStrikeLobbyTab(state);
+  const optionIndex = getHeroStrikeLoadoutCardIndex(activeTab, x, y);
+  if (optionIndex >= 0) applyLobbyOption(state, activeTab, optionIndex);
 }
 
 function handleArmoryPointer(state: HeroStrikeState, x: number, y: number) {

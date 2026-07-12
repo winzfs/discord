@@ -54,6 +54,10 @@ export function getUnlockedHeroStrikeBlueprintCount(researchRank: number) {
   return BLUEPRINTS.filter((entry) => entry.rank <= researchRank).length;
 }
 
+export function getHeroStrikeBlueprintCount() {
+  return BLUEPRINTS.length;
+}
+
 export function normalizeHeroStrikeBlueprintLoadout(loadout: {
   primary: PrimaryWeaponId;
   support: SupportLoadoutId;
