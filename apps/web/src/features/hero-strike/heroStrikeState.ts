@@ -1,3 +1,4 @@
+import { resetHeroStrikeArmory } from "./heroStrikeArmory";
 import { getNextXpRequirement } from "./heroStrikeBalance";
 import { resetHeroStrikeCombatControl } from "./heroStrikeCombatControl";
 import { resetHeroStrikeCombatRank } from "./heroStrikeCombatRank";
@@ -12,6 +13,7 @@ import { resetHeroStrikeOperation } from "./heroStrikeEncounterDirector";
 import { applyHeroStrikeLoadout, readHeroStrikeLoadout, saveHeroStrikeLoadout } from "./heroStrikeLoadout";
 import { getResearchBonuses, getResearchRank, readResearchData } from "./heroStrikeMetaProgress";
 import { getStageObjective } from "./heroStrikeObjectives";
+import { resetHeroStrikeSalvage } from "./heroStrikeSalvage";
 import type { HeroStrikeStar, HeroStrikeState } from "./heroStrikeTypes";
 
 function readHighScore() {
@@ -162,6 +164,14 @@ export function createInitialHeroStrikeState(): HeroStrikeState {
   };
 }
 
+function resetOperationSystems(state: HeroStrikeState) {
+  resetHeroStrikeCombatControl(state);
+  resetHeroStrikeCombatRank(state);
+  resetHeroStrikeOperation(state);
+  resetHeroStrikeSalvage(state);
+  resetHeroStrikeArmory(state);
+}
+
 export function openHeroStrikeLoadout(state: HeroStrikeState) {
   const selectedLoadout = { ...state.loadout };
   const fresh = createInitialHeroStrikeState();
@@ -169,9 +179,7 @@ export function openHeroStrikeLoadout(state: HeroStrikeState) {
   fresh.highScore = state.highScore;
   fresh.loadout = selectedLoadout;
   Object.assign(state, fresh);
-  resetHeroStrikeCombatControl(state);
-  resetHeroStrikeCombatRank(state);
-  resetHeroStrikeOperation(state);
+  resetOperationSystems(state);
 }
 
 export function resetHeroStrikeState(state: HeroStrikeState) {
@@ -183,7 +191,5 @@ export function resetHeroStrikeState(state: HeroStrikeState) {
   fresh.loadout = selectedLoadout;
   applyHeroStrikeLoadout(fresh);
   Object.assign(state, fresh);
-  resetHeroStrikeCombatControl(state);
-  resetHeroStrikeCombatRank(state);
-  resetHeroStrikeOperation(state);
+  resetOperationSystems(state);
 }
