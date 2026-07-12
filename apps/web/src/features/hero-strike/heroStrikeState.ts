@@ -14,6 +14,7 @@ import { resetHeroStrikeOperation } from "./heroStrikeEncounterDirector";
 import { applyHeroStrikeLoadout, readHeroStrikeLoadout, saveHeroStrikeLoadout } from "./heroStrikeLoadout";
 import { getResearchBonuses, getResearchRank, readResearchData } from "./heroStrikeMetaProgress";
 import { getStageObjective } from "./heroStrikeObjectives";
+import { resetHeroStrikePrimaryWeaponSystem } from "./heroStrikePrimaryWeaponSystem";
 import { resetHeroStrikeSalvage } from "./heroStrikeSalvage";
 import type { HeroStrikeStar, HeroStrikeState } from "./heroStrikeTypes";
 
@@ -172,6 +173,7 @@ function resetOperationSystems(state: HeroStrikeState) {
   resetHeroStrikeOperation(state);
   resetHeroStrikeSalvage(state);
   resetHeroStrikeArmory(state);
+  resetHeroStrikePrimaryWeaponSystem(state);
 }
 
 export function openHeroStrikeLoadout(state: HeroStrikeState) {
