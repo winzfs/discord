@@ -71,8 +71,15 @@ export function releaseHeroStrikeFocus(state: HeroStrikeState) {
   state.player.targetY = state.player.y;
 }
 
+function hasCoreModule(state: HeroStrikeState, id: keyof HeroStrikeState["protocolLevels"]) {
+  return (state.protocolLevels[id] ?? 0) > 0;
+}
+
 function getLockWidth(state: HeroStrikeState) {
-  return HERO_STRIKE_BASE_LOCK_WIDTH + Math.min(40, (state.player.pierce + state.player.chainCoreLevel) * 8);
+  const focusBonus = hasCoreModule(state, "reactor-boost") ? 16 : 0;
+  return HERO_STRIKE_BASE_LOCK_WIDTH
+    + focusBonus
+    + Math.min(40, (state.player.pierce + state.player.chainCoreLevel) * 8);
 }
 
 function targetPriority(state: HeroStrikeState, enemy: HeroStrikeEnemy) {
@@ -160,21 +167,24 @@ export function getHeroStrikeAimAngle(state: HeroStrikeState) {
 }
 
 export function getHeroStrikePrimaryDamageScale(state: HeroStrikeState) {
-  return isHeroStrikeFocus(state) ? 1 : 0.58;
+  if (isHeroStrikeFocus(state)) return hasCoreModule(state, "reactor-boost") ? 1.2 : 1;
+  return hasCoreModule(state, "pulse-sync") ? 0.76 : 0.58;
 }
 
 export function getHeroStrikeSupportDamageScale(state: HeroStrikeState) {
-  return isHeroStrikeFocus(state) ? 1 : 0.75;
+  const base = isHeroStrikeFocus(state) ? 1 : 0.75;
+  return base * (hasCoreModule(state, "vital-core") ? 1.18 : 1);
 }
 
 export function getHeroStrikeSupportIntervalScale(state: HeroStrikeState) {
-  return isHeroStrikeFocus(state) ? 1 : 1.28;
+  const base = isHeroStrikeFocus(state) ? 1 : 1.28;
+  return base * (hasCoreModule(state, "vital-core") ? 0.88 : 1);
 }
 
 export function getHeroStrikePrimaryIntervalScale(state: HeroStrikeState) {
-  if (!isHeroStrikeFocus(state)) return 1.34;
-  if (state.loadout.primary === "pulse-blasters") return 0.9;
-  return 1;
+  if (!isHeroStrikeFocus(state)) return hasCoreModule(state, "pulse-sync") ? 1.08 : 1.34;
+  const pulseScale = state.loadout.primary === "pulse-blasters" ? 0.9 : 1;
+  return pulseScale * (hasCoreModule(state, "reactor-boost") ? 0.92 : 1);
 }
 
 export function getHeroStrikeMovementResponseScale(state: HeroStrikeState) {
