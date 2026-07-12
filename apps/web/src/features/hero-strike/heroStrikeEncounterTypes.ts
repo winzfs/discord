@@ -27,6 +27,7 @@ export type HeroStrikeMissionRuntime = {
   status: HeroStrikeMissionStatus;
   progress: number;
   startKills: number;
+  startHits: number;
   targetEnemyId: number | null;
   lastTargetY: number;
   targetEnhanced: boolean;
