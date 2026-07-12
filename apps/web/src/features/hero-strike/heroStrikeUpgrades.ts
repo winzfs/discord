@@ -68,48 +68,36 @@ function unlockedAtStage(id: UpgradeId) {
   return 0;
 }
 
-function describeWeaponCycleUpgrade(state: HeroStrikeState) {
+function describeWeaponCycleUpgrade(state: HeroStrikeState, rapidLevel: number) {
   if (state.loadout.primary === "scatter-array") {
-    const profile = getBreacherScatterProfile(state);
+    const profile = getBreacherScatterProfile(state, { rapid: rapidLevel });
     return `펌프 ${profile.pumpTime.toFixed(2)}초 · 재장전 ${profile.reloadTime.toFixed(2)}초`;
   }
   if (state.loadout.primary === "rail-driver") {
-    const profile = getArcRailProfile(state);
+    const profile = getArcRailProfile(state, { rapid: rapidLevel });
     return `축전 속도 ${Math.round(profile.chargeRate * 100)}%/초`;
   }
-  const profile = getPulseRepeaterProfile(state);
+  const profile = getPulseRepeaterProfile(state, { rapid: rapidLevel });
   return `점사 간격 ${profile.shotGap.toFixed(2)}초 · 냉각 ${Math.round(profile.driveCooling * 100)}%/초`;
 }
 
-function describeWeaponStructureUpgrade(state: HeroStrikeState) {
+function describeWeaponStructureUpgrade(state: HeroStrikeState, twinLevel: number) {
   if (state.loadout.primary === "scatter-array") {
-    const profile = getBreacherScatterProfile(state);
+    const profile = getBreacherScatterProfile(state, { twin: twinLevel });
     return `FOCUS ${profile.focusPellets}펠릿 · DRIVE ${profile.drivePellets}펠릿`;
   }
   if (state.loadout.primary === "rail-driver") {
-    const profile = getArcRailProfile(state);
+    const profile = getArcRailProfile(state, { twin: twinLevel });
     return `주 광선 + 보조 광선 ${profile.sideBeams}쌍`;
   }
-  const profile = getPulseRepeaterProfile(state);
+  const profile = getPulseRepeaterProfile(state, { twin: twinLevel });
   return `DRIVE ${profile.driveBurst}점사 · FOCUS ${profile.focusBurst}점사`;
 }
 
 function describeUpgradeForLoadout(state: HeroStrikeState, id: UpgradeId, level: number) {
   const primary = getPrimaryWeaponProfile(state.loadout.primary);
-  if (id === "rapid-fire") {
-    const previous = state.upgradeLevels[id] ?? 0;
-    state.upgradeLevels[id] = level;
-    const description = describeWeaponCycleUpgrade(state);
-    state.upgradeLevels[id] = previous;
-    return description;
-  }
-  if (id === "twin-shot") {
-    const previous = state.upgradeLevels[id] ?? 0;
-    state.upgradeLevels[id] = level;
-    const description = describeWeaponStructureUpgrade(state);
-    state.upgradeLevels[id] = previous;
-    return description;
-  }
+  if (id === "rapid-fire") return describeWeaponCycleUpgrade(state, level);
+  if (id === "twin-shot") return describeWeaponStructureUpgrade(state, level);
   if (id === "power-core") return `기본 공격력 ${Math.round(getPowerCoreDamage(level, primary.damage))}`;
   if (id === "piercing") return `기본탄 관통 ${primary.pierce + level}회`;
   return describeUpgradeLevel(id, level);
