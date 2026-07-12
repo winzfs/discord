@@ -29,9 +29,9 @@ type LoadoutOption<T extends string> = {
 };
 
 export const PRIMARY_WEAPON_OPTIONS: readonly LoadoutOption<PrimaryWeaponId>[] = [
-  { id: "pulse-blasters", title: "펄스 리피터", icon: "✦", description: "3/5점사 · 열 관리 · 과열 냉각" },
-  { id: "scatter-array", title: "브리처", icon: "≋", description: "5발 탄창 · 펌프 · 집중 산탄" },
-  { id: "rail-driver", title: "아크 레일", icon: "➤", description: "DRIVE 축전 · FOCUS 관통 방출" },
+  { id: "pulse-blasters", title: "펄스 리피터", icon: "✦", description: "양 모드 5점사 · FOCUS 정밀 락온" },
+  { id: "scatter-array", title: "브리처", icon: "≋", description: "5발 탄창 · DRIVE 확산 · FOCUS 집탄" },
+  { id: "rail-driver", title: "아크 레일", icon: "➤", description: "양 모드 지속 관통탄 · FOCUS 축전 방출" },
 ];
 
 export const SUPPORT_LOADOUT_OPTIONS: readonly LoadoutOption<SupportLoadoutId>[] = [
@@ -137,12 +137,4 @@ export function applyHeroStrikeLoadout(state: HeroStrikeState) {
     player.ultimateGainMultiplier = getUltimateGainMultiplier(1);
     player.ultimate = Math.min(player.ultimateMax, player.ultimate + getPulseDriveCharge(1));
   }
-}
-
-export function getLoadoutSummary(loadout: HeroStrikeLoadout) {
-  const primary = PRIMARY_WEAPON_OPTIONS.find((option) => option.id === loadout.primary)?.title ?? "펄스 리피터";
-  const support = SUPPORT_LOADOUT_OPTIONS.find((option) => option.id === loadout.support)?.title ?? "미사일";
-  const tactical = TACTICAL_LOADOUT_OPTIONS.find((option) => option.id === loadout.tactical)?.title ?? "방벽";
-  const difficulty = DIFFICULTY_OPTIONS.find((option) => option.id === loadout.difficulty)?.title ?? "요원";
-  return `${primary} · ${support} · ${tactical} · ${difficulty}`;
 }
