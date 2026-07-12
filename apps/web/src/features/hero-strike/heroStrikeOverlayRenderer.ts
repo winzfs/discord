@@ -1,4 +1,9 @@
 import {
+  getHeroStrikeBuildTags,
+  getHeroStrikeEvolutionHint,
+  getHeroStrikeUpgradeRoleLabel,
+} from "./heroStrikeBuildCatalog";
+import {
   HERO_STRIKE_COLORS,
   HERO_STRIKE_HEIGHT,
   HERO_STRIKE_WIDTH,
@@ -10,11 +15,103 @@ import { drawHeroStrikeProtocolReward } from "./heroStrikeProtocolRenderer";
 import { drawHeroStrikeResult } from "./heroStrikeResultRenderer";
 import { getCurrentHeroStrikeStage, HERO_STRIKE_STAGES } from "./heroStrikeStages";
 import { drawHeroStrikeTitle } from "./heroStrikeTitleRenderer";
-import type { HeroStrikeState } from "./heroStrikeTypes";
+import type { HeroStrikeState, UpgradeOption } from "./heroStrikeTypes";
 
 function roundedRect(ctx: CanvasRenderingContext2D, x: number, y: number, width: number, height: number, radius: number) {
   ctx.beginPath();
   ctx.roundRect(x, y, width, height, radius);
+}
+
+function drawWrappedText(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  centerX: number,
+  startY: number,
+  maxWidth: number,
+  lineHeight: number,
+  maxLines = 2,
+) {
+  const words = text.split(" ");
+  let line = "";
+  let lineY = startY;
+  let lines = 0;
+  for (const word of words) {
+    const test = `${line}${word} `;
+    if (ctx.measureText(test).width > maxWidth && line) {
+      ctx.fillText(line.trim(), centerX, lineY);
+      lines += 1;
+      if (lines >= maxLines) return;
+      line = `${word} `;
+      lineY += lineHeight;
+    } else line = test;
+  }
+  if (lines < maxLines) ctx.fillText(line.trim(), centerX, lineY);
+}
+
+function drawUpgradeCard(
+  ctx: CanvasRenderingContext2D,
+  state: HeroStrikeState,
+  upgrade: UpgradeOption,
+  index: number,
+) {
+  const bounds = UPGRADE_CARD_BOUNDS[index];
+  const accent = upgrade.rarity === "epic"
+    ? HERO_STRIKE_COLORS.purple
+    : upgrade.rarity === "rare"
+      ? HERO_STRIKE_COLORS.cyan
+      : HERO_STRIKE_COLORS.orange;
+  const tags = getHeroStrikeBuildTags(upgrade.id);
+  const evolution = getHeroStrikeEvolutionHint(state, upgrade.id);
+
+  roundedRect(ctx, bounds.x, bounds.y, bounds.width, bounds.height, 18);
+  ctx.fillStyle = "rgba(13,26,48,.96)";
+  ctx.fill();
+  ctx.strokeStyle = accent;
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  ctx.fillStyle = accent;
+  ctx.font = "900 32px system-ui";
+  ctx.fillText(upgrade.icon, bounds.x + bounds.width / 2, bounds.y + 46);
+  ctx.fillStyle = HERO_STRIKE_COLORS.white;
+  ctx.font = "900 14px system-ui";
+  ctx.fillText(upgrade.title, bounds.x + bounds.width / 2, bounds.y + 76);
+
+  ctx.fillStyle = accent;
+  ctx.font = "900 8px system-ui";
+  ctx.fillText(getHeroStrikeUpgradeRoleLabel(upgrade.id), bounds.x + bounds.width / 2, bounds.y + 94);
+
+  ctx.fillStyle = HERO_STRIKE_COLORS.muted;
+  ctx.font = "700 10px system-ui";
+  drawWrappedText(
+    ctx,
+    upgrade.description,
+    bounds.x + bounds.width / 2,
+    bounds.y + 117,
+    bounds.width - 18,
+    15,
+  );
+
+  ctx.fillStyle = "rgba(255,255,255,.08)";
+  roundedRect(ctx, bounds.x + 8, bounds.y + 147, bounds.width - 16, 20, 7);
+  ctx.fill();
+  ctx.fillStyle = accent;
+  ctx.font = "900 8px system-ui";
+  ctx.fillText(tags.join(" · "), bounds.x + bounds.width / 2, bounds.y + 160);
+
+  if (evolution) {
+    ctx.fillStyle = HERO_STRIKE_COLORS.gold;
+    ctx.font = "800 8px system-ui";
+    ctx.fillText(`${evolution.title} ${evolution.progress}`, bounds.x + bounds.width / 2, bounds.y + 181);
+  }
+
+  ctx.fillStyle = accent;
+  ctx.font = "900 9px system-ui";
+  ctx.fillText(
+    `LV.${upgrade.currentLevel} → ${upgrade.nextLevel} / ${upgrade.maxLevel}`,
+    bounds.x + bounds.width / 2,
+    bounds.y + bounds.height - 12,
+  );
 }
 
 function drawUpgradeCards(ctx: CanvasRenderingContext2D, state: HeroStrikeState) {
@@ -23,46 +120,15 @@ function drawUpgradeCards(ctx: CanvasRenderingContext2D, state: HeroStrikeState)
   ctx.textAlign = "center";
   ctx.fillStyle = HERO_STRIKE_COLORS.cyan;
   ctx.font = "900 12px system-ui";
-  ctx.fillText("LEVEL UP", HERO_STRIKE_WIDTH / 2, 305);
+  ctx.fillText("TACTICAL DRAFT", HERO_STRIKE_WIDTH / 2, 305);
   ctx.fillStyle = HERO_STRIKE_COLORS.white;
-  ctx.font = "900 31px system-ui";
-  ctx.fillText("강화 하나를 선택하세요", HERO_STRIKE_WIDTH / 2, 347);
+  ctx.font = "900 29px system-ui";
+  ctx.fillText("다음 전투 방식을 선택하세요", HERO_STRIKE_WIDTH / 2, 347);
+  ctx.fillStyle = HERO_STRIKE_COLORS.muted;
+  ctx.font = "700 10px system-ui";
+  ctx.fillText("주무기 · 전술 시스템 · 생존 역할을 균형 있게 제안합니다", HERO_STRIKE_WIDTH / 2, 371);
 
-  state.upgradeChoices.forEach((upgrade, index) => {
-    const bounds = UPGRADE_CARD_BOUNDS[index];
-    const accent = upgrade.rarity === "epic" ? HERO_STRIKE_COLORS.purple : upgrade.rarity === "rare" ? HERO_STRIKE_COLORS.cyan : HERO_STRIKE_COLORS.orange;
-    roundedRect(ctx, bounds.x, bounds.y, bounds.width, bounds.height, 18);
-    ctx.fillStyle = "rgba(13,26,48,.96)";
-    ctx.fill();
-    ctx.strokeStyle = accent;
-    ctx.lineWidth = 2;
-    ctx.stroke();
-    ctx.fillStyle = accent;
-    ctx.font = "900 36px system-ui";
-    ctx.fillText(upgrade.icon, bounds.x + bounds.width / 2, bounds.y + 57);
-    ctx.fillStyle = HERO_STRIKE_COLORS.white;
-    ctx.font = "900 15px system-ui";
-    ctx.fillText(upgrade.title, bounds.x + bounds.width / 2, bounds.y + 96);
-    ctx.fillStyle = HERO_STRIKE_COLORS.muted;
-    ctx.font = "700 11px system-ui";
-    const words = upgrade.description.split(" ");
-    let line = "";
-    let lineY = bounds.y + 126;
-    for (const word of words) {
-      const test = `${line}${word} `;
-      if (ctx.measureText(test).width > bounds.width - 18 && line) {
-        ctx.fillText(line.trim(), bounds.x + bounds.width / 2, lineY);
-        line = `${word} `;
-        lineY += 17;
-      } else line = test;
-    }
-    ctx.fillText(line.trim(), bounds.x + bounds.width / 2, lineY);
-    ctx.fillStyle = accent;
-    ctx.font = "800 8px system-ui";
-    ctx.fillText(upgrade.rarity.toUpperCase(), bounds.x + bounds.width / 2, bounds.y + bounds.height - 30);
-    ctx.font = "900 10px system-ui";
-    ctx.fillText(`LV.${upgrade.currentLevel} → ${upgrade.nextLevel} / ${upgrade.maxLevel}`, bounds.x + bounds.width / 2, bounds.y + bounds.height - 15);
-  });
+  state.upgradeChoices.forEach((upgrade, index) => drawUpgradeCard(ctx, state, upgrade, index));
 
   const rerollEnabled = state.upgradeRerolls > 0;
   roundedRect(
