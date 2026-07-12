@@ -20,8 +20,12 @@ export function applyBossBreakPressure(
 ) {
   if (!enemy.boss || enemy.dead || enemy.hp <= 0 || (enemy.breakStun ?? 0) > 0) return false;
   const maximum = enemy.breakMax ?? getBossBreakMax(enemy.maxHp);
+  const hunterScale = (state.protocolLevels["precision-link"] ?? 0) > 0 ? 1.25 : 1;
   enemy.breakMax = maximum;
-  enemy.breakGauge = Math.min(maximum, (enemy.breakGauge ?? 0) + damage * Math.max(0.35, breakPower));
+  enemy.breakGauge = Math.min(
+    maximum,
+    (enemy.breakGauge ?? 0) + damage * Math.max(0.35, breakPower) * hunterScale,
+  );
   if (enemy.breakGauge < maximum) return false;
 
   // 음수 게이지는 BREAK 종료 후 곧바로 다시 기절시키는 연속 잠금을 막는 회복 구간이다.
