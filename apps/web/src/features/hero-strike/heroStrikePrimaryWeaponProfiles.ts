@@ -25,9 +25,9 @@ export function getPulseRepeaterProfile(
     shotGap: Math.max(0.045, 0.072 - rapid * 0.007),
     driveRecovery: Math.max(0.22, 0.34 - rapid * 0.03),
     focusRecovery: Math.max(0.3, 0.48 - rapid * 0.035),
-    heatPerShot: Math.max(0.07, 0.105 - rapid * 0.008),
-    driveCooling: 0.34 + rapid * 0.035,
-    focusCooling: 0.2 + rapid * 0.025,
+    heatPerShot: Math.max(0.06, 0.09 - rapid * 0.006),
+    driveCooling: 0.38 + rapid * 0.04,
+    focusCooling: 0.28 + rapid * 0.03,
     overheatRelease: 0.34,
   };
 }
