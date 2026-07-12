@@ -156,17 +156,17 @@ export function getHeroStrikeAimAngle(state: HeroStrikeState) {
 }
 
 export function getHeroStrikePrimaryDamageScale(state: HeroStrikeState) {
-  if (isHeroStrikeFocus(state)) return hasCoreModule(state, "reactor-boost") ? 1.08 : 1;
-  return hasCoreModule(state, "pulse-sync") ? 1.05 : 1;
+  if (isHeroStrikeFocus(state)) return hasCoreModule(state, "reactor-boost") ? 1.06 : 0.98;
+  return hasCoreModule(state, "pulse-sync") ? 1.13 : 1.08;
 }
 
 export function getHeroStrikeSupportDamageScale(state: HeroStrikeState) {
-  const base = isHeroStrikeFocus(state) ? 1 : 0.92;
+  const base = isHeroStrikeFocus(state) ? 1 : 0.95;
   return base * (hasCoreModule(state, "vital-core") ? 1.1 : 1);
 }
 
 export function getHeroStrikeSupportIntervalScale(state: HeroStrikeState) {
-  const base = isHeroStrikeFocus(state) ? 1 : 1.05;
+  const base = isHeroStrikeFocus(state) ? 1 : 1.03;
   return base * (hasCoreModule(state, "vital-core") ? 0.92 : 1);
 }
 
