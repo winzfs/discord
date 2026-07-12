@@ -1,4 +1,5 @@
 import { drawHeroStrikeLobbyBackdrop } from "./heroStrikeLobbyBackdropRenderer";
+import { drawHeroStrikeLobbyBuildProfile } from "./heroStrikeLobbyBuildProfileRenderer";
 import { getHeroStrikeLobbyCategory, getHeroStrikeLobbySnapshot } from "./heroStrikeLobbyData";
 import { drawHeroStrikeLobbyFooter } from "./heroStrikeLobbyFooterRenderer";
 import { drawHeroStrikeLobbyOptions } from "./heroStrikeLobbyOptionsRenderer";
@@ -15,4 +16,5 @@ export function drawHeroStrikeLoadout(ctx: CanvasRenderingContext2D, state: Hero
   drawHeroStrikeLobbyOverview(ctx, snapshot);
   drawHeroStrikeLobbyOptions(ctx, category);
   drawHeroStrikeLobbyFooter(ctx, state, snapshot);
+  drawHeroStrikeLobbyBuildProfile(ctx, state);
 }
