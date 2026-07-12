@@ -29,20 +29,20 @@ type LoadoutOption<T extends string> = {
 };
 
 export const PRIMARY_WEAPON_OPTIONS: readonly LoadoutOption<PrimaryWeaponId>[] = [
-  { id: "pulse-blasters", title: "펄스", icon: "✦", description: "정렬 유지 · 연속 버스트" },
-  { id: "scatter-array", title: "산탄", icon: "≋", description: "근접 이동 · 높은 순간화력" },
-  { id: "rail-driver", title: "레일", icon: "➤", description: "약점 조준 · 관통과 BREAK" },
+  { id: "pulse-blasters", title: "펄스", icon: "✦", description: "DRIVE 견제 · FOCUS 버스트" },
+  { id: "scatter-array", title: "산탄", icon: "≋", description: "이동 견제 · 집중 근접 산탄" },
+  { id: "rail-driver", title: "레일", icon: "➤", description: "이동 충전 · 정밀 관통포" },
 ];
 
 export const SUPPORT_LOADOUT_OPTIONS: readonly LoadoutOption<SupportLoadoutId>[] = [
-  { id: "homing-missile", title: "미사일", icon: "◆", description: "TEMPO 연동 추적 폭발" },
-  { id: "drone-wing", title: "드론", icon: "⌁", description: "이동 중 양측 보조사격" },
-  { id: "side-cannons", title: "측면포", icon: "⋘", description: "측면 정렬 보조탄" },
+  { id: "homing-missile", title: "미사일", icon: "◆", description: "FOCUS 표적 추적 폭발" },
+  { id: "drone-wing", title: "드론", icon: "⌁", description: "락온 방향 양측 보조사격" },
+  { id: "side-cannons", title: "측면포", icon: "⋘", description: "DRIVE 측면 견제 보조탄" },
 ];
 
 export const TACTICAL_LOADOUT_OPTIONS: readonly LoadoutOption<TacticalLoadoutId>[] = [
   { id: "shield-matrix", title: "방벽", icon: "⬡", description: "보호막 2칸 추가" },
-  { id: "salvage-magnet", title: "자석", icon: "◎", description: "이동 회수 범위 강화" },
+  { id: "salvage-magnet", title: "자석", icon: "◎", description: "경험치 회수 범위 강화" },
   { id: "pulse-battery", title: "배터리", icon: "◉", description: "궁극기 획득 강화" },
 ];
 
