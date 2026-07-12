@@ -7,6 +7,7 @@ import {
   HERO_STRIKE_PLAYER_Y,
   HERO_STRIKE_WIDTH,
 } from "./heroStrikeConfig";
+import { resetHeroStrikeOperation } from "./heroStrikeEncounterDirector";
 import { applyHeroStrikeLoadout, readHeroStrikeLoadout, saveHeroStrikeLoadout } from "./heroStrikeLoadout";
 import { getResearchBonuses, getResearchRank, readResearchData } from "./heroStrikeMetaProgress";
 import { getStageObjective } from "./heroStrikeObjectives";
@@ -168,6 +169,7 @@ export function openHeroStrikeLoadout(state: HeroStrikeState) {
   fresh.loadout = selectedLoadout;
   Object.assign(state, fresh);
   resetHeroStrikeCombatControl(state);
+  resetHeroStrikeOperation(state);
 }
 
 export function resetHeroStrikeState(state: HeroStrikeState) {
@@ -180,4 +182,5 @@ export function resetHeroStrikeState(state: HeroStrikeState) {
   applyHeroStrikeLoadout(fresh);
   Object.assign(state, fresh);
   resetHeroStrikeCombatControl(state);
+  resetHeroStrikeOperation(state);
 }
