@@ -1,5 +1,6 @@
 import { getNextXpRequirement } from "./heroStrikeBalance";
 import { resetHeroStrikeCombatControl } from "./heroStrikeCombatControl";
+import { resetHeroStrikeCombatRank } from "./heroStrikeCombatRank";
 import {
   HERO_STRIKE_HEIGHT,
   HERO_STRIKE_HIGH_SCORE_KEY,
@@ -169,6 +170,7 @@ export function openHeroStrikeLoadout(state: HeroStrikeState) {
   fresh.loadout = selectedLoadout;
   Object.assign(state, fresh);
   resetHeroStrikeCombatControl(state);
+  resetHeroStrikeCombatRank(state);
   resetHeroStrikeOperation(state);
 }
 
@@ -182,5 +184,6 @@ export function resetHeroStrikeState(state: HeroStrikeState) {
   applyHeroStrikeLoadout(fresh);
   Object.assign(state, fresh);
   resetHeroStrikeCombatControl(state);
+  resetHeroStrikeCombatRank(state);
   resetHeroStrikeOperation(state);
 }
