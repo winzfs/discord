@@ -11,6 +11,7 @@ import {
   HERO_STRIKE_WIDTH,
 } from "./heroStrikeConfig";
 import { addFloatingText } from "./heroStrikeEffects";
+import { updateHeroStrikeEnemyAction } from "./heroStrikeEnemyActions";
 import { updateEnemyFire } from "./heroStrikeEnemyFire";
 import {
   getHeroStrikeFlowMovementResponse,
@@ -70,8 +71,9 @@ function updatePlayer(state: HeroStrikeState, dt: number) {
 function updateEnemies(state: HeroStrikeState, dt: number) {
   for (const enemy of state.enemies) {
     if (enemy.boss) updateBossPhase(state, enemy);
+    const actionManaged = updateHeroStrikeEnemyAction(state, enemy, dt);
     updateEnemyMovement(state, enemy, dt);
-    if ((enemy.breakStun ?? 0) <= 0) updateEnemyFire(state, enemy, dt);
+    if (!actionManaged && (enemy.breakStun ?? 0) <= 0) updateEnemyFire(state, enemy, dt);
     if (!enemy.boss && enemy.y > HERO_STRIKE_HEIGHT + 50) enemy.dead = true;
   }
   state.enemies = state.enemies.filter((enemy) => !enemy.dead);
