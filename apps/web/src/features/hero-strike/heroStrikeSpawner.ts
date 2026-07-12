@@ -172,11 +172,21 @@ export function spawnBoss(state: HeroStrikeState) {
 export function updateSpawning(state: HeroStrikeState, dt: number) {
   const stage = getCurrentHeroStrikeStage(state);
   const difficulty = getDifficultyProfile(state.loadout.difficulty);
-  const waveChanged = updateHeroStrikeWave(state, stage.durationSeconds);
+  const hasBossEntity = state.enemies.some((enemy) => enemy.boss && !enemy.dead);
 
+  // bossSpawned can be reserved before a queued upgrade screen. Spawn the boss once play resumes.
+  if (state.bossSpawned && !hasBossEntity) {
+    spawnBoss(state);
+    return;
+  }
+
+  const waveChanged = updateHeroStrikeWave(state, stage.durationSeconds);
   if (!state.bossSpawned && state.stageElapsed >= stage.durationSeconds) {
     softenEncounterTransition(state);
-    if (openQueuedHeroStrikeUpgrade(state)) return;
+    if (openQueuedHeroStrikeUpgrade(state)) {
+      state.bossSpawned = true;
+      return;
+    }
     spawnBoss(state);
     return;
   }
