@@ -1,3 +1,4 @@
+import { compactInPlace } from "./heroStrikeArrayUtils";
 import { playHeroStrikeSound } from "./heroStrikeAudio";
 import { getNextXpRequirement, HERO_STRIKE_LEVEL_CAP } from "./heroStrikeBalance";
 import { applyBossBreakPressure, getBossBreakDamageMultiplier } from "./heroStrikeBossBreak";
@@ -23,7 +24,18 @@ function distanceSquared(ax: number, ay: number, bx: number, by: number) {
 function clearNearbyEnemyBullets(state: HeroStrikeState, radius: number) {
   const { x, y } = state.player;
   const radiusSq = radius * radius;
-  state.bullets = state.bullets.filter((bullet) => !bullet.enemy || distanceSquared(bullet.x, bullet.y, x, y) > radiusSq);
+  compactInPlace(
+    state.bullets,
+    (bullet) => !bullet.enemy || distanceSquared(bullet.x, bullet.y, x, y) > radiusSq,
+  );
+}
+
+function clearAllEnemyBullets(state: HeroStrikeState) {
+  compactInPlace(state.bullets, (bullet) => !bullet.enemy);
+}
+
+function compactDeadEnemies(state: HeroStrikeState) {
+  compactInPlace(state.enemies, (enemy) => !enemy.dead);
 }
 
 function applyDamage(state: HeroStrikeState, enemy: HeroStrikeEnemy, amount: number, breakPower = 0.5) {
@@ -42,13 +54,16 @@ export function resolvePlayerCollisions(state: HeroStrikeState) {
   for (const bullet of state.bullets) {
     if (!bullet.enemy || bullet.life <= 0) continue;
     const hitRadius = player.radius + bullet.radius * 0.68;
-    const distanceSq = distanceSquared(player.x, player.y, bullet.x, bullet.y);
+    const grazeRadius = hitRadius + 21;
+    const dx = player.x - bullet.x;
+    const dy = player.y - bullet.y;
+    if (Math.abs(dx) > grazeRadius || Math.abs(dy) > grazeRadius) continue;
+    const distanceSq = dx * dx + dy * dy;
     if (distanceSq <= hitRadius * hitRadius) {
       bullet.life = 0;
       hit = true;
       break;
     }
-    const grazeRadius = hitRadius + 21;
     if (!bullet.grazed && distanceSq <= grazeRadius * grazeRadius) {
       bullet.grazed = true;
       recordStageGraze(state);
@@ -63,7 +78,10 @@ export function resolvePlayerCollisions(state: HeroStrikeState) {
   if (!hit) {
     for (const enemy of state.enemies) {
       const radius = player.radius + enemy.radius * 0.72;
-      if (distanceSquared(player.x, player.y, enemy.x, enemy.y) <= radius * radius) {
+      const dx = player.x - enemy.x;
+      const dy = player.y - enemy.y;
+      if (Math.abs(dx) > radius || Math.abs(dy) > radius) continue;
+      if (dx * dx + dy * dy <= radius * radius) {
         hit = true;
         applyDamage(state, enemy, player.damage * player.campaignDamageMultiplier * 2, 0.9);
         break;
@@ -96,14 +114,13 @@ export function resolvePlayerCollisions(state: HeroStrikeState) {
 function detonateBombPickup(state: HeroStrikeState) {
   const player = state.player;
   const campaignDamage = player.campaignDamageMultiplier;
-  state.bullets = state.bullets.filter((bullet) => !bullet.enemy);
+  clearAllEnemyBullets(state);
   addRing(state, player.x, player.y - 110, HERO_STRIKE_COLORS.orange, 42);
   addBurst(state, player.x, player.y - 110, HERO_STRIKE_COLORS.orange, 28, 260, 4);
   addFloatingText(state, player.x, player.y - 46, "SCREEN CLEAR", HERO_STRIKE_COLORS.orange, 16);
   state.shake = Math.max(state.shake, 0.65);
 
-  const targets = [...state.enemies];
-  for (const enemy of targets) {
+  for (const enemy of state.enemies) {
     const damage = (enemy.boss ? 210 + player.damage * 1.6 : 250 + player.damage * 2.2) * campaignDamage;
     applyDamage(state, enemy, damage, enemy.boss ? 0.7 : 0.35);
     if (enemy.hp <= 0 && !enemy.dead) {
@@ -112,7 +129,7 @@ function detonateBombPickup(state: HeroStrikeState) {
       if (state.phase !== "playing") break;
     }
   }
-  state.enemies = state.enemies.filter((enemy) => !enemy.dead);
+  compactDeadEnemies(state);
 }
 
 function grantExperience(state: HeroStrikeState, value: number) {
@@ -195,13 +212,15 @@ export function updatePickups(state: HeroStrikeState, dt: number) {
     updateHeroStrikePickupMotion(pickup, player, dt);
 
     const collectRadius = 18 + pickup.radius + 8;
-    if (distanceSquared(player.x, player.y, pickup.x, pickup.y) <= collectRadius * collectRadius) {
+    const dx = player.x - pickup.x;
+    const dy = player.y - pickup.y;
+    if (Math.abs(dx) <= collectRadius && Math.abs(dy) <= collectRadius && dx * dx + dy * dy <= collectRadius * collectRadius) {
       pickup.life = 0;
       grantPickup(state, pickup.kind, pickup.value);
       addBurst(state, pickup.x, pickup.y, pickupColor(pickup.kind), pickup.kind === "xp" ? 4 : 8, 90, 2);
     }
   }
-  state.pickups = state.pickups.filter((pickup) => pickup.life > 0 && pickup.y < HERO_STRIKE_HEIGHT + 40);
+  compactInPlace(state.pickups, (pickup) => pickup.life > 0 && pickup.y < HERO_STRIKE_HEIGHT + 40);
 }
 
 export function activateBlink(state: HeroStrikeState) {
@@ -243,12 +262,11 @@ export function activateUltimate(state: HeroStrikeState) {
   player.ultimate = 0;
   state.flash = 0.75;
   state.shake = 1;
-  state.bullets = state.bullets.filter((bullet) => !bullet.enemy);
+  clearAllEnemyBullets(state);
   addRing(state, player.x, player.y - 120, HERO_STRIKE_COLORS.gold, 38);
   addBurst(state, player.x, player.y - 120, HERO_STRIKE_COLORS.gold, 44, 320, 5);
 
-  const targets = [...state.enemies];
-  for (const enemy of targets) {
+  for (const enemy of state.enemies) {
     const damage = (enemy.boss ? 560 + player.damage * 4 : 99999) * player.campaignDamageMultiplier;
     applyDamage(state, enemy, damage, enemy.boss ? 1.25 : 0.5);
     if (enemy.hp <= 0 && !enemy.dead) {
@@ -257,6 +275,6 @@ export function activateUltimate(state: HeroStrikeState) {
       if (state.phase !== "playing") break;
     }
   }
-  state.enemies = state.enemies.filter((enemy) => !enemy.dead);
+  compactDeadEnemies(state);
   return true;
 }
