@@ -10,7 +10,7 @@ type CombatControlRuntime = {
   pendingUpgrades: number;
 };
 
-export const HERO_STRIKE_FOCUS_ENTRY_DELAY = 0.14;
+export const HERO_STRIKE_FOCUS_ENTRY_DELAY = 0.08;
 export const HERO_STRIKE_BASE_LOCK_WIDTH = 76;
 const runtimeByState = new WeakMap<HeroStrikeState, CombatControlRuntime>();
 
@@ -156,28 +156,27 @@ export function getHeroStrikeAimAngle(state: HeroStrikeState) {
 }
 
 export function getHeroStrikePrimaryDamageScale(state: HeroStrikeState) {
-  if (isHeroStrikeFocus(state)) return hasCoreModule(state, "reactor-boost") ? 1.2 : 1;
-  return hasCoreModule(state, "pulse-sync") ? 0.76 : 0.58;
+  if (isHeroStrikeFocus(state)) return hasCoreModule(state, "reactor-boost") ? 1.12 : 1.05;
+  return hasCoreModule(state, "pulse-sync") ? 0.98 : 0.9;
 }
 
 export function getHeroStrikeSupportDamageScale(state: HeroStrikeState) {
-  const base = isHeroStrikeFocus(state) ? 1 : 0.75;
-  return base * (hasCoreModule(state, "vital-core") ? 1.18 : 1);
+  const base = isHeroStrikeFocus(state) ? 1 : 0.88;
+  return base * (hasCoreModule(state, "vital-core") ? 1.12 : 1);
 }
 
 export function getHeroStrikeSupportIntervalScale(state: HeroStrikeState) {
-  const base = isHeroStrikeFocus(state) ? 1 : 1.28;
-  return base * (hasCoreModule(state, "vital-core") ? 0.88 : 1);
+  const base = isHeroStrikeFocus(state) ? 1 : 1.1;
+  return base * (hasCoreModule(state, "vital-core") ? 0.92 : 1);
 }
 
 export function getHeroStrikePrimaryIntervalScale(state: HeroStrikeState) {
-  if (!isHeroStrikeFocus(state)) return hasCoreModule(state, "pulse-sync") ? 1.08 : 1.34;
-  const pulseScale = state.loadout.primary === "pulse-blasters" ? 0.9 : 1;
-  return pulseScale * (hasCoreModule(state, "reactor-boost") ? 0.92 : 1);
+  if (isHeroStrikeFocus(state)) return hasCoreModule(state, "reactor-boost") ? 0.92 : 0.97;
+  return hasCoreModule(state, "pulse-sync") ? 0.94 : 1;
 }
 
 export function getHeroStrikeMovementResponseScale(state: HeroStrikeState) {
-  return isHeroStrikeFocus(state) ? 0.48 : 1.12;
+  return isHeroStrikeFocus(state) ? 0.58 : 1.08;
 }
 
 export function queueHeroStrikeUpgrade(state: HeroStrikeState) {
