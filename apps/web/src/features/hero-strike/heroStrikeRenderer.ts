@@ -1,3 +1,4 @@
+import { drawHeroStrikeBossTelegraph } from "./heroStrikeBossTelegraphRenderer";
 import { drawHeroStrikeCombatControl } from "./heroStrikeCombatControlRenderer";
 import { drawHeroStrikeCombatProgress } from "./heroStrikeCombatProgressRenderer";
 import { drawHeroStrikeCombatRank } from "./heroStrikeCombatRankRenderer";
@@ -20,6 +21,7 @@ export function renderHeroStrike(ctx: CanvasRenderingContext2D, state: HeroStrik
   drawHeroStrikeBackdrop(ctx, state);
   drawHeroStrikeEncounterWorld(ctx, state);
   drawHeroStrikeEnemyTelegraphs(ctx, state);
+  drawHeroStrikeBossTelegraph(ctx, state);
   drawHeroStrikeEntities(ctx, state);
   drawHeroStrikeCombatControl(ctx, state);
   drawHeroStrikeEncounterHud(ctx, state);
