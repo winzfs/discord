@@ -24,12 +24,11 @@ export function getResearchRank(data: number) {
 }
 
 export function getResearchBonuses(rank: number) {
-  const level = Math.max(0, rank - 1);
   return {
-    damageMultiplier: 1 + Math.min(0.15, level * 0.01),
-    xpMultiplier: 1 + Math.min(0.12, Math.floor(level / 2) * 0.015),
-    startingUltimate: Math.min(25, Math.floor(level / 5) * 5),
-    startingShield: level >= 12 ? 1 : 0,
+    damageMultiplier: 1,
+    xpMultiplier: 1,
+    startingUltimate: rank >= 8 ? 15 : rank >= 4 ? 8 : 0,
+    startingShield: rank >= 12 ? 1 : 0,
   };
 }
 
