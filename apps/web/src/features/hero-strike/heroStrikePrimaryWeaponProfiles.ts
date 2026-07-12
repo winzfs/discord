@@ -47,8 +47,8 @@ export function getBreacherScatterProfile(
     focusSpread: Math.max(0.065, 0.1 - twin * 0.012),
     pumpTime: Math.max(0.38, 0.54 - rapid * 0.045),
     reloadTime: Math.max(1.05, 1.45 - rapid * 0.1),
-    driveDamageScale: 0.21,
-    focusDamageScale: 0.16,
+    driveDamageScale: 0.18,
+    focusDamageScale: 0.18,
   };
 }
 
