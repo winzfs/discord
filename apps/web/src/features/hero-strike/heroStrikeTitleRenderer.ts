@@ -1,61 +1,55 @@
-import { getNextHeroStrikeBlueprint } from "./heroStrikeBlueprints";
-import { HERO_STRIKE_COLORS, HERO_STRIKE_HEIGHT, HERO_STRIKE_WIDTH } from "./heroStrikeConfig";
-import { getLoadoutSummary } from "./heroStrikeLoadout";
-import { getResearchProgress } from "./heroStrikeMetaProgress";
+import { HERO_STRIKE_COLORS, HERO_STRIKE_WIDTH } from "./heroStrikeConfig";
+import { drawHeroStrikeLobbyBackdrop } from "./heroStrikeLobbyBackdropRenderer";
+import { getHeroStrikeLobbySnapshot } from "./heroStrikeLobbyData";
+import { drawHeroStrikeTitlePanels } from "./heroStrikeTitlePanelsRenderer";
 import type { HeroStrikeState } from "./heroStrikeTypes";
 
-function roundedRect(ctx: CanvasRenderingContext2D, x: number, y: number, width: number, height: number, radius: number) {
+function roundedRect(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  radius: number,
+) {
   ctx.beginPath();
   ctx.roundRect(x, y, width, height, radius);
 }
 
 export function drawHeroStrikeTitle(ctx: CanvasRenderingContext2D, state: HeroStrikeState) {
-  const research = getResearchProgress(state.researchData);
-  const nextBlueprint = getNextHeroStrikeBlueprint(research.rank);
-  ctx.fillStyle = "rgba(2,6,16,.5)";
-  ctx.fillRect(0, 0, HERO_STRIKE_WIDTH, HERO_STRIKE_HEIGHT);
-  ctx.textAlign = "center";
+  const snapshot = getHeroStrikeLobbySnapshot(state);
+  drawHeroStrikeLobbyBackdrop(ctx, state);
+
+  ctx.textAlign = "left";
   ctx.fillStyle = HERO_STRIKE_COLORS.cyan;
-  ctx.font = "900 12px system-ui";
-  ctx.fillText("MISSION SHOOTER ROGUELITE", HERO_STRIKE_WIDTH / 2, 208);
+  ctx.font = "1000 9px system-ui";
+  ctx.fillText("MISSION SHOOTER ROGUELITE", 24, 80);
   ctx.fillStyle = HERO_STRIKE_COLORS.white;
-  ctx.font = "1000 46px system-ui";
-  ctx.fillText("HERO STRIKE", HERO_STRIKE_WIDTH / 2, 260);
-  ctx.fillStyle = HERO_STRIKE_COLORS.muted;
-  ctx.font = "700 14px system-ui";
-  ctx.fillText("공격 예고를 읽고 임무 목표를 완수하세요", HERO_STRIKE_WIDTH / 2, 298);
-  ctx.fillText("DRIVE 회피 · FOCUS 정밀사격 · 전술 빌드", HERO_STRIKE_WIDTH / 2, 322);
-
-  roundedRect(ctx, 72, 350, HERO_STRIKE_WIDTH - 144, 72, 18);
-  ctx.fillStyle = "rgba(7,20,39,.86)";
-  ctx.fill();
-  ctx.strokeStyle = "rgba(105,231,255,.28)";
-  ctx.stroke();
-  ctx.fillStyle = HERO_STRIKE_COLORS.cyan;
-  ctx.font = "900 11px system-ui";
-  ctx.fillText(`BLUEPRINT RANK ${research.rank}`, HERO_STRIKE_WIDTH / 2, 374);
-  ctx.fillStyle = "rgba(255,255,255,.1)";
-  ctx.fillRect(92, 387, HERO_STRIKE_WIDTH - 184, 6);
-  ctx.fillStyle = HERO_STRIKE_COLORS.xp;
-  ctx.fillRect(92, 387, (HERO_STRIKE_WIDTH - 184) * research.ratio, 6);
-  ctx.fillStyle = HERO_STRIKE_COLORS.muted;
-  ctx.font = "700 8px system-ui";
-  const researchText = nextBlueprint
-    ? `NEXT RANK ${nextBlueprint.rank} · ${nextBlueprint.title}`
-    : "기본 BLUEPRINT 전체 해금";
-  ctx.fillText(researchText, HERO_STRIKE_WIDTH / 2, 408);
-
-  roundedRect(ctx, 88, 450, HERO_STRIKE_WIDTH - 176, 64, 20);
+  ctx.font = "1000 42px system-ui";
+  ctx.fillText("HERO", 24, 126);
   ctx.fillStyle = HERO_STRIKE_COLORS.orange;
-  ctx.fill();
-  ctx.fillStyle = "#111827";
-  ctx.font = "900 19px system-ui";
-  ctx.fillText("출격 준비", HERO_STRIKE_WIDTH / 2, 490);
-  ctx.fillStyle = HERO_STRIKE_COLORS.gold;
-  ctx.font = "800 11px system-ui";
-  ctx.fillText(getLoadoutSummary(state.loadout), HERO_STRIKE_WIDTH / 2, 540);
+  ctx.fillText("STRIKE", 24, 166);
   ctx.fillStyle = HERO_STRIKE_COLORS.muted;
-  ctx.font = "700 10px system-ui";
-  ctx.fillText(`BEST ${state.highScore.toLocaleString()} · 임무·전투 랭크·SALVAGE`, HERO_STRIKE_WIDTH / 2, 565);
+  ctx.font = "800 9px system-ui";
+  ctx.fillText("READ THE ATTACK · COMPLETE THE MISSION", 24, 187);
+  ctx.fillText("BUILD THE LOADOUT · BREAK THE BOSS", 24, 203);
+
+  roundedRect(ctx, 82, 642, 256, 62, 18);
+  const button = ctx.createLinearGradient(82, 0, 338, 0);
+  button.addColorStop(0, HERO_STRIKE_COLORS.orange);
+  button.addColorStop(1, HERO_STRIKE_COLORS.gold);
+  ctx.fillStyle = button;
+  ctx.fill();
+  ctx.strokeStyle = "rgba(255,255,255,.4)";
+  ctx.stroke();
+  ctx.textAlign = "center";
+  ctx.fillStyle = "#111827";
+  ctx.font = "1000 17px system-ui";
+  ctx.fillText("ENTER COMMAND DECK", HERO_STRIKE_WIDTH / 2, 676);
+  ctx.fillStyle = "rgba(17,24,39,.68)";
+  ctx.font = "900 7px system-ui";
+  ctx.fillText(`${snapshot.mission.operationCode} · ${snapshot.mission.name} READY`, HERO_STRIKE_WIDTH / 2, 692);
+
+  drawHeroStrikeTitlePanels(ctx, state, snapshot);
   ctx.textAlign = "left";
 }
