@@ -1,53 +1,20 @@
-import { getEnemyBulletCap } from "./heroStrikeBalance";
 import {
   getBossPhaseBulletSpeedMultiplier,
   getBossPhaseCooldownMultiplier,
 } from "./heroStrikeBossPhases";
-import { HERO_STRIKE_COLORS } from "./heroStrikeConfig";
+import { spawnHeroStrikeEnemyBullet } from "./heroStrikeEnemyProjectiles";
 import { getDifficultyProfile } from "./heroStrikeLoadout";
 import { getCurrentHeroStrikeStage } from "./heroStrikeStages";
-import type { EnemyBulletVariant, HeroStrikeEnemy, HeroStrikeState } from "./heroStrikeTypes";
-
-type BulletOptions = {
-  radius?: number;
-  variant?: EnemyBulletVariant;
-  xOffset?: number;
-  yOffset?: number;
-};
-
-function hostileBulletCount(state: HeroStrikeState) {
-  let count = 0;
-  for (const bullet of state.bullets) if (bullet.enemy && bullet.life > 0) count += 1;
-  return count;
-}
-
-function spawnEnemyBullet(
-  state: HeroStrikeState,
-  enemy: HeroStrikeEnemy,
-  angle: number,
-  speed: number,
-  options: BulletOptions = {},
-) {
-  if (hostileBulletCount(state) >= getEnemyBulletCap(state)) return false;
-  state.bullets.push({
-    id: state.nextId++,
-    x: enemy.x + (options.xOffset ?? 0),
-    y: enemy.y + enemy.radius * 0.4 + (options.yOffset ?? 0),
-    vx: Math.cos(angle) * speed,
-    vy: Math.sin(angle) * speed,
-    radius: options.radius ?? 5.2,
-    damage: 1,
-    pierce: 0,
-    enemy: true,
-    life: 6,
-    color: enemy.boss ? HERO_STRIKE_COLORS.red : HERO_STRIKE_COLORS.hostile,
-    variant: options.variant ?? "orb",
-  });
-  return true;
-}
+import type { HeroStrikeEnemy, HeroStrikeState } from "./heroStrikeTypes";
 
 function aimedAngle(state: HeroStrikeState, enemy: HeroStrikeEnemy) {
   return Math.atan2(state.player.y - enemy.y, state.player.x - enemy.x);
+}
+
+export function getHeroStrikeEnemyBulletSpeed(state: HeroStrikeState) {
+  const stage = getCurrentHeroStrikeStage(state);
+  const difficulty = getDifficultyProfile(state.loadout.difficulty);
+  return 150 * stage.bulletSpeedMultiplier * difficulty.enemyBulletSpeed;
 }
 
 function fireStagePattern(state: HeroStrikeState, enemy: HeroStrikeEnemy, speed: number) {
@@ -55,7 +22,7 @@ function fireStagePattern(state: HeroStrikeState, enemy: HeroStrikeEnemy, speed:
   const base = aimedAngle(state, enemy);
 
   if (enemy.kind === "sniper") {
-    spawnEnemyBullet(state, enemy, base, speed * 1.55, { radius: 4.4, variant: "needle" });
+    spawnHeroStrikeEnemyBullet(state, enemy, base, speed * 1.55, { radius: 4.4, variant: "needle" });
     enemy.fireCooldown = Math.max(1.15, 1.8 - state.stageIndex * 0.065);
     return;
   }
@@ -64,7 +31,10 @@ function fireStagePattern(state: HeroStrikeState, enemy: HeroStrikeEnemy, speed:
     const count = stage.bulletPattern === "assault" || stage.bulletPattern === "fan" ? 7 : 5;
     for (let index = 0; index < count; index += 1) {
       const offset = index - (count - 1) / 2;
-      spawnEnemyBullet(state, enemy, Math.PI / 2 + offset * 0.18, speed * 0.72, { radius: 7, variant: "heavy" });
+      spawnHeroStrikeEnemyBullet(state, enemy, Math.PI / 2 + offset * 0.18, speed * 0.72, {
+        radius: 7,
+        variant: "heavy",
+      });
     }
     enemy.fireCooldown = Math.max(1.15, 1.75 - state.stageIndex * 0.05);
     return;
@@ -72,27 +42,27 @@ function fireStagePattern(state: HeroStrikeState, enemy: HeroStrikeEnemy, speed:
 
   if (enemy.kind === "weaver") {
     const sway = Math.sin(enemy.age * 2.4) * 0.18;
-    spawnEnemyBullet(state, enemy, base - 0.16 + sway, speed * 1.04, { radius: 4.8, variant: "shard" });
-    spawnEnemyBullet(state, enemy, base + 0.16 - sway, speed * 1.04, { radius: 4.8, variant: "shard" });
+    spawnHeroStrikeEnemyBullet(state, enemy, base - 0.16 + sway, speed * 1.04, { radius: 4.8, variant: "shard" });
+    spawnHeroStrikeEnemyBullet(state, enemy, base + 0.16 - sway, speed * 1.04, { radius: 4.8, variant: "shard" });
     enemy.fireCooldown = Math.max(0.92, 1.32 - state.stageIndex * 0.04);
     return;
   }
 
   if (stage.bulletPattern === "aimed") {
-    spawnEnemyBullet(state, enemy, base, speed);
+    spawnHeroStrikeEnemyBullet(state, enemy, base, speed);
   } else if (stage.bulletPattern === "split") {
-    spawnEnemyBullet(state, enemy, base - 0.11, speed);
-    spawnEnemyBullet(state, enemy, base + 0.11, speed);
+    spawnHeroStrikeEnemyBullet(state, enemy, base - 0.11, speed);
+    spawnHeroStrikeEnemyBullet(state, enemy, base + 0.11, speed);
   } else if (stage.bulletPattern === "cross") {
-    spawnEnemyBullet(state, enemy, base, speed);
-    spawnEnemyBullet(state, enemy, base - 0.22, speed * 0.92, { variant: "shard" });
-    spawnEnemyBullet(state, enemy, base + 0.22, speed * 0.92, { variant: "shard" });
-    spawnEnemyBullet(state, enemy, Math.PI / 2, speed * 0.78, { radius: 6, variant: "heavy" });
+    spawnHeroStrikeEnemyBullet(state, enemy, base, speed);
+    spawnHeroStrikeEnemyBullet(state, enemy, base - 0.22, speed * 0.92, { variant: "shard" });
+    spawnHeroStrikeEnemyBullet(state, enemy, base + 0.22, speed * 0.92, { variant: "shard" });
+    spawnHeroStrikeEnemyBullet(state, enemy, Math.PI / 2, speed * 0.78, { radius: 6, variant: "heavy" });
   } else if (stage.bulletPattern === "rain") {
     const count = enemy.kind === "tank" ? 5 : 3;
     for (let index = 0; index < count; index += 1) {
       const offset = index - (count - 1) / 2;
-      spawnEnemyBullet(state, enemy, Math.PI / 2 + offset * 0.055, speed * 0.92, {
+      spawnHeroStrikeEnemyBullet(state, enemy, Math.PI / 2 + offset * 0.055, speed * 0.92, {
         xOffset: offset * 9,
         variant: "needle",
       });
@@ -101,13 +71,13 @@ function fireStagePattern(state: HeroStrikeState, enemy: HeroStrikeEnemy, speed:
     const count = enemy.kind === "tank" ? 7 : 5;
     for (let index = 0; index < count; index += 1) {
       const offset = index - (count - 1) / 2;
-      spawnEnemyBullet(state, enemy, base + offset * 0.14, speed * (0.88 + Math.abs(offset) * 0.025));
+      spawnHeroStrikeEnemyBullet(state, enemy, base + offset * 0.14, speed * (0.88 + Math.abs(offset) * 0.025));
     }
   } else {
     const count = enemy.kind === "tank" ? 5 : 3;
     for (let index = 0; index < count; index += 1) {
       const offset = index - (count - 1) / 2;
-      spawnEnemyBullet(state, enemy, base + offset * 0.13, speed * 1.06, {
+      spawnHeroStrikeEnemyBullet(state, enemy, base + offset * 0.13, speed * 1.06, {
         radius: enemy.kind === "tank" ? 6 : 5.2,
       });
     }
@@ -121,10 +91,10 @@ function applyElitePattern(state: HeroStrikeState, enemy: HeroStrikeEnemy, speed
   if (!enemy.elite || !enemy.eliteTrait) return;
   const base = aimedAngle(state, enemy);
   if (enemy.eliteTrait === "scatter") {
-    spawnEnemyBullet(state, enemy, base - 0.34, speed * 0.88, { variant: "shard" });
-    spawnEnemyBullet(state, enemy, base + 0.34, speed * 0.88, { variant: "shard" });
+    spawnHeroStrikeEnemyBullet(state, enemy, base - 0.34, speed * 0.88, { variant: "shard" });
+    spawnHeroStrikeEnemyBullet(state, enemy, base + 0.34, speed * 0.88, { variant: "shard" });
   } else if (enemy.eliteTrait === "veteran") {
-    spawnEnemyBullet(state, enemy, base, speed * 1.18, { radius: 6.2, variant: "heavy" });
+    spawnHeroStrikeEnemyBullet(state, enemy, base, speed * 1.18, { radius: 6.2, variant: "heavy" });
   }
 
   if (enemy.eliteTrait === "rapid") enemy.fireCooldown *= 0.62;
@@ -135,7 +105,7 @@ function applyElitePattern(state: HeroStrikeState, enemy: HeroStrikeEnemy, speed
 function fireBossFan(state: HeroStrikeState, boss: HeroStrikeEnemy, speed: number) {
   const base = aimedAngle(state, boss);
   for (let index = -3; index <= 3; index += 1) {
-    spawnEnemyBullet(state, boss, base + index * 0.14, speed, { radius: 6 });
+    spawnHeroStrikeEnemyBullet(state, boss, base + index * 0.14, speed, { radius: 6 });
   }
   boss.fireCooldown = 0.82;
 }
@@ -144,7 +114,9 @@ function fireBossPetals(state: HeroStrikeState, boss: HeroStrikeEnemy, speed: nu
   const count = 12;
   const rotation = Math.floor(boss.age * 1.7) % 2 === 0 ? 0 : Math.PI / count;
   for (let index = 0; index < count; index += 1) {
-    spawnEnemyBullet(state, boss, rotation + index * Math.PI * 2 / count, speed * 0.82, { variant: "shard" });
+    spawnHeroStrikeEnemyBullet(state, boss, rotation + index * Math.PI * 2 / count, speed * 0.82, {
+      variant: "shard",
+    });
   }
   boss.fireCooldown = 0.76;
 }
@@ -152,8 +124,12 @@ function fireBossPetals(state: HeroStrikeState, boss: HeroStrikeEnemy, speed: nu
 function fireBossSpiral(state: HeroStrikeState, boss: HeroStrikeEnemy, speed: number) {
   const arms = 4;
   for (let index = 0; index < arms; index += 1) {
-    spawnEnemyBullet(state, boss, boss.age * 1.35 + index * Math.PI * 2 / arms, speed * 0.86, { radius: 5.5 });
-    spawnEnemyBullet(state, boss, -boss.age * 1.05 + index * Math.PI * 2 / arms + 0.3, speed * 0.7, { variant: "shard" });
+    spawnHeroStrikeEnemyBullet(state, boss, boss.age * 1.35 + index * Math.PI * 2 / arms, speed * 0.86, {
+      radius: 5.5,
+    });
+    spawnHeroStrikeEnemyBullet(state, boss, -boss.age * 1.05 + index * Math.PI * 2 / arms + 0.3, speed * 0.7, {
+      variant: "shard",
+    });
   }
   boss.fireCooldown = 0.34;
 }
@@ -161,7 +137,7 @@ function fireBossSpiral(state: HeroStrikeState, boss: HeroStrikeEnemy, speed: nu
 function fireBossLanes(state: HeroStrikeState, boss: HeroStrikeEnemy, speed: number) {
   for (let index = -4; index <= 4; index += 1) {
     if ((index + Math.floor(boss.age * 2)) % 4 === 0) continue;
-    spawnEnemyBullet(state, boss, Math.PI / 2, speed * 0.95, {
+    spawnHeroStrikeEnemyBullet(state, boss, Math.PI / 2, speed * 0.95, {
       xOffset: index * 27,
       radius: 5,
       variant: "needle",
@@ -173,7 +149,7 @@ function fireBossLanes(state: HeroStrikeState, boss: HeroStrikeEnemy, speed: num
 function fireBossBurst(state: HeroStrikeState, boss: HeroStrikeEnemy, speed: number) {
   const base = aimedAngle(state, boss);
   for (let index = -4; index <= 4; index += 1) {
-    spawnEnemyBullet(state, boss, base + index * 0.095, speed * 1.08, {
+    spawnHeroStrikeEnemyBullet(state, boss, base + index * 0.095, speed * 1.08, {
       radius: index === 0 ? 7 : 5.4,
       variant: index === 0 ? "heavy" : "orb",
     });
@@ -201,30 +177,32 @@ function fireBossPattern(state: HeroStrikeState, boss: HeroStrikeEnemy, speed: n
   const phase = boss.bossPhase ?? 1;
   const base = aimedAngle(state, boss);
   if (phase >= 2) {
-    spawnEnemyBullet(state, boss, base - 0.28, speed * 0.9, { variant: "shard" });
-    spawnEnemyBullet(state, boss, base + 0.28, speed * 0.9, { variant: "shard" });
+    spawnHeroStrikeEnemyBullet(state, boss, base - 0.28, speed * 0.9, { variant: "shard" });
+    spawnHeroStrikeEnemyBullet(state, boss, base + 0.28, speed * 0.9, { variant: "shard" });
   }
   if (phase >= 3) {
-    spawnEnemyBullet(state, boss, base, speed * 1.22, { radius: 7, variant: "heavy" });
-    spawnEnemyBullet(state, boss, Math.PI / 2 - 0.45, speed * 0.82, { variant: "needle" });
-    spawnEnemyBullet(state, boss, Math.PI / 2 + 0.45, speed * 0.82, { variant: "needle" });
+    spawnHeroStrikeEnemyBullet(state, boss, base, speed * 1.22, { radius: 7, variant: "heavy" });
+    spawnHeroStrikeEnemyBullet(state, boss, Math.PI / 2 - 0.45, speed * 0.82, { variant: "needle" });
+    spawnHeroStrikeEnemyBullet(state, boss, Math.PI / 2 + 0.45, speed * 0.82, { variant: "needle" });
   }
   boss.fireCooldown *= getBossPhaseCooldownMultiplier(boss);
+}
+
+export function fireHeroStrikeEnemyPattern(state: HeroStrikeState, enemy: HeroStrikeEnemy) {
+  const baseSpeed = getHeroStrikeEnemyBulletSpeed(state);
+  if (enemy.boss) {
+    fireBossPattern(state, enemy, baseSpeed * 0.92 * getBossPhaseBulletSpeedMultiplier(enemy));
+    return;
+  }
+
+  const eliteSpeed = enemy.eliteTrait === "rapid" || enemy.eliteTrait === "veteran" ? 1.08 : 1;
+  fireStagePattern(state, enemy, baseSpeed * eliteSpeed);
+  applyElitePattern(state, enemy, baseSpeed * eliteSpeed);
 }
 
 export function updateEnemyFire(state: HeroStrikeState, enemy: HeroStrikeEnemy, dt: number) {
   if (enemy.kind === "runner" || enemy.y < 28) return;
   enemy.fireCooldown -= dt;
   if (enemy.fireCooldown > 0) return;
-
-  const stage = getCurrentHeroStrikeStage(state);
-  const difficulty = getDifficultyProfile(state.loadout.difficulty);
-  const baseSpeed = 150 * stage.bulletSpeedMultiplier * difficulty.enemyBulletSpeed;
-  if (enemy.boss) {
-    fireBossPattern(state, enemy, baseSpeed * 0.92 * getBossPhaseBulletSpeedMultiplier(enemy));
-  } else {
-    const eliteSpeed = enemy.eliteTrait === "rapid" || enemy.eliteTrait === "veteran" ? 1.08 : 1;
-    fireStagePattern(state, enemy, baseSpeed * eliteSpeed);
-    applyElitePattern(state, enemy, baseSpeed * eliteSpeed);
-  }
+  fireHeroStrikeEnemyPattern(state, enemy);
 }
