@@ -3,10 +3,12 @@ import {
   HERO_STRIKE_RENDER_SCALE_MAX,
   HERO_STRIKE_WIDTH,
 } from "./heroStrikeConfig";
+import { getHeroStrikeRenderScaleLimit } from "./heroStrikePerformance";
 
 export function configureHeroStrikeCanvas(canvas: HTMLCanvasElement, context: CanvasRenderingContext2D) {
   const devicePixelRatio = Math.max(1, window.devicePixelRatio || 1);
-  const pixelRatio = Math.min(HERO_STRIKE_RENDER_SCALE_MAX, devicePixelRatio);
+  const qualityLimit = Math.min(HERO_STRIKE_RENDER_SCALE_MAX, getHeroStrikeRenderScaleLimit());
+  const pixelRatio = Math.min(qualityLimit, devicePixelRatio);
   const width = Math.round(HERO_STRIKE_WIDTH * pixelRatio);
   const height = Math.round(HERO_STRIKE_HEIGHT * pixelRatio);
 
