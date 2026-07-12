@@ -94,31 +94,25 @@ function selectedIdFor(state: HeroStrikeState, row: HeroStrikeLoadoutRow) {
 }
 
 function primaryMetric(state: HeroStrikeState, id: string) {
-  const previous = state.loadout.primary;
-  state.loadout.primary = id as HeroStrikeState["loadout"]["primary"];
-  try {
-    if (id === "scatter-array") {
-      const profile = getBreacherScatterProfile(state);
-      return {
-        metric: `${profile.magazine} SHELL`,
-        detail: `PUMP ${profile.pumpTime.toFixed(2)}s · RELOAD ${profile.reloadTime.toFixed(2)}s`,
-      };
-    }
-    if (id === "rail-driver") {
-      const profile = getArcRailProfile(state);
-      return {
-        metric: "CAPACITOR",
-        detail: `CHARGE ${Math.round(profile.chargeRate * 100)}%/s · FOCUS RELEASE`,
-      };
-    }
-    const profile = getPulseRepeaterProfile(state);
+  if (id === "scatter-array") {
+    const profile = getBreacherScatterProfile(state);
     return {
-      metric: `${profile.driveBurst}/${profile.focusBurst} BURST`,
-      detail: `HEAT ${Math.round(profile.heatPerShot * 100)} · COOL ${Math.round(profile.driveCooling * 100)}%/s`,
+      metric: `${profile.magazine} SHELL`,
+      detail: `PUMP ${profile.pumpTime.toFixed(2)}s · RELOAD ${profile.reloadTime.toFixed(2)}s`,
     };
-  } finally {
-    state.loadout.primary = previous;
   }
+  if (id === "rail-driver") {
+    const profile = getArcRailProfile(state);
+    return {
+      metric: "CAPACITOR",
+      detail: `CHARGE ${Math.round(profile.chargeRate * 100)}%/s · FOCUS RELEASE`,
+    };
+  }
+  const profile = getPulseRepeaterProfile(state);
+  return {
+    metric: `${profile.driveBurst}/${profile.focusBurst} BURST`,
+    detail: `HEAT ${Math.round(profile.heatPerShot * 100)} · COOL ${Math.round(profile.driveCooling * 100)}%/s`,
+  };
 }
 
 function metricFor(state: HeroStrikeState, row: HeroStrikeLoadoutRow, id: string) {
