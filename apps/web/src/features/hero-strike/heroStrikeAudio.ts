@@ -16,16 +16,20 @@ export type HeroStrikeSound =
   | "level-up";
 
 let context: AudioContext | null = null;
+let masterGain: GainNode | null = null;
 const lastPlayed = new Map<HeroStrikeSound, number>();
+const noiseBuffers = new Map<number, AudioBuffer>();
 
 const SOUND_GAPS: Partial<Record<HeroStrikeSound, number>> = {
   "pulse-shot": 0.04,
   "scatter-shot": 0.09,
+  "rail-shot": 0.08,
   "weapon-vent": 0.35,
   "weapon-reload": 0.3,
   "weapon-ready": 0.22,
   hit: 0.035,
   critical: 0.055,
+  kill: 0.055,
 };
 
 function getContext() {
@@ -33,8 +37,18 @@ function getContext() {
   const AudioContextClass = window.AudioContext
     ?? (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
   if (!AudioContextClass) return null;
-  context ??= new AudioContextClass();
+  if (!context) {
+    context = new AudioContextClass();
+    masterGain = context.createGain();
+    masterGain.gain.value = 0.92;
+    masterGain.connect(context.destination);
+  }
   return context;
+}
+
+function getOutput(audio: AudioContext) {
+  if (context !== audio || !masterGain) return audio.destination;
+  return masterGain;
 }
 
 export function unlockHeroStrikeAudio() {
@@ -70,27 +84,44 @@ function tone(
   gain.gain.setValueAtTime(Math.max(0.0001, volume), start);
   gain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
   oscillator.connect(gain);
-  gain.connect(audio.destination);
+  gain.connect(getOutput(audio));
+  oscillator.onended = () => {
+    oscillator.disconnect();
+    gain.disconnect();
+  };
   oscillator.start(start);
   oscillator.stop(start + duration + 0.01);
 }
 
-function noise(audio: AudioContext, duration: number, volume: number, delay = 0) {
-  const frameCount = Math.max(1, Math.floor(audio.sampleRate * duration));
+function getNoiseBuffer(audio: AudioContext, duration: number) {
+  const bucket = Math.ceil(duration * 20) / 20;
+  const existing = noiseBuffers.get(bucket);
+  if (existing) return existing;
+
+  const frameCount = Math.max(1, Math.floor(audio.sampleRate * bucket));
   const buffer = audio.createBuffer(1, frameCount, audio.sampleRate);
   const channel = buffer.getChannelData(0);
   for (let index = 0; index < frameCount; index += 1) {
     channel[index] = (Math.random() * 2 - 1) * (1 - index / frameCount);
   }
+  noiseBuffers.set(bucket, buffer);
+  return buffer;
+}
+
+function noise(audio: AudioContext, duration: number, volume: number, delay = 0) {
   const source = audio.createBufferSource();
   const gain = audio.createGain();
   const start = audio.currentTime + delay;
-  source.buffer = buffer;
+  source.buffer = getNoiseBuffer(audio, duration);
   gain.gain.setValueAtTime(volume, start);
   gain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
   source.connect(gain);
-  gain.connect(audio.destination);
-  source.start(start);
+  gain.connect(getOutput(audio));
+  source.onended = () => {
+    source.disconnect();
+    gain.disconnect();
+  };
+  source.start(start, 0, duration);
 }
 
 export function playHeroStrikeSound(sound: HeroStrikeSound, intensity = 1) {
