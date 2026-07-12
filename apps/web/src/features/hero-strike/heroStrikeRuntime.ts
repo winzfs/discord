@@ -134,6 +134,7 @@ export function tickHeroStrike(state: HeroStrikeState, dt: number) {
   updatePlayer(state, dt);
   updatePlayerFire(state, dt);
   updateSpawning(state, dt);
+  if (state.phase !== "playing") return;
   updateEnemies(state, dt);
   updateSupportWeapons(state, dt);
   if (state.phase !== "playing") return;
