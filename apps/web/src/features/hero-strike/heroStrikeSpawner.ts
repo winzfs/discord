@@ -3,6 +3,7 @@ import { getBossBreakMax, updateBossBreakState } from "./heroStrikeBossBreak";
 import { getBossPhaseMovementMultiplier } from "./heroStrikeBossPhases";
 import { updateEnemyImpactFeedback } from "./heroStrikeCombatFeedback";
 import { HERO_STRIKE_BOSS_Y, HERO_STRIKE_WIDTH } from "./heroStrikeConfig";
+import { applyHeroStrikeEnemyActionMovement } from "./heroStrikeEnemyActions";
 import { getHeroStrikeEncounterEnemy } from "./heroStrikeEncounters";
 import { getFormationInterval, getNextFormation } from "./heroStrikeFormations";
 import { getDifficultyProfile } from "./heroStrikeLoadout";
@@ -174,7 +175,6 @@ export function updateSpawning(state: HeroStrikeState, dt: number) {
   const difficulty = getDifficultyProfile(state.loadout.difficulty);
   const hasBossEntity = state.enemies.some((enemy) => enemy.boss && !enemy.dead);
 
-  // bossSpawned can be reserved before a queued upgrade screen. Spawn the boss once play resumes.
   if (state.bossSpawned && !hasBossEntity) {
     spawnBoss(state);
     return;
@@ -257,37 +257,6 @@ function updateBossMovement(enemy: HeroStrikeEnemy, dt: number) {
   enemy.y = HERO_STRIKE_BOSS_Y + Math.sin(enemy.age * (1.2 + stageIndex * 0.08)) * bobAmount;
 }
 
-function updateRunnerMovement(state: HeroStrikeState, enemy: HeroStrikeEnemy, dt: number) {
-  enemy.fireCooldown -= dt;
-  if (enemy.y < 112) {
-    enemy.y += enemy.vy * dt;
-    return;
-  }
-
-  if (enemy.fireCooldown <= 0) {
-    const dx = state.player.x - enemy.x;
-    const dy = state.player.y - enemy.y;
-    const length = Math.max(1, Math.hypot(dx, dy));
-    enemy.vx = dx / length * 290;
-    enemy.vy = dy / length * 290;
-    enemy.fireCooldown = 3.35;
-  }
-
-  if (enemy.fireCooldown > 2.82) {
-    enemy.x += enemy.vx * dt;
-    enemy.y += enemy.vy * dt;
-    return;
-  }
-
-  if (enemy.fireCooldown < 0.52) {
-    enemy.x += Math.sin(enemy.age * 8) * 8 * dt;
-    return;
-  }
-
-  enemy.x += Math.sin(enemy.age * 4.2 + enemy.phase) * 26 * dt;
-  enemy.y += Math.max(32, Math.abs(enemy.vy) * 0.24) * dt;
-}
-
 export function updateEnemyMovement(state: HeroStrikeState, enemy: HeroStrikeEnemy, dt: number) {
   enemy.age += dt;
   updateEnemyImpactFeedback(enemy, dt);
@@ -296,19 +265,11 @@ export function updateEnemyMovement(state: HeroStrikeState, enemy: HeroStrikeEne
     return;
   }
 
-  if (enemy.kind === "runner") {
-    updateRunnerMovement(state, enemy, dt);
-  } else if (enemy.kind === "sniper") {
-    const hoverY = 155 + Math.sin(enemy.phase) * 30;
-    if (enemy.y < hoverY) enemy.y += enemy.vy * dt;
-    else if (enemy.age < 10) enemy.x += Math.sin(enemy.age * 1.8 + enemy.phase) * 42 * dt;
-    else enemy.y += enemy.vy * 0.68 * dt;
-  } else if (enemy.kind === "weaver") {
+  if (applyHeroStrikeEnemyActionMovement(state, enemy, dt)) return;
+
+  if (enemy.kind === "weaver") {
     enemy.x += (enemy.vx + Math.sin(enemy.age * 5.4 + enemy.phase) * 62) * dt;
     enemy.y += enemy.vy * dt;
-  } else if (enemy.kind === "bomber") {
-    enemy.x += Math.sin(enemy.age * 1.25 + enemy.phase) * 15 * dt;
-    enemy.y += enemy.vy * 0.84 * dt;
   } else {
     const wave = enemy.kind === "drone" ? 18 : 7;
     enemy.x += (enemy.vx + Math.sin(enemy.age * 2.2 + enemy.phase) * wave) * dt;
