@@ -106,13 +106,13 @@ function drawEvolutionTags(ctx: CanvasRenderingContext2D, state: HeroStrikeState
   let x = 20;
   for (const label of labels) {
     const width = ctx.measureText(label).width + 14;
-    roundedRect(ctx, x, 188, width, 17, 7);
+    roundedRect(ctx, x, 216, width, 17, 7);
     ctx.fillStyle = "rgba(4,10,24,.74)";
     ctx.fill();
     ctx.strokeStyle = HERO_STRIKE_COLORS.gold;
     ctx.stroke();
     ctx.fillStyle = HERO_STRIKE_COLORS.gold;
-    ctx.fillText(label, x + 7, 200);
+    ctx.fillText(label, x + 7, 228);
     x += width + 5;
   }
 }
