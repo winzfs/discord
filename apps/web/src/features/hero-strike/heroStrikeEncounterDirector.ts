@@ -29,6 +29,7 @@ function createMission(
     status: "active",
     progress: 0,
     startKills: state.stageKills,
+    startHits: state.stageHits,
     targetEnemyId: null,
     lastTargetY: 0,
     targetEnhanced: false,
@@ -60,7 +61,7 @@ function succeedMission(state: HeroStrikeState, operation: HeroStrikeOperationRu
   const reward = calculateHeroStrikeMissionReward(state, mission.definition);
   operation.salvage += reward.salvage;
   operation.missionsSucceeded += 1;
-  if (state.stageHits === 0) operation.perfectMissions += 1;
+  if (state.stageHits === mission.startHits) operation.perfectMissions += 1;
   recordHeroStrikeCombatRankMission(state, true);
   presentHeroStrikeMissionSuccess(state, mission.definition, reward);
   return true;
