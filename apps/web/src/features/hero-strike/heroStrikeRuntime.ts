@@ -1,6 +1,7 @@
 import { compactInPlace } from "./heroStrikeArrayUtils";
 import { updateHeroStrikeBossDirector } from "./heroStrikeBossDirector";
 import { updateBossPhase } from "./heroStrikeBossPhases";
+import { updateHeroStrikeBullets } from "./heroStrikeBulletRuntime";
 import {
   getHeroStrikeMovementResponseScale,
   updateHeroStrikeCombatControl,
@@ -31,7 +32,7 @@ import { updateEnemyMovement, updateSpawning } from "./heroStrikeSpawner";
 import { tickHeroStrikeStage } from "./heroStrikeStageRuntime";
 import { updateSupportWeapons } from "./heroStrikeSupportWeapons";
 import type { HeroStrikeState } from "./heroStrikeTypes";
-import { resolveBulletCollisions, updateBullets, updatePlayerFire } from "./heroStrikeWeaponRuntime";
+import { resolveBulletCollisions, updatePlayerFire } from "./heroStrikeWeaponRuntime";
 
 function updateStars(state: HeroStrikeState, dt: number) {
   const rushBoost = isHeroStrikeFlowRush(state) ? 1.65 : 1;
@@ -154,7 +155,7 @@ export function tickHeroStrike(state: HeroStrikeState, dt: number) {
   updateSupportWeapons(state, dt);
   if (state.phase !== "playing") return;
 
-  updateBullets(state, dt);
+  updateHeroStrikeBullets(state, dt);
   resolveBulletCollisions(state);
   if (state.phase !== "playing") return;
   resolvePlayerCollisions(state);
