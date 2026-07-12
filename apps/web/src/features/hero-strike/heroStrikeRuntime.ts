@@ -13,6 +13,7 @@ import {
 import { addFloatingText } from "./heroStrikeEffects";
 import { updateHeroStrikeEnemyAction } from "./heroStrikeEnemyActions";
 import { updateEnemyFire } from "./heroStrikeEnemyFire";
+import { updateHeroStrikeEncounter } from "./heroStrikeEncounterDirector";
 import {
   getHeroStrikeFlowMovementResponse,
   isHeroStrikeFlowRush,
@@ -134,6 +135,7 @@ export function tickHeroStrike(state: HeroStrikeState, dt: number) {
   tickHeroStrikeStage(state, dt);
   updateHeroStrikeCombatControl(state, dt);
   updatePlayer(state, dt);
+  updateHeroStrikeEncounter(state, dt);
   updatePlayerFire(state, dt);
   updateSpawning(state, dt);
   if (state.phase !== "playing") return;
