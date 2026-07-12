@@ -1,3 +1,9 @@
+import { purchaseHeroStrikeArmoryOption } from "./heroStrikeArmory";
+import {
+  HERO_STRIKE_ARMORY_CARD_BOUNDS,
+  HERO_STRIKE_ARMORY_CONTINUE_BOUNDS,
+  isInsideHeroStrikeArmoryRect,
+} from "./heroStrikeArmoryLayout";
 import { unlockHeroStrikeAudio } from "./heroStrikeAudio";
 import { beginHeroStrikeDrive, releaseHeroStrikeFocus } from "./heroStrikeCombatControl";
 import {
@@ -82,6 +88,20 @@ function handleLoadoutPointer(state: HeroStrikeState, x: number, y: number) {
   saveHeroStrikeLoadout(state.loadout);
 }
 
+function handleArmoryPointer(state: HeroStrikeState, x: number, y: number) {
+  const optionIndex = HERO_STRIKE_ARMORY_CARD_BOUNDS.findIndex((bounds) => (
+    isInsideHeroStrikeArmoryRect(x, y, bounds)
+  ));
+  if (optionIndex >= 0) {
+    const optionIds = ["repair", "support-tune", "tactical-charge"] as const;
+    purchaseHeroStrikeArmoryOption(state, optionIds[optionIndex]);
+    return;
+  }
+  if (isInsideHeroStrikeArmoryRect(x, y, HERO_STRIKE_ARMORY_CONTINUE_BOUNDS)) {
+    advanceHeroStrikeStage(state);
+  }
+}
+
 export function handleHeroStrikePointer(state: HeroStrikeState, x: number, y: number, pressed: boolean) {
   if (pressed) unlockHeroStrikeAudio();
   if (state.phase === "title") {
@@ -102,14 +122,12 @@ export function handleHeroStrikePointer(state: HeroStrikeState, x: number, y: nu
   if (state.phase === "stage-clear") {
     resetPointer(state);
     if (!pressed) return;
-    if (state.protocolChoices.length === 0) {
-      advanceHeroStrikeStage(state);
+    if (state.protocolChoices.length > 0) {
+      const choice = state.protocolChoices[selectedCardIndex(x, y)];
+      if (choice) applyStageProtocol(state, choice.id);
       return;
     }
-    const choice = state.protocolChoices[selectedCardIndex(x, y)];
-    if (!choice) return;
-    applyStageProtocol(state, choice.id);
-    advanceHeroStrikeStage(state);
+    handleArmoryPointer(state, x, y);
     return;
   }
   if (state.phase === "paused") {
