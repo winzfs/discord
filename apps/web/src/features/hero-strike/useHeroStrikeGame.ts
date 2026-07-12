@@ -3,6 +3,7 @@ import { preloadHeroStrikeAssets } from "./heroStrikeAssets";
 import { configureHeroStrikeCanvas } from "./heroStrikeCanvasResolution";
 import { HERO_STRIKE_MAX_DT } from "./heroStrikeConfig";
 import { handleHeroStrikePointer, releaseHeroStrikePointer } from "./heroStrikeInput";
+import { recordHeroStrikeFrame } from "./heroStrikePerformance";
 import { renderHeroStrike } from "./heroStrikeRenderer";
 import { tickHeroStrike } from "./heroStrikeRuntime";
 import { createInitialHeroStrikeState } from "./heroStrikeState";
@@ -25,7 +26,7 @@ export function useHeroStrikeGame() {
     preloadHeroStrikeAssets();
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const context = canvas.getContext("2d");
+    const context = canvas.getContext("2d", { alpha: false });
     if (!context) return;
 
     const syncResolution = () => configureHeroStrikeCanvas(canvas, context);
@@ -35,6 +36,7 @@ export function useHeroStrikeGame() {
     const tick = (time: number) => {
       const dt = Math.min(HERO_STRIKE_MAX_DT, Math.max(0, (time - lastTimeRef.current) / 1000 || 0));
       lastTimeRef.current = time;
+      if (recordHeroStrikeFrame(dt)) syncResolution();
       tickHeroStrike(stateRef.current, dt);
       renderHeroStrike(context, stateRef.current);
       animationRef.current = requestAnimationFrame(tick);
@@ -43,6 +45,7 @@ export function useHeroStrikeGame() {
 
     const handleVisibility = () => {
       const state = stateRef.current;
+      lastTimeRef.current = 0;
       if (document.hidden && state.phase === "playing") {
         state.previousPhase = "playing";
         state.phase = "paused";
