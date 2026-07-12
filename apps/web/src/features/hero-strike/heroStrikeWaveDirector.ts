@@ -1,7 +1,7 @@
+import { getHeroStrikeEncounter } from "./heroStrikeEncounters";
 import type { EliteTrait, HeroStrikeState } from "./heroStrikeTypes";
 
 const WAVE_THRESHOLDS = [0, 0.28, 0.56, 0.78] as const;
-const WAVE_LABELS = ["개막 공세", "압박 웨이브", "엘리트 출현", "최종 공세"] as const;
 const WAVE_SPAWN_MULTIPLIERS = [1.08, 0.96, 0.84, 0.74] as const;
 
 export function getWaveIndex(stageElapsed: number, durationSeconds: number) {
@@ -24,7 +24,7 @@ export function updateHeroStrikeWave(state: HeroStrikeState, durationSeconds: nu
 }
 
 export function getWaveLabel(waveIndex: number) {
-  return WAVE_LABELS[Math.max(0, Math.min(WAVE_LABELS.length - 1, waveIndex - 1))];
+  return getHeroStrikeEncounter(waveIndex).label;
 }
 
 export function getWaveSpawnMultiplier(waveIndex: number) {
