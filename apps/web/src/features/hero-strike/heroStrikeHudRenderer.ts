@@ -5,6 +5,7 @@ import {
   PAUSE_BUTTON,
   ULTIMATE_BUTTON,
 } from "./heroStrikeConfig";
+import { getHeroStrikeEncounter } from "./heroStrikeEncounters";
 import { isHeroStrikeFlowRush } from "./heroStrikeFlow";
 import { drawHeroStrikeOverlay } from "./heroStrikeOverlayRenderer";
 import { getCurrentHeroStrikeStage, HERO_STRIKE_STAGES } from "./heroStrikeStages";
@@ -16,46 +17,65 @@ function roundedRect(ctx: CanvasRenderingContext2D, x: number, y: number, width:
   ctx.roundRect(x, y, width, height, radius);
 }
 
+function drawEncounterSegments(ctx: CanvasRenderingContext2D, state: HeroStrikeState) {
+  const startX = 20;
+  const y = 66;
+  const gap = 5;
+  const width = (HERO_STRIKE_WIDTH - 40 - gap * 3) / 4;
+  for (let index = 0; index < 4; index += 1) {
+    const encounter = getHeroStrikeEncounter(index + 1);
+    ctx.fillStyle = index + 1 < state.waveIndex
+      ? "rgba(121,242,157,.7)"
+      : index + 1 === state.waveIndex
+        ? encounter.accent
+        : "rgba(255,255,255,.1)";
+    ctx.fillRect(startX + index * (width + gap), y, width, 4);
+  }
+}
+
 function drawTopHud(ctx: CanvasRenderingContext2D, state: HeroStrikeState) {
   const stage = getCurrentHeroStrikeStage(state);
-  roundedRect(ctx, 12, 12, HERO_STRIKE_WIDTH - 24, 72, 20);
-  ctx.fillStyle = "rgba(4, 10, 24, .78)";
+  const encounter = getHeroStrikeEncounter(state.waveIndex);
+  roundedRect(ctx, 12, 10, HERO_STRIKE_WIDTH - 24, 84, 18);
+  ctx.fillStyle = "rgba(4,10,24,.8)";
   ctx.fill();
   ctx.strokeStyle = "rgba(105,231,255,.18)";
   ctx.stroke();
+
   ctx.fillStyle = HERO_STRIKE_COLORS.muted;
-  ctx.font = "700 10px system-ui";
-  ctx.fillText("SCORE", 28, 34);
+  ctx.font = "800 8px system-ui";
+  ctx.fillText("OPERATION", 24, 29);
   ctx.fillStyle = HERO_STRIKE_COLORS.white;
-  ctx.font = "900 24px system-ui";
-  ctx.fillText(state.score.toLocaleString(), 27, 62);
+  ctx.font = "1000 14px system-ui";
+  ctx.fillText(`${state.stageIndex + 1}/${HERO_STRIKE_STAGES.length}`, 24, 49);
 
   ctx.textAlign = "center";
+  ctx.fillStyle = state.bossSpawned ? HERO_STRIKE_COLORS.red : encounter.accent;
+  ctx.font = "1000 15px system-ui";
+  ctx.fillText(state.bossSpawned ? "BOSS" : encounter.label, HERO_STRIKE_WIDTH / 2, 31);
   ctx.fillStyle = HERO_STRIKE_COLORS.muted;
-  ctx.font = "700 10px system-ui";
-  ctx.fillText(`STAGE ${state.stageIndex + 1}/${HERO_STRIKE_STAGES.length}`, HERO_STRIKE_WIDTH / 2, 34);
-  ctx.fillStyle = state.bossSpawned ? HERO_STRIKE_COLORS.red : HERO_STRIKE_COLORS.cyan;
-  ctx.font = "900 21px system-ui";
-  const remaining = Math.max(0, Math.ceil(stage.durationSeconds - state.stageElapsed));
-  ctx.fillText(state.bossSpawned ? "BOSS" : `${remaining}s`, HERO_STRIKE_WIDTH / 2, 61);
+  ctx.font = "700 8px system-ui";
+  ctx.fillText(state.bossSpawned ? stage.bossName : encounter.subtitle, HERO_STRIKE_WIDTH / 2, 49);
 
   ctx.textAlign = "right";
   ctx.fillStyle = HERO_STRIKE_COLORS.muted;
-  ctx.font = "700 10px system-ui";
-  ctx.fillText("WAVE", HERO_STRIKE_WIDTH - 28, 34);
-  ctx.fillStyle = HERO_STRIKE_COLORS.gold;
-  ctx.font = "900 19px system-ui";
-  ctx.fillText(state.bossSpawned ? "FINAL" : `${state.waveIndex}/4`, HERO_STRIKE_WIDTH - 28, 61);
+  ctx.font = "800 8px system-ui";
+  ctx.fillText("TIME", HERO_STRIKE_WIDTH - 24, 29);
+  const remaining = Math.max(0, Math.ceil(stage.durationSeconds - state.stageElapsed));
+  ctx.fillStyle = state.bossSpawned ? HERO_STRIKE_COLORS.red : HERO_STRIKE_COLORS.white;
+  ctx.font = "1000 14px system-ui";
+  ctx.fillText(state.bossSpawned ? "FINAL" : `${remaining}s`, HERO_STRIKE_WIDTH - 24, 49);
   ctx.textAlign = "left";
 
-  ctx.fillStyle = "rgba(255,255,255,.08)";
-  ctx.fillRect(18, 91, HERO_STRIKE_WIDTH - 36, 7);
+  drawEncounterSegments(ctx, state);
   const xpRatio = Math.max(0, Math.min(1, state.player.xp / state.player.nextXp));
+  ctx.fillStyle = "rgba(255,255,255,.08)";
+  ctx.fillRect(20, 78, HERO_STRIKE_WIDTH - 40, 5);
   ctx.fillStyle = HERO_STRIKE_COLORS.xp;
-  ctx.fillRect(18, 91, (HERO_STRIKE_WIDTH - 36) * xpRatio, 7);
+  ctx.fillRect(20, 78, (HERO_STRIKE_WIDTH - 40) * xpRatio, 5);
   ctx.fillStyle = HERO_STRIKE_COLORS.white;
-  ctx.font = "800 10px system-ui";
-  ctx.fillText(`LV.${state.player.level}`, 20, 112);
+  ctx.font = "900 8px system-ui";
+  ctx.fillText(`LV.${state.player.level}`, 22, 91);
 }
 
 function drawFlow(ctx: CanvasRenderingContext2D, state: HeroStrikeState) {
@@ -65,62 +85,45 @@ function drawFlow(ctx: CanvasRenderingContext2D, state: HeroStrikeState) {
   const ratio = rush
     ? Math.max(0, Math.min(1, player.flowRush / maximumRush))
     : Math.max(0, Math.min(1, player.flow / player.flowMax));
-  const x = 76;
-  const y = 104;
-  const width = 274;
+  const x = 205;
+  const y = 102;
+  const width = 150;
   const color = rush ? HERO_STRIKE_COLORS.gold : HERO_STRIKE_COLORS.purple;
 
-  roundedRect(ctx, x, y, width, 13, 6);
-  ctx.fillStyle = "rgba(4,10,24,.8)";
-  ctx.fill();
-  ctx.strokeStyle = rush ? "rgba(255,209,102,.8)" : "rgba(187,134,252,.42)";
-  ctx.lineWidth = rush ? 2 : 1;
-  ctx.stroke();
   ctx.fillStyle = "rgba(255,255,255,.08)";
-  ctx.fillRect(x + 4, y + 4, width - 8, 5);
+  ctx.fillRect(x, y, width, 5);
   ctx.fillStyle = color;
-  ctx.fillRect(x + 4, y + 4, (width - 8) * ratio, 5);
-
-  ctx.font = "900 9px system-ui";
+  ctx.fillRect(x, y, width * ratio, 5);
+  ctx.font = "900 8px system-ui";
   ctx.fillStyle = color;
-  ctx.fillText(rush ? "RUSH" : "FLOW", 20, 114);
   ctx.textAlign = "right";
-  ctx.fillText(rush ? `${player.flowRush.toFixed(1)}s` : `${Math.round(player.flow)}%`, HERO_STRIKE_WIDTH - 20, 114);
+  ctx.fillText(rush ? `RUSH ${player.flowRush.toFixed(1)}s` : `FLOW ${Math.round(player.flow)}%`, x + width, y + 14);
   ctx.textAlign = "left";
 }
 
 function drawHealthAndCombo(ctx: CanvasRenderingContext2D, state: HeroStrikeState) {
   const player = state.player;
   const hpRatio = Math.max(0, Math.min(1, player.hp / Math.max(1, player.maxHp)));
-  roundedRect(ctx, 20, 124, 116, 21, 8);
+  roundedRect(ctx, 20, 99, 166, 24, 8);
   ctx.fillStyle = "rgba(4,10,24,.78)";
   ctx.fill();
   ctx.strokeStyle = "rgba(255,155,61,.34)";
   ctx.stroke();
   ctx.fillStyle = "rgba(255,255,255,.08)";
-  ctx.fillRect(26, 139, 104, 3);
+  ctx.fillRect(27, 115, 101, 4);
   ctx.fillStyle = HERO_STRIKE_COLORS.orange;
-  ctx.fillRect(26, 139, 104 * hpRatio, 3);
+  ctx.fillRect(27, 115, 101 * hpRatio, 4);
   ctx.fillStyle = HERO_STRIKE_COLORS.white;
-  ctx.font = "900 9px system-ui";
-  ctx.textAlign = "center";
-  ctx.fillText(`HP ${player.hp}/${player.maxHp}`, 78, 136);
-
-  ctx.textAlign = "left";
+  ctx.font = "900 8px system-ui";
+  ctx.fillText(`HP ${player.hp}/${player.maxHp}`, 27, 110);
   ctx.fillStyle = HERO_STRIKE_COLORS.shield;
-  ctx.font = "900 9px system-ui";
-  ctx.fillText(`SHIELD ${player.shield}`, 147, 137);
+  ctx.fillText(`SHIELD ${player.shield}`, 136, 116);
 
-  if (player.combo < 2) return;
+  if (player.combo < 3) return;
   ctx.textAlign = "center";
   ctx.fillStyle = isHeroStrikeFlowRush(state) ? HERO_STRIKE_COLORS.gold : HERO_STRIKE_COLORS.white;
-  ctx.font = `900 ${Math.min(30, 18 + player.combo * 0.14)}px system-ui`;
-  ctx.fillText(`${player.combo} COMBO`, HERO_STRIKE_WIDTH / 2, 166);
-  if (isHeroStrikeFlowRush(state) && !state.bossSpawned) {
-    ctx.fillStyle = HERO_STRIKE_COLORS.gold;
-    ctx.font = "900 9px system-ui";
-    ctx.fillText("PULSE RUSH", HERO_STRIKE_WIDTH / 2, 177);
-  }
+  ctx.font = `1000 ${Math.min(26, 15 + player.combo * 0.12)}px system-ui`;
+  ctx.fillText(`${player.combo} COMBO`, HERO_STRIKE_WIDTH / 2, state.bossSpawned ? 236 : 156);
   ctx.textAlign = "left";
 }
 
@@ -132,7 +135,7 @@ function drawBlink(ctx: CanvasRenderingContext2D, state: HeroStrikeState) {
     : 1 - Math.max(0, player.blinkRecharge) / player.blinkRechargeDuration;
   ctx.save();
   ctx.translate(x, y);
-  ctx.fillStyle = "rgba(4,10,24,.78)";
+  ctx.fillStyle = "rgba(4,10,24,.82)";
   ctx.beginPath();
   ctx.arc(0, 0, radius, 0, Math.PI * 2);
   ctx.fill();
@@ -161,7 +164,7 @@ function drawUltimate(ctx: CanvasRenderingContext2D, state: HeroStrikeState) {
   const ratio = state.player.ultimate / state.player.ultimateMax;
   ctx.save();
   ctx.translate(x, y);
-  ctx.fillStyle = "rgba(4,10,24,.78)";
+  ctx.fillStyle = "rgba(4,10,24,.82)";
   ctx.beginPath();
   ctx.arc(0, 0, radius, 0, Math.PI * 2);
   ctx.fill();
@@ -188,40 +191,29 @@ function drawBossBar(ctx: CanvasRenderingContext2D, state: HeroStrikeState) {
   if (!boss) return;
   const stage = getCurrentHeroStrikeStage(state);
   const phase = boss.bossPhase ?? 1;
-  roundedRect(ctx, 42, 178, HERO_STRIKE_WIDTH - 84, 48, 12);
-  ctx.fillStyle = "rgba(5,7,16,.84)";
+  roundedRect(ctx, 42, 166, HERO_STRIKE_WIDTH - 84, 48, 12);
+  ctx.fillStyle = "rgba(5,7,16,.86)";
   ctx.fill();
   const ratio = Math.max(0, boss.hp / boss.maxHp);
   ctx.fillStyle = phase >= 3 ? HERO_STRIKE_COLORS.red : phase >= 2 ? HERO_STRIKE_COLORS.gold : HERO_STRIKE_COLORS.cyan;
-  ctx.fillRect(51, 187, (HERO_STRIKE_WIDTH - 102) * ratio, 9);
-  ctx.strokeStyle = "rgba(255,255,255,.28)";
-  ctx.lineWidth = 1;
-  for (const threshold of [1 / 3, 2 / 3]) {
-    const markerX = 51 + (HERO_STRIKE_WIDTH - 102) * threshold;
-    ctx.beginPath();
-    ctx.moveTo(markerX, 185);
-    ctx.lineTo(markerX, 198);
-    ctx.stroke();
-  }
-
+  ctx.fillRect(51, 175, (HERO_STRIKE_WIDTH - 102) * ratio, 9);
   const breakRatio = (boss.breakStun ?? 0) > 0
     ? 1
     : Math.max(0, Math.min(1, (boss.breakGauge ?? 0) / Math.max(1, boss.breakMax ?? 1)));
   ctx.fillStyle = "rgba(255,255,255,.08)";
-  ctx.fillRect(51, 202, HERO_STRIKE_WIDTH - 102, 5);
+  ctx.fillRect(51, 190, HERO_STRIKE_WIDTH - 102, 5);
   ctx.fillStyle = (boss.breakStun ?? 0) > 0 ? HERO_STRIKE_COLORS.gold : HERO_STRIKE_COLORS.purple;
-  ctx.fillRect(51, 202, (HERO_STRIKE_WIDTH - 102) * breakRatio, 5);
-
+  ctx.fillRect(51, 190, (HERO_STRIKE_WIDTH - 102) * breakRatio, 5);
   ctx.textAlign = "center";
   ctx.fillStyle = HERO_STRIKE_COLORS.white;
-  ctx.font = "900 10px system-ui";
+  ctx.font = "900 9px system-ui";
   const status = (boss.breakStun ?? 0) > 0 ? `BREAK ${boss.breakStun?.toFixed(1)}s` : `PHASE ${phase}`;
-  ctx.fillText(`${stage.bossName} · ${status}`, HERO_STRIKE_WIDTH / 2, 219);
+  ctx.fillText(`${stage.bossName} · ${status}`, HERO_STRIKE_WIDTH / 2, 207);
   ctx.textAlign = "left";
 }
 
 function drawPauseButton(ctx: CanvasRenderingContext2D) {
-  ctx.fillStyle = "rgba(4,10,24,.68)";
+  ctx.fillStyle = "rgba(4,10,24,.72)";
   ctx.beginPath();
   ctx.arc(PAUSE_BUTTON.x, PAUSE_BUTTON.y, PAUSE_BUTTON.radius, 0, Math.PI * 2);
   ctx.fill();
