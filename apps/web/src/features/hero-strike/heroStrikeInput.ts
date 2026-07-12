@@ -1,4 +1,5 @@
 import { unlockHeroStrikeAudio } from "./heroStrikeAudio";
+import { beginHeroStrikeDrive, releaseHeroStrikeFocus } from "./heroStrikeCombatControl";
 import {
   BLINK_BUTTON,
   HERO_STRIKE_HEIGHT,
@@ -129,17 +130,20 @@ export function handleHeroStrikePointer(state: HeroStrikeState, x: number, y: nu
   }
   if (pressed && insideCircle(x, y, PAUSE_BUTTON)) {
     resetPointer(state);
+    releaseHeroStrikeFocus(state);
     state.previousPhase = state.phase;
     state.phase = "paused";
     return;
   }
   if (pressed && insideCircle(x, y, BLINK_BUTTON)) {
     resetPointer(state);
+    releaseHeroStrikeFocus(state);
     activateBlink(state);
     return;
   }
   if (pressed && insideCircle(x, y, ULTIMATE_BUTTON)) {
     resetPointer(state);
+    releaseHeroStrikeFocus(state);
     activateUltimate(state);
     return;
   }
@@ -148,6 +152,7 @@ export function handleHeroStrikePointer(state: HeroStrikeState, x: number, y: nu
     state.pointerActive = true;
     state.pointerLastX = x;
     state.pointerLastY = y;
+    beginHeroStrikeDrive(state);
     return;
   }
   if (!state.pointerActive || state.pointerLastX === null || state.pointerLastY === null) return;
@@ -161,5 +166,7 @@ export function handleHeroStrikePointer(state: HeroStrikeState, x: number, y: nu
 }
 
 export function releaseHeroStrikePointer(state: HeroStrikeState) {
+  const wasActive = state.pointerActive;
   resetPointer(state);
+  if (wasActive && state.phase === "playing") releaseHeroStrikeFocus(state);
 }
