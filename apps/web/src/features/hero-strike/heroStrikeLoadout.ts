@@ -29,15 +29,15 @@ type LoadoutOption<T extends string> = {
 };
 
 export const PRIMARY_WEAPON_OPTIONS: readonly LoadoutOption<PrimaryWeaponId>[] = [
-  { id: "pulse-blasters", title: "펄스", icon: "✦", description: "DRIVE 견제 · FOCUS 버스트" },
-  { id: "scatter-array", title: "산탄", icon: "≋", description: "이동 견제 · 집중 근접 산탄" },
-  { id: "rail-driver", title: "레일", icon: "➤", description: "이동 충전 · 정밀 관통포" },
+  { id: "pulse-blasters", title: "펄스 리피터", icon: "✦", description: "3/5점사 · 열 관리 · 과열 냉각" },
+  { id: "scatter-array", title: "브리처", icon: "≋", description: "5발 탄창 · 펌프 · 집중 산탄" },
+  { id: "rail-driver", title: "아크 레일", icon: "➤", description: "DRIVE 축전 · FOCUS 관통 방출" },
 ];
 
 export const SUPPORT_LOADOUT_OPTIONS: readonly LoadoutOption<SupportLoadoutId>[] = [
   { id: "homing-missile", title: "미사일", icon: "◆", description: "FOCUS 표적 추적 폭발" },
   { id: "drone-wing", title: "드론", icon: "⌁", description: "락온 방향 양측 보조사격" },
-  { id: "side-cannons", title: "측면포", icon: "⋘", description: "DRIVE 측면 견제 보조탄" },
+  { id: "side-cannons", title: "측면포", icon: "⋘", description: "주무기 사이클 연동 보조탄" },
 ];
 
 export const TACTICAL_LOADOUT_OPTIONS: readonly LoadoutOption<TacticalLoadoutId>[] = [
@@ -72,12 +72,12 @@ export function getDifficultyProfile(difficulty: HeroStrikeDifficulty) {
 
 export function getPrimaryWeaponProfile(primary: PrimaryWeaponId) {
   if (primary === "scatter-array") {
-    return { damage: 12, fireInterval: 0.25, bulletSpeed: 700, bulletCount: 3, spread: 0.2, pierce: 0 };
+    return { damage: 32, fireInterval: 0.58, bulletSpeed: 680, bulletCount: 1, spread: 0.13, pierce: 0 };
   }
   if (primary === "rail-driver") {
-    return { damage: 52, fireInterval: 0.42, bulletSpeed: 950, bulletCount: 1, spread: 0.07, pierce: 1 };
+    return { damage: 58, fireInterval: 0.8, bulletSpeed: 980, bulletCount: 1, spread: 0.04, pierce: 1 };
   }
-  return { damage: 22, fireInterval: 0.17, bulletSpeed: 790, bulletCount: 1, spread: 0.11, pierce: 0 };
+  return { damage: 20, fireInterval: 0.34, bulletSpeed: 820, bulletCount: 1, spread: 0.08, pierce: 0 };
 }
 
 function isLoadout(value: unknown): value is HeroStrikeLoadout {
@@ -140,7 +140,7 @@ export function applyHeroStrikeLoadout(state: HeroStrikeState) {
 }
 
 export function getLoadoutSummary(loadout: HeroStrikeLoadout) {
-  const primary = PRIMARY_WEAPON_OPTIONS.find((option) => option.id === loadout.primary)?.title ?? "펄스";
+  const primary = PRIMARY_WEAPON_OPTIONS.find((option) => option.id === loadout.primary)?.title ?? "펄스 리피터";
   const support = SUPPORT_LOADOUT_OPTIONS.find((option) => option.id === loadout.support)?.title ?? "미사일";
   const tactical = TACTICAL_LOADOUT_OPTIONS.find((option) => option.id === loadout.tactical)?.title ?? "방벽";
   const difficulty = DIFFICULTY_OPTIONS.find((option) => option.id === loadout.difficulty)?.title ?? "요원";
