@@ -12,14 +12,14 @@ type CombatControlRuntime = {
   pendingUpgrades: number;
 };
 
-const FOCUS_ENTRY_DELAY = 0.14;
-const BASE_LOCK_WIDTH = 76;
+export const HERO_STRIKE_FOCUS_ENTRY_DELAY = 0.14;
+export const HERO_STRIKE_BASE_LOCK_WIDTH = 76;
 const runtimeByState = new WeakMap<HeroStrikeState, CombatControlRuntime>();
 
 function createRuntime(): CombatControlRuntime {
   return {
     mode: "drive",
-    focusDelay: FOCUS_ENTRY_DELAY,
+    focusDelay: HERO_STRIKE_FOCUS_ENTRY_DELAY,
     lockTargetId: null,
     lockRefresh: 0,
     railCharge: 0.28,
@@ -41,10 +41,20 @@ export function getHeroStrikeCombatControl(state: HeroStrikeState) {
   return runtime;
 }
 
+export function prepareHeroStrikeCombatStage(state: HeroStrikeState) {
+  const runtime = getHeroStrikeCombatControl(state);
+  runtime.mode = "drive";
+  runtime.focusDelay = HERO_STRIKE_FOCUS_ENTRY_DELAY;
+  runtime.lockTargetId = null;
+  runtime.lockRefresh = 0;
+  runtime.railCharge = Math.max(0.28, runtime.railCharge);
+  runtime.railShotReady = false;
+}
+
 export function beginHeroStrikeDrive(state: HeroStrikeState) {
   const runtime = getHeroStrikeCombatControl(state);
   runtime.mode = "drive";
-  runtime.focusDelay = FOCUS_ENTRY_DELAY;
+  runtime.focusDelay = HERO_STRIKE_FOCUS_ENTRY_DELAY;
   runtime.lockTargetId = null;
   runtime.lockRefresh = 0;
   runtime.railShotReady = false;
@@ -53,12 +63,16 @@ export function beginHeroStrikeDrive(state: HeroStrikeState) {
 export function releaseHeroStrikeFocus(state: HeroStrikeState) {
   const runtime = getHeroStrikeCombatControl(state);
   runtime.mode = "drive";
-  runtime.focusDelay = FOCUS_ENTRY_DELAY;
+  runtime.focusDelay = HERO_STRIKE_FOCUS_ENTRY_DELAY;
   runtime.lockTargetId = null;
   runtime.lockRefresh = 0;
   runtime.railShotReady = false;
   state.player.targetX = state.player.x;
   state.player.targetY = state.player.y;
+}
+
+function getLockWidth(state: HeroStrikeState) {
+  return HERO_STRIKE_BASE_LOCK_WIDTH + Math.min(40, (state.player.pierce + state.player.chainCoreLevel) * 8);
 }
 
 function targetPriority(state: HeroStrikeState, enemy: HeroStrikeEnemy) {
@@ -69,7 +83,7 @@ function targetPriority(state: HeroStrikeState, enemy: HeroStrikeEnemy) {
 }
 
 function chooseLockTarget(state: HeroStrikeState) {
-  const lockWidth = BASE_LOCK_WIDTH + Math.min(40, (state.player.pierce + state.player.chainCoreLevel) * 8);
+  const lockWidth = getLockWidth(state);
   let best: HeroStrikeEnemy | null = null;
   let bestScore = Number.POSITIVE_INFINITY;
 
@@ -88,7 +102,7 @@ export function updateHeroStrikeCombatControl(state: HeroStrikeState, dt: number
   const runtime = getHeroStrikeCombatControl(state);
   if (state.pointerActive) {
     runtime.mode = "drive";
-    runtime.focusDelay = FOCUS_ENTRY_DELAY;
+    runtime.focusDelay = HERO_STRIKE_FOCUS_ENTRY_DELAY;
     runtime.lockTargetId = null;
     runtime.railShotReady = false;
     runtime.railCharge = Math.min(1, runtime.railCharge + dt * 0.56);
@@ -119,6 +133,16 @@ export function isHeroStrikeFocus(state: HeroStrikeState) {
   return getHeroStrikeCombatControl(state).mode === "focus";
 }
 
+export function getHeroStrikeFocusProgress(state: HeroStrikeState) {
+  const runtime = getHeroStrikeCombatControl(state);
+  if (runtime.mode === "focus") return 1;
+  return Math.max(0, Math.min(1, 1 - runtime.focusDelay / HERO_STRIKE_FOCUS_ENTRY_DELAY));
+}
+
+export function getHeroStrikeLockWidth(state: HeroStrikeState) {
+  return getLockWidth(state);
+}
+
 export function getHeroStrikeLockTarget(state: HeroStrikeState) {
   const targetId = getHeroStrikeCombatControl(state).lockTargetId;
   return targetId === null
@@ -141,6 +165,10 @@ export function getHeroStrikePrimaryDamageScale(state: HeroStrikeState) {
 
 export function getHeroStrikeSupportDamageScale(state: HeroStrikeState) {
   return isHeroStrikeFocus(state) ? 1 : 0.75;
+}
+
+export function getHeroStrikeSupportIntervalScale(state: HeroStrikeState) {
+  return isHeroStrikeFocus(state) ? 1 : 1.28;
 }
 
 export function getHeroStrikePrimaryIntervalScale(state: HeroStrikeState) {
