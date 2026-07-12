@@ -63,12 +63,9 @@ export function getArcRailProfile(
     minimumCharge: 0.28,
     fullCharge: 0.9,
     sideBeams: twin,
-    minimumDamageScale: 0.85,
+    minimumDamageScale: 0.58,
     maximumDamageScale: 2.35,
     drivePulseInterval: Math.max(0.24, 0.34 - rapid * 0.035),
     focusPulseInterval: Math.max(0.2, 0.28 - rapid * 0.03),
-    drivePulseDamageScale: 0.58,
-    focusPulseDamageScale: 0.73,
-    focusPulseBreakPower: 0.85,
   };
 }
