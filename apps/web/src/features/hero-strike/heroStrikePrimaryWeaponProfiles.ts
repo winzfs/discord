@@ -1,12 +1,24 @@
 import type { HeroStrikeState } from "./heroStrikeTypes";
 
-function upgradeLevel(state: HeroStrikeState, id: keyof HeroStrikeState["upgradeLevels"]) {
-  return state.upgradeLevels[id] ?? 0;
+type WeaponProfileOverrides = {
+  rapid?: number;
+  twin?: number;
+};
+
+function upgradeLevel(
+  state: HeroStrikeState,
+  id: "rapid-fire" | "twin-shot",
+  override?: number,
+) {
+  return override ?? state.upgradeLevels[id] ?? 0;
 }
 
-export function getPulseRepeaterProfile(state: HeroStrikeState) {
-  const rapid = upgradeLevel(state, "rapid-fire");
-  const twin = upgradeLevel(state, "twin-shot");
+export function getPulseRepeaterProfile(
+  state: HeroStrikeState,
+  overrides: WeaponProfileOverrides = {},
+) {
+  const rapid = upgradeLevel(state, "rapid-fire", overrides.rapid);
+  const twin = upgradeLevel(state, "twin-shot", overrides.twin);
   return {
     driveBurst: 3 + (twin >= 2 ? 1 : 0),
     focusBurst: 5 + twin,
@@ -20,9 +32,12 @@ export function getPulseRepeaterProfile(state: HeroStrikeState) {
   };
 }
 
-export function getBreacherScatterProfile(state: HeroStrikeState) {
-  const rapid = upgradeLevel(state, "rapid-fire");
-  const twin = upgradeLevel(state, "twin-shot");
+export function getBreacherScatterProfile(
+  state: HeroStrikeState,
+  overrides: WeaponProfileOverrides = {},
+) {
+  const rapid = upgradeLevel(state, "rapid-fire", overrides.rapid);
+  const twin = upgradeLevel(state, "twin-shot", overrides.twin);
   return {
     magazine: 5,
     drivePellets: 2 + (twin >= 2 ? 1 : 0),
@@ -31,20 +46,23 @@ export function getBreacherScatterProfile(state: HeroStrikeState) {
     focusSpread: Math.max(0.07, 0.13 - twin * 0.018),
     pumpTime: Math.max(0.38, 0.58 - rapid * 0.055),
     reloadTime: Math.max(0.95, 1.55 - rapid * 0.13),
-    driveDamageScale: 0.34,
-    focusDamageScale: 0.19,
+    driveDamageScale: 0.36,
+    focusDamageScale: 0.24,
   };
 }
 
-export function getArcRailProfile(state: HeroStrikeState) {
-  const rapid = upgradeLevel(state, "rapid-fire");
-  const twin = upgradeLevel(state, "twin-shot");
+export function getArcRailProfile(
+  state: HeroStrikeState,
+  overrides: WeaponProfileOverrides = {},
+) {
+  const rapid = upgradeLevel(state, "rapid-fire", overrides.rapid);
+  const twin = upgradeLevel(state, "twin-shot", overrides.twin);
   return {
     chargeRate: 0.44 + rapid * 0.075,
-    minimumCharge: 0.2,
+    minimumCharge: 0.3,
     fullCharge: 0.92,
     sideBeams: twin,
-    minimumDamageScale: 0.95,
-    maximumDamageScale: 2.45,
+    minimumDamageScale: 0.35,
+    maximumDamageScale: 2.5,
   };
 }
