@@ -6,7 +6,7 @@ import {
   getHeroStrikeRailCharge,
   getPendingHeroStrikeUpgrades,
 } from "./heroStrikeCombatControl";
-import { HERO_STRIKE_COLORS, HERO_STRIKE_WIDTH } from "./heroStrikeConfig";
+import { HERO_STRIKE_COLORS } from "./heroStrikeConfig";
 import type { HeroStrikeState } from "./heroStrikeTypes";
 
 function drawLockLane(ctx: CanvasRenderingContext2D, state: HeroStrikeState) {
@@ -71,9 +71,10 @@ function drawControlStatus(ctx: CanvasRenderingContext2D, state: HeroStrikeState
   const mode = getHeroStrikeCombatMode(state);
   const focus = mode === "focus";
   const pending = getPendingHeroStrikeUpgrades(state);
-  const x = 116;
-  const y = 734;
-  const width = 188;
+  const x = 18;
+  const y = 710;
+  const width = 182;
+  const centerX = x + width / 2;
 
   roundedRect(ctx, x, y, width, 34, 13);
   ctx.fillStyle = "rgba(3,9,21,.86)";
@@ -85,10 +86,10 @@ function drawControlStatus(ctx: CanvasRenderingContext2D, state: HeroStrikeState
   ctx.textAlign = "center";
   ctx.fillStyle = focus ? HERO_STRIKE_COLORS.gold : HERO_STRIKE_COLORS.cyan;
   ctx.font = "1000 11px system-ui";
-  ctx.fillText(focus ? "FOCUS FIRE" : "DRIVE", HERO_STRIKE_WIDTH / 2, y + 14);
+  ctx.fillText(focus ? "FOCUS FIRE" : "DRIVE", centerX, y + 14);
   ctx.fillStyle = HERO_STRIKE_COLORS.muted;
   ctx.font = "700 8px system-ui";
-  ctx.fillText(focus ? "LOCKED PRECISION" : "MOVE · CHARGE · SUPPRESS", HERO_STRIKE_WIDTH / 2, y + 26);
+  ctx.fillText(focus ? "LOCKED PRECISION" : "MOVE · CHARGE · SUPPRESS", centerX, y + 26);
 
   if (state.loadout.primary === "rail-driver") {
     const charge = getHeroStrikeRailCharge(state);
@@ -101,8 +102,8 @@ function drawControlStatus(ctx: CanvasRenderingContext2D, state: HeroStrikeState
   if (pending > 0) {
     ctx.textAlign = "right";
     ctx.fillStyle = HERO_STRIKE_COLORS.xp;
-    ctx.font = "900 9px system-ui";
-    ctx.fillText(`UPGRADE ×${pending}`, HERO_STRIKE_WIDTH - 20, y + 20);
+    ctx.font = "900 8px system-ui";
+    ctx.fillText(`UP ${pending}`, x + width - 7, y + 12);
   }
   ctx.textAlign = "left";
 }
