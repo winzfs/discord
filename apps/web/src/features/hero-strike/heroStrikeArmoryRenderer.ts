@@ -43,10 +43,11 @@ export function drawHeroStrikeArmory(
     const bounds = HERO_STRIKE_ARMORY_CARD_BOUNDS[index];
     const affordable = status.salvage >= option.cost;
     const selected = status.purchasedId === option.id;
-    const disabled = status.purchaseMade && !selected;
+    const disabled = !option.available || (status.purchaseMade && !selected);
+    const actionable = affordable && option.available && !status.purchaseMade;
     const accent = selected
       ? HERO_STRIKE_COLORS.green
-      : affordable && !disabled
+      : actionable
         ? HERO_STRIKE_COLORS.cyan
         : HERO_STRIKE_COLORS.muted;
 
@@ -78,11 +79,16 @@ export function drawHeroStrikeArmory(
     );
     ctx.fillStyle = HERO_STRIKE_COLORS.muted;
     ctx.font = "700 8px system-ui";
-    ctx.fillText(
-      status.purchaseMade ? (selected ? "정비 적용 완료" : "이번 구역 구매 완료") : affordable ? "터치하여 구매" : "SALVAGE 부족",
-      bounds.x + bounds.width / 2,
-      bounds.y + 147,
-    );
+    const statusText = status.purchaseMade
+      ? selected
+        ? "정비 적용 완료"
+        : "이번 구역 구매 완료"
+      : !option.available
+        ? option.unavailableReason ?? "사용 불가"
+        : affordable
+          ? "터치하여 구매"
+          : "SALVAGE 부족";
+    ctx.fillText(statusText, bounds.x + bounds.width / 2, bounds.y + 147);
   });
 
   const continueBounds = HERO_STRIKE_ARMORY_CONTINUE_BOUNDS;
