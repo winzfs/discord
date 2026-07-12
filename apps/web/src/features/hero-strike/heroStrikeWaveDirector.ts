@@ -1,3 +1,4 @@
+import { resolveHeroStrikeEncounterBoundary } from "./heroStrikeEncounterDirector";
 import { getHeroStrikeEncounter } from "./heroStrikeEncounters";
 import type { EliteTrait, HeroStrikeState } from "./heroStrikeTypes";
 
@@ -17,6 +18,7 @@ export function updateHeroStrikeWave(state: HeroStrikeState, durationSeconds: nu
   if (state.bossSpawned) return false;
   const nextWave = getWaveIndex(state.stageElapsed, durationSeconds);
   if (nextWave === state.waveIndex) return false;
+  resolveHeroStrikeEncounterBoundary(state);
   state.waveIndex = nextWave;
   state.waveBanner = 1.8;
   state.spawnCooldown = Math.min(state.spawnCooldown, 0.35);
@@ -38,7 +40,7 @@ export function getWaveEntryGroupSize(waveIndex: number) {
 }
 
 export function shouldSpawnElite(state: HeroStrikeState) {
-  return state.waveIndex >= 3 && !state.eliteSpawned && !state.bossSpawned;
+  return state.waveIndex >= 4 && !state.eliteSpawned && !state.bossSpawned;
 }
 
 export function getEliteTraitForStage(stageIndex: number): EliteTrait {

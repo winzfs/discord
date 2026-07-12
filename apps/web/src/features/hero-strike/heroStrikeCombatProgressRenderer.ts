@@ -1,36 +1,12 @@
 import { HERO_STRIKE_COLORS, HERO_STRIKE_WIDTH } from "./heroStrikeConfig";
-import { getHeroStrikeEncounter } from "./heroStrikeEncounters";
+import { getHeroStrikeMissionDefinition } from "./heroStrikeEncounterCatalog";
 import { getEvolutionShortLabels } from "./heroStrikeEvolutions";
-import { getObjectiveProgressRatio, getObjectiveStatusText } from "./heroStrikeObjectives";
 import type { HeroStrikeState } from "./heroStrikeTypes";
 import { getEliteTraitForStage, getEliteTraitLabel } from "./heroStrikeWaveDirector";
 
 function roundedRect(ctx: CanvasRenderingContext2D, x: number, y: number, width: number, height: number, radius: number) {
   ctx.beginPath();
   ctx.roundRect(x, y, width, height, radius);
-}
-
-function drawObjective(ctx: CanvasRenderingContext2D, state: HeroStrikeState) {
-  if (state.phase !== "playing") return;
-  const x = 203;
-  const y = 124;
-  const width = 158;
-  const ratio = getObjectiveProgressRatio(state);
-  roundedRect(ctx, x, y, width, 25, 9);
-  ctx.fillStyle = "rgba(4,10,24,.76)";
-  ctx.fill();
-  ctx.strokeStyle = state.objectiveComplete ? HERO_STRIKE_COLORS.green : "rgba(105,231,255,.28)";
-  ctx.lineWidth = 1;
-  ctx.stroke();
-  ctx.fillStyle = "rgba(255,255,255,.08)";
-  ctx.fillRect(x + 7, y + 18, width - 14, 3);
-  ctx.fillStyle = state.objectiveComplete ? HERO_STRIKE_COLORS.green : HERO_STRIKE_COLORS.cyan;
-  ctx.fillRect(x + 7, y + 18, (width - 14) * ratio, 3);
-  ctx.fillStyle = state.objectiveComplete ? HERO_STRIKE_COLORS.green : HERO_STRIKE_COLORS.white;
-  ctx.font = "800 9px system-ui";
-  ctx.textAlign = "center";
-  ctx.fillText(state.objectiveComplete ? "OBJECTIVE CLEAR" : getObjectiveStatusText(state), x + width / 2, y + 12);
-  ctx.textAlign = "left";
 }
 
 function drawCenteredBanner(
@@ -58,17 +34,17 @@ function drawCenteredBanner(
 
 function drawWaveBanner(ctx: CanvasRenderingContext2D, state: HeroStrikeState) {
   if (state.phase !== "playing" || state.waveBanner <= 0 || state.bossSpawned || state.stageBanner > 0.2) return;
-  const encounter = getHeroStrikeEncounter(state.waveIndex);
-  const elite = state.waveIndex === 3;
+  const mission = getHeroStrikeMissionDefinition(state.stageIndex, state.waveIndex);
+  const elite = state.waveIndex === 4;
   const trait = getEliteTraitForStage(state.stageIndex);
   const subtitle = elite
-    ? `${encounter.subtitle} · ${getEliteTraitLabel(trait)} ELITE`
-    : encounter.subtitle;
+    ? `${mission.brief} · ${getEliteTraitLabel(trait)} ELITE`
+    : mission.brief;
   drawCenteredBanner(
     ctx,
-    encounter.label,
+    mission.label,
     subtitle,
-    elite ? HERO_STRIKE_COLORS.purple : encounter.accent,
+    elite ? HERO_STRIKE_COLORS.purple : mission.accent,
     245,
     Math.min(1, state.waveBanner * 1.6),
   );
@@ -130,19 +106,18 @@ function drawEvolutionTags(ctx: CanvasRenderingContext2D, state: HeroStrikeState
   let x = 20;
   for (const label of labels) {
     const width = ctx.measureText(label).width + 14;
-    roundedRect(ctx, x, 178, width, 17, 7);
+    roundedRect(ctx, x, 216, width, 17, 7);
     ctx.fillStyle = "rgba(4,10,24,.74)";
     ctx.fill();
     ctx.strokeStyle = HERO_STRIKE_COLORS.gold;
     ctx.stroke();
     ctx.fillStyle = HERO_STRIKE_COLORS.gold;
-    ctx.fillText(label, x + 7, 190);
+    ctx.fillText(label, x + 7, 228);
     x += width + 5;
   }
 }
 
 export function drawHeroStrikeCombatProgress(ctx: CanvasRenderingContext2D, state: HeroStrikeState) {
-  drawObjective(ctx, state);
   drawEvolutionTags(ctx, state);
   drawWaveBanner(ctx, state);
   drawBossPhaseBanner(ctx, state);

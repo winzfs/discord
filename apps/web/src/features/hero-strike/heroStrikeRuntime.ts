@@ -1,8 +1,10 @@
+import { updateHeroStrikeBossDirector } from "./heroStrikeBossDirector";
 import { updateBossPhase } from "./heroStrikeBossPhases";
 import {
   getHeroStrikeMovementResponseScale,
   updateHeroStrikeCombatControl,
 } from "./heroStrikeCombatControl";
+import { updateHeroStrikeCombatRank } from "./heroStrikeCombatRank";
 import {
   HERO_STRIKE_COLORS,
   HERO_STRIKE_HEIGHT,
@@ -11,7 +13,12 @@ import {
   HERO_STRIKE_WIDTH,
 } from "./heroStrikeConfig";
 import { addFloatingText } from "./heroStrikeEffects";
+import { updateHeroStrikeEnemyAction } from "./heroStrikeEnemyActions";
 import { updateEnemyFire } from "./heroStrikeEnemyFire";
+import {
+  resolveHeroStrikeEncounterBoundary,
+  updateHeroStrikeEncounter,
+} from "./heroStrikeEncounterDirector";
 import {
   getHeroStrikeFlowMovementResponse,
   isHeroStrikeFlowRush,
@@ -70,8 +77,12 @@ function updatePlayer(state: HeroStrikeState, dt: number) {
 function updateEnemies(state: HeroStrikeState, dt: number) {
   for (const enemy of state.enemies) {
     if (enemy.boss) updateBossPhase(state, enemy);
+    const bossManaged = updateHeroStrikeBossDirector(state, enemy, dt);
+    const actionManaged = updateHeroStrikeEnemyAction(state, enemy, dt);
     updateEnemyMovement(state, enemy, dt);
-    if ((enemy.breakStun ?? 0) <= 0) updateEnemyFire(state, enemy, dt);
+    if (!bossManaged && !actionManaged && (enemy.breakStun ?? 0) <= 0) {
+      updateEnemyFire(state, enemy, dt);
+    }
     if (!enemy.boss && enemy.y > HERO_STRIKE_HEIGHT + 50) enemy.dead = true;
   }
   state.enemies = state.enemies.filter((enemy) => !enemy.dead);
@@ -116,6 +127,7 @@ export function tickHeroStrike(state: HeroStrikeState, dt: number) {
   updateEffects(state, dt);
   if (state.phase !== "playing") {
     if (state.phase === "game-over" || state.phase === "victory") {
+      resolveHeroStrikeEncounterBoundary(state);
       finalizeHeroStrikeRun(state);
       persistHighScore(state);
     }
@@ -132,6 +144,8 @@ export function tickHeroStrike(state: HeroStrikeState, dt: number) {
   tickHeroStrikeStage(state, dt);
   updateHeroStrikeCombatControl(state, dt);
   updatePlayer(state, dt);
+  updateHeroStrikeEncounter(state, dt);
+  updateHeroStrikeCombatRank(state, dt);
   updatePlayerFire(state, dt);
   updateSpawning(state, dt);
   if (state.phase !== "playing") return;

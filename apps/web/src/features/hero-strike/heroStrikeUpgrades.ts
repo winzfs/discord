@@ -2,6 +2,8 @@ import {
   consumePendingHeroStrikeUpgrade,
   getPendingHeroStrikeUpgrades,
 } from "./heroStrikeCombatControl";
+import { getHeroStrikeUpgradeRole } from "./heroStrikeBuildCatalog";
+import { draftHeroStrikeUpgradeChoices } from "./heroStrikeBuildDraft";
 import { unlockEligibleEvolutions } from "./heroStrikeEvolutions";
 import { getPrimaryWeaponProfile } from "./heroStrikeLoadout";
 import {
@@ -16,7 +18,6 @@ import {
   getShieldGrant,
   getUltimateGainMultiplier,
   HERO_STRIKE_UPGRADE_MAX_LEVELS,
-  HERO_STRIKE_WEAPON_UPGRADES,
 } from "./heroStrikeUpgradeScaling";
 import type { HeroStrikeState, UpgradeId, UpgradeOption } from "./heroStrikeTypes";
 
@@ -105,20 +106,13 @@ function weightedPick(state: HeroStrikeState, pool: UpgradeOption[]) {
   return pool[pool.length - 1];
 }
 
-function pickUnique(state: HeroStrikeState, pool: UpgradeOption[], count: number) {
-  const remaining = [...pool];
-  const result: UpgradeOption[] = [];
-  while (remaining.length > 0 && result.length < count) {
-    const picked = weightedPick(state, remaining);
-    result.push(picked);
-    remaining.splice(remaining.indexOf(picked), 1);
-  }
-  return result;
-}
-
-function replaceLastChoice(choices: UpgradeOption[], upgrade: UpgradeOption) {
-  const withoutDuplicate = choices.filter((choice) => choice.id !== upgrade.id);
-  return [...withoutDuplicate.slice(0, 2), upgrade];
+function replaceSystemsChoice(choices: UpgradeOption[], upgrade: UpgradeOption) {
+  if (choices.some((choice) => choice.id === upgrade.id)) return choices;
+  const systemsIndex = choices.findIndex((choice) => getHeroStrikeUpgradeRole(choice.id) === "systems");
+  if (systemsIndex < 0) return choices;
+  const next = [...choices];
+  next[systemsIndex] = upgrade;
+  return next;
 }
 
 export function createUpgradeChoices(state: HeroStrikeState, excludedIds: readonly UpgradeId[] = []) {
@@ -130,14 +124,10 @@ export function createUpgradeChoices(state: HeroStrikeState, excludedIds: readon
   const preferred = allAvailable.filter((upgrade) => !excluded.has(upgrade.id));
   const available = preferred.length >= 3 ? preferred : allAvailable;
 
-  let choices = pickUnique(state, available, 3);
+  let choices = draftHeroStrikeUpgradeChoices(state, available, weightedPick, 3);
   const selectedSupport = allAvailable.find((upgrade) => upgrade.id === state.loadout.support);
   if (state.player.level <= 3 && selectedSupport && (state.upgradeLevels[state.loadout.support] ?? 0) === 1) {
-    choices = replaceLastChoice(choices, selectedSupport);
-  } else if (!choices.some((choice) => HERO_STRIKE_WEAPON_UPGRADES.has(choice.id))) {
-    const weaponPool = allAvailable.filter((upgrade) => HERO_STRIKE_WEAPON_UPGRADES.has(upgrade.id));
-    const weapon = weaponPool.length > 0 ? weightedPick(state, weaponPool) : undefined;
-    if (weapon) choices = replaceLastChoice(choices, weapon);
+    choices = replaceSystemsChoice(choices, selectedSupport);
   }
   return choices;
 }

@@ -1,4 +1,11 @@
+import { purchaseHeroStrikeArmoryOption } from "./heroStrikeArmory";
+import {
+  HERO_STRIKE_ARMORY_CARD_BOUNDS,
+  HERO_STRIKE_ARMORY_CONTINUE_BOUNDS,
+  isInsideHeroStrikeArmoryRect,
+} from "./heroStrikeArmoryLayout";
 import { unlockHeroStrikeAudio } from "./heroStrikeAudio";
+import { isHeroStrikeBlueprintUnlocked } from "./heroStrikeBlueprints";
 import { beginHeroStrikeDrive, releaseHeroStrikeFocus } from "./heroStrikeCombatControl";
 import {
   BLINK_BUTTON,
@@ -74,12 +81,33 @@ function handleLoadoutPointer(state: HeroStrikeState, x: number, y: number) {
   const support = SUPPORT_LOADOUT_OPTIONS[getHeroStrikeLoadoutCardIndex("support", x, y)];
   const tactical = TACTICAL_LOADOUT_OPTIONS[getHeroStrikeLoadoutCardIndex("tactical", x, y)];
   const difficulty = DIFFICULTY_OPTIONS[getHeroStrikeLoadoutCardIndex("difficulty", x, y)];
-  if (primary) state.loadout.primary = primary.id;
-  else if (support) state.loadout.support = support.id;
-  else if (tactical) state.loadout.tactical = tactical.id;
-  else if (difficulty) state.loadout.difficulty = difficulty.id;
-  else return;
+
+  if (primary && isHeroStrikeBlueprintUnlocked(state.researchRank, "primary", primary.id)) {
+    state.loadout.primary = primary.id;
+  } else if (support && isHeroStrikeBlueprintUnlocked(state.researchRank, "support", support.id)) {
+    state.loadout.support = support.id;
+  } else if (tactical && isHeroStrikeBlueprintUnlocked(state.researchRank, "tactical", tactical.id)) {
+    state.loadout.tactical = tactical.id;
+  } else if (difficulty && isHeroStrikeBlueprintUnlocked(state.researchRank, "difficulty", difficulty.id)) {
+    state.loadout.difficulty = difficulty.id;
+  } else {
+    return;
+  }
   saveHeroStrikeLoadout(state.loadout);
+}
+
+function handleArmoryPointer(state: HeroStrikeState, x: number, y: number) {
+  const optionIndex = HERO_STRIKE_ARMORY_CARD_BOUNDS.findIndex((bounds) => (
+    isInsideHeroStrikeArmoryRect(x, y, bounds)
+  ));
+  if (optionIndex >= 0) {
+    const optionIds = ["repair", "support-tune", "tactical-charge"] as const;
+    purchaseHeroStrikeArmoryOption(state, optionIds[optionIndex]);
+    return;
+  }
+  if (isInsideHeroStrikeArmoryRect(x, y, HERO_STRIKE_ARMORY_CONTINUE_BOUNDS)) {
+    advanceHeroStrikeStage(state);
+  }
 }
 
 export function handleHeroStrikePointer(state: HeroStrikeState, x: number, y: number, pressed: boolean) {
@@ -102,14 +130,12 @@ export function handleHeroStrikePointer(state: HeroStrikeState, x: number, y: nu
   if (state.phase === "stage-clear") {
     resetPointer(state);
     if (!pressed) return;
-    if (state.protocolChoices.length === 0) {
-      advanceHeroStrikeStage(state);
+    if (state.protocolChoices.length > 0) {
+      const choice = state.protocolChoices[selectedCardIndex(x, y)];
+      if (choice) applyStageProtocol(state, choice.id);
       return;
     }
-    const choice = state.protocolChoices[selectedCardIndex(x, y)];
-    if (!choice) return;
-    applyStageProtocol(state, choice.id);
-    advanceHeroStrikeStage(state);
+    handleArmoryPointer(state, x, y);
     return;
   }
   if (state.phase === "paused") {

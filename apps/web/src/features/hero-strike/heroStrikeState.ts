@@ -1,5 +1,8 @@
+import { resetHeroStrikeArmory } from "./heroStrikeArmory";
 import { getNextXpRequirement } from "./heroStrikeBalance";
+import { normalizeHeroStrikeBlueprintLoadout } from "./heroStrikeBlueprints";
 import { resetHeroStrikeCombatControl } from "./heroStrikeCombatControl";
+import { resetHeroStrikeCombatRank } from "./heroStrikeCombatRank";
 import {
   HERO_STRIKE_HEIGHT,
   HERO_STRIKE_HIGH_SCORE_KEY,
@@ -7,9 +10,11 @@ import {
   HERO_STRIKE_PLAYER_Y,
   HERO_STRIKE_WIDTH,
 } from "./heroStrikeConfig";
+import { resetHeroStrikeOperation } from "./heroStrikeEncounterDirector";
 import { applyHeroStrikeLoadout, readHeroStrikeLoadout, saveHeroStrikeLoadout } from "./heroStrikeLoadout";
 import { getResearchBonuses, getResearchRank, readResearchData } from "./heroStrikeMetaProgress";
 import { getStageObjective } from "./heroStrikeObjectives";
+import { resetHeroStrikeSalvage } from "./heroStrikeSalvage";
 import type { HeroStrikeStar, HeroStrikeState } from "./heroStrikeTypes";
 
 function readHighScore() {
@@ -32,12 +37,13 @@ export function createInitialHeroStrikeState(): HeroStrikeState {
   const researchData = readResearchData();
   const researchRank = getResearchRank(researchData);
   const research = getResearchBonuses(researchRank);
+  const loadout = normalizeHeroStrikeBlueprintLoadout(readHeroStrikeLoadout(), researchRank);
   const objective = getStageObjective(0);
 
   return {
     phase: "title",
     previousPhase: "playing",
-    loadout: readHeroStrikeLoadout(),
+    loadout,
     elapsed: 0,
     stageElapsed: 0,
     score: 0,
@@ -160,18 +166,29 @@ export function createInitialHeroStrikeState(): HeroStrikeState {
   };
 }
 
+function resetOperationSystems(state: HeroStrikeState) {
+  resetHeroStrikeCombatControl(state);
+  resetHeroStrikeCombatRank(state);
+  resetHeroStrikeOperation(state);
+  resetHeroStrikeSalvage(state);
+  resetHeroStrikeArmory(state);
+}
+
 export function openHeroStrikeLoadout(state: HeroStrikeState) {
   const selectedLoadout = { ...state.loadout };
   const fresh = createInitialHeroStrikeState();
   fresh.phase = "loadout";
   fresh.highScore = state.highScore;
-  fresh.loadout = selectedLoadout;
+  fresh.loadout = normalizeHeroStrikeBlueprintLoadout(selectedLoadout, fresh.researchRank);
   Object.assign(state, fresh);
-  resetHeroStrikeCombatControl(state);
+  resetOperationSystems(state);
 }
 
 export function resetHeroStrikeState(state: HeroStrikeState) {
-  const selectedLoadout = { ...state.loadout };
+  const selectedLoadout = normalizeHeroStrikeBlueprintLoadout(
+    { ...state.loadout },
+    state.researchRank,
+  );
   saveHeroStrikeLoadout(selectedLoadout);
   const fresh = createInitialHeroStrikeState();
   fresh.phase = "playing";
@@ -179,5 +196,5 @@ export function resetHeroStrikeState(state: HeroStrikeState) {
   fresh.loadout = selectedLoadout;
   applyHeroStrikeLoadout(fresh);
   Object.assign(state, fresh);
-  resetHeroStrikeCombatControl(state);
+  resetOperationSystems(state);
 }
