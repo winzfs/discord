@@ -138,3 +138,11 @@ export function applyHeroStrikeLoadout(state: HeroStrikeState) {
     player.ultimate = Math.min(player.ultimateMax, player.ultimate + getPulseDriveCharge(1));
   }
 }
+
+export function getLoadoutSummary(loadout: HeroStrikeLoadout) {
+  const primary = PRIMARY_WEAPON_OPTIONS.find((option) => option.id === loadout.primary)?.title ?? "펄스 리피터";
+  const support = SUPPORT_LOADOUT_OPTIONS.find((option) => option.id === loadout.support)?.title ?? "미사일";
+  const tactical = TACTICAL_LOADOUT_OPTIONS.find((option) => option.id === loadout.tactical)?.title ?? "방벽";
+  const difficulty = DIFFICULTY_OPTIONS.find((option) => option.id === loadout.difficulty)?.title ?? "요원";
+  return `${primary} · ${support} · ${tactical} · ${difficulty}`;
+}
