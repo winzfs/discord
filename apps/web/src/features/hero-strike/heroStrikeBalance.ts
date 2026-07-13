@@ -34,18 +34,19 @@ export function getEnemyBulletCap(state: HeroStrikeState) {
   const lowHealthRelief = state.player.hp <= 1 ? 14 : state.player.hp <= 2 ? 7 : 0;
   const bossBonus = state.bossSpawned ? 14 : 0;
   const difficultyOffset = state.loadout.difficulty === "legend" ? 7 : state.loadout.difficulty === "recruit" ? -6 : 0;
-  const pressureBonus = Math.round((getHeroStrikePressureBulletSpeedMultiplier(state) - 0.96) * 44);
+  const pressureBonus = Math.round((getHeroStrikePressureBulletSpeedMultiplier(state) - 0.98) * 50);
   return Math.max(
     44,
-    Math.min(118, 54 + state.stageIndex * 7 + bossBonus + difficultyOffset + pressureBonus - lowHealthRelief),
+    Math.min(116, 54 + state.stageIndex * 7 + bossBonus + difficultyOffset + pressureBonus - lowHealthRelief),
   );
 }
 
 export function getSpawnReliefMultiplier(state: HeroStrikeState) {
-  const lowHealthRelief = state.player.hp <= 1 ? 1.18 : state.player.hp <= 2 ? 1.09 : 1;
-  return lowHealthRelief
-    * getHeroStrikePressureSpawnIntervalMultiplier(state)
+  const threatScale = getHeroStrikePressureSpawnIntervalMultiplier(state)
     * getHeroStrikeContractSpawnIntervalMultiplier(state);
+  if (state.player.hp <= 1) return Math.max(1.04, threatScale * 1.18);
+  if (state.player.hp <= 2) return Math.max(0.98, threatScale * 1.09);
+  return threatScale;
 }
 
 export function getStageObjectiveScore(stageIndex: number) {
