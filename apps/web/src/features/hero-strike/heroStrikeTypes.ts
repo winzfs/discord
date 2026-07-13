@@ -1,7 +1,7 @@
 export type HeroStrikePhase = "title" | "loadout" | "playing" | "level-up" | "stage-clear" | "paused" | "game-over" | "victory";
 export type EnemyKind = "runner" | "drone" | "tank" | "sniper" | "weaver" | "bomber" | "boss";
 export type EliteTrait = "armored" | "rapid" | "scatter" | "veteran";
-export type EvolutionId = "pulse-storm" | "hunter-swarm" | "arc-overload" | "aegis-wing";
+export type EvolutionId = "pulse-storm" | "breach-nova" | "hunter-swarm" | "arc-overload" | "aegis-wing";
 export type StageObjectiveId = "kills" | "graze" | "combo" | "survivor" | "elite";
 export type PrimaryWeaponId = "pulse-blasters" | "scatter-array" | "rail-driver";
 export type SupportLoadoutId = "homing-missile" | "drone-wing" | "side-cannons";
