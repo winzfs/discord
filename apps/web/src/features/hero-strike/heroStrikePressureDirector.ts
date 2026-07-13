@@ -81,13 +81,13 @@ export function getHeroStrikePressureSnapshot(state: HeroStrikeState): HeroStrik
 
 export function getHeroStrikePressureSpawnIntervalMultiplier(state: HeroStrikeState) {
   const pressure = pressureValue(state);
-  return Math.max(0.76, 1 - pressure * 0.2);
+  return Math.max(0.86, 1 - pressure * 0.14);
 }
 
 export function getHeroStrikePressureEnemyCapBonus(state: HeroStrikeState) {
-  return Math.floor(pressureValue(state) * 3.5);
+  return Math.floor(pressureValue(state) * 2.5);
 }
 
 export function getHeroStrikePressureBulletSpeedMultiplier(state: HeroStrikeState) {
-  return 0.96 + pressureValue(state) * 0.16;
+  return 0.98 + pressureValue(state) * 0.1;
 }
