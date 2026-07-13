@@ -134,7 +134,7 @@ function updatePulseVent(
   if (runtime.ventPulsesRemaining <= 0) {
     runtime.overheated = false;
     runtime.heat = profile.ventResetHeat;
-    runtime.cycleTimer = Math.min(runtime.cycleTimer, 0.11);
+    runtime.cycleTimer = Math.min(runtime.cycleTimer, 0.06);
     playHeroStrikeSound("weapon-ready", 0.82);
   }
 
@@ -154,6 +154,14 @@ function updatePulse(state: HeroStrikeState, dt: number, runtime: PrimaryWeaponR
 
   if (runtime.overheated) return updatePulseVent(state, dt, runtime);
 
+  if (focus !== runtime.lastFocus) {
+    runtime.lastFocus = focus;
+    runtime.burstRemaining = 0;
+    runtime.shotTimer = 0;
+    runtime.cycleTimer = Math.min(runtime.cycleTimer, focus ? 0.025 : 0);
+    playHeroStrikeSound(focus ? "weapon-ready" : "pulse-shot", focus ? 0.58 : 0.35);
+  }
+
   const cooling = focus ? profile.focusCooling : profile.driveCooling;
   runtime.heat = Math.max(0, runtime.heat - cooling * dt);
 
@@ -166,8 +174,10 @@ function updatePulse(state: HeroStrikeState, dt: number, runtime: PrimaryWeaponR
 
   const shotIndex = runtime.burstSize - runtime.burstRemaining;
   runtime.burstRemaining -= 1;
-  runtime.heat = Math.min(1.08, runtime.heat + profile.heatPerShot);
-  runtime.shotTimer = profile.shotGap;
+  const heatPerShot = focus ? profile.focusHeatPerShot : profile.driveHeatPerShot;
+  const shotGap = focus ? profile.focusShotGap : profile.driveShotGap;
+  runtime.heat = Math.min(1.08, runtime.heat + heatPerShot);
+  runtime.shotTimer = shotGap;
   const finalShot = runtime.burstRemaining <= 0;
   if (finalShot) runtime.cycleTimer = focus ? profile.focusRecovery : profile.driveRecovery;
 
@@ -177,12 +187,12 @@ function updatePulse(state: HeroStrikeState, dt: number, runtime: PrimaryWeaponR
     runtime.burstRemaining = 0;
     runtime.ventPulseCount = profile.ventPulseCount;
     runtime.ventPulsesRemaining = profile.ventPulseCount;
-    runtime.ventPulseTimer = 0.055;
+    runtime.ventPulseTimer = 0.022;
     playHeroStrikeSound("weapon-vent", 1);
   }
 
-  runtime.muzzleFlash = 0.08;
-  runtime.recoil = Math.max(runtime.recoil, finalShot ? 1 : redline ? 0.7 : 0.52);
+  runtime.muzzleFlash = focus ? 0.1 : 0.065;
+  runtime.recoil = Math.max(runtime.recoil, finalShot ? 1 : focus ? 0.82 : redline ? 0.65 : 0.45);
   return [{
     kind: "pulse",
     focus,
@@ -244,6 +254,7 @@ function updateScatterLoader(
 function updateScatter(state: HeroStrikeState, dt: number, runtime: PrimaryWeaponRuntime) {
   const profile = getBreacherScatterProfile(state);
   const focus = isHeroStrikeFocus(state);
+  runtime.lastFocus = focus;
   runtime.cycleTimer = Math.max(0, runtime.cycleTimer - dt);
   updateScatterLoader(state, dt, runtime, focus);
 
@@ -267,8 +278,8 @@ function updateScatter(state: HeroStrikeState, dt: number, runtime: PrimaryWeapo
       ? profile.focusPumpTime
       : profile.drivePumpTime;
   startScatterShellLoad(state, runtime, focus);
-  runtime.muzzleFlash = emergency ? 0.16 : 0.13;
-  runtime.recoil = emergency ? 1 : focus ? 0.95 : 0.72;
+  runtime.muzzleFlash = emergency ? 0.16 : focus ? 0.17 : 0.1;
+  runtime.recoil = emergency ? 1 : focus ? 1 : 0.58;
 
   return [{
     kind: "scatter",
@@ -320,7 +331,7 @@ function updateRail(state: HeroStrikeState, dt: number, runtime: PrimaryWeaponRu
   runtime.railFiredInFocus = true;
   runtime.railReadyNotified = false;
   runtime.railSparkTimer = profile.sparkInterval;
-  runtime.muzzleFlash = 0.18;
+  runtime.muzzleFlash = 0.2;
   runtime.recoil = 1;
   return [{
     kind: "rail",
@@ -341,19 +352,22 @@ export function updateHeroStrikePrimaryWeaponSystem(state: HeroStrikeState, dt: 
 
 export function getHeroStrikePrimaryWeaponStatus(state: HeroStrikeState) {
   const runtime = getRuntime(state);
+  const focus = isHeroStrikeFocus(state);
+  const modeLabel = focus ? "FOCUS" : "DRIVE";
   if (state.loadout.primary === "scatter-array") {
     const profile = getBreacherScatterProfile(state);
     const loading = runtime.shells < profile.magazine && runtime.reloadTimer > 0;
     const loadRatio = loading
       ? 1 - runtime.reloadTimer / Math.max(0.01, runtime.reloadDuration)
       : 0;
+    const resourceLabel = runtime.shells <= 0
+      ? `SLAM ${Math.round(loadRatio * 100)}%`
+      : loading
+        ? `${runtime.shells}/${profile.magazine} LOAD`
+        : `${runtime.shells}/${profile.magazine} SHELL`;
     return {
       kind: "scatter" as const,
-      label: runtime.shells <= 0
-        ? `SLAM LOAD ${Math.round(loadRatio * 100)}%`
-        : loading
-          ? `AUTOLOAD ${runtime.shells}/${profile.magazine}`
-          : `SHELL ${runtime.shells}/${profile.magazine}`,
+      label: `${modeLabel} · ${resourceLabel}`,
       ratio: runtime.shells <= 0 ? loadRatio : runtime.shells / profile.magazine,
       warning: runtime.shells <= 0,
       muzzleFlash: runtime.muzzleFlash,
@@ -366,13 +380,14 @@ export function getHeroStrikePrimaryWeaponStatus(state: HeroStrikeState) {
   }
   if (state.loadout.primary === "rail-driver") {
     const profile = getArcRailProfile(state);
-    const focus = isHeroStrikeFocus(state);
     const chargeLabel = runtime.railCharge >= profile.fullCharge
-      ? "CAPACITOR READY"
-      : `SPARK CHARGE ${Math.round(runtime.railCharge * 100)}%`;
+      ? "READY"
+      : `${Math.round(runtime.railCharge * 100)}%`;
     return {
       kind: "rail" as const,
-      label: focus && runtime.railFiredInFocus ? "REPOSITION TO CHARGE" : chargeLabel,
+      label: focus && runtime.railFiredInFocus
+        ? "FOCUS · FIRED"
+        : `${modeLabel} · ${chargeLabel}`,
       ratio: runtime.railCharge,
       warning: focus && runtime.railFiredInFocus,
       muzzleFlash: runtime.muzzleFlash,
@@ -380,13 +395,14 @@ export function getHeroStrikePrimaryWeaponStatus(state: HeroStrikeState) {
     };
   }
   const profile = getPulseRepeaterProfile(state);
+  const heatLabel = runtime.overheated
+    ? `PURGE ${runtime.ventPulsesRemaining}`
+    : runtime.heat >= profile.redlineStart
+      ? `REDLINE ${Math.round(runtime.heat * 100)}%`
+      : `HEAT ${Math.round(runtime.heat * 100)}%`;
   return {
     kind: "pulse" as const,
-    label: runtime.overheated
-      ? `THERMAL PURGE ${runtime.ventPulsesRemaining}`
-      : runtime.heat >= profile.redlineStart
-        ? `REDLINE ${Math.round(runtime.heat * 100)}%`
-        : `HEAT ${Math.round(runtime.heat * 100)}%`,
+    label: `${modeLabel} · ${heatLabel}`,
     ratio: runtime.heat,
     warning: runtime.overheated || runtime.heat >= profile.redlineStart,
     muzzleFlash: runtime.muzzleFlash,
