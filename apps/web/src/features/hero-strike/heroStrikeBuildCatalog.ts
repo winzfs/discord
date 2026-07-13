@@ -78,3 +78,21 @@ export function getHeroStrikeCurrentTagCounts(state: HeroStrikeState) {
   }
   return counts;
 }
+
+export function getHeroStrikeDominantBuildTags(state: HeroStrikeState, limit = 3) {
+  return [...getHeroStrikeCurrentTagCounts(state).entries()]
+    .sort((left, right) => right[1] - left[1] || left[0].localeCompare(right[0]))
+    .slice(0, limit)
+    .map(([tag, level]) => ({ tag, level }));
+}
+
+export function getHeroStrikeUpgradeSynergy(state: HeroStrikeState, id: UpgradeId) {
+  const counts = getHeroStrikeCurrentTagCounts(state);
+  const tags = getHeroStrikeBuildTags(id);
+  const matchedPower = tags.reduce((total, tag) => total + (counts.get(tag) ?? 0), 0);
+  const evolution = getHeroStrikeEvolutionHint(state, id);
+  if (evolution) return { label: "EVOLUTION PATH", strength: 3, accent: "#ffd166" };
+  if (matchedPower >= 4) return { label: "CORE MATCH", strength: 2, accent: "#69e7ff" };
+  if (matchedPower > 0) return { label: "SYNERGY", strength: 1, accent: "#79f29d" };
+  return { label: "NEW PATH", strength: 0, accent: "#8da4c5" };
+}
