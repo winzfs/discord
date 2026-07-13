@@ -1,4 +1,3 @@
-import { Link } from "react-router-dom";
 import { WidowHoldShotGame } from "../features/widow-hold-shot/WidowHoldShotGame";
 import "../styles/widow-hold-shot.css";
 
@@ -7,15 +6,19 @@ type WidowHoldShotPageProps = {
 };
 
 export function WidowHoldShotPage({ onBack }: WidowHoldShotPageProps) {
+  const goBack = () => {
+    if (onBack) {
+      onBack();
+      return;
+    }
+    window.location.assign("/training-lab");
+  };
+
   return (
     <main className="widow-page-shell">
       <section className="widow-page-stage" aria-label="위도우 대기샷 훈련">
         <header className="widow-page-topbar">
-          {onBack ? (
-            <button type="button" onClick={onBack} aria-label="훈련소로 돌아가기">←</button>
-          ) : (
-            <Link to="/training-lab" aria-label="훈련소로 돌아가기">←</Link>
-          )}
+          <button type="button" onClick={goBack} aria-label="훈련소로 돌아가기">←</button>
           <div>
             <p>SNIPER CALIBRATION RANGE</p>
             <h1>위도우 대기샷 연습</h1>
