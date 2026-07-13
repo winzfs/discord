@@ -43,10 +43,18 @@ export function resetHeroStrikeArmory(state: HeroStrikeState) {
   runtimeByState.set(state, createRuntime(state));
 }
 
+function selectedSupportUpgrade(state: HeroStrikeState): Extract<UpgradeId, "homing-missile" | "drone-wing" | "side-cannons"> {
+  return state.loadout.support;
+}
+
 function selectedSupportLevel(state: HeroStrikeState) {
   if (state.loadout.support === "homing-missile") return state.player.homingMissileLevel;
   if (state.loadout.support === "drone-wing") return state.player.supportDroneLevel;
   return state.player.sideCannonLevel;
+}
+
+function selectedSupportMaxLevel(state: HeroStrikeState) {
+  return HERO_STRIKE_UPGRADE_MAX_LEVELS[selectedSupportUpgrade(state)];
 }
 
 function primaryTuneTarget(state: HeroStrikeState): Extract<UpgradeId, "rapid-fire" | "twin-shot"> | null {
@@ -77,7 +85,7 @@ export function getHeroStrikeArmoryOptions(state: HeroStrikeState): readonly Her
   const stageScale = Math.floor(state.stageIndex / 2) * 3;
   const canRepair = state.player.hp < state.player.maxHp;
   const canTunePrimary = primaryTuneTarget(state) !== null;
-  const canTuneSupport = selectedSupportLevel(state) < 4;
+  const canTuneSupport = selectedSupportLevel(state) < selectedSupportMaxLevel(state);
 
   return [
     {
@@ -102,7 +110,7 @@ export function getHeroStrikeArmoryOptions(state: HeroStrikeState): readonly Her
       id: "support-tune",
       title: "보조 튜닝",
       icon: "⌁",
-      description: "선택 보조무기 레벨 +1",
+      description: `선택 보조무기 레벨 +1 · 최대 ${selectedSupportMaxLevel(state)}`,
       cost: 34 + stageScale,
       available: canTuneSupport,
       unavailableReason: canTuneSupport ? null : "보조무기 최대",
@@ -112,16 +120,17 @@ export function getHeroStrikeArmoryOptions(state: HeroStrikeState): readonly Her
 
 function tuneSelectedSupport(state: HeroStrikeState) {
   const player = state.player;
+  const maxLevel = selectedSupportMaxLevel(state);
   if (state.loadout.support === "homing-missile") {
-    player.homingMissileLevel = Math.min(4, player.homingMissileLevel + 1);
+    player.homingMissileLevel = Math.min(maxLevel, player.homingMissileLevel + 1);
     state.upgradeLevels["homing-missile"] = player.homingMissileLevel;
     player.missileCooldown = 0;
   } else if (state.loadout.support === "drone-wing") {
-    player.supportDroneLevel = Math.min(4, player.supportDroneLevel + 1);
+    player.supportDroneLevel = Math.min(maxLevel, player.supportDroneLevel + 1);
     state.upgradeLevels["drone-wing"] = player.supportDroneLevel;
     player.supportDroneCooldown = 0;
   } else {
-    player.sideCannonLevel = Math.min(4, player.sideCannonLevel + 1);
+    player.sideCannonLevel = Math.min(maxLevel, player.sideCannonLevel + 1);
     state.upgradeLevels["side-cannons"] = player.sideCannonLevel;
   }
 }
