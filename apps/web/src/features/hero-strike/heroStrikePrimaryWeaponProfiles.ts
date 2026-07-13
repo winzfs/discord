@@ -48,8 +48,8 @@ export function getBreacherScatterProfile(
     focusPumpTime: Math.max(0.43, 0.58 - rapid * 0.045),
     driveReloadTime: Math.max(0.88, 1.2 - rapid * 0.08),
     focusReloadTime: Math.max(1.05, 1.45 - rapid * 0.1),
-    driveDamageScale: 0.34,
-    focusDamageScale: 0.22,
+    driveDamageScale: 0.58,
+    focusDamageScale: 0.42,
   };
 }
 
@@ -65,6 +65,6 @@ export function getArcRailProfile(
     fullCharge: 0.9,
     sideBeams: twin,
     minimumDamageScale: 0.62,
-    maximumDamageScale: 2.45,
+    maximumDamageScale: 2.65,
   };
 }
