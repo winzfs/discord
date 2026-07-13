@@ -49,7 +49,7 @@ export const TACTICAL_LOADOUT_OPTIONS: readonly LoadoutOption<TacticalLoadoutId>
 export const DIFFICULTY_OPTIONS: readonly LoadoutOption<HeroStrikeDifficulty>[] = [
   { id: "recruit", title: "신병", icon: "Ⅰ", description: "적 약화 · 보상 85%" },
   { id: "agent", title: "요원", icon: "Ⅱ", description: "표준 패턴과 보상" },
-  { id: "legend", title: "전설", icon: "Ⅲ", description: "빠른 압박 · 보상 증가" },
+  { id: "legend", title: "전설", icon: "Ⅲ", description: "빠른 탄막·고밀도 압박 · 보상 증가" },
 ];
 
 export type HeroStrikeDifficultyProfile = {
@@ -61,9 +61,9 @@ export type HeroStrikeDifficultyProfile = {
 };
 
 const DIFFICULTY_PROFILES: Record<HeroStrikeDifficulty, HeroStrikeDifficultyProfile> = {
-  recruit: { enemyHealth: 0.84, enemyBulletSpeed: 0.9, spawnInterval: 1.1, score: 0.85, research: 0.85 },
+  recruit: { enemyHealth: 0.82, enemyBulletSpeed: 0.9, spawnInterval: 1.12, score: 0.85, research: 0.85 },
   agent: { enemyHealth: 1, enemyBulletSpeed: 1, spawnInterval: 1, score: 1, research: 1 },
-  legend: { enemyHealth: 1.24, enemyBulletSpeed: 1.14, spawnInterval: 0.88, score: 1.35, research: 1.25 },
+  legend: { enemyHealth: 1.12, enemyBulletSpeed: 1.16, spawnInterval: 0.84, score: 1.35, research: 1.25 },
 };
 
 export function getDifficultyProfile(difficulty: HeroStrikeDifficulty) {
