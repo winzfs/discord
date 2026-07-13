@@ -56,7 +56,7 @@ export function getBreacherScatterProfile(
     emergencyShellLoadTime: Math.max(0.15, 0.23 - rapid * 0.018),
     driveDamageScale: 0.64,
     focusDamageScale: 0.48,
-    emergencyDamageScale: 0.58,
+    emergencyDamageScale: 0.46,
   };
 }
 
