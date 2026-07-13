@@ -1,7 +1,8 @@
 import { getHeroStrikeSalvageBalance, spendHeroStrikeSalvage } from "./heroStrikeSalvage";
-import type { HeroStrikeState } from "./heroStrikeTypes";
+import { HERO_STRIKE_UPGRADE_MAX_LEVELS } from "./heroStrikeUpgradeScaling";
+import type { HeroStrikeState, UpgradeId } from "./heroStrikeTypes";
 
-export type HeroStrikeArmoryOptionId = "repair" | "support-tune" | "tactical-charge";
+export type HeroStrikeArmoryOptionId = "repair" | "primary-tune" | "support-tune";
 
 export type HeroStrikeArmoryOption = {
   id: HeroStrikeArmoryOptionId;
@@ -48,12 +49,35 @@ function selectedSupportLevel(state: HeroStrikeState) {
   return state.player.sideCannonLevel;
 }
 
+function primaryTuneTarget(state: HeroStrikeState): Extract<UpgradeId, "rapid-fire" | "twin-shot"> | null {
+  const rapid = state.upgradeLevels["rapid-fire"] ?? 0;
+  const twin = state.upgradeLevels["twin-shot"] ?? 0;
+  const rapidMax = HERO_STRIKE_UPGRADE_MAX_LEVELS["rapid-fire"];
+  const twinMax = HERO_STRIKE_UPGRADE_MAX_LEVELS["twin-shot"];
+  if (rapid >= rapidMax && twin >= twinMax) return null;
+  if (rapid >= rapidMax) return "twin-shot";
+  if (twin >= twinMax) return "rapid-fire";
+  return rapid / rapidMax <= twin / twinMax ? "rapid-fire" : "twin-shot";
+}
+
+function primaryTuneDescription(state: HeroStrikeState) {
+  const target = primaryTuneTarget(state);
+  if (!target) return "주무기 튜닝 완료";
+  if (target === "rapid-fire") {
+    if (state.loadout.primary === "rail-driver") return "축전 속도 단계 +1";
+    if (state.loadout.primary === "scatter-array") return "펌프·재장전 단계 +1";
+    return "점사·냉각 단계 +1";
+  }
+  if (state.loadout.primary === "rail-driver") return "충전포 보조 광선 단계 +1";
+  if (state.loadout.primary === "scatter-array") return "산탄 펠릿 단계 +1";
+  return "점사 탄 수 단계 +1";
+}
+
 export function getHeroStrikeArmoryOptions(state: HeroStrikeState): readonly HeroStrikeArmoryOption[] {
   const stageScale = Math.floor(state.stageIndex / 2) * 3;
   const canRepair = state.player.hp < state.player.maxHp;
+  const canTunePrimary = primaryTuneTarget(state) !== null;
   const canTuneSupport = selectedSupportLevel(state) < 4;
-  const canChargeTactical = state.player.shield < 5
-    || state.player.ultimate < state.player.ultimateMax;
 
   return [
     {
@@ -66,6 +90,15 @@ export function getHeroStrikeArmoryOptions(state: HeroStrikeState): readonly Her
       unavailableReason: canRepair ? null : "체력 최대",
     },
     {
+      id: "primary-tune",
+      title: "주무기 튜닝",
+      icon: "✦",
+      description: primaryTuneDescription(state),
+      cost: 31 + stageScale,
+      available: canTunePrimary,
+      unavailableReason: canTunePrimary ? null : "주무기 튜닝 완료",
+    },
+    {
       id: "support-tune",
       title: "보조 튜닝",
       icon: "⌁",
@@ -73,15 +106,6 @@ export function getHeroStrikeArmoryOptions(state: HeroStrikeState): readonly Her
       cost: 34 + stageScale,
       available: canTuneSupport,
       unavailableReason: canTuneSupport ? null : "보조무기 최대",
-    },
-    {
-      id: "tactical-charge",
-      title: "전술 충전",
-      icon: "◉",
-      description: "보호막 +1 · 궁극기 +35%",
-      cost: 27 + stageScale,
-      available: canChargeTactical,
-      unavailableReason: canChargeTactical ? null : "전술 자원 최대",
     },
   ];
 }
@@ -102,17 +126,20 @@ function tuneSelectedSupport(state: HeroStrikeState) {
   }
 }
 
+function tunePrimaryWeapon(state: HeroStrikeState) {
+  const target = primaryTuneTarget(state);
+  if (!target) return;
+  const maxLevel = HERO_STRIKE_UPGRADE_MAX_LEVELS[target];
+  state.upgradeLevels[target] = Math.min(maxLevel, (state.upgradeLevels[target] ?? 0) + 1);
+}
+
 function applyArmoryOption(state: HeroStrikeState, id: HeroStrikeArmoryOptionId) {
   if (id === "repair") {
     state.player.hp = Math.min(state.player.maxHp, state.player.hp + 2);
-  } else if (id === "support-tune") {
-    tuneSelectedSupport(state);
+  } else if (id === "primary-tune") {
+    tunePrimaryWeapon(state);
   } else {
-    state.player.shield = Math.min(5, state.player.shield + 1);
-    state.player.ultimate = Math.min(
-      state.player.ultimateMax,
-      state.player.ultimate + state.player.ultimateMax * 0.35,
-    );
+    tuneSelectedSupport(state);
   }
 }
 
