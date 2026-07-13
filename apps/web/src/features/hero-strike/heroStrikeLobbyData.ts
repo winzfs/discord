@@ -19,7 +19,11 @@ import {
   getBreacherScatterProfile,
   getPulseRepeaterProfile,
 } from "./heroStrikePrimaryWeaponProfiles";
-import { getHeroStrikeStage } from "./heroStrikeStages";
+import {
+  getHeroStrikeOperationEstimatedMinutes,
+  getHeroStrikeStage,
+  HERO_STRIKE_STAGES,
+} from "./heroStrikeStages";
 import {
   getMagnetRadius,
   getPulseDriveCharge,
@@ -166,7 +170,8 @@ function selectedOption(state: HeroStrikeState, row: HeroStrikeLoadoutRow) {
 }
 
 export function getHeroStrikeLobbySnapshot(state: HeroStrikeState) {
-  const stage = getHeroStrikeStage(0);
+  const firstStage = getHeroStrikeStage(0);
+  const finalStage = getHeroStrikeStage(HERO_STRIKE_STAGES.length - 1);
   const difficulty = getDifficultyProfile(state.loadout.difficulty);
   const research = getResearchProgress(state.researchData);
   const nextBlueprint = getNextHeroStrikeBlueprint(research.rank);
@@ -185,12 +190,12 @@ export function getHeroStrikeLobbySnapshot(state: HeroStrikeState) {
       ultimate: "PULSE OVERLOAD",
     },
     mission: {
-      operationCode: "OP-01",
-      name: stage.name,
-      subtitle: stage.subtitle,
-      bossName: stage.bossName,
-      encounters: 4,
-      estimatedMinutes: Math.max(2, Math.ceil((stage.durationSeconds + 42) / 60)),
+      operationCode: "OP-05",
+      name: "OMEGA STRIKE",
+      subtitle: `${firstStage.name} → ${finalStage.name}`,
+      bossName: finalStage.bossName,
+      encounters: HERO_STRIKE_STAGES.length * 4,
+      estimatedMinutes: getHeroStrikeOperationEstimatedMinutes(),
       threatLabel: threat.label,
       threatBars: threat.bars,
       scoreMultiplier: difficulty.score,
