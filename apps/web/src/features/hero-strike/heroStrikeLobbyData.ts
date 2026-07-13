@@ -101,21 +101,21 @@ function primaryMetric(state: HeroStrikeState, id: string) {
   if (id === "scatter-array") {
     const profile = getBreacherScatterProfile(state);
     return {
-      metric: `${profile.magazine} SHELL · ${profile.drivePellets}/${profile.focusPellets} PELLET`,
-      detail: `DRIVE ${profile.drivePumpTime.toFixed(2)}s · FOCUS ${profile.focusPumpTime.toFixed(2)}s`,
+      metric: `${profile.magazine} SHELL · AUTOLOAD`,
+      detail: `DRIVE ${profile.drivePellets}펠릿 · FOCUS ${profile.focusPellets}펠릿 · 빈 약실 ${profile.emergencyShellLoadTime.toFixed(2)}초`,
     };
   }
   if (id === "rail-driver") {
     const profile = getArcRailProfile(state);
     return {
-      metric: "MOVE TO CHARGE",
-      detail: `축전 ${Math.round(profile.chargeRate * 100)}%/s · FOCUS 1회 방출`,
+      metric: "SPARK TO CHARGE",
+      detail: `축전 ${Math.round(profile.chargeRate * 100)}%/s · 스파크 ${profile.sparkInterval.toFixed(2)}초 · FOCUS 관통포`,
     };
   }
   const profile = getPulseRepeaterProfile(state);
   return {
-    metric: `${profile.driveBurst}/${profile.focusBurst} BURST`,
-    detail: `DRIVE 냉각 ${Math.round(profile.driveCooling * 100)} · FOCUS ${Math.round(profile.focusCooling * 100)}%/s`,
+    metric: `${profile.driveBurst}/${profile.focusBurst} BURST · PURGE`,
+    detail: `고열 화력 증가 · 과열 시 ${profile.ventPulseCount}회 열배출 탄막`,
   };
 }
 
