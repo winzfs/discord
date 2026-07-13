@@ -22,16 +22,16 @@ export function getPulseRepeaterProfile(
   return {
     driveBurst: 4 + (twin >= 2 ? 1 : 0),
     focusBurst: 6 + twin,
-    shotGap: Math.max(0.038, 0.058 - rapid * 0.005),
-    driveRecovery: Math.max(0.12, 0.19 - rapid * 0.018),
-    focusRecovery: Math.max(0.18, 0.27 - rapid * 0.024),
-    heatPerShot: Math.max(0.052, 0.074 - rapid * 0.004),
-    driveCooling: 0.34 + rapid * 0.035,
-    focusCooling: 0.14 + rapid * 0.018,
-    redlineStart: 0.62,
-    ventPulseCount: 3 + (twin >= 3 ? 1 : 0),
-    ventPulseGap: Math.max(0.075, 0.11 - rapid * 0.008),
-    ventResetHeat: 0.3,
+    shotGap: Math.max(0.036, 0.054 - rapid * 0.005),
+    driveRecovery: Math.max(0.1, 0.16 - rapid * 0.016),
+    focusRecovery: Math.max(0.15, 0.23 - rapid * 0.02),
+    heatPerShot: Math.max(0.036, 0.052 - rapid * 0.004),
+    driveCooling: 0.55 + rapid * 0.045,
+    focusCooling: 0.3 + rapid * 0.03,
+    redlineStart: 0.7,
+    ventPulseCount: 2 + (twin >= 3 ? 1 : 0),
+    ventPulseGap: Math.max(0.028, 0.04 - rapid * 0.004),
+    ventResetHeat: 0.12,
   };
 }
 
