@@ -21,6 +21,7 @@ import {
   type HeroStrikePrimaryAction,
   updateHeroStrikePrimaryWeaponSystem,
 } from "./heroStrikePrimaryWeaponSystem";
+import { getHeroStrikeSupportBaseDamage } from "./heroStrikeSupportBalance";
 import {
   getExplosionRadius,
   getRearGuardAngles,
@@ -35,6 +36,7 @@ import type {
 } from "./heroStrikeTypes";
 
 type PlayerBulletOptions = {
+  baseDamage?: number;
   damageScale?: number;
   xOffset?: number;
   yOffset?: number;
@@ -68,6 +70,7 @@ function spawnPlayerBullet(state: HeroStrikeState, angle: number, options: Playe
   const player = state.player;
   const critical = criticalStats(state);
   const isCritical = Math.random() < critical.chance;
+  const baseDamage = options.baseDamage ?? player.damage;
   const damageScale = options.damageScale ?? 1;
   const criticalScale = isCritical ? critical.multiplier : 1;
   const explosionScale = options.explosionScale ?? 1;
@@ -87,7 +90,7 @@ function spawnPlayerBullet(state: HeroStrikeState, angle: number, options: Playe
     vx: Math.sin(angle) * speed,
     vy: -Math.cos(angle) * speed,
     radius: options.radius ?? 4.2,
-    damage: player.damage
+    damage: baseDamage
       * player.campaignDamageMultiplier
       * damageScale
       * criticalScale
@@ -222,8 +225,10 @@ function fireSideCannons(state: HeroStrikeState) {
   const level = state.player.sideCannonLevel;
   if (level <= 0) return;
   const damageScale = getSideCannonDamageScale(level);
+  const supportDamage = getHeroStrikeSupportBaseDamage(state);
   for (const angle of getSideCannonAngles(level)) {
     spawnPlayerBullet(state, angle, {
+      baseDamage: supportDamage,
       xOffset: Math.sign(angle) * 15,
       damageScale,
       pierce: state.player.pierce,
@@ -240,8 +245,10 @@ function fireRearGuard(state: HeroStrikeState) {
   const level = state.player.rearGuardLevel;
   if (level <= 0) return;
   const damageScale = getRearGuardDamageScale(level);
+  const supportDamage = getHeroStrikeSupportBaseDamage(state);
   for (const angle of getRearGuardAngles(level)) {
     spawnPlayerBullet(state, angle, {
+      baseDamage: supportDamage,
       yOffset: 48,
       damageScale,
       pierce: 0,
