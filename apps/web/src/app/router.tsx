@@ -12,6 +12,8 @@ import { LobbyPage } from "../pages/LobbyPage";
 import { ProfilePage } from "../pages/ProfilePage";
 import { PuzzleBubblePage } from "../pages/PuzzleBubblePage";
 import { ReactionLabPage } from "../pages/ReactionLabPage";
+import { TrainingLabPage } from "../pages/TrainingLabPage";
+import { WidowHoldShotPage } from "../pages/WidowHoldShotPage";
 
 export const router = createBrowserRouter([
   {
@@ -31,8 +33,16 @@ export const router = createBrowserRouter([
     element: <HeroStrikePage />,
   },
   {
+    path: "/training-lab",
+    element: <TrainingLabPage />,
+  },
+  {
     path: "/reaction-lab",
     element: <ReactionLabPage />,
+  },
+  {
+    path: "/widow-hold-shot",
+    element: <WidowHoldShotPage />,
   },
   {
     path: "/lobby",
