@@ -121,7 +121,7 @@ function upgradeWeight(state: HeroStrikeState, upgrade: UpgradeOption) {
   if (PRIMARY_SYNERGY[state.loadout.primary].includes(upgrade.id)) weight += 2.2;
   if (upgrade.id === state.loadout.support && currentLevel < 2) weight += 2.8;
   const partner = EVOLUTION_PARTNERS[upgrade.id];
-  if (state.stageIndex >= 4 && partner && (state.upgradeLevels[partner] ?? 0) > 0) weight += 2.4;
+  if (state.stageIndex >= 2 && partner && (state.upgradeLevels[partner] ?? 0) > 0) weight += 2.4;
   if (state.player.hp <= 2 && upgrade.id === "shield") weight += 2.2;
   return weight;
 }
