@@ -56,7 +56,7 @@ const CATEGORY_META: Record<HeroStrikeLoadoutRow, Omit<HeroStrikeLobbyCategory, 
   primary: {
     label: "PRIMARY ARMAMENT",
     shortLabel: "PRIMARY",
-    subtitle: "열·탄창·축전을 관리하는 주무기",
+    subtitle: "DRIVE와 FOCUS의 전투 리듬을 결정하는 주무기",
     accent: "#ff9b3d",
   },
   support: {
@@ -97,21 +97,21 @@ function primaryMetric(state: HeroStrikeState, id: string) {
   if (id === "scatter-array") {
     const profile = getBreacherScatterProfile(state);
     return {
-      metric: `${profile.magazine} SHELL`,
-      detail: `PUMP ${profile.pumpTime.toFixed(2)}s · RELOAD ${profile.reloadTime.toFixed(2)}s`,
+      metric: `${profile.magazine} SHELL · ${profile.drivePellets}/${profile.focusPellets} PELLET`,
+      detail: `DRIVE ${profile.drivePumpTime.toFixed(2)}s · FOCUS ${profile.focusPumpTime.toFixed(2)}s`,
     };
   }
   if (id === "rail-driver") {
     const profile = getArcRailProfile(state);
     return {
-      metric: "CAPACITOR",
-      detail: `CHARGE ${Math.round(profile.chargeRate * 100)}%/s · FOCUS RELEASE`,
+      metric: "MOVE TO CHARGE",
+      detail: `축전 ${Math.round(profile.chargeRate * 100)}%/s · FOCUS 1회 방출`,
     };
   }
   const profile = getPulseRepeaterProfile(state);
   return {
     metric: `${profile.driveBurst}/${profile.focusBurst} BURST`,
-    detail: `HEAT ${Math.round(profile.heatPerShot * 100)} · COOL ${Math.round(profile.driveCooling * 100)}%/s`,
+    detail: `DRIVE 냉각 ${Math.round(profile.driveCooling * 100)} · FOCUS ${Math.round(profile.focusCooling * 100)}%/s`,
   };
 }
 
@@ -180,7 +180,7 @@ export function getHeroStrikeLobbySnapshot(state: HeroStrikeState) {
     hero: {
       name: "TRACER",
       role: "STRIKE PILOT",
-      passive: "DRIVE 이동 · FOCUS 정밀사격",
+      passive: "DRIVE 이동 · FOCUS 무기 강공격",
       tactical: "BLINK ×2",
       ultimate: "PULSE OVERLOAD",
     },
