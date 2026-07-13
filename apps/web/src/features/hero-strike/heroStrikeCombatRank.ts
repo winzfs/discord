@@ -19,8 +19,8 @@ const runtimeByState = new WeakMap<HeroStrikeState, HeroStrikeCombatRankRuntime>
 
 function createRuntime(state: HeroStrikeState): HeroStrikeCombatRankRuntime {
   return {
-    points: 35,
-    peakPoints: 35,
+    points: 42,
+    peakPoints: 42,
     totalPoints: 0,
     sampleTime: 0,
     inactivity: 0,
@@ -53,7 +53,7 @@ function addPoints(state: HeroStrikeState, amount: number) {
 }
 
 export function recordHeroStrikeCombatRankMission(state: HeroStrikeState, succeeded: boolean) {
-  addPoints(state, succeeded ? 9 : -12);
+  addPoints(state, succeeded ? 8 : -10);
 }
 
 export function updateHeroStrikeCombatRank(state: HeroStrikeState, dt: number) {
@@ -62,9 +62,9 @@ export function updateHeroStrikeCombatRank(state: HeroStrikeState, dt: number) {
   const killDelta = Math.max(0, state.kills - runtime.lastKills);
   const hitDelta = Math.max(0, state.hitsTaken - runtime.lastHits);
   const breakDelta = Math.max(0, state.bossBreaks - runtime.lastBossBreaks);
-  if (killDelta > 0) addPoints(state, killDelta * 0.9);
-  if (hitDelta > 0) addPoints(state, hitDelta * -19);
-  if (breakDelta > 0) addPoints(state, breakDelta * 10);
+  if (killDelta > 0) addPoints(state, Math.min(2.4, killDelta * 0.18));
+  if (hitDelta > 0) addPoints(state, hitDelta * -16);
+  if (breakDelta > 0) addPoints(state, breakDelta * 8);
   runtime.lastKills = state.kills;
   runtime.lastHits = state.hitsTaken;
   runtime.lastBossBreaks = state.bossBreaks;
@@ -74,13 +74,13 @@ export function updateHeroStrikeCombatRank(state: HeroStrikeState, dt: number) {
     runtime.lastStageGrazes = state.stageGrazes;
   }
   const grazeDelta = Math.max(0, state.stageGrazes - runtime.lastStageGrazes);
-  if (grazeDelta > 0) addPoints(state, grazeDelta * 1.6);
+  if (grazeDelta > 0) addPoints(state, grazeDelta * 1.05);
   runtime.lastStageGrazes = state.stageGrazes;
 
   runtime.inactivity += dt;
-  if (runtime.inactivity > 2.4) {
-    const decay = runtime.points >= 80 ? 2.2 : runtime.points >= 60 ? 1.1 : 0;
-    runtime.points = Math.max(35, runtime.points - decay * dt);
+  if (runtime.inactivity > 3) {
+    const decay = runtime.points >= 82 ? 1.5 : runtime.points >= 65 ? 0.7 : 0;
+    runtime.points = Math.max(42, runtime.points - decay * dt);
   }
 
   runtime.totalPoints += runtime.points * dt;
@@ -104,13 +104,4 @@ export function getHeroStrikeCombatRank(state: HeroStrikeState) {
     peakGrade: getHeroStrikeCombatGradeFromPoints(runtime.peakPoints),
     averagePoints: runtime.sampleTime > 0 ? runtime.totalPoints / runtime.sampleTime : runtime.points,
   };
-}
-
-export function getHeroStrikeCombatRankRewardMultiplier(state: HeroStrikeState) {
-  const { grade } = getHeroStrikeCombatRank(state);
-  if (grade === "S") return 1.3;
-  if (grade === "A") return 1.2;
-  if (grade === "B") return 1.1;
-  if (grade === "C") return 1;
-  return 0.9;
 }
