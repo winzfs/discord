@@ -29,9 +29,9 @@ type LoadoutOption<T extends string> = {
 };
 
 export const PRIMARY_WEAPON_OPTIONS: readonly LoadoutOption<PrimaryWeaponId>[] = [
-  { id: "pulse-blasters", title: "펄스 리피터", icon: "✦", description: "양 모드 5점사 · FOCUS 정밀 락온" },
-  { id: "scatter-array", title: "브리처", icon: "≋", description: "5발 탄창 · DRIVE 확산 · FOCUS 집탄" },
-  { id: "rail-driver", title: "아크 레일", icon: "➤", description: "양 모드 지속 관통탄 · FOCUS 축전 방출" },
+  { id: "pulse-blasters", title: "펄스 리피터", icon: "✦", description: "DRIVE 3점사 · FOCUS 5점사 · 열 관리" },
+  { id: "scatter-array", title: "브리처", icon: "≋", description: "5발 탄창 · DRIVE 견제 · FOCUS 근접 집중" },
+  { id: "rail-driver", title: "아크 레일", icon: "➤", description: "DRIVE 축전 · FOCUS 1회 관통 방출" },
 ];
 
 export const SUPPORT_LOADOUT_OPTIONS: readonly LoadoutOption<SupportLoadoutId>[] = [
