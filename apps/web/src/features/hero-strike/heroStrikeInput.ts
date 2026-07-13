@@ -34,7 +34,6 @@ import {
 } from "./heroStrikeLoadoutLayout";
 import { getHeroStrikeLobbyTab, setHeroStrikeLobbyTab } from "./heroStrikeLobbyRuntime";
 import { activateBlink, activateUltimate } from "./heroStrikePlayerRuntime";
-import { applyStageProtocol } from "./heroStrikeProtocols";
 import { advanceHeroStrikeStage } from "./heroStrikeStageRuntime";
 import { openHeroStrikeLoadout, resetHeroStrikeState } from "./heroStrikeState";
 import { applyUpgrade, rerollUpgradeChoices } from "./heroStrikeUpgrades";
@@ -117,7 +116,7 @@ function handleArmoryPointer(state: HeroStrikeState, x: number, y: number) {
     isInsideHeroStrikeArmoryRect(x, y, bounds)
   ));
   if (optionIndex >= 0) {
-    const optionIds = ["repair", "support-tune", "tactical-charge"] as const;
+    const optionIds = ["repair", "primary-tune", "support-tune"] as const;
     purchaseHeroStrikeArmoryOption(state, optionIds[optionIndex]);
     return;
   }
@@ -145,13 +144,7 @@ export function handleHeroStrikePointer(state: HeroStrikeState, x: number, y: nu
   }
   if (state.phase === "stage-clear") {
     resetPointer(state);
-    if (!pressed) return;
-    if (state.protocolChoices.length > 0) {
-      const choice = state.protocolChoices[selectedCardIndex(x, y)];
-      if (choice) applyStageProtocol(state, choice.id);
-      return;
-    }
-    handleArmoryPointer(state, x, y);
+    if (pressed) handleArmoryPointer(state, x, y);
     return;
   }
   if (state.phase === "paused") {
