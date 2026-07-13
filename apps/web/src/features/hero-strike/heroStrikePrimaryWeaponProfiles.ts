@@ -20,15 +20,18 @@ export function getPulseRepeaterProfile(
   const rapid = upgradeLevel(state, "rapid-fire", overrides.rapid);
   const twin = upgradeLevel(state, "twin-shot", overrides.twin);
   return {
-    driveBurst: 3 + (twin >= 2 ? 1 : 0),
-    focusBurst: 5 + twin,
-    shotGap: Math.max(0.046, 0.066 - rapid * 0.006),
-    driveRecovery: Math.max(0.16, 0.24 - rapid * 0.022),
-    focusRecovery: Math.max(0.24, 0.36 - rapid * 0.03),
-    heatPerShot: Math.max(0.058, 0.086 - rapid * 0.006),
-    driveCooling: 0.48 + rapid * 0.045,
-    focusCooling: 0.24 + rapid * 0.025,
-    overheatRelease: 0.28,
+    driveBurst: 4 + (twin >= 2 ? 1 : 0),
+    focusBurst: 6 + twin,
+    shotGap: Math.max(0.038, 0.058 - rapid * 0.005),
+    driveRecovery: Math.max(0.12, 0.19 - rapid * 0.018),
+    focusRecovery: Math.max(0.18, 0.27 - rapid * 0.024),
+    heatPerShot: Math.max(0.052, 0.074 - rapid * 0.004),
+    driveCooling: 0.34 + rapid * 0.035,
+    focusCooling: 0.14 + rapid * 0.018,
+    redlineStart: 0.62,
+    ventPulseCount: 3 + (twin >= 3 ? 1 : 0),
+    ventPulseGap: Math.max(0.075, 0.11 - rapid * 0.008),
+    ventResetHeat: 0.3,
   };
 }
 
@@ -39,17 +42,21 @@ export function getBreacherScatterProfile(
   const rapid = upgradeLevel(state, "rapid-fire", overrides.rapid);
   const twin = upgradeLevel(state, "twin-shot", overrides.twin);
   return {
-    magazine: 5,
-    drivePellets: 2 + (twin >= 2 ? 1 : 0),
-    focusPellets: 6 + twin,
-    driveSpread: 0.27,
-    focusSpread: Math.max(0.06, 0.095 - twin * 0.014),
-    drivePumpTime: Math.max(0.32, 0.44 - rapid * 0.035),
-    focusPumpTime: Math.max(0.43, 0.58 - rapid * 0.045),
-    driveReloadTime: Math.max(0.88, 1.2 - rapid * 0.08),
-    focusReloadTime: Math.max(1.05, 1.45 - rapid * 0.1),
-    driveDamageScale: 0.58,
-    focusDamageScale: 0.42,
+    magazine: 6,
+    drivePellets: 3 + (twin >= 2 ? 1 : 0),
+    focusPellets: 8 + twin,
+    emergencyPellets: 5 + Math.floor(twin / 2),
+    driveSpread: 0.19,
+    focusSpread: Math.max(0.045, 0.078 - twin * 0.01),
+    emergencySpread: 0.12,
+    drivePumpTime: Math.max(0.24, 0.34 - rapid * 0.028),
+    focusPumpTime: Math.max(0.34, 0.48 - rapid * 0.035),
+    driveShellLoadTime: Math.max(0.24, 0.36 - rapid * 0.028),
+    focusShellLoadTime: Math.max(0.34, 0.5 - rapid * 0.035),
+    emergencyShellLoadTime: Math.max(0.15, 0.23 - rapid * 0.018),
+    driveDamageScale: 0.64,
+    focusDamageScale: 0.48,
+    emergencyDamageScale: 0.58,
   };
 }
 
@@ -60,11 +67,13 @@ export function getArcRailProfile(
   const rapid = upgradeLevel(state, "rapid-fire", overrides.rapid);
   const twin = upgradeLevel(state, "twin-shot", overrides.twin);
   return {
-    chargeRate: 0.52 + rapid * 0.085,
-    minimumCharge: 0.25,
-    fullCharge: 0.9,
+    chargeRate: 0.58 + rapid * 0.09,
+    minimumCharge: 0.22,
+    fullCharge: 0.88,
     sideBeams: twin,
-    minimumDamageScale: 0.62,
-    maximumDamageScale: 2.65,
+    sparkBeams: 1 + (twin >= 2 ? 1 : 0),
+    sparkInterval: Math.max(0.15, 0.24 - rapid * 0.018),
+    minimumDamageScale: 0.72,
+    maximumDamageScale: 2.8,
   };
 }
