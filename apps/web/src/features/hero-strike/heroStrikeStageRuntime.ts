@@ -6,13 +6,8 @@ import { getDifficultyProfile } from "./heroStrikeLoadout";
 import { grantResearchData } from "./heroStrikeMetaProgress";
 import { resetStageObjective, resolveStageObjective } from "./heroStrikeObjectives";
 import { spawnStageReward } from "./heroStrikePickups";
-import { createStageProtocolChoices } from "./heroStrikeProtocols";
 import { getHeroStrikeStage, isFinalHeroStrikeStage } from "./heroStrikeStages";
 import type { HeroStrikeState } from "./heroStrikeTypes";
-
-function offersProtocolAfterStage(stageIndex: number) {
-  return stageIndex === 1 || stageIndex === 3 || stageIndex === 5 || stageIndex === 7;
-}
 
 export function tickHeroStrikeStage(state: HeroStrikeState, dt: number) {
   state.stageElapsed += dt;
@@ -41,9 +36,7 @@ export function completeHeroStrikeStage(state: HeroStrikeState) {
     return;
   }
 
-  state.protocolChoices = offersProtocolAfterStage(state.stageIndex)
-    ? createStageProtocolChoices(state)
-    : [];
+  state.protocolChoices = [];
   state.phase = "stage-clear";
 }
 
