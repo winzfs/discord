@@ -1,6 +1,11 @@
+import { playHeroStrikeSound } from "./heroStrikeAudio";
 import { HERO_STRIKE_COLORS, HERO_STRIKE_WIDTH } from "./heroStrikeConfig";
 import { addBurst, addFloatingText, addRing } from "./heroStrikeEffects";
-import { playHeroStrikeSound } from "./heroStrikeAudio";
+import {
+  getHeroStrikeMomentumDamageMultiplier,
+  getHeroStrikeMomentumFireRateMultiplier,
+  getHeroStrikeMomentumMovementMultiplier,
+} from "./heroStrikeMomentum";
 import {
   getFlowRushDamageMultiplier,
   getFlowRushDuration,
@@ -67,17 +72,20 @@ export function isHeroStrikeFlowRush(state: HeroStrikeState) {
 }
 
 export function getHeroStrikeFlowDamageMultiplier(state: HeroStrikeState) {
-  return isHeroStrikeFlowRush(state)
+  const rushMultiplier = isHeroStrikeFlowRush(state)
     ? getFlowRushDamageMultiplier(state.player.overdriveLevel)
     : 1;
+  return rushMultiplier * getHeroStrikeMomentumDamageMultiplier(state);
 }
 
 export function getHeroStrikeFlowFireRateMultiplier(state: HeroStrikeState) {
-  return isHeroStrikeFlowRush(state)
+  const rushMultiplier = isHeroStrikeFlowRush(state)
     ? getFlowRushFireRateMultiplier(state.player.overdriveLevel)
     : 1;
+  return rushMultiplier * getHeroStrikeMomentumFireRateMultiplier(state);
 }
 
 export function getHeroStrikeFlowMovementResponse(state: HeroStrikeState, baseResponse: number) {
-  return isHeroStrikeFlowRush(state) ? baseResponse * 1.28 : baseResponse;
+  const rushMultiplier = isHeroStrikeFlowRush(state) ? 1.28 : 1;
+  return baseResponse * rushMultiplier * getHeroStrikeMomentumMovementMultiplier(state);
 }
