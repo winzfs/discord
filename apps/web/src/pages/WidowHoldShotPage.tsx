@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { WidowHoldShotGame } from "../features/widow-hold-shot/WidowHoldShotGame";
 import "../styles/widow-hold-shot.css";
 
@@ -10,7 +11,11 @@ export function WidowHoldShotPage({ onBack }: WidowHoldShotPageProps) {
     <main className="widow-page-shell">
       <section className="widow-page-stage" aria-label="위도우 대기샷 훈련">
         <header className="widow-page-topbar">
-          <button type="button" onClick={onBack} aria-label="훈련소로 돌아가기">←</button>
+          {onBack ? (
+            <button type="button" onClick={onBack} aria-label="훈련소로 돌아가기">←</button>
+          ) : (
+            <Link to="/training-lab" aria-label="훈련소로 돌아가기">←</Link>
+          )}
           <div>
             <p>SNIPER CALIBRATION RANGE</p>
             <h1>위도우 대기샷 연습</h1>
