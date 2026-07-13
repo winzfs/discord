@@ -1,0 +1,474 @@
+.reaction-lab-shell {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  min-height: 100dvh;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 50% -10%, rgba(252, 146, 55, .24), transparent 38%),
+    radial-gradient(circle at 8% 82%, rgba(78, 208, 255, .1), transparent 30%),
+    linear-gradient(155deg, #111b2a, #05080f 72%);
+  color: #f8fbff;
+  user-select: none;
+}
+
+.reaction-lab-shell::before {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, .025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, .025) 1px, transparent 1px);
+  background-size: 34px 34px;
+  mask-image: radial-gradient(circle at 50% 42%, black, transparent 78%);
+  content: "";
+  pointer-events: none;
+}
+
+.reaction-lab-stage {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto auto;
+  width: min(100%, 780px);
+  height: 100dvh;
+  margin: 0 auto;
+  padding: env(safe-area-inset-top) 14px env(safe-area-inset-bottom);
+}
+
+.reaction-lab-topbar {
+  display: grid;
+  grid-template-columns: 48px 1fr 72px;
+  align-items: center;
+  min-height: 68px;
+}
+
+.reaction-lab-topbar > a {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid rgba(255, 255, 255, .12);
+  border-radius: 12px;
+  background: rgba(6, 12, 22, .72);
+  color: #c7d3e3;
+  text-decoration: none;
+  font-size: 1.1rem;
+  transition: border-color .18s ease, color .18s ease, transform .18s ease;
+}
+
+.reaction-lab-topbar > a:hover {
+  border-color: rgba(252, 146, 55, .6);
+  color: #fff;
+  transform: translateX(-2px);
+}
+
+.reaction-lab-brand { text-align: center; }
+.reaction-lab-brand p {
+  margin: 0;
+  color: #fc9237;
+  font-size: .58rem;
+  font-weight: 900;
+  letter-spacing: .22em;
+}
+.reaction-lab-brand h1 {
+  margin: .18rem 0 0;
+  font-size: 1.1rem;
+  letter-spacing: .08em;
+}
+
+.reaction-lab-status {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  color: #7af0a3;
+  font-size: .58rem;
+  font-weight: 900;
+  letter-spacing: .08em;
+}
+.reaction-lab-status i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #7af0a3;
+  box-shadow: 0 0 12px rgba(122, 240, 163, .85);
+}
+
+.reaction-lab-game {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  min-height: 0;
+  padding: 4px;
+  border: 1px solid rgba(255, 255, 255, .12);
+  border-radius: 26px;
+  background: linear-gradient(145deg, rgba(252, 146, 55, .18), rgba(10, 19, 32, .72) 22%, rgba(78, 208, 255, .08));
+  box-shadow: 0 26px 80px rgba(0, 0, 0, .48), inset 0 0 40px rgba(255, 255, 255, .025);
+  overflow: hidden;
+}
+
+.reaction-lab-hud {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1px;
+  border-bottom: 1px solid rgba(255, 255, 255, .08);
+  background: rgba(2, 7, 14, .88);
+}
+.reaction-lab-hud div {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  padding: 12px 10px;
+  text-align: center;
+}
+.reaction-lab-hud span {
+  color: #6e8099;
+  font-size: .55rem;
+  font-weight: 900;
+  letter-spacing: .12em;
+}
+.reaction-lab-hud strong {
+  overflow: hidden;
+  color: #f8fbff;
+  font-size: clamp(.84rem, 2.4vw, 1.05rem);
+  font-variant-numeric: tabular-nums;
+  text-overflow: ellipsis;
+}
+
+.reaction-lab-board {
+  position: relative;
+  min-height: 0;
+  overflow: hidden;
+  border-radius: 0 0 21px 21px;
+  background:
+    radial-gradient(circle at 50% 44%, rgba(44, 76, 112, .34), transparent 44%),
+    linear-gradient(180deg, #091421, #03070d 85%);
+  touch-action: manipulation;
+}
+.reaction-lab-board::before,
+.reaction-lab-board::after {
+  position: absolute;
+  inset: 8%;
+  border: 1px solid rgba(122, 171, 210, .08);
+  border-radius: 50%;
+  content: "";
+  pointer-events: none;
+}
+.reaction-lab-board::after {
+  inset: 24%;
+  border-style: dashed;
+  animation: reaction-lab-spin 18s linear infinite;
+}
+
+.reaction-lab-scanline {
+  position: absolute;
+  z-index: 1;
+  top: -12%;
+  left: 0;
+  width: 100%;
+  height: 16%;
+  background: linear-gradient(180deg, transparent, rgba(78, 208, 255, .05), transparent);
+  animation: reaction-lab-scan 5.5s linear infinite;
+  pointer-events: none;
+}
+
+.reaction-lab-overlay {
+  position: absolute;
+  z-index: 5;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(24px, 7vw, 58px);
+  text-align: center;
+}
+.reaction-lab-overlay h2 {
+  max-width: 500px;
+  margin: .45rem 0 .7rem;
+  font-size: clamp(1.35rem, 4vw, 2.2rem);
+  letter-spacing: -.025em;
+}
+.reaction-lab-overlay > p:not(.reaction-lab-kicker) {
+  max-width: 540px;
+  margin: 0;
+  color: #9cafc5;
+  font-size: clamp(.78rem, 2.2vw, .98rem);
+  line-height: 1.65;
+}
+.reaction-lab-kicker {
+  margin: 0;
+  color: #fc9237;
+  font-size: .62rem;
+  font-weight: 1000;
+  letter-spacing: .2em;
+}
+
+.reaction-lab-core {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 112px;
+  height: 112px;
+  margin-bottom: 22px;
+  border: 1px solid rgba(252, 146, 55, .38);
+  border-radius: 50%;
+  box-shadow: 0 0 48px rgba(252, 146, 55, .13), inset 0 0 34px rgba(252, 146, 55, .12);
+}
+.reaction-lab-core::before,
+.reaction-lab-core::after {
+  position: absolute;
+  inset: 12px;
+  border: 1px dashed rgba(78, 208, 255, .45);
+  border-radius: 50%;
+  content: "";
+  animation: reaction-lab-spin 7s linear infinite;
+}
+.reaction-lab-core::after {
+  inset: 26px;
+  border-style: solid;
+  border-color: rgba(252, 146, 55, .42);
+  animation-direction: reverse;
+  animation-duration: 4s;
+}
+.reaction-lab-core span {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #fc9237;
+  box-shadow: 0 0 22px rgba(252, 146, 55, .95);
+}
+
+.reaction-lab-role-guide {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin: 24px 0;
+}
+.reaction-lab-role-guide span {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 12px;
+  border: 1px solid rgba(255, 255, 255, .09);
+  border-radius: 10px;
+  background: rgba(6, 13, 24, .64);
+  color: #c4d1e1;
+  font-size: .72rem;
+  font-weight: 800;
+}
+.reaction-lab-role-guide b { font-size: 1rem; }
+.reaction-lab-role-guide__tank b { color: #62b8ff; }
+.reaction-lab-role-guide__damage b { color: #ff667e; }
+.reaction-lab-role-guide__support b { color: #7af0a3; }
+
+.reaction-lab-primary {
+  min-width: 168px;
+  min-height: 48px;
+  padding: 0 24px;
+  border: 0;
+  border-radius: 13px;
+  background: linear-gradient(135deg, #ffad4d, #f36f2e);
+  box-shadow: 0 13px 32px rgba(243, 111, 46, .26), inset 0 1px rgba(255, 255, 255, .28);
+  color: #15100c;
+  font: inherit;
+  font-size: .88rem;
+  font-weight: 1000;
+  cursor: pointer;
+  transition: filter .18s ease, transform .18s ease;
+}
+.reaction-lab-primary:hover { filter: brightness(1.08); transform: translateY(-1px); }
+.reaction-lab-primary:active { transform: translateY(1px) scale(.99); }
+
+.reaction-lab-prompt {
+  position: absolute;
+  z-index: 4;
+  top: 18px;
+  left: 50%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: min(86%, 380px);
+  padding: 11px 17px;
+  border: 1px solid rgba(255, 255, 255, .12);
+  border-radius: 14px;
+  background: rgba(4, 10, 19, .88);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, .28);
+  transform: translateX(-50%);
+  backdrop-filter: blur(12px);
+}
+.reaction-lab-prompt > span {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 11px;
+  background: rgba(255, 255, 255, .06);
+  font-size: 1.35rem;
+}
+.reaction-lab-prompt div { display: grid; gap: 2px; text-align: left; }
+.reaction-lab-prompt small { color: #657991; font-size: .5rem; font-weight: 900; letter-spacing: .14em; }
+.reaction-lab-prompt strong { font-size: clamp(.75rem, 2.2vw, .92rem); }
+.reaction-lab-prompt--tank > span { color: #62b8ff; }
+.reaction-lab-prompt--damage > span { color: #ff667e; }
+.reaction-lab-prompt--support > span { color: #7af0a3; }
+
+.reaction-lab-timer-bar {
+  position: absolute;
+  z-index: 4;
+  top: 80px;
+  left: 50%;
+  width: min(80%, 360px);
+  height: 3px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .08);
+  transform: translateX(-50%);
+}
+.reaction-lab-timer-bar i {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, #62b8ff, #fc9237);
+  transform-origin: left;
+  transition: transform .08s linear;
+}
+.reaction-lab-timer-bar.is-critical i { background: #ff667e; }
+
+.reaction-lab-target-field { position: absolute; inset: 0; }
+.reaction-lab-target {
+  position: absolute;
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid currentColor;
+  border-radius: 22px 50% 50%;
+  background: rgba(8, 19, 32, .88);
+  box-shadow: 0 12px 34px rgba(0, 0, 0, .34), inset 0 0 24px currentColor;
+  color: #fff;
+  cursor: crosshair;
+  animation: reaction-lab-pop .18s ease-out both, reaction-lab-float 1.8s ease-in-out infinite alternate;
+  -webkit-tap-highlight-color: transparent;
+}
+.reaction-lab-target::before {
+  position: absolute;
+  inset: 8px;
+  border: 1px dashed currentColor;
+  border-radius: inherit;
+  content: "";
+  opacity: .45;
+}
+.reaction-lab-target span {
+  position: relative;
+  z-index: 1;
+  font-size: clamp(1.35rem, 5vw, 2rem);
+  filter: drop-shadow(0 0 10px currentColor);
+}
+.reaction-lab-target--tank { color: #62b8ff; }
+.reaction-lab-target--damage { color: #ff667e; }
+.reaction-lab-target--support { color: #7af0a3; }
+.reaction-lab-target:hover { filter: brightness(1.2); }
+.reaction-lab-target:active { scale: .92; }
+
+.reaction-lab-feedback {
+  position: absolute;
+  z-index: 6;
+  bottom: 22px;
+  left: 50%;
+  margin: 0;
+  padding: 8px 13px;
+  border-radius: 10px;
+  background: rgba(3, 8, 15, .82);
+  font-size: .72rem;
+  font-weight: 900;
+  transform: translateX(-50%);
+  animation: reaction-lab-feedback .2s ease-out;
+}
+.reaction-lab-feedback.is-hit { color: #7af0a3; }
+.reaction-lab-feedback.is-miss { color: #ff8294; }
+
+.reaction-lab-result { background: radial-gradient(circle at 50% 42%, rgba(252, 146, 55, .12), transparent 44%); }
+.reaction-lab-grade {
+  display: grid;
+  place-items: center;
+  width: 104px;
+  height: 104px;
+  margin-bottom: 18px;
+  border: 1px solid currentColor;
+  border-radius: 28px;
+  background: rgba(4, 10, 18, .78);
+  box-shadow: 0 0 42px currentColor;
+  color: #c9d5e3;
+  font-size: 3.4rem;
+  font-weight: 1000;
+}
+.reaction-lab-grade--s { color: #ffb44f; }
+.reaction-lab-grade--a { color: #7af0a3; }
+.reaction-lab-grade--b { color: #62b8ff; }
+.reaction-lab-grade--c { color: #c1a0ff; }
+.reaction-lab-grade--d { color: #8c9aae; }
+.reaction-lab-final-score {
+  margin: 8px 0 18px;
+  color: #fff;
+  font-size: clamp(2rem, 8vw, 3.4rem);
+  font-variant-numeric: tabular-nums;
+}
+.reaction-lab-result-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(70px, 1fr));
+  gap: 8px;
+  width: min(100%, 470px);
+  margin-bottom: 22px;
+}
+.reaction-lab-result-grid div {
+  display: grid;
+  gap: 4px;
+  padding: 10px 8px;
+  border: 1px solid rgba(255, 255, 255, .08);
+  border-radius: 11px;
+  background: rgba(5, 12, 22, .66);
+}
+.reaction-lab-result-grid span { color: #73869e; font-size: .56rem; }
+.reaction-lab-result-grid b { font-size: .94rem; }
+
+.reaction-lab-help,
+.reaction-lab-disclaimer {
+  width: 100%;
+  margin: 0;
+  text-align: center;
+}
+.reaction-lab-help { padding-top: 8px; color: #93a6bd; font-size: .66rem; }
+.reaction-lab-disclaimer { padding: 4px 0 2px; color: #4f6178; font-size: .52rem; }
+
+@keyframes reaction-lab-spin { to { transform: rotate(360deg); } }
+@keyframes reaction-lab-scan { from { transform: translateY(-20%); } to { transform: translateY(760%); } }
+@keyframes reaction-lab-pop { from { opacity: 0; scale: .55; } to { opacity: 1; scale: 1; } }
+@keyframes reaction-lab-float { from { margin-top: -3px; } to { margin-top: 4px; } }
+@keyframes reaction-lab-feedback { from { opacity: 0; transform: translate(-50%, 8px); } }
+
+@media (max-width: 520px) {
+  .reaction-lab-stage { padding-inline: 8px; }
+  .reaction-lab-topbar { min-height: 58px; grid-template-columns: 44px 1fr 62px; }
+  .reaction-lab-game { border-radius: 20px; }
+  .reaction-lab-board { border-radius: 0 0 16px 16px; }
+  .reaction-lab-hud div { padding: 9px 4px; }
+  .reaction-lab-result-grid { grid-template-columns: repeat(2, minmax(80px, 1fr)); }
+  .reaction-lab-target { max-width: 78px; max-height: 78px; }
+}
+
+@media (max-height: 680px) {
+  .reaction-lab-topbar { min-height: 50px; }
+  .reaction-lab-help { display: none; }
+  .reaction-lab-disclaimer { padding-top: 3px; }
+  .reaction-lab-core { width: 82px; height: 82px; margin-bottom: 12px; }
+  .reaction-lab-role-guide { margin: 14px 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reaction-lab-board::after,
+  .reaction-lab-scanline,
+  .reaction-lab-core::before,
+  .reaction-lab-core::after,
+  .reaction-lab-target { animation: none; }
+}
