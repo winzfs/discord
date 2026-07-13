@@ -1,7 +1,9 @@
 import {
   getHeroStrikeBuildTags,
+  getHeroStrikeDominantBuildTags,
   getHeroStrikeEvolutionHint,
   getHeroStrikeUpgradeRoleLabel,
+  getHeroStrikeUpgradeSynergy,
 } from "./heroStrikeBuildCatalog";
 import {
   HERO_STRIKE_COLORS,
@@ -55,29 +57,36 @@ function drawUpgradeCard(
   index: number,
 ) {
   const bounds = UPGRADE_CARD_BOUNDS[index];
-  const accent = upgrade.rarity === "epic"
+  const rarityAccent = upgrade.rarity === "epic"
     ? HERO_STRIKE_COLORS.purple
     : upgrade.rarity === "rare"
       ? HERO_STRIKE_COLORS.cyan
       : HERO_STRIKE_COLORS.orange;
   const tags = getHeroStrikeBuildTags(upgrade.id);
   const evolution = getHeroStrikeEvolutionHint(state, upgrade.id);
+  const synergy = getHeroStrikeUpgradeSynergy(state, upgrade.id);
+  const accent = synergy.strength >= 2 ? synergy.accent : rarityAccent;
 
   roundedRect(ctx, bounds.x, bounds.y, bounds.width, bounds.height, 18);
   ctx.fillStyle = "rgba(13,26,48,.96)";
   ctx.fill();
   ctx.strokeStyle = accent;
-  ctx.lineWidth = 2;
+  ctx.lineWidth = synergy.strength >= 2 ? 3 : 2;
   ctx.stroke();
 
-  ctx.fillStyle = accent;
+  ctx.textAlign = "center";
+  ctx.fillStyle = synergy.accent;
+  ctx.font = "1000 7px system-ui";
+  ctx.fillText(synergy.label, bounds.x + bounds.width / 2, bounds.y + 15);
+
+  ctx.fillStyle = rarityAccent;
   ctx.font = "900 32px system-ui";
-  ctx.fillText(upgrade.icon, bounds.x + bounds.width / 2, bounds.y + 46);
+  ctx.fillText(upgrade.icon, bounds.x + bounds.width / 2, bounds.y + 48);
   ctx.fillStyle = HERO_STRIKE_COLORS.white;
   ctx.font = "900 14px system-ui";
   ctx.fillText(upgrade.title, bounds.x + bounds.width / 2, bounds.y + 76);
 
-  ctx.fillStyle = accent;
+  ctx.fillStyle = rarityAccent;
   ctx.font = "900 8px system-ui";
   ctx.fillText(getHeroStrikeUpgradeRoleLabel(upgrade.id), bounds.x + bounds.width / 2, bounds.y + 94);
 
@@ -95,7 +104,7 @@ function drawUpgradeCard(
   ctx.fillStyle = "rgba(255,255,255,.08)";
   roundedRect(ctx, bounds.x + 8, bounds.y + 147, bounds.width - 16, 20, 7);
   ctx.fill();
-  ctx.fillStyle = accent;
+  ctx.fillStyle = rarityAccent;
   ctx.font = "900 8px system-ui";
   ctx.fillText(tags.join(" · "), bounds.x + bounds.width / 2, bounds.y + 160);
 
@@ -114,6 +123,23 @@ function drawUpgradeCard(
   );
 }
 
+function drawCurrentBuildIdentity(ctx: CanvasRenderingContext2D, state: HeroStrikeState) {
+  const dominant = getHeroStrikeDominantBuildTags(state);
+  ctx.textAlign = "center";
+  ctx.font = "900 8px system-ui";
+  if (dominant.length === 0) {
+    ctx.fillStyle = HERO_STRIKE_COLORS.muted;
+    ctx.fillText("BUILD · 미확정 — 첫 핵심 방향을 선택하세요", HERO_STRIKE_WIDTH / 2, 392);
+    return;
+  }
+  ctx.fillStyle = HERO_STRIKE_COLORS.gold;
+  ctx.fillText(
+    `CURRENT BUILD · ${dominant.map(({ tag, level }) => `${tag} ${level}`).join("  /  ")}`,
+    HERO_STRIKE_WIDTH / 2,
+    392,
+  );
+}
+
 function drawUpgradeCards(ctx: CanvasRenderingContext2D, state: HeroStrikeState) {
   ctx.fillStyle = "rgba(2,6,16,.86)";
   ctx.fillRect(0, 0, HERO_STRIKE_WIDTH, HERO_STRIKE_HEIGHT);
@@ -123,10 +149,11 @@ function drawUpgradeCards(ctx: CanvasRenderingContext2D, state: HeroStrikeState)
   ctx.fillText("TACTICAL DRAFT", HERO_STRIKE_WIDTH / 2, 305);
   ctx.fillStyle = HERO_STRIKE_COLORS.white;
   ctx.font = "900 29px system-ui";
-  ctx.fillText("다음 전투 방식을 선택하세요", HERO_STRIKE_WIDTH / 2, 347);
+  ctx.fillText("빌드의 다음 방향을 선택하세요", HERO_STRIKE_WIDTH / 2, 347);
   ctx.fillStyle = HERO_STRIKE_COLORS.muted;
   ctx.font = "700 10px system-ui";
-  ctx.fillText("주무기 · 전술 시스템 · 생존 역할을 균형 있게 제안합니다", HERO_STRIKE_WIDTH / 2, 371);
+  ctx.fillText("진화 경로와 현재 시너지를 기준으로 추천 강도를 표시합니다", HERO_STRIKE_WIDTH / 2, 371);
+  drawCurrentBuildIdentity(ctx, state);
 
   state.upgradeChoices.forEach((upgrade, index) => drawUpgradeCard(ctx, state, upgrade, index));
 
