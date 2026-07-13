@@ -4,21 +4,24 @@ import "../styles/reaction-lab.css";
 
 type ReactionLabPageProps = {
   activityMode?: boolean;
+  onBack?: () => void;
 };
 
-export function ReactionLabPage({ activityMode = false }: ReactionLabPageProps) {
+export function ReactionLabPage({ activityMode = false, onBack }: ReactionLabPageProps) {
   return (
     <main className="reaction-lab-shell">
-      <section className="reaction-lab-stage" aria-label="옴닉 반응 훈련 게임">
+      <section className="reaction-lab-stage" aria-label="반응속도 연습 게임">
         <header className="reaction-lab-topbar">
-          {activityMode ? (
+          {onBack ? (
+            <button type="button" className="reaction-lab-back" onClick={onBack} aria-label="훈련소로 돌아가기">←</button>
+          ) : activityMode ? (
             <span aria-hidden="true" />
           ) : (
-            <Link to="/game" aria-label="게임 선택 화면으로 돌아가기">←</Link>
+            <Link to="/training-lab" aria-label="훈련소로 돌아가기">←</Link>
           )}
           <div className="reaction-lab-brand">
-            <p>OMNIC TACTICAL NETWORK</p>
-            <h1>REACTION LAB</h1>
+            <p>TACTICAL REACTION NETWORK</p>
+            <h1>반응속도 연습</h1>
           </div>
           <div className="reaction-lab-status" aria-label="훈련 시스템 온라인">
             <i aria-hidden="true" />
@@ -27,7 +30,7 @@ export function ReactionLabPage({ activityMode = false }: ReactionLabPageProps) 
         </header>
         <ReactionLabGame />
         <p className="reaction-lab-help">터치와 마우스 지원 · 최고 기록은 이 기기에 저장됩니다</p>
-        <p className="reaction-lab-disclaimer">비상업 오버워치 팬게임 · Blizzard Entertainment와 공식 관련 없음</p>
+        <p className="reaction-lab-disclaimer">비상업 팬게임 훈련 콘텐츠 · Blizzard Entertainment와 공식 관련 없음</p>
       </section>
     </main>
   );
