@@ -1,6 +1,11 @@
 import { getBossHealth, getNormalEnemyHealthScale, getSpawnReliefMultiplier } from "./heroStrikeBalance";
 import { getBossBreakMax, updateBossBreakState } from "./heroStrikeBossBreak";
 import { getBossPhaseMovementMultiplier } from "./heroStrikeBossPhases";
+import {
+  getHeroStrikeContractEliteHealthMultiplier,
+  getHeroStrikeContractEliteTrait,
+  getHeroStrikeContractEnemyCapBonus,
+} from "./heroStrikeCombatContract";
 import { updateEnemyImpactFeedback } from "./heroStrikeCombatFeedback";
 import { HERO_STRIKE_BOSS_Y, HERO_STRIKE_WIDTH } from "./heroStrikeConfig";
 import { applyHeroStrikeEnemyActionMovement } from "./heroStrikeEnemyActions";
@@ -8,6 +13,7 @@ import { resolveHeroStrikeEncounterBoundary } from "./heroStrikeEncounterDirecto
 import { getHeroStrikeEncounterEnemy } from "./heroStrikeEncounters";
 import { getFormationInterval, getNextFormation } from "./heroStrikeFormations";
 import { getDifficultyProfile } from "./heroStrikeLoadout";
+import { getHeroStrikePressureEnemyCapBonus } from "./heroStrikePressureDirector";
 import { chooseEnemyKindForStage, getCurrentHeroStrikeStage, type NormalEnemyKind } from "./heroStrikeStages";
 import type { EliteTrait, HeroStrikeEnemy, HeroStrikeState } from "./heroStrikeTypes";
 import { openQueuedHeroStrikeUpgrade } from "./heroStrikeUpgrades";
@@ -76,13 +82,14 @@ export function spawnEnemy(
   const base = ENEMY_STATS[kind];
   const healthScale = getNormalEnemyHealthScale(state, stage.durationSeconds);
   const elite = eliteTrait !== undefined;
-  const hpScale = healthScale * (eliteTrait ? eliteHealthMultiplier(eliteTrait) : 1);
+  const eliteContractScale = elite ? getHeroStrikeContractEliteHealthMultiplier(state) : 1;
+  const hpScale = healthScale * (eliteTrait ? eliteHealthMultiplier(eliteTrait) : 1) * eliteContractScale;
   const x = requestedX === undefined
     ? 30 + Math.random() * (HERO_STRIKE_WIDTH - 60)
     : Math.max(30, Math.min(HERO_STRIKE_WIDTH - 30, requestedX));
   const speed = enemyBaseSpeed(kind) * stage.enemySpeedMultiplier * (eliteTrait ? eliteSpeedMultiplier(eliteTrait) : 1);
-  const rewardScale = elite ? 2.4 : 1;
-  const scoreScale = elite ? 4 : 1;
+  const rewardScale = elite ? 2.4 * eliteContractScale : 1;
+  const scoreScale = elite ? 4 * eliteContractScale : 1;
   const cooldownScale = eliteTrait === "rapid" ? 0.62 : eliteTrait === "veteran" ? 0.78 : 1;
 
   state.enemies.push({
@@ -113,7 +120,7 @@ export function spawnEnemy(
 function spawnElite(state: HeroStrikeState) {
   const kinds: readonly NormalEnemyKind[] = ["drone", "tank", "sniper", "weaver", "bomber"];
   const kind = kinds[state.stageIndex % kinds.length];
-  const trait = getEliteTraitForStage(state.stageIndex);
+  const trait = getHeroStrikeContractEliteTrait(state, getEliteTraitForStage(state.stageIndex));
   state.eliteSpawned = true;
   state.waveBanner = 2.1;
   spawnEnemy(state, kind, trait);
@@ -194,14 +201,17 @@ export function updateSpawning(state: HeroStrikeState, dt: number) {
   }
   if (state.bossSpawned) return;
 
-  const enemyCap = 10 + Math.min(6, Math.floor(state.stageIndex / 2));
+  const enemyCap = 10
+    + Math.min(6, Math.floor(state.stageIndex / 2))
+    + getHeroStrikePressureEnemyCapBonus(state)
+    + getHeroStrikeContractEnemyCapBonus(state);
 
   if (waveChanged) {
     softenEncounterTransition(state);
-    state.spawnCooldown = 0.46 * difficulty.spawnInterval;
+    state.spawnCooldown = 0.46 * difficulty.spawnInterval * getSpawnReliefMultiplier(state);
     state.formationCooldown = Math.min(state.formationCooldown, 3.1);
     if (openQueuedHeroStrikeUpgrade(state)) return;
-    const groupSize = Math.min(3, getWaveEntryGroupSize(state.waveIndex));
+    const groupSize = Math.min(4, getWaveEntryGroupSize(state.waveIndex) + getHeroStrikeContractEnemyCapBonus(state));
     for (let index = 0; index < groupSize && state.enemies.length < enemyCap; index += 1) {
       spawnEnemy(state, getHeroStrikeEncounterEnemy(state.waveIndex));
     }
@@ -210,7 +220,7 @@ export function updateSpawning(state: HeroStrikeState, dt: number) {
 
   if (shouldSpawnElite(state)) {
     spawnElite(state);
-    state.spawnCooldown = 1.05 * difficulty.spawnInterval;
+    state.spawnCooldown = 1.05 * difficulty.spawnInterval * getSpawnReliefMultiplier(state);
     state.formationCooldown = Math.max(state.formationCooldown, 5);
     return;
   }
@@ -218,8 +228,8 @@ export function updateSpawning(state: HeroStrikeState, dt: number) {
   state.formationCooldown -= dt;
   if (state.stageElapsed > 7 && state.formationCooldown <= 0 && state.enemies.length <= enemyCap - 4) {
     spawnFormation(state, enemyCap);
-    state.formationCooldown = getFormationInterval(state) * 1.12 * difficulty.spawnInterval;
-    state.spawnCooldown = Math.max(state.spawnCooldown, 0.86);
+    state.formationCooldown = getFormationInterval(state) * 1.12 * difficulty.spawnInterval * getSpawnReliefMultiplier(state);
+    state.spawnCooldown = Math.max(state.spawnCooldown, 0.86 * getSpawnReliefMultiplier(state));
     return;
   }
 
