@@ -19,7 +19,11 @@ import {
   getBreacherScatterProfile,
   getPulseRepeaterProfile,
 } from "./heroStrikePrimaryWeaponProfiles";
-import { getHeroStrikeStage } from "./heroStrikeStages";
+import {
+  getHeroStrikeOperationEstimatedMinutes,
+  getHeroStrikeStage,
+  HERO_STRIKE_STAGES,
+} from "./heroStrikeStages";
 import {
   getMagnetRadius,
   getPulseDriveCharge,
@@ -56,7 +60,7 @@ const CATEGORY_META: Record<HeroStrikeLoadoutRow, Omit<HeroStrikeLobbyCategory, 
   primary: {
     label: "PRIMARY ARMAMENT",
     shortLabel: "PRIMARY",
-    subtitle: "열·탄창·축전을 관리하는 주무기",
+    subtitle: "DRIVE와 FOCUS의 전투 리듬을 결정하는 주무기",
     accent: "#ff9b3d",
   },
   support: {
@@ -97,21 +101,21 @@ function primaryMetric(state: HeroStrikeState, id: string) {
   if (id === "scatter-array") {
     const profile = getBreacherScatterProfile(state);
     return {
-      metric: `${profile.magazine} SHELL`,
-      detail: `PUMP ${profile.pumpTime.toFixed(2)}s · RELOAD ${profile.reloadTime.toFixed(2)}s`,
+      metric: `${profile.magazine} SHELL · AUTOLOAD`,
+      detail: `DRIVE ${profile.drivePellets}펠릿 · FOCUS ${profile.focusPellets}펠릿 · 빈 약실 ${profile.emergencyShellLoadTime.toFixed(2)}초`,
     };
   }
   if (id === "rail-driver") {
     const profile = getArcRailProfile(state);
     return {
-      metric: "CAPACITOR",
-      detail: `CHARGE ${Math.round(profile.chargeRate * 100)}%/s · FOCUS RELEASE`,
+      metric: "SPARK TO CHARGE",
+      detail: `축전 ${Math.round(profile.chargeRate * 100)}%/s · 스파크 ${profile.sparkInterval.toFixed(2)}초 · FOCUS 관통포`,
     };
   }
   const profile = getPulseRepeaterProfile(state);
   return {
-    metric: `${profile.driveBurst}/${profile.focusBurst} BURST`,
-    detail: `HEAT ${Math.round(profile.heatPerShot * 100)} · COOL ${Math.round(profile.driveCooling * 100)}%/s`,
+    metric: `${profile.driveBurst}/${profile.focusBurst} BURST · PURGE`,
+    detail: `고열 화력 증가 · 과열 시 ${profile.ventPulseCount}회 열배출 탄막`,
   };
 }
 
@@ -166,7 +170,8 @@ function selectedOption(state: HeroStrikeState, row: HeroStrikeLoadoutRow) {
 }
 
 export function getHeroStrikeLobbySnapshot(state: HeroStrikeState) {
-  const stage = getHeroStrikeStage(0);
+  const firstStage = getHeroStrikeStage(0);
+  const finalStage = getHeroStrikeStage(HERO_STRIKE_STAGES.length - 1);
   const difficulty = getDifficultyProfile(state.loadout.difficulty);
   const research = getResearchProgress(state.researchData);
   const nextBlueprint = getNextHeroStrikeBlueprint(research.rank);
@@ -180,17 +185,17 @@ export function getHeroStrikeLobbySnapshot(state: HeroStrikeState) {
     hero: {
       name: "TRACER",
       role: "STRIKE PILOT",
-      passive: "DRIVE 이동 · FOCUS 정밀사격",
+      passive: "DRIVE 이동 · FOCUS 무기 강공격",
       tactical: "BLINK ×2",
       ultimate: "PULSE OVERLOAD",
     },
     mission: {
-      operationCode: "OP-01",
-      name: stage.name,
-      subtitle: stage.subtitle,
-      bossName: stage.bossName,
-      encounters: 4,
-      estimatedMinutes: Math.max(2, Math.ceil((stage.durationSeconds + 42) / 60)),
+      operationCode: "OP-05",
+      name: "OMEGA STRIKE",
+      subtitle: `${firstStage.name} → ${finalStage.name}`,
+      bossName: finalStage.bossName,
+      encounters: HERO_STRIKE_STAGES.length * 4,
+      estimatedMinutes: getHeroStrikeOperationEstimatedMinutes(),
       threatLabel: threat.label,
       threatBars: threat.bars,
       scoreMultiplier: difficulty.score,

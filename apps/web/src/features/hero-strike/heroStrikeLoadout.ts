@@ -29,9 +29,24 @@ type LoadoutOption<T extends string> = {
 };
 
 export const PRIMARY_WEAPON_OPTIONS: readonly LoadoutOption<PrimaryWeaponId>[] = [
-  { id: "pulse-blasters", title: "펄스 리피터", icon: "✦", description: "양 모드 5점사 · FOCUS 정밀 락온" },
-  { id: "scatter-array", title: "브리처", icon: "≋", description: "5발 탄창 · DRIVE 확산 · FOCUS 집탄" },
-  { id: "rail-driver", title: "아크 레일", icon: "➤", description: "양 모드 지속 관통탄 · FOCUS 축전 방출" },
+  {
+    id: "pulse-blasters",
+    title: "펄스 리피터",
+    icon: "✦",
+    description: "고열 화력 상승 · 과열 시 열배출 탄막으로 전환",
+  },
+  {
+    id: "scatter-array",
+    title: "브리처",
+    icon: "≋",
+    description: "6발 자동 장전 · 빈 약실도 한 발 장전 즉시 반격",
+  },
+  {
+    id: "rail-driver",
+    title: "아크 레일",
+    icon: "➤",
+    description: "DRIVE 스파크 축전 · FOCUS 관통포 방출",
+  },
 ];
 
 export const SUPPORT_LOADOUT_OPTIONS: readonly LoadoutOption<SupportLoadoutId>[] = [
@@ -49,7 +64,7 @@ export const TACTICAL_LOADOUT_OPTIONS: readonly LoadoutOption<TacticalLoadoutId>
 export const DIFFICULTY_OPTIONS: readonly LoadoutOption<HeroStrikeDifficulty>[] = [
   { id: "recruit", title: "신병", icon: "Ⅰ", description: "적 약화 · 보상 85%" },
   { id: "agent", title: "요원", icon: "Ⅱ", description: "표준 패턴과 보상" },
-  { id: "legend", title: "전설", icon: "Ⅲ", description: "빠른 압박 · 보상 증가" },
+  { id: "legend", title: "전설", icon: "Ⅲ", description: "빠른 탄막·고밀도 압박 · 보상 증가" },
 ];
 
 export type HeroStrikeDifficultyProfile = {
@@ -61,9 +76,9 @@ export type HeroStrikeDifficultyProfile = {
 };
 
 const DIFFICULTY_PROFILES: Record<HeroStrikeDifficulty, HeroStrikeDifficultyProfile> = {
-  recruit: { enemyHealth: 0.84, enemyBulletSpeed: 0.9, spawnInterval: 1.1, score: 0.85, research: 0.85 },
+  recruit: { enemyHealth: 0.82, enemyBulletSpeed: 0.9, spawnInterval: 1.12, score: 0.85, research: 0.85 },
   agent: { enemyHealth: 1, enemyBulletSpeed: 1, spawnInterval: 1, score: 1, research: 1 },
-  legend: { enemyHealth: 1.24, enemyBulletSpeed: 1.14, spawnInterval: 0.88, score: 1.35, research: 1.25 },
+  legend: { enemyHealth: 1.12, enemyBulletSpeed: 1.16, spawnInterval: 0.84, score: 1.35, research: 1.25 },
 };
 
 export function getDifficultyProfile(difficulty: HeroStrikeDifficulty) {
@@ -72,12 +87,12 @@ export function getDifficultyProfile(difficulty: HeroStrikeDifficulty) {
 
 export function getPrimaryWeaponProfile(primary: PrimaryWeaponId) {
   if (primary === "scatter-array") {
-    return { damage: 32, fireInterval: 0.58, bulletSpeed: 680, bulletCount: 1, spread: 0.13, pierce: 0 };
+    return { damage: 36, fireInterval: 0.48, bulletSpeed: 700, bulletCount: 1, spread: 0.12, pierce: 0 };
   }
   if (primary === "rail-driver") {
-    return { damage: 58, fireInterval: 0.8, bulletSpeed: 980, bulletCount: 1, spread: 0.04, pierce: 1 };
+    return { damage: 60, fireInterval: 0.78, bulletSpeed: 990, bulletCount: 1, spread: 0.04, pierce: 1 };
   }
-  return { damage: 20, fireInterval: 0.34, bulletSpeed: 820, bulletCount: 1, spread: 0.08, pierce: 0 };
+  return { damage: 22, fireInterval: 0.3, bulletSpeed: 840, bulletCount: 1, spread: 0.07, pierce: 0 };
 }
 
 function isLoadout(value: unknown): value is HeroStrikeLoadout {

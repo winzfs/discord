@@ -15,11 +15,9 @@ import {
   describeUpgradeLevel,
   getCriticalChance,
   getCriticalMultiplier,
-  getForwardBulletCount,
   getMagnetRadius,
   getPowerCoreDamage,
   getPulseDriveCharge,
-  getRapidFireInterval,
   getShieldGrant,
   getUltimateGainMultiplier,
   HERO_STRIKE_UPGRADE_MAX_LEVELS,
@@ -54,8 +52,9 @@ const PRIMARY_SYNERGY: Record<HeroStrikeState["loadout"]["primary"], readonly Up
 const EVOLUTION_PARTNERS: Partial<Record<UpgradeId, UpgradeId>> = {
   "rapid-fire": "twin-shot",
   "twin-shot": "rapid-fire",
+  "power-core": "explosive-rounds",
   "homing-missile": "explosive-rounds",
-  "explosive-rounds": "homing-missile",
+  "explosive-rounds": "power-core",
   "chain-core": "critical-core",
   "critical-core": "chain-core",
   "drone-wing": "shield",
@@ -71,27 +70,27 @@ function unlockedAtStage(id: UpgradeId) {
 function describeWeaponCycleUpgrade(state: HeroStrikeState, rapidLevel: number) {
   if (state.loadout.primary === "scatter-array") {
     const profile = getBreacherScatterProfile(state, { rapid: rapidLevel });
-    return `펌프 ${profile.pumpTime.toFixed(2)}초 · 재장전 ${profile.reloadTime.toFixed(2)}초`;
+    return `펌프 ${profile.drivePumpTime.toFixed(2)}초 · 자동 장전 ${profile.driveShellLoadTime.toFixed(2)}초 · 비상 장전 ${profile.emergencyShellLoadTime.toFixed(2)}초`;
   }
   if (state.loadout.primary === "rail-driver") {
     const profile = getArcRailProfile(state, { rapid: rapidLevel });
-    return `축전 속도 ${Math.round(profile.chargeRate * 100)}%/초`;
+    return `축전 ${Math.round(profile.chargeRate * 100)}%/초 · 스파크 ${profile.sparkInterval.toFixed(2)}초`;
   }
   const profile = getPulseRepeaterProfile(state, { rapid: rapidLevel });
-  return `점사 간격 ${profile.shotGap.toFixed(2)}초 · 냉각 ${Math.round(profile.driveCooling * 100)}%/초`;
+  return `점사 간격 ${profile.shotGap.toFixed(2)}초 · 열배출 간격 ${profile.ventPulseGap.toFixed(2)}초`;
 }
 
 function describeWeaponStructureUpgrade(state: HeroStrikeState, twinLevel: number) {
   if (state.loadout.primary === "scatter-array") {
     const profile = getBreacherScatterProfile(state, { twin: twinLevel });
-    return `FOCUS ${profile.focusPellets}펠릿 · DRIVE ${profile.drivePellets}펠릿`;
+    return `DRIVE ${profile.drivePellets}펠릿 · FOCUS ${profile.focusPellets}펠릿 · 비상 ${profile.emergencyPellets}펠릿`;
   }
   if (state.loadout.primary === "rail-driver") {
     const profile = getArcRailProfile(state, { twin: twinLevel });
-    return `주 광선 + 보조 광선 ${profile.sideBeams}쌍`;
+    return `축전 스파크 ${profile.sparkBeams}발 · 관통포 보조 광선 ${profile.sideBeams}쌍`;
   }
   const profile = getPulseRepeaterProfile(state, { twin: twinLevel });
-  return `DRIVE ${profile.driveBurst}점사 · FOCUS ${profile.focusBurst}점사`;
+  return `DRIVE ${profile.driveBurst}점사 · FOCUS ${profile.focusBurst}점사 · 열배출 ${profile.ventPulseCount}회`;
 }
 
 function describeUpgradeForLoadout(state: HeroStrikeState, id: UpgradeId, level: number) {
@@ -122,7 +121,7 @@ function upgradeWeight(state: HeroStrikeState, upgrade: UpgradeOption) {
   if (PRIMARY_SYNERGY[state.loadout.primary].includes(upgrade.id)) weight += 2.2;
   if (upgrade.id === state.loadout.support && currentLevel < 2) weight += 2.8;
   const partner = EVOLUTION_PARTNERS[upgrade.id];
-  if (state.stageIndex >= 4 && partner && (state.upgradeLevels[partner] ?? 0) > 0) weight += 2.4;
+  if (state.stageIndex >= 2 && partner && (state.upgradeLevels[partner] ?? 0) > 0) weight += 2.4;
   if (state.player.hp <= 2 && upgrade.id === "shield") weight += 2.2;
   return weight;
 }
@@ -199,8 +198,9 @@ export function applyUpgrade(state: HeroStrikeState, id: UpgradeId) {
   state.upgradeLevels[id] = nextLevel;
 
   switch (id) {
-    case "rapid-fire": player.fireInterval = getRapidFireInterval(nextLevel, primary.fireInterval); break;
-    case "twin-shot": player.bulletCount = getForwardBulletCount(nextLevel, primary.bulletCount); break;
+    case "rapid-fire":
+    case "twin-shot":
+      break;
     case "power-core": player.damage = getPowerCoreDamage(nextLevel, primary.damage); break;
     case "piercing": player.pierce = primary.pierce + nextLevel; break;
     case "magnet": player.magnetRadius = getMagnetRadius(nextLevel); break;

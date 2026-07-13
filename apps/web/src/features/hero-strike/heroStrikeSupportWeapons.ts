@@ -1,3 +1,4 @@
+import { compactInPlace } from "./heroStrikeArrayUtils";
 import { applyBossBreakPressure, getBossBreakDamageMultiplier } from "./heroStrikeBossBreak";
 import {
   getHeroStrikeAimAngle,
@@ -17,6 +18,7 @@ import {
   getHeroStrikeFlowDamageMultiplier,
   getHeroStrikeFlowFireRateMultiplier,
 } from "./heroStrikeFlow";
+import { getHeroStrikeSupportBaseDamage } from "./heroStrikeSupportBalance";
 import {
   getDroneDamageScale,
   getDroneFireInterval,
@@ -67,6 +69,7 @@ function spawnMissile(state: HeroStrikeState, forcedSide?: -1 | 1) {
   const swarm = hasEvolution(state, "hunter-swarm");
   const side = forcedSide ?? (state.nextId % 2 === 0 ? -1 : 1);
   const controlDamage = getHeroStrikeSupportDamageScale(state);
+  const supportDamage = getHeroStrikeSupportBaseDamage(state);
   state.missiles.push({
     id: state.nextId++,
     x: state.player.x + side * 18,
@@ -77,7 +80,7 @@ function spawnMissile(state: HeroStrikeState, forcedSide?: -1 | 1) {
     turnRate: getMissileTurnRate(level) * (swarm ? 1.08 : 1),
     damage: criticalDamage(
       state,
-      (40 + state.player.damage * getMissileDamageScale(level))
+      (40 + supportDamage * getMissileDamageScale(level))
         * state.player.campaignDamageMultiplier
         * controlDamage
         * getHeroStrikeFlowDamageMultiplier(state)
@@ -100,6 +103,7 @@ function spawnDroneVolley(state: HeroStrikeState) {
   const criticalChance = Math.min(0.45, player.criticalChance + player.bonusCriticalChance);
   const criticalMultiplier = player.criticalMultiplier + player.bonusCriticalMultiplier;
   const controlDamage = getHeroStrikeSupportDamageScale(state);
+  const supportDamage = getHeroStrikeSupportBaseDamage(state);
   const aim = getHeroStrikeAimAngle(state);
   const speed = 810;
   for (const side of [-1, 1] as const) {
@@ -112,7 +116,7 @@ function spawnDroneVolley(state: HeroStrikeState) {
       vx: Math.sin(angle) * speed,
       vy: -Math.cos(angle) * speed,
       radius: aegis ? 3.8 : 3.2,
-      damage: player.damage
+      damage: supportDamage
         * player.campaignDamageMultiplier
         * controlDamage
         * getHeroStrikeFlowDamageMultiplier(state)
@@ -164,8 +168,7 @@ function explodeMissile(state: HeroStrikeState, missile: HeroStrikeMissile) {
   addRing(state, missile.x, missile.y, HERO_STRIKE_COLORS.orange, 18);
   addBurst(state, missile.x, missile.y, HERO_STRIKE_COLORS.orange, 10, 165, 3);
   const radiusSquared = missile.explosionRadius * missile.explosionRadius;
-  const targets = [...state.enemies];
-  for (const enemy of targets) {
+  for (const enemy of state.enemies) {
     if (enemy.dead || distanceSquared(missile.x, missile.y, enemy.x, enemy.y) > radiusSquared) continue;
     const baseDamage = missile.damage * (enemy.boss ? 0.65 : 1);
     const damage = baseDamage * getBossBreakDamageMultiplier(enemy);
@@ -182,7 +185,7 @@ function explodeMissile(state: HeroStrikeState, missile: HeroStrikeMissile) {
     }
   }
   state.hitStop = Math.max(state.hitStop, 0.014);
-  state.enemies = state.enemies.filter((enemy) => !enemy.dead);
+  compactInPlace(state.enemies, (enemy) => !enemy.dead);
   missile.life = 0;
 }
 
@@ -201,7 +204,8 @@ function updateMissiles(state: HeroStrikeState, dt: number) {
     if (state.phase !== "playing") break;
   }
 
-  state.missiles = state.missiles.filter(
+  compactInPlace(
+    state.missiles,
     (missile) => missile.life > 0
       && missile.x > -60
       && missile.x < HERO_STRIKE_WIDTH + 60

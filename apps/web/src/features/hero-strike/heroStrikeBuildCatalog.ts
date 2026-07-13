@@ -53,6 +53,7 @@ export function getHeroStrikeUpgradeRoleLabel(id: UpgradeId) {
 export function getHeroStrikeEvolutionHint(state: HeroStrikeState, id: UpgradeId) {
   const evolution = HERO_STRIKE_EVOLUTIONS.find((entry) => (
     !state.evolutions.includes(entry.id)
+    && (!entry.primary || entry.primary === state.loadout.primary)
     && Object.prototype.hasOwnProperty.call(entry.requirements, id)
   ));
   if (!evolution) return null;

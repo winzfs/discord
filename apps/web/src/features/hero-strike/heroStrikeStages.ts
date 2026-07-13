@@ -32,8 +32,11 @@ export type HeroStrikeStage = {
 };
 
 export const HERO_STRIKE_STAGES: readonly HeroStrikeStage[] = [
-  ...HERO_STRIKE_EARLY_STAGES,
-  ...HERO_STRIKE_LATE_STAGES,
+  HERO_STRIKE_EARLY_STAGES[0],
+  HERO_STRIKE_EARLY_STAGES[2],
+  HERO_STRIKE_EARLY_STAGES[4],
+  HERO_STRIKE_LATE_STAGES[2],
+  HERO_STRIKE_LATE_STAGES[4],
 ];
 
 export function getHeroStrikeStage(index: number) {
@@ -46,6 +49,15 @@ export function getCurrentHeroStrikeStage(state: Pick<HeroStrikeState, "stageInd
 
 export function isFinalHeroStrikeStage(index: number) {
   return index >= HERO_STRIKE_STAGES.length - 1;
+}
+
+export function getHeroStrikeOperationEstimatedMinutes() {
+  const combatSeconds = HERO_STRIKE_STAGES.reduce(
+    (total, stage) => total + stage.durationSeconds + 42,
+    0,
+  );
+  const armorySeconds = Math.max(0, HERO_STRIKE_STAGES.length - 1) * 16;
+  return Math.max(1, Math.ceil((combatSeconds + armorySeconds) / 60));
 }
 
 export function chooseEnemyKindForStage(stage: HeroStrikeStage, roll = Math.random()): NormalEnemyKind {

@@ -69,13 +69,18 @@ export function drawHeroStrikePrimaryWeaponHud(ctx: CanvasRenderingContext2D, st
   ctx.fillText(status.label, x + width - 8, y + 10);
 
   if (status.kind === "scatter") {
-    const shellWidth = 22;
+    const shellWidth = 18;
     const gap = 4;
     const totalWidth = status.magazine * shellWidth + (status.magazine - 1) * gap;
     const startX = x + (width - totalWidth) / 2;
     for (let index = 0; index < status.magazine; index += 1) {
+      const shellX = startX + index * (shellWidth + gap);
       ctx.fillStyle = index < status.shells ? HERO_STRIKE_COLORS.orange : "rgba(255,255,255,.1)";
-      ctx.fillRect(startX + index * (shellWidth + gap), y + 14, shellWidth, 3);
+      ctx.fillRect(shellX, y + 14, shellWidth, 3);
+      if (status.loadingShell && index === status.shells) {
+        ctx.fillStyle = status.warning ? HERO_STRIKE_COLORS.red : HERO_STRIKE_COLORS.gold;
+        ctx.fillRect(shellX, y + 14, shellWidth * status.loadRatio, 3);
+      }
     }
   } else {
     const barX = x + 8;
