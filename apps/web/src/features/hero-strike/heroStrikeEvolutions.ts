@@ -1,10 +1,16 @@
 import { grantResearchData } from "./heroStrikeMetaProgress";
-import type { EvolutionId, HeroStrikeState, UpgradeId } from "./heroStrikeTypes";
+import type {
+  EvolutionId,
+  HeroStrikeState,
+  PrimaryWeaponId,
+  UpgradeId,
+} from "./heroStrikeTypes";
 
 type EvolutionDefinition = {
   id: EvolutionId;
   title: string;
   shortLabel: string;
+  primary?: PrimaryWeaponId;
   requirements: Partial<Record<UpgradeId, number>>;
 };
 
@@ -13,7 +19,15 @@ export const HERO_STRIKE_EVOLUTIONS: readonly EvolutionDefinition[] = [
     id: "pulse-storm",
     title: "펄스 스톰",
     shortLabel: "STORM",
+    primary: "pulse-blasters",
     requirements: { "rapid-fire": 3, "twin-shot": 2 },
+  },
+  {
+    id: "breach-nova",
+    title: "브리치 노바",
+    shortLabel: "NOVA",
+    primary: "scatter-array",
+    requirements: { "explosive-rounds": 2, "power-core": 2 },
   },
   {
     id: "hunter-swarm",
@@ -23,8 +37,9 @@ export const HERO_STRIKE_EVOLUTIONS: readonly EvolutionDefinition[] = [
   },
   {
     id: "arc-overload",
-    title: "아크 오버로드",
-    shortLabel: "ARC",
+    title: "썬더 라인",
+    shortLabel: "THUNDER",
+    primary: "rail-driver",
     requirements: { "chain-core": 2, "critical-core": 3 },
   },
   {
@@ -40,6 +55,7 @@ export function hasEvolution(state: HeroStrikeState, id: EvolutionId) {
 }
 
 function requirementsMet(state: HeroStrikeState, definition: EvolutionDefinition) {
+  if (definition.primary && definition.primary !== state.loadout.primary) return false;
   return Object.entries(definition.requirements).every(([id, level]) => {
     return (state.upgradeLevels[id as UpgradeId] ?? 0) >= (level ?? 0);
   });
@@ -57,6 +73,8 @@ export function unlockEligibleEvolutions(state: HeroStrikeState) {
       state.player.shield = Math.min(5, state.player.shield + 1);
     } else if (definition.id === "pulse-storm") {
       state.player.ultimate = Math.min(state.player.ultimateMax, state.player.ultimate + 18);
+    } else if (definition.id === "breach-nova") {
+      state.player.shield = Math.min(5, state.player.shield + 1);
     }
   }
 
