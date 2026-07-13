@@ -2,8 +2,10 @@ import {
   getBossPhaseBulletSpeedMultiplier,
   getBossPhaseCooldownMultiplier,
 } from "./heroStrikeBossPhases";
+import { getHeroStrikeContractBulletSpeedMultiplier } from "./heroStrikeCombatContract";
 import { spawnHeroStrikeEnemyBullet } from "./heroStrikeEnemyProjectiles";
 import { getDifficultyProfile } from "./heroStrikeLoadout";
+import { getHeroStrikePressureBulletSpeedMultiplier } from "./heroStrikePressureDirector";
 import { getCurrentHeroStrikeStage } from "./heroStrikeStages";
 import type { HeroStrikeEnemy, HeroStrikeState } from "./heroStrikeTypes";
 
@@ -14,7 +16,11 @@ function aimedAngle(state: HeroStrikeState, enemy: HeroStrikeEnemy) {
 export function getHeroStrikeEnemyBulletSpeed(state: HeroStrikeState) {
   const stage = getCurrentHeroStrikeStage(state);
   const difficulty = getDifficultyProfile(state.loadout.difficulty);
-  return 150 * stage.bulletSpeedMultiplier * difficulty.enemyBulletSpeed;
+  return 150
+    * stage.bulletSpeedMultiplier
+    * difficulty.enemyBulletSpeed
+    * getHeroStrikePressureBulletSpeedMultiplier(state)
+    * getHeroStrikeContractBulletSpeedMultiplier(state);
 }
 
 function fireStagePattern(state: HeroStrikeState, enemy: HeroStrikeEnemy, speed: number) {
