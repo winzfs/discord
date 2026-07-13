@@ -1,13 +1,8 @@
 import { drawHeroStrikeBossTelegraph } from "./heroStrikeBossTelegraphRenderer";
 import { drawHeroStrikeCombatControl } from "./heroStrikeCombatControlRenderer";
-import { drawHeroStrikeCombatProgress } from "./heroStrikeCombatProgressRenderer";
-import { drawHeroStrikeCombatRank } from "./heroStrikeCombatRankRenderer";
 import { HERO_STRIKE_HEIGHT, HERO_STRIKE_WIDTH } from "./heroStrikeConfig";
 import { drawHeroStrikeBackdrop } from "./heroStrikeBackdropRenderer";
-import {
-  drawHeroStrikeEncounterHud,
-  drawHeroStrikeEncounterWorld,
-} from "./heroStrikeEncounterRenderer";
+import { drawHeroStrikeEncounterWorld } from "./heroStrikeEncounterRenderer";
 import { drawHeroStrikeEnemyTelegraphs } from "./heroStrikeEnemyTelegraphRenderer";
 import { drawHeroStrikeEntities } from "./heroStrikeEntityRenderer";
 import { drawHeroStrikeHud } from "./heroStrikeHudRenderer";
@@ -15,6 +10,7 @@ import {
   drawHeroStrikePrimaryWeaponHud,
   drawHeroStrikePrimaryWeaponWorld,
 } from "./heroStrikePrimaryWeaponRenderer";
+import { drawHeroStrikeTacticalHud } from "./heroStrikeTacticalHudRenderer";
 import type { HeroStrikeState } from "./heroStrikeTypes";
 
 export function renderHeroStrike(ctx: CanvasRenderingContext2D, state: HeroStrikeState) {
@@ -30,9 +26,7 @@ export function renderHeroStrike(ctx: CanvasRenderingContext2D, state: HeroStrik
   drawHeroStrikePrimaryWeaponWorld(ctx, state);
   drawHeroStrikeCombatControl(ctx, state);
   drawHeroStrikePrimaryWeaponHud(ctx, state);
-  drawHeroStrikeEncounterHud(ctx, state);
-  drawHeroStrikeCombatRank(ctx, state);
-  drawHeroStrikeCombatProgress(ctx, state);
+  drawHeroStrikeTacticalHud(ctx, state);
   drawHeroStrikeHud(ctx, state);
   if (state.flash > 0) {
     ctx.fillStyle = `rgba(255,255,255,${Math.min(0.45, state.flash)})`;
