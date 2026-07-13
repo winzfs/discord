@@ -62,6 +62,11 @@ function presentation(tier: HeroStrikeMomentumTier) {
   };
 }
 
+export function getHeroStrikeMomentumLabelForCombo(combo: number) {
+  const tier = tierFromCombo(combo);
+  return { tier, ...presentation(tier) };
+}
+
 export function getHeroStrikeMomentumSnapshot(state: HeroStrikeState): HeroStrikeMomentumSnapshot {
   const combo = state.player.combo;
   const tier = tierFromCombo(combo);
