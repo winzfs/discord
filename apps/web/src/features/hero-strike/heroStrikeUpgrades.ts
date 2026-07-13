@@ -70,27 +70,27 @@ function unlockedAtStage(id: UpgradeId) {
 function describeWeaponCycleUpgrade(state: HeroStrikeState, rapidLevel: number) {
   if (state.loadout.primary === "scatter-array") {
     const profile = getBreacherScatterProfile(state, { rapid: rapidLevel });
-    return `DRIVE 펌프 ${profile.drivePumpTime.toFixed(2)}초 · FOCUS ${profile.focusPumpTime.toFixed(2)}초`;
+    return `펌프 ${profile.drivePumpTime.toFixed(2)}초 · 자동 장전 ${profile.driveShellLoadTime.toFixed(2)}초 · 비상 장전 ${profile.emergencyShellLoadTime.toFixed(2)}초`;
   }
   if (state.loadout.primary === "rail-driver") {
     const profile = getArcRailProfile(state, { rapid: rapidLevel });
-    return `축전 속도 ${Math.round(profile.chargeRate * 100)}%/초`;
+    return `축전 ${Math.round(profile.chargeRate * 100)}%/초 · 스파크 ${profile.sparkInterval.toFixed(2)}초`;
   }
   const profile = getPulseRepeaterProfile(state, { rapid: rapidLevel });
-  return `점사 간격 ${profile.shotGap.toFixed(2)}초 · DRIVE 냉각 ${Math.round(profile.driveCooling * 100)}%/초`;
+  return `점사 간격 ${profile.shotGap.toFixed(2)}초 · 열배출 간격 ${profile.ventPulseGap.toFixed(2)}초`;
 }
 
 function describeWeaponStructureUpgrade(state: HeroStrikeState, twinLevel: number) {
   if (state.loadout.primary === "scatter-array") {
     const profile = getBreacherScatterProfile(state, { twin: twinLevel });
-    return `FOCUS ${profile.focusPellets}펠릿 · DRIVE ${profile.drivePellets}펠릿`;
+    return `DRIVE ${profile.drivePellets}펠릿 · FOCUS ${profile.focusPellets}펠릿 · 비상 ${profile.emergencyPellets}펠릿`;
   }
   if (state.loadout.primary === "rail-driver") {
     const profile = getArcRailProfile(state, { twin: twinLevel });
-    return `충전포 + 보조 광선 ${profile.sideBeams}쌍`;
+    return `축전 스파크 ${profile.sparkBeams}발 · 관통포 보조 광선 ${profile.sideBeams}쌍`;
   }
   const profile = getPulseRepeaterProfile(state, { twin: twinLevel });
-  return `DRIVE ${profile.driveBurst}점사 · FOCUS ${profile.focusBurst}점사`;
+  return `DRIVE ${profile.driveBurst}점사 · FOCUS ${profile.focusBurst}점사 · 열배출 ${profile.ventPulseCount}회`;
 }
 
 function describeUpgradeForLoadout(state: HeroStrikeState, id: UpgradeId, level: number) {
