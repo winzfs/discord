@@ -1,9 +1,12 @@
 import { getRunGrade } from "./heroStrikeBalance";
+import { getHeroStrikeDominantBuildTags } from "./heroStrikeBuildCatalog";
 import { getHeroStrikeCombatRank } from "./heroStrikeCombatRank";
 import { HERO_STRIKE_COLORS, HERO_STRIKE_HEIGHT, HERO_STRIKE_WIDTH } from "./heroStrikeConfig";
 import { getHeroStrikeOperationSummary } from "./heroStrikeEncounterDirector";
 import { getEvolutionShortLabels } from "./heroStrikeEvolutions";
 import { getLoadoutSummary } from "./heroStrikeLoadout";
+import { getHeroStrikeMomentumLabelForCombo } from "./heroStrikeMomentum";
+import { HERO_STRIKE_STAGES } from "./heroStrikeStages";
 import type { HeroStrikeState } from "./heroStrikeTypes";
 
 function roundedRect(ctx: CanvasRenderingContext2D, x: number, y: number, width: number, height: number, radius: number) {
@@ -40,13 +43,16 @@ function debriefAdvice(
   if (missionsFailed >= Math.max(2, missionsSucceeded / 2)) {
     return "다음 목표 · 잡몹보다 PRIORITY와 작전 구역을 먼저 처리하세요";
   }
+  if (state.maxCombo < 18 && state.kills >= 24) {
+    return "다음 목표 · 처치 간격을 유지해 CHAIN 모멘텀 이상을 노리세요";
+  }
   if (averageRank < 48) {
     return "다음 목표 · 그레이즈·BREAK·빠른 표적 격파로 전투 랭크를 올리세요";
   }
   if (state.evolutions.length === 0 && state.stageIndex >= 4) {
     return "다음 목표 · 카드의 진화 조건을 맞춰 첫 무기 진화를 완성하세요";
   }
-  return "전투 흐름 안정 · 더 높은 위험도와 완벽 임무를 노릴 수 있습니다";
+  return "전투 흐름 안정 · 더 높은 위험도와 완벽 계약을 노릴 수 있습니다";
 }
 
 export function drawHeroStrikeResult(ctx: CanvasRenderingContext2D, state: HeroStrikeState) {
@@ -55,7 +61,9 @@ export function drawHeroStrikeResult(ctx: CanvasRenderingContext2D, state: HeroS
   const combatRank = getHeroStrikeCombatRank(state);
   const operation = getHeroStrikeOperationSummary(state);
   const evolutions = getEvolutionShortLabels(state);
-  const reachedStage = Math.min(10, state.stageIndex + 1);
+  const reachedStage = Math.min(HERO_STRIKE_STAGES.length, state.stageIndex + 1);
+  const momentum = getHeroStrikeMomentumLabelForCombo(state.maxCombo);
+  const dominantBuild = getHeroStrikeDominantBuildTags(state);
   const advice = debriefAdvice(
     state,
     operation.missionsSucceeded,
@@ -71,7 +79,7 @@ export function drawHeroStrikeResult(ctx: CanvasRenderingContext2D, state: HeroS
   ctx.fillText(victory ? "OPERATION COMPLETE" : `OPERATION ENDED · STAGE ${reachedStage}`, HERO_STRIKE_WIDTH / 2, 79);
   ctx.fillStyle = HERO_STRIKE_COLORS.white;
   ctx.font = "1000 25px system-ui";
-  ctx.fillText("전투 보고서", HERO_STRIKE_WIDTH / 2, 112);
+  ctx.fillText("전투 분석 보고서", HERO_STRIKE_WIDTH / 2, 112);
 
   ctx.fillStyle = gradeColor(grade);
   ctx.font = "1000 60px system-ui";
@@ -96,32 +104,41 @@ export function drawHeroStrikeResult(ctx: CanvasRenderingContext2D, state: HeroS
 
   drawStat(ctx, "COMBAT AVG", `${Math.round(combatRank.averagePoints)}%`, 90, 358);
   drawStat(ctx, "BOSS BREAK", String(state.bossBreaks), 210, 358);
-  drawStat(ctx, "MAX COMBO", String(state.maxCombo), 330, 358);
+  drawStat(ctx, "MAX COMBO", `${state.maxCombo} ${momentum.label}`, 330, 358);
 
   drawStat(ctx, "EVOLUTION", String(evolutions.length), 90, 414);
   drawStat(ctx, "PERFECT", String(operation.perfectMissions), 210, 414);
-  drawStat(ctx, "STAGE", `${reachedStage}/10`, 330, 414);
+  drawStat(ctx, "STAGE", `${reachedStage}/${HERO_STRIKE_STAGES.length}`, 330, 414);
 
   ctx.fillStyle = HERO_STRIKE_COLORS.xp;
   ctx.font = "900 10px system-ui";
   ctx.fillText(`RESEARCH DATA +${state.runResearchEarned} · BLUEPRINT RANK ${state.researchRank}`, HERO_STRIKE_WIDTH / 2, 479);
 
-  roundedRect(ctx, 42, 521, HERO_STRIKE_WIDTH - 84, 77, 16);
+  roundedRect(ctx, 42, 521, HERO_STRIKE_WIDTH - 84, 86, 16);
   ctx.fillStyle = "rgba(13,26,48,.9)";
   ctx.fill();
-  ctx.strokeStyle = HERO_STRIKE_COLORS.cyan;
-  ctx.globalAlpha = 0.35;
+  ctx.strokeStyle = momentum.accent;
+  ctx.globalAlpha = 0.42;
   ctx.stroke();
   ctx.globalAlpha = 1;
   ctx.fillStyle = HERO_STRIKE_COLORS.gold;
   ctx.font = "900 9px system-ui";
-  ctx.fillText(evolutions.length > 0 ? `EVOLUTION · ${evolutions.join(" · ")}` : "EVOLUTION · 미완성", HERO_STRIKE_WIDTH / 2, 543);
+  ctx.fillText(
+    dominantBuild.length > 0
+      ? `BUILD · ${dominantBuild.map(({ tag, level }) => `${tag} ${level}`).join(" · ")}`
+      : "BUILD · 미완성",
+    HERO_STRIKE_WIDTH / 2,
+    542,
+  );
+  ctx.fillStyle = HERO_STRIKE_COLORS.cyan;
+  ctx.font = "800 9px system-ui";
+  ctx.fillText(evolutions.length > 0 ? `EVOLUTION · ${evolutions.join(" · ")}` : "EVOLUTION · 미완성", HERO_STRIKE_WIDTH / 2, 561);
   ctx.fillStyle = HERO_STRIKE_COLORS.white;
   ctx.font = "800 10px system-ui";
-  ctx.fillText(advice, HERO_STRIKE_WIDTH / 2, 567);
+  ctx.fillText(advice, HERO_STRIKE_WIDTH / 2, 582);
   ctx.fillStyle = HERO_STRIKE_COLORS.muted;
   ctx.font = "700 9px system-ui";
-  ctx.fillText(getLoadoutSummary(state.loadout), HERO_STRIKE_WIDTH / 2, 587);
+  ctx.fillText(getLoadoutSummary(state.loadout), HERO_STRIKE_WIDTH / 2, 599);
 
   roundedRect(ctx, 92, 623, HERO_STRIKE_WIDTH - 184, 64, 20);
   ctx.fillStyle = HERO_STRIKE_COLORS.orange;
