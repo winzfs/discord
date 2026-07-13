@@ -62,7 +62,7 @@ function requirementsMet(state: HeroStrikeState, definition: EvolutionDefinition
 }
 
 export function unlockEligibleEvolutions(state: HeroStrikeState) {
-  if (state.stageIndex < 4) return [];
+  if (state.stageIndex < 2) return [];
   const unlocked: EvolutionDefinition[] = [];
   for (const definition of HERO_STRIKE_EVOLUTIONS) {
     if (hasEvolution(state, definition.id) || !requirementsMet(state, definition)) continue;
@@ -73,8 +73,6 @@ export function unlockEligibleEvolutions(state: HeroStrikeState) {
       state.player.shield = Math.min(5, state.player.shield + 1);
     } else if (definition.id === "pulse-storm") {
       state.player.ultimate = Math.min(state.player.ultimateMax, state.player.ultimate + 18);
-    } else if (definition.id === "breach-nova") {
-      state.player.shield = Math.min(5, state.player.shield + 1);
     }
   }
 
