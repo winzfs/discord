@@ -1,4 +1,11 @@
+import {
+  getHeroStrikeContractSpawnIntervalMultiplier,
+} from "./heroStrikeCombatContract";
 import { getDifficultyProfile } from "./heroStrikeLoadout";
+import {
+  getHeroStrikePressureBulletSpeedMultiplier,
+  getHeroStrikePressureSpawnIntervalMultiplier,
+} from "./heroStrikePressureDirector";
 import type { HeroStrikeStage } from "./heroStrikeStages";
 import type { HeroStrikeState } from "./heroStrikeTypes";
 
@@ -27,13 +34,18 @@ export function getEnemyBulletCap(state: HeroStrikeState) {
   const lowHealthRelief = state.player.hp <= 1 ? 14 : state.player.hp <= 2 ? 7 : 0;
   const bossBonus = state.bossSpawned ? 14 : 0;
   const difficultyOffset = state.loadout.difficulty === "legend" ? 7 : state.loadout.difficulty === "recruit" ? -6 : 0;
-  return Math.max(44, Math.min(112, 54 + state.stageIndex * 7 + bossBonus + difficultyOffset - lowHealthRelief));
+  const pressureBonus = Math.round((getHeroStrikePressureBulletSpeedMultiplier(state) - 0.96) * 44);
+  return Math.max(
+    44,
+    Math.min(118, 54 + state.stageIndex * 7 + bossBonus + difficultyOffset + pressureBonus - lowHealthRelief),
+  );
 }
 
 export function getSpawnReliefMultiplier(state: HeroStrikeState) {
-  if (state.player.hp <= 1) return 1.18;
-  if (state.player.hp <= 2) return 1.09;
-  return 1;
+  const lowHealthRelief = state.player.hp <= 1 ? 1.18 : state.player.hp <= 2 ? 1.09 : 1;
+  return lowHealthRelief
+    * getHeroStrikePressureSpawnIntervalMultiplier(state)
+    * getHeroStrikeContractSpawnIntervalMultiplier(state);
 }
 
 export function getStageObjectiveScore(stageIndex: number) {
