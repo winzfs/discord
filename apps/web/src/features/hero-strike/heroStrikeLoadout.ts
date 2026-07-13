@@ -33,7 +33,7 @@ export const PRIMARY_WEAPON_OPTIONS: readonly LoadoutOption<PrimaryWeaponId>[] =
     id: "pulse-blasters",
     title: "펄스 리피터",
     icon: "✦",
-    description: "고열 화력 상승 · 과열 시 열배출 탄막으로 전환",
+    description: "고열 화력 상승 · 과열 시 짧은 열배출 탄막",
   },
   {
     id: "scatter-array",
@@ -92,7 +92,7 @@ export function getPrimaryWeaponProfile(primary: PrimaryWeaponId) {
   if (primary === "rail-driver") {
     return { damage: 60, fireInterval: 0.78, bulletSpeed: 990, bulletCount: 1, spread: 0.04, pierce: 1 };
   }
-  return { damage: 22, fireInterval: 0.3, bulletSpeed: 840, bulletCount: 1, spread: 0.07, pierce: 0 };
+  return { damage: 24, fireInterval: 0.3, bulletSpeed: 840, bulletCount: 1, spread: 0.07, pierce: 0 };
 }
 
 function isLoadout(value: unknown): value is HeroStrikeLoadout {
