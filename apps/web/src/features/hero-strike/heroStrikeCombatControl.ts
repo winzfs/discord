@@ -10,7 +10,7 @@ type CombatControlRuntime = {
   pendingUpgrades: number;
 };
 
-export const HERO_STRIKE_FOCUS_ENTRY_DELAY = 0.08;
+export const HERO_STRIKE_FOCUS_ENTRY_DELAY = 0.1;
 export const HERO_STRIKE_BASE_LOCK_WIDTH = 76;
 const runtimeByState = new WeakMap<HeroStrikeState, CombatControlRuntime>();
 
@@ -63,14 +63,8 @@ export function releaseHeroStrikeFocus(state: HeroStrikeState) {
   state.player.targetY = state.player.y;
 }
 
-function hasCoreModule(state: HeroStrikeState, id: keyof HeroStrikeState["protocolLevels"]) {
-  return (state.protocolLevels[id] ?? 0) > 0;
-}
-
 function getLockWidth(state: HeroStrikeState) {
-  const focusBonus = hasCoreModule(state, "reactor-boost") ? 16 : 0;
   return HERO_STRIKE_BASE_LOCK_WIDTH
-    + focusBonus
     + Math.min(40, (state.player.pierce + state.player.chainCoreLevel) * 8);
 }
 
@@ -155,24 +149,20 @@ export function getHeroStrikeAimAngle(state: HeroStrikeState) {
   return Math.max(-0.34, Math.min(0.34, Math.atan2(dx, dy)));
 }
 
-export function getHeroStrikePrimaryDamageScale(state: HeroStrikeState) {
-  if (isHeroStrikeFocus(state)) return hasCoreModule(state, "reactor-boost") ? 1.06 : 0.98;
-  return hasCoreModule(state, "pulse-sync") ? 1.13 : 1.08;
+export function getHeroStrikePrimaryDamageScale(_state: HeroStrikeState) {
+  return 1;
 }
 
-export function getHeroStrikeSupportDamageScale(state: HeroStrikeState) {
-  const base = isHeroStrikeFocus(state) ? 1 : 0.95;
-  return base * (hasCoreModule(state, "vital-core") ? 1.1 : 1);
+export function getHeroStrikeSupportDamageScale(_state: HeroStrikeState) {
+  return 1;
 }
 
-export function getHeroStrikeSupportIntervalScale(state: HeroStrikeState) {
-  const base = isHeroStrikeFocus(state) ? 1 : 1.03;
-  return base * (hasCoreModule(state, "vital-core") ? 0.92 : 1);
+export function getHeroStrikeSupportIntervalScale(_state: HeroStrikeState) {
+  return 1;
 }
 
-export function getHeroStrikePrimaryIntervalScale(state: HeroStrikeState) {
-  if (isHeroStrikeFocus(state)) return hasCoreModule(state, "reactor-boost") ? 0.94 : 1;
-  return hasCoreModule(state, "pulse-sync") ? 0.94 : 1;
+export function getHeroStrikePrimaryIntervalScale(_state: HeroStrikeState) {
+  return 1;
 }
 
 export function getHeroStrikeMovementResponseScale(state: HeroStrikeState) {
