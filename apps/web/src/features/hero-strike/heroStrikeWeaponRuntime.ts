@@ -1,3 +1,4 @@
+import { compactInPlace } from "./heroStrikeArrayUtils";
 import { playHeroStrikeSound } from "./heroStrikeAudio";
 import { getEliteResearchReward } from "./heroStrikeBalance";
 import { applyBossBreakPressure, getBossBreakDamageMultiplier } from "./heroStrikeBossBreak";
@@ -137,16 +138,16 @@ function spawnPlayerBullet(state: HeroStrikeState, angle: number, options: Playe
 function firePulseAction(state: HeroStrikeState, action: Extract<HeroStrikePrimaryAction, { kind: "pulse" }>) {
   const aim = getHeroStrikeAimAngle(state);
   const barrel = action.shotIndex % 2 === 0 ? -1 : 1;
-  const hotFinal = action.finalShot && action.heat >= 0.72;
+  const hotFinal = action.finalShot && action.heat >= 0.68;
   spawnPlayerBullet(state, aim + barrel * 0.012, {
     xOffset: barrel * 7,
-    damageScale: (action.focus ? 1.02 : 0.78) * (hotFinal ? 1.22 : 1),
+    damageScale: (action.focus ? 1.02 : 0.9) * (hotFinal ? 1.24 : 1),
     style: "pulse-blasters",
     radius: hotFinal ? 5 : 4,
-    impactForce: hotFinal ? 27 : action.focus ? 19 : 13,
-    breakPower: hotFinal ? 1.22 : action.focus ? 1 : 0.72,
+    impactForce: hotFinal ? 27 : action.focus ? 19 : 14,
+    breakPower: hotFinal ? 1.22 : action.focus ? 1 : 0.76,
   });
-  playHeroStrikeSound("pulse-shot", hotFinal ? 1.18 : action.focus ? 0.9 : 0.58);
+  playHeroStrikeSound("pulse-shot", hotFinal ? 1.18 : action.focus ? 0.9 : 0.62);
   if (hotFinal) state.shake = Math.max(state.shake, 0.08);
 }
 
@@ -155,7 +156,9 @@ function fireScatterAction(state: HeroStrikeState, action: Extract<HeroStrikePri
   const aim = getHeroStrikeAimAngle(state);
   const centered = (action.pellets - 1) / 2;
   const spread = action.focus ? profile.focusSpread : profile.driveSpread;
-  const damageScale = action.focus ? profile.focusDamageScale : profile.driveDamageScale;
+  const baseDamageScale = action.focus ? profile.focusDamageScale : profile.driveDamageScale;
+  const breachNova = hasEvolution(state, "breach-nova") && action.shellsAfter === 0;
+  const damageScale = baseDamageScale * (breachNova ? 1.35 : 1);
 
   for (let index = 0; index < action.pellets; index += 1) {
     const position = index - centered;
@@ -163,16 +166,22 @@ function fireScatterAction(state: HeroStrikeState, action: Extract<HeroStrikePri
       xOffset: Math.max(-13, Math.min(13, position * 3.2)),
       damageScale,
       style: "scatter-array",
-      radius: action.focus ? 5.1 : 4.1,
+      radius: breachNova ? 6.1 : action.focus ? 5.1 : 4.1,
       life: action.focus ? 0.72 : 0.58,
       speedScale: action.focus ? 0.96 : 0.86,
-      impactForce: action.focus ? 33 : 17,
-      breakPower: action.focus ? 1.3 : 0.58,
-      explosionScale: 0.48,
+      impactForce: breachNova ? 46 : action.focus ? 33 : 17,
+      breakPower: breachNova ? 2.05 : action.focus ? 1.3 : 0.58,
+      explosionScale: breachNova ? 1.18 : 0.48,
+      color: breachNova ? HERO_STRIKE_COLORS.gold : undefined,
     });
   }
-  state.shake = Math.max(state.shake, action.focus ? 0.2 : 0.1);
-  playHeroStrikeSound("scatter-shot", action.focus ? 1.18 : 0.68);
+  if (breachNova) {
+    addRing(state, state.player.x, state.player.y - 28, HERO_STRIKE_COLORS.gold, 18);
+    addFloatingText(state, state.player.x, state.player.y - 58, "BREACH NOVA", HERO_STRIKE_COLORS.gold, 13);
+    state.hitStop = Math.max(state.hitStop, 0.035);
+  }
+  state.shake = Math.max(state.shake, breachNova ? 0.38 : action.focus ? 0.2 : 0.1);
+  playHeroStrikeSound("scatter-shot", breachNova ? 1.35 : action.focus ? 1.18 : 0.68);
 }
 
 function fireRailAction(state: HeroStrikeState, action: Extract<HeroStrikePrimaryAction, { kind: "rail" }>) {
@@ -225,7 +234,7 @@ function firePrimaryAction(state: HeroStrikeState, action: HeroStrikePrimaryActi
   else firePulseAction(state, action);
 
   const aim = getHeroStrikeAimAngle(state);
-  if (hasEvolution(state, "pulse-storm") && action.kind !== "rail") {
+  if (hasEvolution(state, "pulse-storm") && action.kind === "pulse") {
     spawnPlayerBullet(state, aim - 0.3, { xOffset: -18, damageScale: 0.26, pierce: state.player.pierce + 1, style: "support" });
     spawnPlayerBullet(state, aim + 0.3, { xOffset: 18, damageScale: 0.26, pierce: state.player.pierce + 1, style: "support" });
   }
@@ -406,7 +415,7 @@ function applyExplosion(state: HeroStrikeState, source: HeroStrikeEnemy, bullet:
   if (radius <= 0 || level <= 0 || state.phase !== "playing") return;
   const radiusSquared = radius * radius;
   addRing(state, source.x, source.y, HERO_STRIKE_COLORS.orange, Math.min(26, radius * 0.45));
-  for (const enemy of [...state.enemies]) {
+  for (const enemy of state.enemies) {
     if (enemy.id === source.id || enemy.dead) continue;
     if (distanceSquared(source.x, source.y, enemy.x, enemy.y) > radiusSquared) continue;
     damageEnemy(state, enemy, bullet.damage * getExplosionDamageScale(level));
@@ -463,7 +472,7 @@ export function resolveBulletCollisions(state: HeroStrikeState) {
     }
     if (state.phase !== "playing") break;
   }
-  state.enemies = state.enemies.filter((enemy) => !enemy.dead);
+  compactInPlace(state.enemies, (enemy) => !enemy.dead);
 }
 
 export function updateBullets(state: HeroStrikeState, dt: number) {
@@ -473,14 +482,15 @@ export function updateBullets(state: HeroStrikeState, dt: number) {
     bullet.life -= dt;
   }
 
-  const activeBullets = state.bullets.filter(
+  compactInPlace(
+    state.bullets,
     (bullet) => bullet.life > 0
       && bullet.x > -40
       && bullet.x < HERO_STRIKE_WIDTH + 40
       && bullet.y > -60
       && bullet.y < HERO_STRIKE_HEIGHT + 60,
   );
-  state.bullets = activeBullets.length > HERO_STRIKE_MAX_BULLETS
-    ? activeBullets.slice(activeBullets.length - HERO_STRIKE_MAX_BULLETS)
-    : activeBullets;
+  if (state.bullets.length > HERO_STRIKE_MAX_BULLETS) {
+    state.bullets.splice(0, state.bullets.length - HERO_STRIKE_MAX_BULLETS);
+  }
 }
