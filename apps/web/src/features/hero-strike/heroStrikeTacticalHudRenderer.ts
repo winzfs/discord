@@ -2,6 +2,7 @@ import { getHeroStrikeCombatContract } from "./heroStrikeCombatContract";
 import { getHeroStrikeCombatRank } from "./heroStrikeCombatRank";
 import { HERO_STRIKE_COLORS, HERO_STRIKE_WIDTH } from "./heroStrikeConfig";
 import { getHeroStrikeMissionSnapshot } from "./heroStrikeEncounterDirector";
+import { getHeroStrikeMomentumSnapshot } from "./heroStrikeMomentum";
 import { getHeroStrikePressureSnapshot } from "./heroStrikePressureDirector";
 import type { HeroStrikeState } from "./heroStrikeTypes";
 
@@ -72,18 +73,38 @@ function drawMissionPanel(ctx: CanvasRenderingContext2D, state: HeroStrikeState)
   ctx.fillText(missionProgressText(state), x + width - 12, y + 47);
 
   ctx.textAlign = "left";
-  ctx.fillStyle = contract.accent;
+  ctx.fillStyle = contract.eligible ? contract.accent : HERO_STRIKE_COLORS.red;
   ctx.font = "900 7px system-ui";
   ctx.fillText(`${contract.label} · ${contract.statusLabel}`, x + 12, y + 52);
 }
 
+function drawSegmentBar(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  width: number,
+  segments: number,
+  ratio: number,
+  accent: string,
+) {
+  const gap = 3;
+  const segmentWidth = (width - gap * (segments - 1)) / segments;
+  for (let index = 0; index < segments; index += 1) {
+    const threshold = (index + 1) / segments;
+    ctx.fillStyle = ratio >= threshold - (1 / segments - 0.01)
+      ? accent
+      : "rgba(255,255,255,.09)";
+    ctx.fillRect(x + index * (segmentWidth + gap), y, segmentWidth, 5);
+  }
+}
+
 function drawPressurePanel(ctx: CanvasRenderingContext2D, state: HeroStrikeState) {
   const pressure = getHeroStrikePressureSnapshot(state);
-  const contract = getHeroStrikeCombatContract(state);
+  const momentum = getHeroStrikeMomentumSnapshot(state);
   const y = state.bossSpawned ? 222 : 249;
   const x = 18;
   const width = HERO_STRIKE_WIDTH - 36;
-  const height = 30;
+  const height = 32;
 
   roundedRect(ctx, x, y, width, height, 10);
   ctx.fillStyle = "rgba(3,8,20,.86)";
@@ -97,22 +118,16 @@ function drawPressurePanel(ctx: CanvasRenderingContext2D, state: HeroStrikeState
   ctx.font = "1000 8px system-ui";
   ctx.textAlign = "left";
   ctx.fillText(`THREAT · ${pressure.label}`, x + 10, y + 12);
-  ctx.fillStyle = contract.eligible ? contract.accent : HERO_STRIKE_COLORS.red;
+  ctx.fillStyle = momentum.accent;
   ctx.textAlign = "right";
-  ctx.fillText(contract.title, x + width - 10, y + 12);
+  ctx.fillText(`MOMENTUM · ${momentum.label} ${momentum.combo}`, x + width - 10, y + 12);
 
-  const barX = x + 10;
-  const barY = y + 18;
-  const barWidth = width - 20;
-  const gap = 3;
-  const segmentWidth = (barWidth - gap * 4) / 5;
-  for (let index = 0; index < 5; index += 1) {
-    const threshold = (index + 1) / 5;
-    ctx.fillStyle = pressure.ratio >= threshold - 0.19
-      ? pressure.accent
-      : "rgba(255,255,255,.09)";
-    ctx.fillRect(barX + index * (segmentWidth + gap), barY, segmentWidth, 5);
-  }
+  const barY = y + 20;
+  const pressureWidth = Math.floor((width - 26) * 0.58);
+  const momentumX = x + 13 + pressureWidth + 8;
+  const momentumWidth = width - 23 - pressureWidth - 8;
+  drawSegmentBar(ctx, x + 10, barY, pressureWidth, 5, pressure.ratio, pressure.accent);
+  drawSegmentBar(ctx, momentumX, barY, momentumWidth, 4, momentum.ratio, momentum.accent);
   ctx.textAlign = "left";
 }
 
@@ -125,7 +140,7 @@ function drawPressureEvent(ctx: CanvasRenderingContext2D, state: HeroStrikeState
   ctx.textAlign = "center";
   ctx.fillStyle = HERO_STRIKE_COLORS.gold;
   ctx.font = "1000 15px system-ui";
-  ctx.fillText(eventLabel, HERO_STRIKE_WIDTH / 2, state.bossSpawned ? 270 : 298);
+  ctx.fillText(eventLabel, HERO_STRIKE_WIDTH / 2, state.bossSpawned ? 274 : 302);
   ctx.restore();
   ctx.textAlign = "left";
 }
