@@ -10,8 +10,8 @@ type CombatControlRuntime = {
   pendingUpgrades: number;
 };
 
-export const HERO_STRIKE_FOCUS_ENTRY_DELAY = 0.1;
-export const HERO_STRIKE_BASE_LOCK_WIDTH = 76;
+export const HERO_STRIKE_FOCUS_ENTRY_DELAY = 0.14;
+export const HERO_STRIKE_BASE_LOCK_WIDTH = 88;
 const runtimeByState = new WeakMap<HeroStrikeState, CombatControlRuntime>();
 
 function createRuntime(): CombatControlRuntime {
@@ -65,7 +65,7 @@ export function releaseHeroStrikeFocus(state: HeroStrikeState) {
 
 function getLockWidth(state: HeroStrikeState) {
   return HERO_STRIKE_BASE_LOCK_WIDTH
-    + Math.min(40, (state.player.pierce + state.player.chainCoreLevel) * 8);
+    + Math.min(44, (state.player.pierce + state.player.chainCoreLevel) * 8);
 }
 
 function targetPriority(state: HeroStrikeState, enemy: HeroStrikeEnemy) {
@@ -111,7 +111,7 @@ export function updateHeroStrikeCombatControl(state: HeroStrikeState, dt: number
   if (runtime.mode !== "focus") return;
   runtime.lockRefresh -= dt;
   if (runtime.lockRefresh > 0) return;
-  runtime.lockRefresh = 0.08;
+  runtime.lockRefresh = 0.055;
   runtime.lockTargetId = chooseLockTarget(state)?.id ?? null;
 }
 
@@ -146,7 +146,7 @@ export function getHeroStrikeAimAngle(state: HeroStrikeState) {
   if (!target) return 0;
   const dx = target.x - state.player.x;
   const dy = Math.max(48, state.player.y - target.y);
-  return Math.max(-0.34, Math.min(0.34, Math.atan2(dx, dy)));
+  return Math.max(-0.38, Math.min(0.38, Math.atan2(dx, dy)));
 }
 
 export function getHeroStrikePrimaryDamageScale(_state: HeroStrikeState) {
@@ -166,7 +166,7 @@ export function getHeroStrikePrimaryIntervalScale(_state: HeroStrikeState) {
 }
 
 export function getHeroStrikeMovementResponseScale(state: HeroStrikeState) {
-  return isHeroStrikeFocus(state) ? 0.62 : 1.06;
+  return isHeroStrikeFocus(state) ? 0.42 : 1.12;
 }
 
 export function queueHeroStrikeUpgrade(state: HeroStrikeState) {
