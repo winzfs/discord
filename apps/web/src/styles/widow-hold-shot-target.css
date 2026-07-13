@@ -1,0 +1,12 @@
+/* 표적 머리 중심이 고정 스코프 중앙선과 일치하도록 보정한다. */
+.widow-target {
+  top: calc(50% + 44px);
+}
+
+@media (max-width: 640px) {
+  .widow-target {
+    top: calc(50% + 44px);
+    width: 58px;
+    height: 118px;
+  }
+}
