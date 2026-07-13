@@ -2,12 +2,20 @@ import { Link } from "react-router-dom";
 import { ReactionLabGame } from "../features/reaction-lab/ReactionLabGame";
 import "../styles/reaction-lab.css";
 
-export function ReactionLabPage() {
+type ReactionLabPageProps = {
+  activityMode?: boolean;
+};
+
+export function ReactionLabPage({ activityMode = false }: ReactionLabPageProps) {
   return (
     <main className="reaction-lab-shell">
       <section className="reaction-lab-stage" aria-label="옴닉 반응 훈련 게임">
         <header className="reaction-lab-topbar">
-          <Link to="/game" aria-label="게임 선택 화면으로 돌아가기">←</Link>
+          {activityMode ? (
+            <span aria-hidden="true" />
+          ) : (
+            <Link to="/game" aria-label="게임 선택 화면으로 돌아가기">←</Link>
+          )}
           <div className="reaction-lab-brand">
             <p>OMNIC TACTICAL NETWORK</p>
             <h1>REACTION LAB</h1>
