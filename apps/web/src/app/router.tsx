@@ -11,6 +11,7 @@ import { LoginPage } from "../pages/LoginPage";
 import { LobbyPage } from "../pages/LobbyPage";
 import { ProfilePage } from "../pages/ProfilePage";
 import { PuzzleBubblePage } from "../pages/PuzzleBubblePage";
+import { ReactionLabPage } from "../pages/ReactionLabPage";
 
 export const router = createBrowserRouter([
   {
@@ -28,6 +29,10 @@ export const router = createBrowserRouter([
   {
     path: "/hero-strike",
     element: <HeroStrikePage />,
+  },
+  {
+    path: "/reaction-lab",
+    element: <ReactionLabPage />,
   },
   {
     path: "/lobby",
