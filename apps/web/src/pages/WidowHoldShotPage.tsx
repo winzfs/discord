@@ -1,5 +1,6 @@
 import { WidowHoldShotGame } from "../features/widow-hold-shot/WidowHoldShotGame";
 import "../styles/widow-hold-shot.css";
+import "../styles/widow-hold-shot-target.css";
 
 type WidowHoldShotPageProps = {
   onBack?: () => void;
