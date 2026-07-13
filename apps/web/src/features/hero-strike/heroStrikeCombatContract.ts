@@ -31,7 +31,7 @@ const CONTRACTS: readonly HeroStrikeContractDefinition[] = [
     brief: "적 편성이 더 빠르고 두꺼워집니다",
     accent: "#ff9b3d",
     rewardMultiplier: 1.18,
-    spawnIntervalMultiplier: 0.84,
+    spawnIntervalMultiplier: 0.9,
     enemyCapBonus: 2,
     bulletSpeedMultiplier: 1,
     eliteHealthMultiplier: 1,
@@ -44,9 +44,9 @@ const CONTRACTS: readonly HeroStrikeContractDefinition[] = [
     brief: "적탄 속도가 증가하고 산개 탄막이 강화됩니다",
     accent: "#ff5f6d",
     rewardMultiplier: 1.2,
-    spawnIntervalMultiplier: 0.96,
+    spawnIntervalMultiplier: 0.97,
     enemyCapBonus: 0,
-    bulletSpeedMultiplier: 1.13,
+    bulletSpeedMultiplier: 1.08,
     eliteHealthMultiplier: 1,
     eliteTrait: "scatter",
   },
@@ -59,7 +59,7 @@ const CONTRACTS: readonly HeroStrikeContractDefinition[] = [
     rewardMultiplier: 1.24,
     spawnIntervalMultiplier: 1,
     enemyCapBonus: 0,
-    bulletSpeedMultiplier: 1.04,
+    bulletSpeedMultiplier: 1.02,
     eliteHealthMultiplier: 1.28,
     eliteTrait: "veteran",
   },
@@ -70,9 +70,9 @@ const CONTRACTS: readonly HeroStrikeContractDefinition[] = [
     brief: "현재 조우에서 피격되지 않으면 보너스 획득",
     accent: "#79f29d",
     rewardMultiplier: 1.32,
-    spawnIntervalMultiplier: 0.94,
+    spawnIntervalMultiplier: 0.97,
     enemyCapBonus: 1,
-    bulletSpeedMultiplier: 1.05,
+    bulletSpeedMultiplier: 1.03,
     eliteHealthMultiplier: 1,
     eliteTrait: "armored",
     flawless: true,
@@ -87,7 +87,7 @@ function contractIndex(state: HeroStrikeState) {
 }
 
 function contractDefinition(state: HeroStrikeState) {
-  return CONTRACTS[contractIndex(state)];
+  return CONTRACTS[contractIndex(state)] ?? CONTRACTS[0];
 }
 
 function ensureRuntime(state: HeroStrikeState) {
