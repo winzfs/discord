@@ -1,8 +1,20 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  advanceWidowMotion,
+  createWidowMotion,
+  getWidowBodyWindow,
+  getWidowDifficulty,
+  getWidowDirection,
+  getWidowHeadWindow,
+  getWidowSpawnDelay,
+  getWidowTargetScale,
+  randomBetween,
+  WIDOW_CROSSHAIR_X,
+  type WidowMotionState,
+} from "./movement";
 
 const GAME_DURATION_MS = 45_000;
 const BEST_SCORE_KEY = "discord-random-defense:widow-hold-shot:best";
-const CROSSHAIR_X = 50;
 
 type GamePhase = "idle" | "playing" | "result";
 type FeedbackKind = "headshot" | "body" | "miss" | "escape";
@@ -15,10 +27,6 @@ function readBestScore(): number {
   } catch {
     return 0;
   }
-}
-
-function randomBetween(min: number, max: number): number {
-  return min + Math.random() * (max - min);
 }
 
 function getRank(score: number) {
@@ -41,7 +49,7 @@ export function WidowHoldShotGame() {
   const [shots, setShots] = useState(0);
   const [timeLeft, setTimeLeft] = useState(GAME_DURATION_MS);
   const [targetVisible, setTargetVisible] = useState(false);
-  const [targetX, setTargetX] = useState(-12);
+  const [targetX, setTargetX] = useState(WIDOW_CROSSHAIR_X);
   const [targetScale, setTargetScale] = useState(1);
   const [targetDirection, setTargetDirection] = useState<1 | -1>(1);
   const [feedback, setFeedback] = useState<Feedback>(null);
@@ -56,11 +64,11 @@ export function WidowHoldShotGame() {
   const missesRef = useRef(0);
   const shotsRef = useRef(0);
   const targetVisibleRef = useRef(false);
-  const targetXRef = useRef(-12);
   const targetScaleRef = useRef(1);
-  const targetDirectionRef = useRef<1 | -1>(1);
-  const targetSpeedRef = useRef(18);
+  const motionRef = useRef<WidowMotionState | null>(null);
+  const difficultyRef = useRef(0);
   const spawnAtRef = useRef(Number.POSITIVE_INFINITY);
+  const gameStartedAtRef = useRef(0);
   const gameEndsAtRef = useRef(0);
   const lastFrameAtRef = useRef(0);
   const lastShotAtRef = useRef(0);
@@ -76,24 +84,29 @@ export function WidowHoldShotGame() {
     }, 620);
   }, []);
 
-  const scheduleTarget = useCallback((delay = randomBetween(420, 900)) => {
+  const scheduleTarget = useCallback((delay?: number) => {
     targetVisibleRef.current = false;
+    motionRef.current = null;
     setTargetVisible(false);
-    spawnAtRef.current = performance.now() + delay;
+    spawnAtRef.current = performance.now() + (delay ?? getWidowSpawnDelay(difficultyRef.current));
   }, []);
 
   const spawnTarget = useCallback(() => {
-    const direction: 1 | -1 = Math.random() < 0.5 ? 1 : -1;
-    const scale = randomBetween(0.82, 1.08);
-    const x = direction === 1 ? -10 : 110;
-    targetDirectionRef.current = direction;
+    const now = performance.now();
+    const elapsedRatio = (now - gameStartedAtRef.current) / GAME_DURATION_MS;
+    const difficulty = getWidowDifficulty(elapsedRatio, comboRef.current);
+    const scale = getWidowTargetScale(difficulty);
+    const motion = createWidowMotion(now, difficulty);
+    const direction = getWidowDirection(motion);
+
+    difficultyRef.current = difficulty;
     targetScaleRef.current = scale;
-    targetXRef.current = x;
-    targetSpeedRef.current = randomBetween(15, 24);
+    motionRef.current = motion;
     targetVisibleRef.current = true;
+
     setTargetDirection(direction);
     setTargetScale(scale);
-    setTargetX(x);
+    setTargetX(motion.x);
     setTargetVisible(true);
     spawnAtRef.current = Number.POSITIVE_INFINITY;
   }, []);
@@ -102,6 +115,7 @@ export function WidowHoldShotGame() {
     if (phaseRef.current !== "playing") return;
     phaseRef.current = "result";
     targetVisibleRef.current = false;
+    motionRef.current = null;
     setTargetVisible(false);
     setPhase("result");
     setTimeLeft(0);
@@ -124,7 +138,7 @@ export function WidowHoldShotGame() {
     comboRef.current = 0;
     setMisses(missesRef.current);
     setCombo(0);
-    showFeedback({ kind: "escape", text: "표적 통과 · 타이밍을 놓쳤습니다" });
+    showFeedback({ kind: "escape", text: "표적 이탈 · 무빙을 읽지 못했습니다" });
     scheduleTarget();
   }, [scheduleTarget, showFeedback]);
 
@@ -149,11 +163,12 @@ export function WidowHoldShotGame() {
         spawnTarget();
       }
 
-      if (targetVisibleRef.current) {
-        const nextX = targetXRef.current + targetDirectionRef.current * targetSpeedRef.current * deltaSeconds;
-        targetXRef.current = nextX;
-        setTargetX(nextX);
-        if (nextX < -13 || nextX > 113) registerEscape();
+      const motion = motionRef.current;
+      if (targetVisibleRef.current && motion !== null) {
+        advanceWidowMotion(motion, now, deltaSeconds);
+        setTargetX(motion.x);
+        setTargetDirection(getWidowDirection(motion));
+        if (now >= motion.expiresAt) registerEscape();
       }
 
       animationFrame = window.requestAnimationFrame(tick);
@@ -169,6 +184,7 @@ export function WidowHoldShotGame() {
   }, []);
 
   const startGame = useCallback(() => {
+    const now = performance.now();
     phaseRef.current = "playing";
     scoreRef.current = 0;
     comboRef.current = 0;
@@ -178,8 +194,11 @@ export function WidowHoldShotGame() {
     missesRef.current = 0;
     shotsRef.current = 0;
     targetVisibleRef.current = false;
+    motionRef.current = null;
+    difficultyRef.current = 0;
     lastShotAtRef.current = 0;
-    gameEndsAtRef.current = performance.now() + GAME_DURATION_MS;
+    gameStartedAtRef.current = now;
+    gameEndsAtRef.current = now + GAME_DURATION_MS;
 
     setPhase("playing");
     setScore(0);
@@ -192,7 +211,7 @@ export function WidowHoldShotGame() {
     setTimeLeft(GAME_DURATION_MS);
     setFeedback(null);
     setShotFlash(false);
-    scheduleTarget(450);
+    scheduleTarget(420);
   }, [scheduleTarget]);
 
   const fire = useCallback(() => {
@@ -210,7 +229,8 @@ export function WidowHoldShotGame() {
       setShotFlash(false);
     }, 85);
 
-    if (!targetVisibleRef.current) {
+    const motion = motionRef.current;
+    if (!targetVisibleRef.current || motion === null) {
       missesRef.current += 1;
       comboRef.current = 0;
       scoreRef.current = Math.max(0, scoreRef.current - 35);
@@ -221,16 +241,18 @@ export function WidowHoldShotGame() {
       return;
     }
 
-    const distance = Math.abs(targetXRef.current - CROSSHAIR_X);
-    const headWindow = 2.1 * targetScaleRef.current;
-    const bodyWindow = 4.9 * targetScaleRef.current;
+    const difficulty = difficultyRef.current;
+    const distance = Math.abs(motion.x - WIDOW_CROSSHAIR_X);
+    const headWindow = getWidowHeadWindow(targetScaleRef.current, difficulty);
+    const bodyWindow = getWidowBodyWindow(targetScaleRef.current, difficulty);
 
     if (distance <= headWindow) {
       comboRef.current += 1;
       killsRef.current += 1;
       maxComboRef.current = Math.max(maxComboRef.current, comboRef.current);
-      const precisionBonus = Math.max(0, Math.round((headWindow - distance) * 48));
-      const gained = 260 + precisionBonus + Math.min(240, comboRef.current * 18);
+      const precisionBonus = Math.max(0, Math.round((headWindow - distance) * 64));
+      const difficultyBonus = Math.round(difficulty * 170);
+      const gained = 260 + precisionBonus + difficultyBonus + Math.min(260, comboRef.current * 18);
       scoreRef.current += gained;
 
       setCombo(comboRef.current);
@@ -238,7 +260,7 @@ export function WidowHoldShotGame() {
       setKills(killsRef.current);
       setScore(scoreRef.current);
       showFeedback({ kind: "headshot", text: `헤드샷 +${gained}` });
-      scheduleTarget(randomBetween(360, 720));
+      scheduleTarget(getWidowSpawnDelay(difficulty));
       return;
     }
 
@@ -249,7 +271,8 @@ export function WidowHoldShotGame() {
       setBodyHits(bodyHitsRef.current);
       setCombo(0);
       setScore(scoreRef.current);
-      showFeedback({ kind: "body", text: "몸샷 +35 · 조금 더 기다리세요" });
+      showFeedback({ kind: "body", text: "몸샷 +35 · 역무빙에 속았습니다" });
+      scheduleTarget(randomBetween(240, 430));
       return;
     }
 
@@ -276,6 +299,7 @@ export function WidowHoldShotGame() {
   const headshotRate = kills + bodyHits > 0 ? Math.round((kills / (kills + bodyHits)) * 100) : 0;
   const rank = getRank(score);
   const secondsLeft = (timeLeft / 1000).toFixed(1);
+  const targetTopOffset = 44 * targetScale;
 
   return (
     <section className={`widow-drill widow-drill--${phase}`}>
@@ -302,7 +326,11 @@ export function WidowHoldShotGame() {
         {targetVisible ? (
           <div
             className={`widow-target widow-target--${targetDirection === 1 ? "right" : "left"}`}
-            style={{ left: `${targetX}%`, transform: `translate(-50%, -50%) scale(${targetScale})` }}
+            style={{
+              left: `${targetX}%`,
+              top: `calc(50% + ${targetTopOffset}px)`,
+              transform: `translate(-50%, -50%) scale(${targetScale})`,
+            }}
             aria-label="움직이는 훈련 표적"
           >
             <span className="widow-target-head"><i /></span>
@@ -332,7 +360,7 @@ export function WidowHoldShotGame() {
             <div className="widow-overlay-sight" aria-hidden="true"><span /></div>
             <p>HOLD-SHOT CALIBRATION</p>
             <h2>적의 머리가 조준점을 지날 때 쏘세요</h2>
-            <span>화면 터치 · 마우스 클릭 · 스페이스바로 발사</span>
+            <span>시간이 지날수록 작아지고, 빨라지고, 무빙이 난폭해집니다</span>
             <button type="button" onPointerDown={(event) => event.stopPropagation()} onClick={startGame}>훈련 시작</button>
           </div>
         ) : null}
