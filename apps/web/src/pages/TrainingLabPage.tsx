@@ -64,14 +64,6 @@ export function TrainingLabPage({ activityMode = false }: TrainingLabPageProps) 
           <span className="training-lab-online"><i aria-hidden="true" />ONLINE</span>
         </header>
 
-        <section className="training-lab-intro">
-          <div>
-            <h2>짧게 반복하고, 실전 감각을 끌어올리세요.</h2>
-            <p>게임이 끝나면 Discord 계정의 최고 기록이 현재 서버 랭킹에 자동 저장됩니다.</p>
-          </div>
-          <div className="training-lab-count"><strong>2</strong><span>TRAINING MODES</span></div>
-        </section>
-
         <section className={`training-profile training-profile--${identityState.status}`} aria-label="Discord 서버 계정 연결 상태">
           <span className="training-profile-avatar" aria-hidden="true">
             {identity?.avatarUrl ? <img src={identity.avatarUrl} alt="" /> : identity?.displayName.slice(0, 1) ?? "D"}
@@ -108,6 +100,15 @@ export function TrainingLabPage({ activityMode = false }: TrainingLabPageProps) 
             </button>
           ) : null}
         </section>
+
+        <section className="training-lab-intro">
+          <div>
+            <h2>짧게 반복하고, 실전 감각을 끌어올리세요.</h2>
+            <p>게임이 끝나면 Discord 계정의 최고 기록이 현재 서버 랭킹에 자동 저장됩니다.</p>
+          </div>
+          <div className="training-lab-count"><strong>2</strong><span>TRAINING MODES</span></div>
+        </section>
+
 
         <div className="training-lab-grid">
           <article className="training-card training-card--reaction">
