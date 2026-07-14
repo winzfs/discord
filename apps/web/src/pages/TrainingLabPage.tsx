@@ -34,8 +34,7 @@ export function TrainingLabPage({ activityMode = false }: TrainingLabPageProps) 
   useEffect(() => {
     if (!activityMode || identityState.status !== "idle") return;
 
-    // Activity를 다시 열면 Discord의 기존 OAuth 승인 상태를 이용해
-    // 토큰을 기기에 저장하지 않고 새 세션을 조용히 복원한다.
+    // 랭킹은 연결 없이 DB에서 읽고, 기록 저장용 Discord 인증만 조용히 준비한다.
     void ensureDiscordTrainingIdentity().catch(() => undefined);
   }, [activityMode, identityState.status]);
 
@@ -50,7 +49,6 @@ export function TrainingLabPage({ activityMode = false }: TrainingLabPageProps) 
   const reactionBest = readBestScore("discord-random-defense:reaction-lab:best");
   const widowBest = readBestScore("discord-random-defense:widow-hold-shot:best");
   const identity = identityState.identity;
-  const connectionRequired = activityMode && identityState.status !== "ready";
 
   const connectDiscord = () => {
     if (identityState.status === "error") {
@@ -77,21 +75,21 @@ export function TrainingLabPage({ activityMode = false }: TrainingLabPageProps) 
             {identity?.avatarUrl ? <img src={identity.avatarUrl} alt="" /> : identity?.displayName.slice(0, 1) ?? "D"}
           </span>
           <div>
-            <small>DISCORD SERVER IDENTITY</small>
+            <small>DISCORD SCORE IDENTITY</small>
             <strong>{identity
-              ? `${identity.displayName} 님으로 연결됨`
+              ? `${identity.displayName} 님으로 기록 저장 연결됨`
               : identityState.status === "loading"
-                ? "이전 Discord 연결 복원 중…"
+                ? "Discord 기록 저장 연결 중…"
                 : identityState.status === "error"
-                  ? "랭킹 연결에 실패했어요"
-                  : "Discord 계정을 먼저 연결하세요"}</strong>
+                  ? "기록 저장 연결이 잠시 끊겼어요"
+                  : "Discord 계정을 연결하면 기록이 저장됩니다"}</strong>
             <span>{identity
-              ? "현재 서버 별명과 Discord ID로 최고 기록이 자동 저장됩니다."
+              ? "게임이 끝나면 현재 서버 DB에 최고 기록이 자동 저장됩니다."
               : identityState.status === "loading"
-                ? "기존 승인 정보를 확인하고 새 랭킹 세션을 준비하고 있습니다."
+                ? "랭킹은 이미 DB에서 불러오고 있으며, 저장용 인증만 준비하고 있습니다."
                 : identityState.status === "error"
-                  ? identityState.message
-                  : "버튼을 누르면 현재 서버 랭킹 확인과 기록 저장이 활성화됩니다."}</span>
+                  ? `${identityState.message} 랭킹 조회와 훈련은 계속 사용할 수 있어요.`
+                  : "서버 랭킹은 연결 없이 볼 수 있고, 연결 후에는 최고 기록도 저장됩니다."}</span>
           </div>
           {identity ? (
             <b className="training-profile-connected">CONNECTED</b>
@@ -105,8 +103,8 @@ export function TrainingLabPage({ activityMode = false }: TrainingLabPageProps) 
               {identityState.status === "loading"
                 ? "자동 연결 중…"
                 : identityState.status === "error"
-                  ? "Discord 다시 연결"
-                  : "Discord 계정 연결"}
+                  ? "기록 저장 다시 연결"
+                  : "Discord 기록 저장 연결"}
             </button>
           ) : null}
         </section>
@@ -114,7 +112,7 @@ export function TrainingLabPage({ activityMode = false }: TrainingLabPageProps) 
         <section className="training-lab-intro">
           <div>
             <h2>짧게 반복하고, 실전 감각을 끌어올리세요.</h2>
-            <p>게임이 끝나면 Discord 계정의 최고 기록이 현재 서버 랭킹에 자동 저장됩니다.</p>
+            <p>서버 랭킹은 DB에서 바로 확인하고, 연결된 계정의 최고 기록만 안전하게 갱신합니다.</p>
           </div>
           <div className="training-lab-count"><strong>2</strong><span>TRAINING MODES</span></div>
         </section>
@@ -132,7 +130,7 @@ export function TrainingLabPage({ activityMode = false }: TrainingLabPageProps) 
             </div>
             <div className="training-card-footer">
               <div><span>DEVICE BEST</span><strong>{reactionBest.toLocaleString()}</strong></div>
-              <button type="button" onClick={() => setGame("reaction")} disabled={connectionRequired}>{connectionRequired ? "연결 후 시작" : "훈련 시작"}</button>
+              <button type="button" onClick={() => setGame("reaction")}>훈련 시작</button>
             </div>
           </article>
 
@@ -148,7 +146,7 @@ export function TrainingLabPage({ activityMode = false }: TrainingLabPageProps) 
             </div>
             <div className="training-card-footer">
               <div><span>DEVICE BEST</span><strong>{widowBest.toLocaleString()}</strong></div>
-              <button type="button" onClick={() => setGame("widow")} disabled={connectionRequired}>{connectionRequired ? "연결 후 시작" : "훈련 시작"}</button>
+              <button type="button" onClick={() => setGame("widow")}>훈련 시작</button>
             </div>
           </article>
         </div>
@@ -157,7 +155,7 @@ export function TrainingLabPage({ activityMode = false }: TrainingLabPageProps) 
 
         <footer className="training-lab-footer">
           <span>마우스 · 터치 · 키보드 지원</span>
-          <span>최고 기록은 현재 Discord 서버별로 저장됩니다</span>
+          <span>서버 랭킹과 최고 기록은 DB에 저장됩니다</span>
         </footer>
       </section>
     </main>
