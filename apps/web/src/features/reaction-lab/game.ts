@@ -22,9 +22,9 @@ export interface ReactionTarget {
 }
 
 export const REACTION_ROLES: readonly ReactionRoleDefinition[] = [
-  { key: "tank", label: "돌격", symbol: "◆", instruction: "돌격" },
-  { key: "damage", label: "공격", symbol: "✦", instruction: "공격" },
-  { key: "support", label: "지원", symbol: "✚", instruction: "지원" },
+  { key: "tank", label: "블루", symbol: "B", instruction: "블루" },
+  { key: "damage", label: "레드", symbol: "R", instruction: "레드" },
+  { key: "support", label: "그린", symbol: "G", instruction: "그린" },
 ] as const;
 
 function randomBetween(min: number, max: number): number {
