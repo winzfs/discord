@@ -1,1 +1,240 @@
- 
+.reaction-lab-prompt {
+  top: 0;
+  left: 0;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  min-width: 0;
+  min-height: 116px;
+  padding: 14px 20px;
+  overflow: hidden;
+  border: 0;
+  border-bottom: 4px solid rgba(255, 255, 255, .8);
+  border-radius: 0;
+  background: var(--prompt-color);
+  box-shadow:
+    0 17px 36px rgba(0, 0, 0, .42),
+    inset 0 1px rgba(255, 255, 255, .22),
+    inset 0 -18px 32px rgba(0, 0, 0, .12);
+  transform: none;
+  isolation: isolate;
+}
+
+.reaction-lab-prompt::before {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background:
+    linear-gradient(100deg, rgba(255, 255, 255, .13), transparent 36%),
+    linear-gradient(180deg, transparent 44%, rgba(0, 0, 0, .12));
+  content: "";
+}
+
+.reaction-lab-prompt::after {
+  position: absolute;
+  right: -4%;
+  bottom: -70%;
+  width: 42%;
+  aspect-ratio: 1;
+  border: 2px solid rgba(255, 255, 255, .12);
+  border-radius: 50%;
+  box-shadow:
+    0 0 0 28px rgba(255, 255, 255, .035),
+    0 0 0 62px rgba(255, 255, 255, .025);
+  content: "";
+}
+
+.reaction-lab-prompt--tank {
+  --prompt-color: #197df2;
+}
+
+.reaction-lab-prompt--damage {
+  --prompt-color: #e4344e;
+}
+
+.reaction-lab-prompt--support {
+  --prompt-color: #13af63;
+}
+
+.reaction-lab-prompt .reaction-prompt-icon,
+.reaction-lab-prompt .reaction-prompt-copy small,
+.reaction-lab-prompt .reaction-prompt-copy em,
+.reaction-lab-prompt .reaction-prompt-command {
+  display: none;
+}
+
+.reaction-lab-prompt .reaction-prompt-copy {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  text-align: center;
+}
+
+.reaction-lab-prompt .reaction-prompt-copy strong {
+  display: block;
+  overflow: visible;
+  color: #fff;
+  font-size: clamp(2.8rem, 7vw, 5.1rem);
+  font-weight: 1000;
+  line-height: .94;
+  letter-spacing: -.065em;
+  text-align: center;
+  text-overflow: clip;
+  text-shadow:
+    0 3px 0 rgba(0, 0, 0, .11),
+    0 8px 24px rgba(0, 0, 0, .28);
+  white-space: nowrap;
+}
+
+.reaction-lab-prompt .reaction-prompt-copy strong::after {
+  margin-left: .18em;
+  color: rgba(255, 255, 255, .96);
+  content: "를 쏘세요" !important;
+  font-size: .58em;
+  font-weight: 950;
+  letter-spacing: -.035em;
+}
+
+.reaction-lab-timer-bar {
+  top: 116px;
+  width: 100%;
+  height: 4px;
+  border-radius: 0;
+  background: rgba(0, 0, 0, .28);
+}
+
+.reaction-lab-timer-bar i {
+  background: rgba(255, 255, 255, .95);
+  box-shadow: 0 0 14px rgba(255, 255, 255, .72);
+}
+
+.reaction-lab-target-field {
+  inset: 124px 0 0;
+}
+
+.reaction-lab-target--tank {
+  --role-color: #2e96ff;
+}
+
+.reaction-lab-target--damage {
+  --role-color: #ff405c;
+}
+
+.reaction-lab-target--support {
+  --role-color: #32db7f;
+}
+
+.reaction-lab-target .reaction-agent__head {
+  border-color: color-mix(in srgb, var(--role-color) 72%, white 28%);
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, .32), transparent 34%),
+    linear-gradient(180deg,
+      color-mix(in srgb, var(--role-color) 55%, #a8b7c2 45%) 0%,
+      color-mix(in srgb, var(--role-color) 34%, #36434d 66%) 62%,
+      #202a32 100%);
+  box-shadow:
+    inset 0 -7px 9px rgba(0, 0, 0, .24),
+    0 0 11px color-mix(in srgb, var(--role-color) 42%, transparent);
+}
+
+.reaction-lab-target .reaction-agent__torso {
+  border-color: color-mix(in srgb, var(--role-color) 60%, white 40%);
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, .2), transparent 31%),
+    linear-gradient(165deg,
+      color-mix(in srgb, var(--role-color) 68%, #8495a1 32%) 0%,
+      color-mix(in srgb, var(--role-color) 48%, #34434e 52%) 55%,
+      color-mix(in srgb, var(--role-color) 22%, #1d2830 78%) 100%);
+  box-shadow:
+    inset 0 -12px 14px rgba(0, 0, 0, .24),
+    0 0 11px color-mix(in srgb, var(--role-color) 34%, transparent);
+}
+
+.reaction-lab-target .reaction-agent__arm,
+.reaction-lab-target .reaction-agent__leg {
+  border-color: color-mix(in srgb, var(--role-color) 58%, white 42%);
+  background: linear-gradient(180deg,
+    color-mix(in srgb, var(--role-color) 58%, #687b88 42%) 0%,
+    color-mix(in srgb, var(--role-color) 38%, #33424d 62%) 55%,
+    color-mix(in srgb, var(--role-color) 17%, #1b252d 83%) 100%);
+}
+
+.reaction-lab-target .reaction-agent__hips {
+  border-color: color-mix(in srgb, var(--role-color) 58%, white 32%);
+  background: linear-gradient(180deg,
+    color-mix(in srgb, var(--role-color) 48%, #4b5c67 52%),
+    color-mix(in srgb, var(--role-color) 20%, #222d35 80%));
+}
+
+.reaction-lab-target .reaction-agent__torso b {
+  border-color: rgba(255, 255, 255, .82);
+  background: color-mix(in srgb, var(--role-color) 74%, #071018 26%);
+  color: #fff;
+  box-shadow: 0 0 12px color-mix(in srgb, var(--role-color) 60%, transparent);
+}
+
+.reaction-lab-role-guide__tank {
+  --role-guide-color: #2e96ff;
+}
+
+.reaction-lab-role-guide__damage {
+  --role-guide-color: #ff405c;
+}
+
+.reaction-lab-role-guide__support {
+  --role-guide-color: #32db7f;
+}
+
+.reaction-lab-role-guide > span {
+  border-color: color-mix(in srgb, var(--role-guide-color) 55%, transparent);
+  background: color-mix(in srgb, var(--role-guide-color) 14%, rgba(4, 9, 14, .8));
+  color: color-mix(in srgb, var(--role-guide-color) 80%, white 20%);
+}
+
+@media (max-width: 720px) {
+  .reaction-lab-prompt {
+    min-height: 90px;
+    padding: 10px 8px;
+  }
+
+  .reaction-lab-prompt .reaction-prompt-copy strong {
+    font-size: clamp(2.15rem, 11vw, 3.4rem);
+  }
+
+  .reaction-lab-prompt .reaction-prompt-copy strong::after {
+    margin-left: .13em;
+    font-size: .52em;
+  }
+
+  .reaction-lab-timer-bar {
+    top: 90px;
+  }
+
+  .reaction-lab-target-field {
+    inset: 98px 0 0;
+  }
+}
+
+@media (max-width: 430px) {
+  .reaction-lab-prompt .reaction-prompt-copy strong {
+    font-size: clamp(1.95rem, 10.5vw, 2.8rem);
+  }
+}
+
+@media (max-height: 700px) {
+  .reaction-lab-prompt {
+    min-height: 78px;
+  }
+
+  .reaction-lab-prompt .reaction-prompt-copy strong {
+    font-size: clamp(2rem, 6vw, 3rem);
+  }
+
+  .reaction-lab-timer-bar {
+    top: 78px;
+  }
+
+  .reaction-lab-target-field {
+    inset: 86px 0 0;
+  }
+}
