@@ -6,6 +6,7 @@ import "../styles/reaction-lab-v3.css";
 import "../styles/reaction-lab-v4.css";
 import "../styles/reaction-lab-v5.css";
 import "../styles/reaction-lab-v6.css";
+import "../styles/training-performance.css";
 import "../styles/training-leaderboard.css";
 
 type ReactionLabPageProps = {
