@@ -10,6 +10,7 @@ import { ReactionLabPage } from "./ReactionLabPage";
 import { WidowHoldShotPage } from "./WidowHoldShotPage";
 import "../styles/training-lab.css";
 import "../styles/training-leaderboard.css";
+import "../styles/training-db-ranking.css";
 import "../styles/training-discord-identity.css";
 
 type TrainingGame = "menu" | "reaction" | "widow";
