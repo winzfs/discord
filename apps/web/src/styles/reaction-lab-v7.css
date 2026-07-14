@@ -1,0 +1,154 @@
+.reaction-lab-target,
+.reaction-lab-target:hover,
+.reaction-lab-target:active {
+  width: clamp(54px, 7.4vw, 86px) !important;
+  height: clamp(54px, 7.4vw, 86px) !important;
+  min-width: 0;
+  min-height: 0;
+  padding: 0 !important;
+  overflow: visible;
+  border: 0 !important;
+  border-radius: 50%;
+  background: transparent !important;
+  box-shadow: none !important;
+  filter: none !important;
+  isolation: isolate;
+  contain: layout style paint;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.reaction-lab-target::before,
+.reaction-lab-target::after {
+  display: none !important;
+  content: none !important;
+}
+
+.reaction-lab-target .reaction-agent {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.reaction-lab-target .reaction-agent__character,
+.reaction-lab-target .reaction-agent__head,
+.reaction-lab-target .reaction-agent__neck,
+.reaction-lab-target .reaction-agent__torso,
+.reaction-lab-target .reaction-agent__arm,
+.reaction-lab-target .reaction-agent__hips,
+.reaction-lab-target .reaction-agent__leg,
+.reaction-lab-target .reaction-agent__label {
+  display: none !important;
+}
+
+.reaction-lab-target .reaction-agent__shadow {
+  position: absolute;
+  right: 10%;
+  bottom: -14%;
+  left: 10%;
+  display: block !important;
+  height: 22%;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, .56);
+  filter: blur(6px);
+  opacity: .76;
+  transform: scaleX(1.08);
+}
+
+.reaction-lab-target .reaction-agent::before {
+  position: absolute;
+  inset: 0;
+  border: 1px solid color-mix(in srgb, var(--role-color) 72%, white 28%);
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 31% 25%, rgba(255, 255, 255, .92) 0 5%, rgba(255, 255, 255, .36) 6% 14%, transparent 25%),
+    radial-gradient(circle at 45% 38%, color-mix(in srgb, var(--role-color) 86%, white 14%) 0 15%, var(--role-color) 42%, color-mix(in srgb, var(--role-color) 63%, #07101a 37%) 74%, color-mix(in srgb, var(--role-color) 28%, #03080d 72%) 100%);
+  box-shadow:
+    inset -11px -13px 18px rgba(0, 0, 0, .34),
+    inset 7px 6px 12px rgba(255, 255, 255, .13),
+    0 0 0 1px rgba(255, 255, 255, .06),
+    0 0 18px color-mix(in srgb, var(--role-color) 46%, transparent),
+    0 13px 18px rgba(0, 0, 0, .42);
+  content: "";
+  transform: translateZ(0) scale(1);
+  transform-origin: center;
+  will-change: transform, filter;
+  animation: reaction-orb-breathe 1.45s ease-in-out infinite alternate;
+}
+
+.reaction-lab-target .reaction-agent::after {
+  position: absolute;
+  top: 19%;
+  left: 22%;
+  width: 24%;
+  height: 13%;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(255, 255, 255, .8), rgba(255, 255, 255, .08));
+  filter: blur(.3px);
+  content: "";
+  opacity: .72;
+  transform: rotate(-28deg);
+}
+
+.reaction-lab-target:active .reaction-agent::before {
+  transform: translateZ(0) scale(.9);
+  filter: brightness(1.28);
+}
+
+.reaction-lab-target--tank {
+  --role-color: #2e96ff;
+}
+
+.reaction-lab-target--damage {
+  --role-color: #ff405c;
+}
+
+.reaction-lab-target--support {
+  --role-color: #32db7f;
+}
+
+@keyframes reaction-orb-breathe {
+  from {
+    filter: saturate(.98) brightness(.98);
+    transform: translateZ(0) scale(.985);
+  }
+  to {
+    filter: saturate(1.08) brightness(1.05);
+    transform: translateZ(0) scale(1.015);
+  }
+}
+
+@media (max-width: 720px) {
+  .reaction-lab-target,
+  .reaction-lab-target:hover,
+  .reaction-lab-target:active {
+    width: clamp(48px, 12vw, 70px) !important;
+    height: clamp(48px, 12vw, 70px) !important;
+  }
+
+  .reaction-lab-target .reaction-agent::before {
+    box-shadow:
+      inset -8px -10px 14px rgba(0, 0, 0, .32),
+      inset 5px 5px 9px rgba(255, 255, 255, .12),
+      0 0 13px color-mix(in srgb, var(--role-color) 38%, transparent),
+      0 9px 13px rgba(0, 0, 0, .38);
+  }
+}
+
+@media (max-height: 700px) {
+  .reaction-lab-target,
+  .reaction-lab-target:hover,
+  .reaction-lab-target:active {
+    width: clamp(44px, 9vh, 62px) !important;
+    height: clamp(44px, 9vh, 62px) !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reaction-lab-target .reaction-agent::before {
+    animation: none;
+  }
+}
