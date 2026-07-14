@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { TrainingLeaderboard } from "../features/training/TrainingLeaderboard";
 import {
@@ -30,6 +30,14 @@ function readBestScore(key: string): number {
 export function TrainingLabPage({ activityMode = false }: TrainingLabPageProps) {
   const [game, setGame] = useState<TrainingGame>("menu");
   const identityState = useDiscordTrainingIdentity();
+
+  useEffect(() => {
+    if (!activityMode || identityState.status !== "idle") return;
+
+    // Activity를 다시 열면 Discord의 기존 OAuth 승인 상태를 이용해
+    // 토큰을 기기에 저장하지 않고 새 세션을 조용히 복원한다.
+    void ensureDiscordTrainingIdentity().catch(() => undefined);
+  }, [activityMode, identityState.status]);
 
   if (game === "reaction") {
     return <ReactionLabPage activityMode onBack={() => setGame("menu")} />;
@@ -73,15 +81,17 @@ export function TrainingLabPage({ activityMode = false }: TrainingLabPageProps) 
             <strong>{identity
               ? `${identity.displayName} 님으로 연결됨`
               : identityState.status === "loading"
-                ? "Discord 계정 연결 중…"
+                ? "이전 Discord 연결 복원 중…"
                 : identityState.status === "error"
                   ? "랭킹 연결에 실패했어요"
                   : "Discord 계정을 먼저 연결하세요"}</strong>
             <span>{identity
               ? "현재 서버 별명과 Discord ID로 최고 기록이 자동 저장됩니다."
-              : identityState.status === "error"
-                ? identityState.message
-                : "버튼을 누르면 현재 서버 랭킹 확인과 기록 저장이 활성화됩니다."}</span>
+              : identityState.status === "loading"
+                ? "기존 승인 정보를 확인하고 새 랭킹 세션을 준비하고 있습니다."
+                : identityState.status === "error"
+                  ? identityState.message
+                  : "버튼을 누르면 현재 서버 랭킹 확인과 기록 저장이 활성화됩니다."}</span>
           </div>
           {identity ? (
             <b className="training-profile-connected">CONNECTED</b>
@@ -93,7 +103,7 @@ export function TrainingLabPage({ activityMode = false }: TrainingLabPageProps) 
               disabled={identityState.status === "loading"}
             >
               {identityState.status === "loading"
-                ? "연결 중…"
+                ? "자동 연결 중…"
                 : identityState.status === "error"
                   ? "Discord 다시 연결"
                   : "Discord 계정 연결"}
@@ -108,7 +118,6 @@ export function TrainingLabPage({ activityMode = false }: TrainingLabPageProps) 
           </div>
           <div className="training-lab-count"><strong>2</strong><span>TRAINING MODES</span></div>
         </section>
-
 
         <div className="training-lab-grid">
           <article className="training-card training-card--reaction">
