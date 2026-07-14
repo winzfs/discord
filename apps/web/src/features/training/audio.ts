@@ -1,7 +1,9 @@
 let audioContext: AudioContext | null = null;
 let masterGain: GainNode | null = null;
 let compressor: DynamicsCompressorNode | null = null;
-let shotNoiseBuffer: AudioBuffer | null = null;
+
+type TrainingSound = "shot" | "headshot" | "body" | "miss";
+const soundBuffers: Partial<Record<TrainingSound, AudioBuffer>> = {};
 
 function getContext(): AudioContext | null {
   if (typeof window === "undefined" || typeof window.AudioContext === "undefined") return null;
@@ -15,142 +17,107 @@ function getOutput(context: AudioContext): AudioNode {
 
   masterGain = context.createGain();
   compressor = context.createDynamicsCompressor();
-  masterGain.gain.setValueAtTime(0.88, context.currentTime);
+  masterGain.gain.setValueAtTime(0.86, context.currentTime);
   compressor.threshold.setValueAtTime(-18, context.currentTime);
-  compressor.knee.setValueAtTime(18, context.currentTime);
-  compressor.ratio.setValueAtTime(5, context.currentTime);
+  compressor.knee.setValueAtTime(16, context.currentTime);
+  compressor.ratio.setValueAtTime(4, context.currentTime);
   compressor.attack.setValueAtTime(0.002, context.currentTime);
-  compressor.release.setValueAtTime(0.09, context.currentTime);
+  compressor.release.setValueAtTime(0.08, context.currentTime);
   masterGain.connect(compressor);
   compressor.connect(context.destination);
   return masterGain;
 }
 
-function createNoiseBuffer(context: AudioContext, durationSeconds: number): AudioBuffer {
-  const length = Math.max(1, Math.floor(context.sampleRate * durationSeconds));
+function renderBuffer(
+  context: AudioContext,
+  durationSeconds: number,
+  render: (time: number, progress: number, index: number) => number,
+): AudioBuffer {
+  const length = Math.max(1, Math.ceil(context.sampleRate * durationSeconds));
   const buffer = context.createBuffer(1, length, context.sampleRate);
   const channel = buffer.getChannelData(0);
-  let previous = 0;
 
-  for (let index = 0; index < channel.length; index += 1) {
-    const progress = index / channel.length;
-    const white = Math.random() * 2 - 1;
-    previous = previous * 0.32 + white * 0.68;
-    channel[index] = previous * Math.pow(1 - progress, 1.8);
+  for (let index = 0; index < length; index += 1) {
+    const time = index / context.sampleRate;
+    const progress = index / Math.max(1, length - 1);
+    channel[index] = Math.max(-1, Math.min(1, render(time, progress, index)));
   }
   return buffer;
 }
 
-function getShotNoiseBuffer(context: AudioContext): AudioBuffer {
-  if (shotNoiseBuffer === null) shotNoiseBuffer = createNoiseBuffer(context, 0.095);
-  return shotNoiseBuffer;
+function buildSoundBuffers(context: AudioContext): void {
+  if (!soundBuffers.shot) {
+    let filteredNoise = 0;
+    soundBuffers.shot = renderBuffer(context, 0.095, (time, progress) => {
+      const envelope = Math.pow(1 - progress, 2.3);
+      const white = Math.random() * 2 - 1;
+      filteredNoise = filteredNoise * 0.38 + white * 0.62;
+      const low = Math.sin(2 * Math.PI * (145 - 88 * progress) * time) * 0.48;
+      const click = Math.sin(2 * Math.PI * (1_850 - 900 * progress) * time)
+        * Math.pow(1 - progress, 8) * 0.18;
+      return (filteredNoise * 0.9 + low + click) * envelope * 0.42;
+    });
+  }
+
+  if (!soundBuffers.headshot) {
+    soundBuffers.headshot = renderBuffer(context, 0.105, (time, progress) => {
+      const envelope = Math.pow(1 - progress, 2.1);
+      const primary = Math.sin(2 * Math.PI * (1_280 + 520 * progress) * time) * 0.32;
+      const ping = progress > 0.2
+        ? Math.sin(2 * Math.PI * 2_180 * time) * Math.pow(1 - progress, 3) * 0.16
+        : 0;
+      return (primary + ping) * envelope;
+    });
+  }
+
+  if (!soundBuffers.body) {
+    soundBuffers.body = renderBuffer(context, 0.075, (time, progress) => (
+      Math.sin(2 * Math.PI * (540 - 150 * progress) * time)
+      * Math.pow(1 - progress, 2.2) * 0.22
+    ));
+  }
+
+  if (!soundBuffers.miss) {
+    soundBuffers.miss = renderBuffer(context, 0.11, (time, progress) => {
+      const frequency = 160 - 55 * progress;
+      const square = Math.sin(2 * Math.PI * frequency * time) >= 0 ? 1 : -1;
+      return square * Math.pow(1 - progress, 2.4) * 0.1;
+    });
+  }
+}
+
+function playBuffer(kind: TrainingSound, volume = 1): void {
+  const context = getContext();
+  if (context === null) return;
+  buildSoundBuffers(context);
+
+  const buffer = soundBuffers[kind];
+  if (!buffer) return;
+
+  const source = context.createBufferSource();
+  const gain = context.createGain();
+  gain.gain.setValueAtTime(volume, context.currentTime);
+  source.buffer = buffer;
+  source.connect(gain);
+  gain.connect(getOutput(context));
+  source.start();
 }
 
 export function prepareTrainingAudio(): void {
   const context = getContext();
   if (context === null) return;
   getOutput(context);
-  getShotNoiseBuffer(context);
-}
-
-function playTone(
-  context: AudioContext,
-  options: {
-    frequency: number;
-    endFrequency?: number;
-    duration: number;
-    volume: number;
-    type?: OscillatorType;
-    delay?: number;
-  },
-): void {
-  const startsAt = context.currentTime + (options.delay ?? 0);
-  const endsAt = startsAt + options.duration;
-  const oscillator = context.createOscillator();
-  const gain = context.createGain();
-
-  oscillator.type = options.type ?? "sine";
-  oscillator.frequency.setValueAtTime(options.frequency, startsAt);
-  if (options.endFrequency !== undefined) {
-    oscillator.frequency.exponentialRampToValueAtTime(Math.max(1, options.endFrequency), endsAt);
-  }
-
-  gain.gain.setValueAtTime(0.0001, startsAt);
-  gain.gain.exponentialRampToValueAtTime(options.volume, startsAt + Math.min(0.008, options.duration / 3));
-  gain.gain.exponentialRampToValueAtTime(0.0001, endsAt);
-
-  oscillator.connect(gain);
-  gain.connect(getOutput(context));
-  oscillator.start(startsAt);
-  oscillator.stop(endsAt + 0.02);
+  buildSoundBuffers(context);
 }
 
 export function playTrainingShot(): void {
-  const context = getContext();
-  if (context === null) return;
-
-  const startsAt = context.currentTime;
-  const source = context.createBufferSource();
-  const filter = context.createBiquadFilter();
-  const gain = context.createGain();
-
-  source.buffer = getShotNoiseBuffer(context);
-  filter.type = "bandpass";
-  filter.frequency.setValueAtTime(1_450, startsAt);
-  filter.frequency.exponentialRampToValueAtTime(720, startsAt + 0.075);
-  filter.Q.setValueAtTime(0.72, startsAt);
-  gain.gain.setValueAtTime(0.15, startsAt);
-  gain.gain.exponentialRampToValueAtTime(0.0001, startsAt + 0.085);
-
-  source.connect(filter);
-  filter.connect(gain);
-  gain.connect(getOutput(context));
-  source.start(startsAt, Math.random() * 0.008);
-  source.stop(startsAt + 0.09);
-
-  playTone(context, {
-    frequency: 145,
-    endFrequency: 54,
-    duration: 0.09,
-    volume: 0.095,
-    type: "sawtooth",
-  });
-  playTone(context, {
-    frequency: 1_820,
-    endFrequency: 880,
-    duration: 0.028,
-    volume: 0.028,
-    type: "triangle",
-  });
+  playBuffer("shot");
 }
 
 export function playTrainingHit(headshot = false): void {
-  const context = getContext();
-  if (context === null) return;
-
-  if (headshot) {
-    playTone(context, { frequency: 1_280, endFrequency: 1_760, duration: 0.095, volume: 0.075 });
-    playTone(context, { frequency: 2_180, duration: 0.055, volume: 0.04, delay: 0.025 });
-    return;
-  }
-
-  playTone(context, {
-    frequency: 540,
-    endFrequency: 390,
-    duration: 0.07,
-    volume: 0.055,
-    type: "triangle",
-  });
+  playBuffer(headshot ? "headshot" : "body");
 }
 
 export function playTrainingMiss(): void {
-  const context = getContext();
-  if (context === null) return;
-  playTone(context, {
-    frequency: 160,
-    endFrequency: 105,
-    duration: 0.11,
-    volume: 0.035,
-    type: "square",
-  });
+  playBuffer("miss");
 }

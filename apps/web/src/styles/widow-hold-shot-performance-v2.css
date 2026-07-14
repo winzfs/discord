@@ -1,0 +1,60 @@
+.widow-range,
+.widow-target,
+.widow-shot-flash,
+.widow-ammo,
+.widow-scope {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+.widow-range {
+  contain: layout paint style;
+}
+
+.widow-target {
+  contain: layout paint style;
+  will-change: transform;
+  filter: none;
+}
+
+.widow-agent-character,
+.widow-agent-shadow,
+.widow-shot-flash,
+.widow-ammo {
+  will-change: transform, opacity;
+}
+
+.widow-range-light {
+  filter: none;
+  opacity: .42;
+}
+
+.widow-range-haze {
+  filter: none !important;
+  opacity: .2 !important;
+}
+
+.widow-drill-hud {
+  backdrop-filter: none;
+}
+
+.widow-shot-flash {
+  mix-blend-mode: normal;
+}
+
+@media (max-width: 720px), (pointer: coarse) {
+  .widow-range {
+    box-shadow: 0 18px 42px rgba(0, 0, 0, .38), inset 0 0 28px rgba(105, 70, 161, .05);
+  }
+
+  .widow-range-light--two,
+  .widow-range-haze {
+    display: none;
+  }
+
+  .widow-target::before,
+  .widow-agent-head,
+  .widow-agent-torso {
+    box-shadow: none !important;
+  }
+}
