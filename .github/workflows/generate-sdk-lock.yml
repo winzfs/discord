@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - agent/discord-training-identity
+  pull_request:
+    branches:
+      - main
 
 jobs:
   generate-lockfile:
