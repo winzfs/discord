@@ -1,0 +1,117 @@
+/* Shared performance layer for the two aim trainers. Keep motion on compositor-friendly properties. */
+.widow-range,
+.reaction-lab-board {
+  contain: layout paint style;
+  backface-visibility: hidden;
+  transform: translateZ(0);
+  touch-action: none;
+}
+
+.widow-target {
+  left: 50%;
+  contain: layout paint style;
+  backface-visibility: hidden;
+  will-change: transform;
+}
+
+.widow-agent-character,
+.widow-agent-arm,
+.widow-agent-leg,
+.reaction-lab-target,
+.reaction-agent__character {
+  backface-visibility: hidden;
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+
+.widow-shot-flash--persistent {
+  display: block;
+  opacity: 0;
+  animation: none;
+  pointer-events: none;
+  will-change: opacity, transform;
+}
+
+.widow-ammo,
+.widow-scope-hit-marker,
+.widow-feedback {
+  will-change: transform, opacity;
+}
+
+.widow-scope-ring--inner {
+  animation: training-scope-breathe 2.8s ease-in-out infinite;
+}
+
+.widow-scope-center {
+  filter: drop-shadow(0 0 5px rgba(255, 49, 76, .68));
+}
+
+.widow-difficulty-meter > span,
+.reaction-lab-timer-bar > i {
+  transform-origin: left center;
+  transition: transform 80ms linear;
+  will-change: transform;
+}
+
+.reaction-lab-target-field {
+  contain: layout paint style;
+}
+
+.reaction-lab-target {
+  contain: layout paint style;
+}
+
+.reaction-crosshair--gpu {
+  top: 0;
+  left: 0;
+  opacity: 0;
+  transition: opacity 70ms linear;
+  will-change: transform, opacity;
+}
+
+.reaction-crosshair--gpu.is-visible {
+  opacity: 1;
+}
+
+.reaction-shot-flash,
+.reaction-hit-marker,
+.reaction-lab-feedback {
+  will-change: opacity, transform;
+}
+
+@keyframes training-scope-breathe {
+  0%, 100% { opacity: .76; }
+  50% { opacity: 1; }
+}
+
+@media (max-width: 760px) {
+  .widow-drill-hud,
+  .reaction-lab-hud {
+    backdrop-filter: none;
+  }
+
+  .widow-range-light {
+    filter: blur(5px);
+  }
+
+  .widow-range-haze {
+    filter: blur(7px);
+    opacity: .7;
+  }
+
+  .widow-target,
+  .widow-agent-character {
+    filter: drop-shadow(0 7px 6px rgba(0, 0, 0, .44));
+  }
+
+  .reaction-lab-scanline {
+    opacity: .3;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .widow-scope-ring--inner,
+  .widow-range-haze {
+    animation: none;
+  }
+}

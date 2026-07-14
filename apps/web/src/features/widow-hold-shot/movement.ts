@@ -14,6 +14,7 @@ export type WidowMotionState = {
   expiresAt: number;
   forcedDirection: WidowDirection | 0;
   jitterPhase: number;
+  accelerationPhase: number;
 };
 
 function clamp(value: number, min: number, max: number): number {
@@ -73,6 +74,7 @@ export function createWidowMotion(now: number, difficulty: number): WidowMotionS
     expiresAt: now + randomBetween(lerp(5_200, 3_250, difficulty), lerp(6_100, 4_050, difficulty)),
     forcedDirection: 0,
     jitterPhase: Math.random() * Math.PI * 2,
+    accelerationPhase: Math.random() * Math.PI * 2,
   };
 }
 
@@ -128,7 +130,7 @@ function planNextSegment(state: WidowMotionState, now: number): void {
 
   if (roll < pauseChance + doubleBackChance) {
     const fakeDirection: WidowDirection = Math.random() < 0.76 ? ((-current) as WidowDirection) : inwardDirection;
-    state.desiredVelocity = fakeDirection * baseSpeed * randomBetween(1.0, 1.3);
+    state.desiredVelocity = fakeDirection * baseSpeed * randomBetween(1, 1.3);
     state.forcedDirection = (-fakeDirection) as WidowDirection;
     state.nextDecisionAt = now + randomBetween(lerp(230, 55, difficulty), lerp(430, 135, difficulty));
     return;
@@ -154,27 +156,44 @@ function approach(current: number, target: number, maxDelta: number): number {
   return current;
 }
 
-export function advanceWidowMotion(state: WidowMotionState, now: number, deltaSeconds: number): void {
-  if (now >= state.nextDecisionAt) planNextSegment(state, now);
-
-  const acceleration = state.acceleration * randomBetween(0.92, 1.08);
-  state.velocity = approach(state.velocity, state.desiredVelocity, acceleration * deltaSeconds);
+function advanceStep(state: WidowMotionState, simulationTimeMs: number, deltaSeconds: number): void {
+  const accelerationPulse = 0.965 + Math.sin(simulationTimeMs * 0.0042 + state.accelerationPhase) * 0.035;
+  state.velocity = approach(
+    state.velocity,
+    state.desiredVelocity,
+    state.acceleration * accelerationPulse * deltaSeconds,
+  );
 
   const jitterAmplitude = lerp(0.15, 6.8, state.difficulty);
   const jitterFrequency = lerp(0.007, 0.031, state.difficulty);
-  const jitterVelocity = Math.sin(now * jitterFrequency + state.jitterPhase) * jitterAmplitude;
+  const jitterVelocity = Math.sin(simulationTimeMs * jitterFrequency + state.jitterPhase) * jitterAmplitude;
   state.x += (state.velocity + jitterVelocity) * deltaSeconds;
 
   if (state.x <= state.minX) {
     state.x = state.minX;
     state.velocity = Math.abs(state.velocity) * 0.72;
     state.desiredVelocity = Math.abs(state.desiredVelocity || 1);
-    state.nextDecisionAt = Math.min(state.nextDecisionAt, now + 35);
+    state.nextDecisionAt = Math.min(state.nextDecisionAt, simulationTimeMs + 35);
   } else if (state.x >= state.maxX) {
     state.x = state.maxX;
     state.velocity = -Math.abs(state.velocity) * 0.72;
     state.desiredVelocity = -Math.abs(state.desiredVelocity || 1);
-    state.nextDecisionAt = Math.min(state.nextDecisionAt, now + 35);
+    state.nextDecisionAt = Math.min(state.nextDecisionAt, simulationTimeMs + 35);
+  }
+}
+
+export function advanceWidowMotion(state: WidowMotionState, now: number, deltaSeconds: number): void {
+  if (now >= state.nextDecisionAt) planNextSegment(state, now);
+
+  let remaining = Math.min(0.05, Math.max(0, deltaSeconds));
+  const maxStep = 1 / 120;
+  let simulationTimeMs = now - remaining * 1000;
+
+  while (remaining > 0.00001) {
+    const step = Math.min(maxStep, remaining);
+    simulationTimeMs += step * 1000;
+    advanceStep(state, simulationTimeMs, step);
+    remaining -= step;
   }
 }
 

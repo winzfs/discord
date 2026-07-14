@@ -6,7 +6,12 @@ import {
   type CSSProperties,
   type PointerEvent as ReactPointerEvent,
 } from "react";
-import { playTrainingHit, playTrainingMiss, playTrainingShot } from "../training/audio";
+import {
+  playTrainingHit,
+  playTrainingMiss,
+  playTrainingShot,
+  prepareTrainingAudio,
+} from "../training/audio";
 import { submitTrainingScore } from "../training/leaderboard";
 import {
   createReactionTargets,
@@ -21,11 +26,11 @@ import {
 } from "./game";
 
 const GAME_DURATION_MS = 30_000;
+const HUD_REFRESH_MS = 50;
 const BEST_SCORE_KEY = "discord-random-defense:reaction-lab:best";
 
 type GamePhase = "idle" | "playing" | "result";
 type Feedback = { kind: "hit" | "miss"; text: string } | null;
-type Crosshair = { x: number; y: number; visible: boolean };
 type HitMarker = { x: number; y: number; kind: "hit" | "miss"; id: number } | null;
 type SaveState = {
   status: "idle" | "saving" | "saved" | "error";
@@ -54,13 +59,13 @@ export function ReactionLabGame() {
   const [prompt, setPrompt] = useState<ReactionRoleDefinition>(REACTION_ROLES[0]);
   const [targets, setTargets] = useState<ReactionTarget[]>([]);
   const [feedback, setFeedback] = useState<Feedback>(null);
-  const [crosshair, setCrosshair] = useState<Crosshair>({ x: 50, y: 50, visible: false });
   const [hitMarker, setHitMarker] = useState<HitMarker>(null);
   const [shotFlash, setShotFlash] = useState(false);
   const [totalReactionMs, setTotalReactionMs] = useState(0);
   const [saveState, setSaveState] = useState<SaveState>({ status: "idle" });
 
   const boardRef = useRef<HTMLDivElement | null>(null);
+  const crosshairRef = useRef<HTMLDivElement | null>(null);
   const phaseRef = useRef<GamePhase>("idle");
   const scoreRef = useRef(0);
   const comboRef = useRef(0);
@@ -73,6 +78,7 @@ export function ReactionLabGame() {
   const gameEndsAtRef = useRef(0);
   const roundStartedAtRef = useRef(0);
   const roundExpiresAtRef = useRef(Number.POSITIVE_INFINITY);
+  const lastHudAtRef = useRef(0);
   const lockedRef = useRef(true);
   const transitionTimerRef = useRef<number | null>(null);
   const feedbackTimerRef = useRef<number | null>(null);
@@ -107,6 +113,10 @@ export function ReactionLabGame() {
     }, 260);
   }, []);
 
+  const hideCrosshair = useCallback(() => {
+    crosshairRef.current?.classList.remove("is-visible");
+  }, []);
+
   const spawnRound = useCallback(() => {
     if (phaseRef.current !== "playing") return;
     roundRef.current += 1;
@@ -136,7 +146,7 @@ export function ReactionLabGame() {
     setPhase("result");
     setTargets([]);
     setTimeLeft(0);
-    setCrosshair((current) => ({ ...current, visible: false }));
+    hideCrosshair();
 
     const finalScore = scoreRef.current;
     const attempts = hitsRef.current + missesRef.current;
@@ -167,7 +177,7 @@ export function ReactionLabGame() {
     }).catch(() => {
       setSaveState({ status: "error" });
     });
-  }, []);
+  }, [hideCrosshair]);
 
   const registerMiss = useCallback((text: string, playSound = true) => {
     if (phaseRef.current !== "playing" || lockedRef.current) return;
@@ -188,10 +198,13 @@ export function ReactionLabGame() {
     if (phase !== "playing") return undefined;
 
     let animationFrame = 0;
-    const tick = () => {
-      const now = performance.now();
+    lastHudAtRef.current = 0;
+    const tick = (now: number) => {
       const remaining = Math.max(0, gameEndsAtRef.current - now);
-      setTimeLeft(remaining);
+      if (now - lastHudAtRef.current >= HUD_REFRESH_MS || remaining <= 0) {
+        lastHudAtRef.current = now;
+        setTimeLeft(remaining);
+      }
 
       if (remaining <= 0) {
         finishGame();
@@ -217,6 +230,7 @@ export function ReactionLabGame() {
   }, []);
 
   const startGame = useCallback(() => {
+    prepareTrainingAudio();
     if (transitionTimerRef.current !== null) {
       window.clearTimeout(transitionTimerRef.current);
       transitionTimerRef.current = null;
@@ -244,16 +258,23 @@ export function ReactionLabGame() {
     setHitMarker(null);
     setShotFlash(false);
     setSaveState({ status: "idle" });
+    hideCrosshair();
     spawnRound();
-  }, [spawnRound]);
+  }, [hideCrosshair, spawnRound]);
 
   const aimAtPointer = useCallback((event: ReactPointerEvent<HTMLElement>) => {
     const board = boardRef.current;
     if (board === null) return { x: 50, y: 50 };
     const rect = board.getBoundingClientRect();
-    const x = Math.max(0, Math.min(100, ((event.clientX - rect.left) / rect.width) * 100));
-    const y = Math.max(0, Math.min(100, ((event.clientY - rect.top) / rect.height) * 100));
-    setCrosshair({ x, y, visible: true });
+    const xPx = Math.max(0, Math.min(rect.width, event.clientX - rect.left));
+    const yPx = Math.max(0, Math.min(rect.height, event.clientY - rect.top));
+    const x = rect.width > 0 ? (xPx / rect.width) * 100 : 50;
+    const y = rect.height > 0 ? (yPx / rect.height) * 100 : 50;
+    const crosshair = crosshairRef.current;
+    if (crosshair !== null) {
+      crosshair.style.transform = `translate3d(${xPx.toFixed(1)}px, ${yPx.toFixed(1)}px, 0) translate(-50%, -50%)`;
+      crosshair.classList.add("is-visible");
+    }
     return { x, y };
   }, []);
 
@@ -323,12 +344,10 @@ export function ReactionLabGame() {
         className={`reaction-lab-board ${shotFlash ? "is-firing" : ""}`}
         onPointerMove={phase === "playing" ? aimAtPointer : undefined}
         onPointerEnter={phase === "playing" ? aimAtPointer : undefined}
-        onPointerLeave={() => setCrosshair((current) => ({ ...current, visible: false }))}
+        onPointerLeave={hideCrosshair}
         onPointerDown={phase === "playing" ? handleBoardShot : undefined}
       >
-        <div className="reaction-range-depth" aria-hidden="true">
-          <i /><i /><i /><i />
-        </div>
+        <div className="reaction-range-depth" aria-hidden="true"><i /><i /><i /><i /></div>
         <div className="reaction-range-floor" aria-hidden="true" />
         <div className="reaction-range-beacon reaction-range-beacon--left" aria-hidden="true" />
         <div className="reaction-range-beacon reaction-range-beacon--right" aria-hidden="true" />
@@ -342,9 +361,7 @@ export function ReactionLabGame() {
             <p>마우스나 터치로 조준점을 움직인 뒤 지시된 역할의 훈련봇을 쏘세요. 빠른 명중과 연속 처치가 점수를 높입니다.</p>
             <div className="reaction-lab-role-guide">
               {REACTION_ROLES.map((role) => (
-                <span key={role.key} className={`reaction-lab-role-guide__${role.key}`}>
-                  <b>{role.symbol}</b>{role.label}
-                </span>
+                <span key={role.key} className={`reaction-lab-role-guide__${role.key}`}><b>{role.symbol}</b>{role.label}</span>
               ))}
             </div>
             <button type="button" className="reaction-lab-primary" onClick={startGame}>사격 훈련 시작</button>
@@ -408,11 +425,7 @@ export function ReactionLabGame() {
               })}
             </div>
 
-            <div
-              className={`reaction-crosshair ${crosshair.visible ? "is-visible" : ""}`}
-              style={{ left: `${crosshair.x}%`, top: `${crosshair.y}%` }}
-              aria-hidden="true"
-            ><i /><b /></div>
+            <div ref={crosshairRef} className="reaction-crosshair reaction-crosshair--gpu" aria-hidden="true"><i /><b /></div>
             {hitMarker ? (
               <div
                 key={hitMarker.id}
