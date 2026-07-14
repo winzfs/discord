@@ -50,13 +50,11 @@ export async function submitTrainingScore(input: TrainingScoreInput): Promise<Tr
   const identity = await ensureDiscordTrainingIdentity();
   const response = await fetch(TRAINING_API_ENDPOINT, {
     method: "POST",
-    headers: {
-      "Authorization": `Bearer ${identity.accessToken}`,
-      "Content-Type": "application/json",
-    },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       action: "submit",
       guildId: identity.guildId,
+      accessToken: identity.accessToken,
       ...input,
     }),
   });
@@ -70,13 +68,11 @@ export async function fetchTrainingLeaderboard(
   const identity = await ensureDiscordTrainingIdentity();
   const response = await fetch(TRAINING_API_ENDPOINT, {
     method: "POST",
-    headers: {
-      "Authorization": `Bearer ${identity.accessToken}`,
-      "Content-Type": "application/json",
-    },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       action: "leaderboard",
       guildId: identity.guildId,
+      accessToken: identity.accessToken,
       gameKey,
       limit,
     }),
