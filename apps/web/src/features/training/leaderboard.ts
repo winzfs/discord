@@ -1,3 +1,4 @@
+import { isEmbeddedActivity } from "../../lib/activityMode";
 import {
   ensureDiscordTrainingIdentity,
   getDiscordActivityGuildId,
@@ -5,6 +6,12 @@ import {
   TRAINING_API_ENDPOINT,
   type DiscordTrainingIdentity,
 } from "./discordIdentity";
+
+const DIRECT_RANKING_API_ENDPOINT = "https://pbjjjggnudihwynixqai.supabase.co/functions/v1/training-ranking";
+const ACTIVITY_RANKING_API_ENDPOINT = "/.proxy/training-api/training-ranking";
+const TRAINING_RANKING_API_ENDPOINT = isEmbeddedActivity()
+  ? ACTIVITY_RANKING_API_ENDPOINT
+  : DIRECT_RANKING_API_ENDPOINT;
 
 export type TrainingGameKey = "reaction" | "widow";
 
@@ -97,15 +104,10 @@ export async function fetchTrainingLeaderboard(
 
   for (let attempt = 0; attempt < 2; attempt += 1) {
     try {
-      const response = await fetch(TRAINING_API_ENDPOINT, {
+      const response = await fetch(TRAINING_RANKING_API_ENDPOINT, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "leaderboard",
-          guildId,
-          gameKey,
-          limit,
-        }),
+        body: JSON.stringify({ guildId, gameKey, limit }),
       });
       const payload = await readJson<{ entries: TrainingLeaderboardEntry[] }>(response);
       return payload.entries;
