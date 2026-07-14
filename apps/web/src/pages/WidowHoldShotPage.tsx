@@ -3,6 +3,7 @@ import "../styles/widow-hold-shot.css";
 import "../styles/widow-hold-shot-target.css";
 import "../styles/widow-hold-shot-v2.css";
 import "../styles/training-performance.css";
+import "../styles/widow-hold-shot-performance-v2.css";
 import "../styles/training-leaderboard.css";
 
 type WidowHoldShotPageProps = {
