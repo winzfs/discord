@@ -1,6 +1,7 @@
 import { WidowHoldShotGame } from "../features/widow-hold-shot/WidowHoldShotGame";
 import "../styles/widow-hold-shot.css";
 import "../styles/widow-hold-shot-target.css";
+import "../styles/widow-hold-shot-v2.css";
 
 type WidowHoldShotPageProps = {
   onBack?: () => void;
@@ -27,7 +28,7 @@ export function WidowHoldShotPage({ onBack }: WidowHoldShotPageProps) {
           <span><i aria-hidden="true" />READY</span>
         </header>
         <WidowHoldShotGame />
-        <p className="widow-page-help">조준점은 고정입니다 · 머리가 중앙을 통과하는 순간 발사하세요</p>
+        <p className="widow-page-help">고정 조준선 · 캐릭터 무빙을 읽고 머리가 중앙을 통과하는 순간 발사하세요</p>
         <p className="widow-page-disclaimer">비상업 팬게임 훈련 콘텐츠 · Blizzard Entertainment와 공식 관련 없음</p>
       </section>
     </main>
