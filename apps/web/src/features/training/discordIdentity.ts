@@ -68,6 +68,10 @@ function getSnapshot(): DiscordIdentityState {
   return state;
 }
 
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => window.setTimeout(resolve, ms));
+}
+
 async function readJson<T>(response: Response): Promise<T> {
   const payload = await response.json().catch(() => null) as T | { error?: string } | null;
   if (!response.ok) {
@@ -81,7 +85,7 @@ async function readJson<T>(response: Response): Promise<T> {
 
 async function fetchConfig(): Promise<{ clientId: string }> {
   let lastError: unknown;
-  for (let attempt = 0; attempt < 2; attempt += 1) {
+  for (let attempt = 0; attempt < 3; attempt += 1) {
     try {
       const response = await fetch(`${TRAINING_API_ENDPOINT}?action=config`, {
         method: "GET",
@@ -90,7 +94,7 @@ async function fetchConfig(): Promise<{ clientId: string }> {
       return await readJson<{ clientId: string }>(response);
     } catch (error) {
       lastError = error;
-      if (attempt === 0) await new Promise((resolve) => window.setTimeout(resolve, 300));
+      if (attempt < 2) await delay(300 * (attempt + 1));
     }
   }
   throw lastError;
@@ -175,7 +179,26 @@ async function authenticateDiscordIdentity(): Promise<DiscordTrainingIdentity> {
   };
 }
 
-export function ensureDiscordTrainingIdentity(forceRefresh = false): Promise<DiscordTrainingIdentity> {
+async function authenticateWithRetry(attempts: number): Promise<DiscordTrainingIdentity> {
+  let lastError: unknown;
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    try {
+      return await authenticateDiscordIdentity();
+    } catch (error) {
+      lastError = error;
+      if (attempt < attempts - 1) {
+        activityContextPromise = null;
+        await delay(450 * (attempt + 1));
+      }
+    }
+  }
+  throw lastError;
+}
+
+export function ensureDiscordTrainingIdentity(
+  forceRefresh = false,
+  attempts = 1,
+): Promise<DiscordTrainingIdentity> {
   if (!forceRefresh && state.status === "ready" && state.identity) {
     return Promise.resolve(state.identity);
   }
@@ -183,7 +206,7 @@ export function ensureDiscordTrainingIdentity(forceRefresh = false): Promise<Dis
 
   if (forceRefresh) authenticationPromise = null;
   emit({ status: "loading", identity: null, message: null });
-  authenticationPromise = authenticateDiscordIdentity()
+  authenticationPromise = authenticateWithRetry(Math.max(1, attempts))
     .then((identity) => {
       emit({ status: "ready", identity, message: null });
       return identity;
@@ -197,8 +220,12 @@ export function ensureDiscordTrainingIdentity(forceRefresh = false): Promise<Dis
   return authenticationPromise;
 }
 
+export function autoRestoreDiscordTrainingIdentity(): Promise<DiscordTrainingIdentity> {
+  return ensureDiscordTrainingIdentity(false, 3);
+}
+
 export function refreshDiscordTrainingIdentity(): Promise<DiscordTrainingIdentity> {
-  return ensureDiscordTrainingIdentity(true);
+  return ensureDiscordTrainingIdentity(true, 2);
 }
 
 export function retryDiscordTrainingIdentity(): void {
