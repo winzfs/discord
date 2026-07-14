@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { TrainingLeaderboard } from "../features/training/TrainingLeaderboard";
 import {
@@ -31,12 +31,6 @@ export function TrainingLabPage({ activityMode = false }: TrainingLabPageProps) 
   const [game, setGame] = useState<TrainingGame>("menu");
   const identityState = useDiscordTrainingIdentity();
 
-  useEffect(() => {
-    if (activityMode && identityState.status === "idle") {
-      void ensureDiscordTrainingIdentity().catch(() => undefined);
-    }
-  }, [activityMode, identityState.status]);
-
   if (game === "reaction") {
     return <ReactionLabPage activityMode onBack={() => setGame("menu")} />;
   }
@@ -48,6 +42,15 @@ export function TrainingLabPage({ activityMode = false }: TrainingLabPageProps) 
   const reactionBest = readBestScore("discord-random-defense:reaction-lab:best");
   const widowBest = readBestScore("discord-random-defense:widow-hold-shot:best");
   const identity = identityState.identity;
+  const connectionRequired = activityMode && identityState.status !== "ready";
+
+  const connectDiscord = () => {
+    if (identityState.status === "error") {
+      retryDiscordTrainingIdentity();
+      return;
+    }
+    void ensureDiscordTrainingIdentity().catch(() => undefined);
+  };
 
   return (
     <main className="training-lab-shell">
@@ -76,17 +79,34 @@ export function TrainingLabPage({ activityMode = false }: TrainingLabPageProps) 
           <div>
             <small>DISCORD SERVER IDENTITY</small>
             <strong>{identity
-              ? identity.displayName
-              : identityState.status === "loading" || identityState.status === "idle"
+              ? `${identity.displayName} 님으로 연결됨`
+              : identityState.status === "loading"
                 ? "Discord 계정 연결 중…"
-                : "서버 랭킹 연결 안 됨"}</strong>
+                : identityState.status === "error"
+                  ? "랭킹 연결에 실패했어요"
+                  : "Discord 계정을 먼저 연결하세요"}</strong>
             <span>{identity
-              ? "현재 서버의 별명과 Discord ID로 안전하게 기록됩니다."
-              : identityState.message ?? "Discord 서버 채널에서 Activity를 실행해 주세요."}</span>
+              ? "현재 서버 별명과 Discord ID로 최고 기록이 자동 저장됩니다."
+              : identityState.status === "error"
+                ? identityState.message
+                : "버튼을 누르면 현재 서버 랭킹 확인과 기록 저장이 활성화됩니다."}</span>
           </div>
-          {identityState.status === "error" ? (
-            <button type="button" onClick={retryDiscordTrainingIdentity}>다시 연결</button>
-          ) : identity ? <b className="training-profile-connected">CONNECTED</b> : null}
+          {identity ? (
+            <b className="training-profile-connected">CONNECTED</b>
+          ) : activityMode ? (
+            <button
+              type="button"
+              className="training-connect-button"
+              onClick={connectDiscord}
+              disabled={identityState.status === "loading"}
+            >
+              {identityState.status === "loading"
+                ? "연결 중…"
+                : identityState.status === "error"
+                  ? "Discord 다시 연결"
+                  : "Discord 계정 연결"}
+            </button>
+          ) : null}
         </section>
 
         <div className="training-lab-grid">
@@ -102,7 +122,7 @@ export function TrainingLabPage({ activityMode = false }: TrainingLabPageProps) 
             </div>
             <div className="training-card-footer">
               <div><span>DEVICE BEST</span><strong>{reactionBest.toLocaleString()}</strong></div>
-              <button type="button" onClick={() => setGame("reaction")}>훈련 시작</button>
+              <button type="button" onClick={() => setGame("reaction")} disabled={connectionRequired}>{connectionRequired ? "연결 후 시작" : "훈련 시작"}</button>
             </div>
           </article>
 
@@ -118,7 +138,7 @@ export function TrainingLabPage({ activityMode = false }: TrainingLabPageProps) 
             </div>
             <div className="training-card-footer">
               <div><span>DEVICE BEST</span><strong>{widowBest.toLocaleString()}</strong></div>
-              <button type="button" onClick={() => setGame("widow")}>훈련 시작</button>
+              <button type="button" onClick={() => setGame("widow")} disabled={connectionRequired}>{connectionRequired ? "연결 후 시작" : "훈련 시작"}</button>
             </div>
           </article>
         </div>

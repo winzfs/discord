@@ -134,3 +134,49 @@
     height: 29px;
   }
 }
+
+.training-profile--idle,
+.training-profile--error {
+  border-color: rgba(82, 205, 255, .42);
+  background:
+    linear-gradient(105deg, rgba(18, 82, 119, .38), rgba(7, 18, 31, .97) 58%),
+    linear-gradient(180deg, rgba(13, 28, 43, .96), rgba(5, 13, 24, .98));
+  box-shadow: 0 0 0 1px rgba(83, 209, 255, .08), 0 18px 44px rgba(0, 0, 0, .3);
+}
+
+.training-profile--error {
+  border-color: rgba(255, 102, 122, .38);
+}
+
+.training-connect-button {
+  min-width: 190px !important;
+  padding: 0 20px !important;
+  border-color: rgba(122, 224, 255, .72) !important;
+  background: linear-gradient(180deg, #35b7ee, #187ba9) !important;
+  box-shadow: 0 10px 26px rgba(36, 166, 220, .25);
+  font-size: .78rem !important;
+}
+
+.training-connect-button:disabled {
+  cursor: wait;
+  opacity: .7;
+}
+
+.training-card-footer button:disabled {
+  cursor: not-allowed;
+  filter: grayscale(.35);
+  opacity: .48;
+}
+
+.training-ranking-auth strong {
+  color: #eefaff;
+  font-size: .82rem;
+}
+
+@media (max-width: 720px) {
+  .training-connect-button {
+    width: 100%;
+    min-width: 0 !important;
+    min-height: 48px !important;
+  }
+}

@@ -32,6 +32,7 @@ type ScorePayload = {
   maxCombo?: unknown;
   limit?: unknown;
   code?: unknown;
+  accessToken?: unknown;
 };
 
 type DiscordIdentity = {
@@ -168,9 +169,16 @@ async function exchangeCode(payload: ScorePayload): Promise<Response> {
   }
 }
 
-async function requireIdentity(request: Request, guildId: unknown): Promise<DiscordIdentity> {
-  const token = bearerToken(request);
-  if (!token) throw new Error("missing access token");
+async function requireIdentity(
+  request: Request,
+  guildId: unknown,
+  payloadAccessToken: unknown,
+): Promise<DiscordIdentity> {
+  const bodyToken = typeof payloadAccessToken === "string"
+    ? payloadAccessToken.trim()
+    : "";
+  const token = bodyToken || bearerToken(request);
+  if (!token || token.length > 4096) throw new Error("missing access token");
   if (!isDiscordId(guildId)) throw new Error("invalid guild id");
   return getDiscordIdentity(token, guildId);
 }
@@ -213,7 +221,7 @@ async function leaderboard(request: Request, payload: ScorePayload): Promise<Res
 
   let identity: DiscordIdentity;
   try {
-    identity = await requireIdentity(request, payload.guildId);
+    identity = await requireIdentity(request, payload.guildId, payload.accessToken);
   } catch (error) {
     return json({ error: error instanceof Error ? error.message : "discord verification failed" }, 401);
   }
@@ -253,7 +261,7 @@ async function submit(request: Request, payload: ScorePayload): Promise<Response
 
   let identity: DiscordIdentity;
   try {
-    identity = await requireIdentity(request, payload.guildId);
+    identity = await requireIdentity(request, payload.guildId, payload.accessToken);
   } catch (error) {
     return json({ error: error instanceof Error ? error.message : "discord verification failed" }, 401);
   }
