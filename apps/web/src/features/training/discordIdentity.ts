@@ -18,6 +18,12 @@ export type DiscordTrainingIdentity = {
   avatarUrl: string | null;
 };
 
+type DiscordActivityContext = {
+  clientId: string;
+  guildId: string;
+  sdk: DiscordSDK;
+};
+
 type IdentityStatus = "idle" | "loading" | "ready" | "error" | "unavailable";
 
 export type DiscordIdentityState = {
@@ -43,8 +49,9 @@ let state: DiscordIdentityState = isEmbeddedActivity()
   : {
       status: "unavailable",
       identity: null,
-      message: "Discord Activity에서 실행하면 서버 계정으로 랭킹에 연결됩니다.",
+      message: "Discord Activity에서 실행하면 서버 계정으로 기록을 저장할 수 있습니다.",
     };
+let activityContextPromise: Promise<DiscordActivityContext> | null = null;
 let authenticationPromise: Promise<DiscordTrainingIdentity> | null = null;
 
 function emit(nextState: DiscordIdentityState): void {
@@ -72,6 +79,23 @@ async function readJson<T>(response: Response): Promise<T> {
   return payload as T;
 }
 
+async function fetchConfig(): Promise<{ clientId: string }> {
+  let lastError: unknown;
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      const response = await fetch(`${TRAINING_API_ENDPOINT}?action=config`, {
+        method: "GET",
+        cache: "no-store",
+      });
+      return await readJson<{ clientId: string }>(response);
+    } catch (error) {
+      lastError = error;
+      if (attempt === 0) await new Promise((resolve) => window.setTimeout(resolve, 300));
+    }
+  }
+  throw lastError;
+}
+
 function friendlyMessage(error: unknown): string {
   const message = error instanceof Error ? error.message : String(error);
   if (message.includes("guild required")) {
@@ -84,27 +108,42 @@ function friendlyMessage(error: unknown): string {
     return "Discord 계정 권한 승인이 필요합니다.";
   }
   if (message.includes("Failed to fetch") || message.includes("NetworkError")) {
-    return "Discord Activity URL Mapping에서 training-api 연결을 확인해 주세요.";
+    return "Discord 연결이 잠시 불안정합니다. 다시 시도해 주세요.";
   }
   return message || "Discord 계정 연결에 실패했습니다.";
 }
 
-async function authenticateDiscordIdentity(): Promise<DiscordTrainingIdentity> {
+async function getDiscordActivityContext(): Promise<DiscordActivityContext> {
   if (!isEmbeddedActivity()) {
-    throw new Error("Discord Activity에서만 계정 인증을 사용할 수 있습니다.");
+    throw new Error("Discord Activity에서만 서버 정보를 사용할 수 있습니다.");
   }
+  if (activityContextPromise) return activityContextPromise;
 
-  const configResponse = await fetch(`${TRAINING_API_ENDPOINT}?action=config`, { method: "GET" });
-  const { clientId } = await readJson<{ clientId: string }>(configResponse);
-  if (!clientId) throw new Error("missing discord oauth configuration");
+  activityContextPromise = (async () => {
+    const { clientId } = await fetchConfig();
+    if (!clientId) throw new Error("missing discord oauth configuration");
 
-  const discordSdk = new DiscordSDK(clientId);
-  await discordSdk.ready();
+    const sdk = new DiscordSDK(clientId);
+    await sdk.ready();
+    const guildId = sdk.guildId;
+    if (!guildId) throw new Error("guild required");
+    return { clientId, guildId, sdk };
+  })().catch((error) => {
+    activityContextPromise = null;
+    throw error;
+  });
 
-  const guildId = discordSdk.guildId;
-  if (!guildId) throw new Error("guild required");
+  return activityContextPromise;
+}
 
-  const { code } = await discordSdk.commands.authorize({
+export async function getDiscordActivityGuildId(): Promise<string> {
+  const context = await getDiscordActivityContext();
+  return context.guildId;
+}
+
+async function authenticateDiscordIdentity(): Promise<DiscordTrainingIdentity> {
+  const { clientId, guildId, sdk } = await getDiscordActivityContext();
+  const { code } = await sdk.commands.authorize({
     client_id: clientId,
     response_type: "code",
     state: "",
@@ -119,7 +158,7 @@ async function authenticateDiscordIdentity(): Promise<DiscordTrainingIdentity> {
   });
   const exchange = await readJson<ExchangeResponse>(exchangeResponse);
 
-  const authenticated = await discordSdk.commands.authenticate({
+  const authenticated = await sdk.commands.authenticate({
     access_token: exchange.accessToken,
   });
   if (!authenticated?.user?.id || authenticated.user.id !== exchange.profile.userId) {
@@ -136,12 +175,13 @@ async function authenticateDiscordIdentity(): Promise<DiscordTrainingIdentity> {
   };
 }
 
-export function ensureDiscordTrainingIdentity(): Promise<DiscordTrainingIdentity> {
-  if (state.status === "ready" && state.identity) {
+export function ensureDiscordTrainingIdentity(forceRefresh = false): Promise<DiscordTrainingIdentity> {
+  if (!forceRefresh && state.status === "ready" && state.identity) {
     return Promise.resolve(state.identity);
   }
-  if (authenticationPromise) return authenticationPromise;
+  if (!forceRefresh && authenticationPromise) return authenticationPromise;
 
+  if (forceRefresh) authenticationPromise = null;
   emit({ status: "loading", identity: null, message: null });
   authenticationPromise = authenticateDiscordIdentity()
     .then((identity) => {
@@ -157,10 +197,12 @@ export function ensureDiscordTrainingIdentity(): Promise<DiscordTrainingIdentity
   return authenticationPromise;
 }
 
+export function refreshDiscordTrainingIdentity(): Promise<DiscordTrainingIdentity> {
+  return ensureDiscordTrainingIdentity(true);
+}
+
 export function retryDiscordTrainingIdentity(): void {
-  authenticationPromise = null;
-  emit({ status: "idle", identity: null, message: null });
-  void ensureDiscordTrainingIdentity().catch(() => undefined);
+  void refreshDiscordTrainingIdentity().catch(() => undefined);
 }
 
 export function useDiscordTrainingIdentity(): DiscordIdentityState {
