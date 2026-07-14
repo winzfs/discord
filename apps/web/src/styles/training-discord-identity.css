@@ -1,0 +1,136 @@
+.training-profile {
+  grid-template-columns: 64px minmax(0, 1fr) auto;
+  align-items: center;
+}
+
+.training-profile-avatar {
+  display: grid;
+  place-items: center;
+  width: 54px;
+  height: 54px;
+  overflow: hidden;
+  border: 2px solid rgba(104, 216, 255, .48);
+  border-radius: 50%;
+  background: linear-gradient(145deg, #284b63, #0b1a28);
+  color: #eaf9ff;
+  font-size: 1.2rem;
+  font-weight: 1000;
+  box-shadow: 0 0 22px rgba(72, 191, 239, .15);
+}
+
+.training-profile-avatar img,
+.training-rank-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.training-profile-connected {
+  padding: 8px 11px;
+  border: 1px solid rgba(84, 227, 156, .35);
+  border-radius: 999px;
+  background: rgba(38, 143, 96, .13);
+  color: #69e3a5;
+  font-size: .55rem;
+  letter-spacing: .11em;
+}
+
+.training-profile--loading .training-profile-avatar,
+.training-profile--idle .training-profile-avatar {
+  animation: training-identity-pulse 1.2s ease-in-out infinite alternate;
+}
+
+.training-profile--error {
+  border-color: rgba(255, 102, 122, .25);
+}
+
+.training-ranking-header > button:disabled {
+  cursor: default;
+  opacity: .42;
+}
+
+.training-rank-row {
+  grid-template-columns: 42px 38px minmax(0, 1fr) auto;
+}
+
+.training-rank-row.is-me {
+  border: 1px solid rgba(98, 211, 255, .22);
+  border-radius: 10px;
+  background: linear-gradient(90deg, rgba(34, 113, 158, .18), rgba(16, 51, 76, .08));
+}
+
+.training-rank-avatar {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  overflow: hidden;
+  border: 1px solid rgba(133, 195, 231, .24);
+  border-radius: 50%;
+  background: #102331;
+  color: #d9f4ff;
+  font-size: .7rem;
+  font-weight: 1000;
+}
+
+.training-ranking-auth {
+  gap: 10px;
+  padding: 24px 16px;
+}
+
+.training-ranking-auth p {
+  max-width: 440px;
+  margin: 0;
+  line-height: 1.55;
+}
+
+.training-ranking-auth button {
+  min-height: 34px;
+  padding: 0 14px;
+  border: 1px solid rgba(105, 211, 255, .32);
+  border-radius: 8px;
+  background: rgba(31, 103, 145, .45);
+  color: #effaff;
+  font: inherit;
+  font-size: .67rem;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+@keyframes training-identity-pulse {
+  from { opacity: .55; box-shadow: 0 0 8px rgba(72, 191, 239, .06); }
+  to { opacity: 1; box-shadow: 0 0 28px rgba(72, 191, 239, .22); }
+}
+
+@media (max-width: 720px) {
+  .training-profile {
+    grid-template-columns: 48px minmax(0, 1fr);
+    gap: 10px;
+  }
+
+  .training-profile > div {
+    grid-column: auto;
+  }
+
+  .training-profile-avatar {
+    width: 44px;
+    height: 44px;
+  }
+
+  .training-profile > button,
+  .training-profile-connected {
+    grid-column: 1 / -1;
+    justify-self: stretch;
+    text-align: center;
+  }
+
+  .training-rank-row {
+    grid-template-columns: 32px 32px minmax(0, 1fr) auto;
+    gap: 7px;
+  }
+
+  .training-rank-avatar {
+    width: 29px;
+    height: 29px;
+  }
+}

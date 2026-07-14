@@ -1,15 +1,16 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { TrainingLeaderboard } from "../features/training/TrainingLeaderboard";
 import {
-  getTrainingProfile,
-  updateTrainingNickname,
-  type TrainingProfile,
-} from "../features/training/leaderboard";
+  ensureDiscordTrainingIdentity,
+  retryDiscordTrainingIdentity,
+  useDiscordTrainingIdentity,
+} from "../features/training/discordIdentity";
 import { ReactionLabPage } from "./ReactionLabPage";
 import { WidowHoldShotPage } from "./WidowHoldShotPage";
 import "../styles/training-lab.css";
 import "../styles/training-leaderboard.css";
+import "../styles/training-discord-identity.css";
 
 type TrainingGame = "menu" | "reaction" | "widow";
 
@@ -28,8 +29,13 @@ function readBestScore(key: string): number {
 
 export function TrainingLabPage({ activityMode = false }: TrainingLabPageProps) {
   const [game, setGame] = useState<TrainingGame>("menu");
-  const [profile, setProfile] = useState<TrainingProfile>(getTrainingProfile);
-  const [nicknameDraft, setNicknameDraft] = useState(profile.nickname);
+  const identityState = useDiscordTrainingIdentity();
+
+  useEffect(() => {
+    if (activityMode && identityState.status === "idle") {
+      void ensureDiscordTrainingIdentity().catch(() => undefined);
+    }
+  }, [activityMode, identityState.status]);
 
   if (game === "reaction") {
     return <ReactionLabPage activityMode onBack={() => setGame("menu")} />;
@@ -41,12 +47,7 @@ export function TrainingLabPage({ activityMode = false }: TrainingLabPageProps) 
 
   const reactionBest = readBestScore("discord-random-defense:reaction-lab:best");
   const widowBest = readBestScore("discord-random-defense:widow-hold-shot:best");
-
-  const saveNickname = () => {
-    const next = updateTrainingNickname(nicknameDraft);
-    setProfile(next);
-    setNicknameDraft(next.nickname);
-  };
+  const identity = identityState.identity;
 
   return (
     <main className="training-lab-shell">
@@ -63,33 +64,29 @@ export function TrainingLabPage({ activityMode = false }: TrainingLabPageProps) 
         <section className="training-lab-intro">
           <div>
             <h2>짧게 반복하고, 실전 감각을 끌어올리세요.</h2>
-            <p>게임이 끝나면 최고 기록이 자동으로 랭킹 서버에 저장됩니다.</p>
+            <p>게임이 끝나면 Discord 계정의 최고 기록이 현재 서버 랭킹에 자동 저장됩니다.</p>
           </div>
           <div className="training-lab-count"><strong>2</strong><span>TRAINING MODES</span></div>
         </section>
 
-        <section className="training-profile" aria-label="훈련소 호출명 설정">
+        <section className={`training-profile training-profile--${identityState.status}`} aria-label="Discord 서버 계정 연결 상태">
+          <span className="training-profile-avatar" aria-hidden="true">
+            {identity?.avatarUrl ? <img src={identity.avatarUrl} alt="" /> : identity?.displayName.slice(0, 1) ?? "D"}
+          </span>
           <div>
-            <small>PLAYER CALLSIGN</small>
-            <strong>{profile.nickname}</strong>
-            <span>이 이름으로 훈련소 랭킹에 표시됩니다.</span>
+            <small>DISCORD SERVER IDENTITY</small>
+            <strong>{identity
+              ? identity.displayName
+              : identityState.status === "loading" || identityState.status === "idle"
+                ? "Discord 계정 연결 중…"
+                : "서버 랭킹 연결 안 됨"}</strong>
+            <span>{identity
+              ? "현재 서버의 별명과 Discord ID로 안전하게 기록됩니다."
+              : identityState.message ?? "Discord 서버 채널에서 Activity를 실행해 주세요."}</span>
           </div>
-          <label>
-            <span>호출명</span>
-            <input
-              value={nicknameDraft}
-              maxLength={16}
-              autoComplete="off"
-              onChange={(event) => setNicknameDraft(event.target.value)}
-              onBlur={saveNickname}
-              onKeyDown={(event) => {
-                if (event.key === "Enter") {
-                  event.currentTarget.blur();
-                }
-              }}
-            />
-          </label>
-          <button type="button" onClick={saveNickname}>저장</button>
+          {identityState.status === "error" ? (
+            <button type="button" onClick={retryDiscordTrainingIdentity}>다시 연결</button>
+          ) : identity ? <b className="training-profile-connected">CONNECTED</b> : null}
         </section>
 
         <div className="training-lab-grid">
@@ -101,7 +98,7 @@ export function TrainingLabPage({ activityMode = false }: TrainingLabPageProps) 
             <div className="training-card-copy">
               <small>인지 · 탐색 · 에임 전환</small>
               <h2>반응속도 에임 트레이너</h2>
-              <p>상단에 지정된 역할을 확인하고, 움직이는 사람형 표적 사이에서 빠르게 찾아 조준해 사격하세요.</p>
+              <p>상단에 표시되는 레드·그린·블루를 확인하고, 움직이는 표적 사이에서 같은 색을 빠르게 찾아 사격하세요.</p>
             </div>
             <div className="training-card-footer">
               <div><span>DEVICE BEST</span><strong>{reactionBest.toLocaleString()}</strong></div>
@@ -130,7 +127,7 @@ export function TrainingLabPage({ activityMode = false }: TrainingLabPageProps) 
 
         <footer className="training-lab-footer">
           <span>마우스 · 터치 · 키보드 지원</span>
-          <span>최고 기록은 DB와 현재 기기에 함께 저장됩니다</span>
+          <span>최고 기록은 현재 Discord 서버별로 저장됩니다</span>
         </footer>
       </section>
     </main>
