@@ -1,0 +1,259 @@
+.training-profile {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(180px, 260px) auto;
+  align-items: end;
+  gap: 14px;
+  margin-top: 18px;
+  padding: 17px 18px;
+  border: 1px solid rgba(108, 196, 239, .16);
+  border-radius: 14px;
+  background: linear-gradient(180deg, rgba(13, 28, 43, .92), rgba(5, 13, 24, .94));
+  box-shadow: inset 0 1px rgba(255, 255, 255, .025);
+}
+
+.training-profile > div {
+  display: grid;
+  gap: 3px;
+}
+
+.training-profile small,
+.training-profile label > span {
+  color: #6f879d;
+  font-size: .52rem;
+  font-weight: 1000;
+  letter-spacing: .14em;
+}
+
+.training-profile strong {
+  color: #f5fbff;
+  font-size: 1.1rem;
+}
+
+.training-profile > div > span {
+  color: #71869b;
+  font-size: .68rem;
+}
+
+.training-profile label {
+  display: grid;
+  gap: 5px;
+}
+
+.training-profile input {
+  width: 100%;
+  min-height: 40px;
+  padding: 0 11px;
+  border: 1px solid rgba(125, 193, 234, .22);
+  border-radius: 8px;
+  outline: none;
+  background: rgba(2, 8, 15, .86);
+  color: #f6fbff;
+  font: inherit;
+  font-size: .8rem;
+}
+
+.training-profile input:focus {
+  border-color: #5fd4ff;
+  box-shadow: 0 0 0 3px rgba(95, 212, 255, .1);
+}
+
+.training-profile > button,
+.training-ranking-header > button {
+  min-height: 40px;
+  border: 1px solid rgba(102, 213, 255, .35);
+  border-radius: 8px;
+  background: linear-gradient(180deg, #247bab, #135071);
+  color: #fff;
+  font: inherit;
+  font-size: .73rem;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.training-profile > button {
+  min-width: 78px;
+  padding: 0 15px;
+}
+
+.training-ranking {
+  margin-top: 8px;
+  overflow: hidden;
+  border: 1px solid rgba(121, 184, 228, .17);
+  border-radius: 17px;
+  background: linear-gradient(180deg, rgba(10, 23, 38, .96), rgba(4, 10, 19, .98));
+  box-shadow: 0 22px 56px rgba(0, 0, 0, .26), inset 0 1px rgba(255, 255, 255, .025);
+}
+
+.training-ranking-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 20px 14px;
+  border-bottom: 1px solid rgba(124, 178, 217, .12);
+}
+
+.training-ranking-header small,
+.training-ranking-header h2 {
+  margin: 0;
+}
+
+.training-ranking-header small {
+  color: #66d8ff;
+  font-size: .52rem;
+  font-weight: 1000;
+  letter-spacing: .16em;
+}
+
+.training-ranking-header h2 {
+  margin-top: 3px;
+  font-size: 1.2rem;
+}
+
+.training-ranking-header > button {
+  display: grid;
+  place-items: center;
+  width: 39px;
+  min-width: 39px;
+  padding: 0;
+  font-size: 1.05rem;
+}
+
+.training-ranking-tabs {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1px;
+  padding: 8px;
+  background: rgba(2, 7, 13, .74);
+}
+
+.training-ranking-tabs button {
+  min-height: 38px;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: transparent;
+  color: #71879b;
+  font: inherit;
+  font-size: .72rem;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.training-ranking-tabs button.is-active {
+  border-color: rgba(105, 211, 255, .28);
+  background: linear-gradient(180deg, rgba(35, 108, 151, .52), rgba(17, 55, 80, .58));
+  color: #eefaff;
+}
+
+.training-ranking-list {
+  min-height: 160px;
+  padding: 5px 10px 12px;
+}
+
+.training-rank-row {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 11px;
+  min-height: 52px;
+  padding: 8px 10px;
+  border-bottom: 1px solid rgba(113, 157, 191, .08);
+}
+
+.training-rank-row:last-child {
+  border-bottom: 0;
+}
+
+.training-rank-position {
+  display: grid;
+  place-items: center;
+  width: 31px;
+  height: 31px;
+  border: 1px solid rgba(130, 181, 218, .17);
+  border-radius: 8px;
+  background: rgba(4, 12, 21, .86);
+  color: #758ba0;
+  font-size: .78rem;
+}
+
+.training-rank-row.rank-1 .training-rank-position {
+  border-color: rgba(255, 215, 102, .58);
+  color: #ffe17d;
+  box-shadow: 0 0 16px rgba(255, 205, 76, .12);
+}
+
+.training-rank-row.rank-2 .training-rank-position { color: #d6e6f2; }
+.training-rank-row.rank-3 .training-rank-position { color: #e3aa78; }
+
+.training-rank-user {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.training-rank-user b {
+  overflow: hidden;
+  color: #eef7ff;
+  font-size: .78rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.training-rank-user span {
+  color: #667d92;
+  font-size: .58rem;
+}
+
+.training-rank-score {
+  color: #7edfff;
+  font-size: .86rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.training-ranking-state {
+  display: grid;
+  place-items: center;
+  min-height: 140px;
+  margin: 0;
+  color: #6e8398;
+  font-size: .72rem;
+  text-align: center;
+}
+
+.training-ranking-state.is-error {
+  color: #ff8492;
+}
+
+.training-score-save-state {
+  display: block;
+  margin: 8px 0 0;
+  color: #69dca0;
+  font-size: .64rem;
+  font-weight: 800;
+}
+
+.training-score-save-state.is-saving { color: #8ecde9; }
+.training-score-save-state.is-error { color: #ff8995; }
+
+@media (max-width: 720px) {
+  .training-profile {
+    grid-template-columns: 1fr auto;
+  }
+
+  .training-profile > div {
+    grid-column: 1 / -1;
+  }
+
+  .training-profile label {
+    min-width: 0;
+  }
+
+  .training-rank-row {
+    grid-template-columns: 36px minmax(0, 1fr) auto;
+    padding-inline: 6px;
+  }
+
+  .training-ranking-header {
+    padding-inline: 14px;
+  }
+}

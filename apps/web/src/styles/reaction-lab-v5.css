@@ -1,0 +1,171 @@
+.reaction-lab-target::before,
+.reaction-lab-target::after {
+  display: none !important;
+  content: none !important;
+}
+
+.reaction-lab-prompt {
+  top: 0;
+  left: 0;
+  width: 100%;
+  min-width: 0;
+  min-height: 102px;
+  grid-template-columns: 74px minmax(0, 1fr) 92px;
+  gap: 15px;
+  padding: 11px clamp(16px, 3.8vw, 38px);
+  border: 0;
+  border-bottom: 5px solid var(--prompt-color);
+  border-radius: 0;
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--prompt-color) 88%, #0a111a 12%) 0%, color-mix(in srgb, var(--prompt-color) 56%, #101925 44%) 54%, #07101a 100%);
+  box-shadow: 0 16px 35px rgba(0, 0, 0, .42);
+  transform: none;
+}
+
+.reaction-lab-prompt .reaction-prompt-icon {
+  display: grid;
+  place-items: center;
+  width: 66px;
+  height: 66px;
+  border: 3px solid rgba(255, 255, 255, .88);
+  border-radius: 12px;
+  background: rgba(1, 6, 11, .28);
+  color: #fff;
+  font-size: 2.15rem;
+  box-shadow: 0 7px 18px rgba(0, 0, 0, .3), inset 0 0 20px rgba(255, 255, 255, .1);
+}
+
+.reaction-lab-prompt .reaction-prompt-copy {
+  display: grid;
+  align-content: center;
+  gap: 1px;
+  min-width: 0;
+  text-align: left;
+}
+
+.reaction-lab-prompt .reaction-prompt-copy small {
+  color: rgba(255, 255, 255, .9);
+  font-size: .66rem;
+  font-weight: 1000;
+  letter-spacing: .11em;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, .28);
+}
+
+.reaction-lab-prompt .reaction-prompt-copy small::before,
+.reaction-lab-prompt .reaction-prompt-copy small::after,
+.reaction-lab-prompt .reaction-prompt-copy strong::after {
+  content: none !important;
+}
+
+.reaction-lab-prompt .reaction-prompt-copy strong {
+  overflow: hidden;
+  color: #fff;
+  font-size: clamp(2.55rem, 6vw, 4rem);
+  font-weight: 1000;
+  line-height: .93;
+  letter-spacing: -.07em;
+  text-overflow: ellipsis;
+  text-shadow: 0 5px 18px rgba(0, 0, 0, .32);
+  white-space: nowrap;
+}
+
+.reaction-lab-prompt .reaction-prompt-copy em {
+  overflow: hidden;
+  margin-top: 4px;
+  color: rgba(255, 255, 255, .86);
+  font-size: .7rem;
+  font-style: normal;
+  font-weight: 850;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.reaction-prompt-command {
+  display: grid;
+  place-items: center;
+  align-self: stretch;
+  min-width: 84px;
+  border: 2px solid rgba(255, 255, 255, .84);
+  border-radius: 10px;
+  background: rgba(3, 8, 13, .5);
+  color: #fff;
+  font-size: 1.05rem;
+  font-weight: 1000;
+  letter-spacing: .08em;
+  box-shadow: inset 0 0 18px rgba(255, 255, 255, .08);
+}
+
+.reaction-lab-timer-bar {
+  top: 102px;
+}
+
+.reaction-lab-target-field {
+  inset: 110px 0 0;
+}
+
+@media (max-width: 720px) {
+  .reaction-lab-prompt {
+    min-height: 86px;
+    grid-template-columns: 55px minmax(0, 1fr) 60px;
+    gap: 9px;
+    padding: 8px 10px;
+  }
+
+  .reaction-lab-prompt .reaction-prompt-icon {
+    width: 49px;
+    height: 49px;
+    border-width: 2px;
+    border-radius: 9px;
+    font-size: 1.55rem;
+  }
+
+  .reaction-lab-prompt .reaction-prompt-copy small {
+    font-size: .5rem;
+  }
+
+  .reaction-lab-prompt .reaction-prompt-copy strong {
+    font-size: clamp(1.85rem, 9vw, 2.65rem);
+  }
+
+  .reaction-lab-prompt .reaction-prompt-copy em {
+    margin-top: 2px;
+    font-size: .54rem;
+  }
+
+  .reaction-prompt-command {
+    min-width: 56px;
+    border-radius: 8px;
+    font-size: .72rem;
+  }
+
+  .reaction-lab-timer-bar {
+    top: 86px;
+  }
+
+  .reaction-lab-target-field {
+    inset: 94px 0 0;
+  }
+}
+
+@media (max-height: 700px) {
+  .reaction-lab-prompt {
+    min-height: 78px;
+  }
+
+  .reaction-lab-prompt .reaction-prompt-icon {
+    width: 46px;
+    height: 46px;
+  }
+
+  .reaction-lab-prompt .reaction-prompt-copy strong {
+    font-size: 2rem;
+  }
+
+  .reaction-lab-timer-bar {
+    top: 78px;
+  }
+
+  .reaction-lab-target-field {
+    inset: 86px 0 0;
+  }
+}

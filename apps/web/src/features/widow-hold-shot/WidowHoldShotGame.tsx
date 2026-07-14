@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
 import { playTrainingHit, playTrainingMiss, playTrainingShot } from "../training/audio";
+import { submitTrainingScore } from "../training/leaderboard";
 import {
   advanceWidowMotion,
   createWidowMotion,
@@ -20,6 +21,11 @@ const BEST_SCORE_KEY = "discord-random-defense:widow-hold-shot:best";
 type GamePhase = "idle" | "playing" | "result";
 type FeedbackKind = "headshot" | "body" | "miss" | "escape";
 type Feedback = { kind: FeedbackKind; text: string } | null;
+type SaveState = {
+  status: "idle" | "saving" | "saved" | "error";
+  rank?: number;
+  improved?: boolean;
+};
 
 function readBestScore(): number {
   try {
@@ -56,6 +62,7 @@ export function WidowHoldShotGame() {
   const [targetDifficulty, setTargetDifficulty] = useState(0);
   const [feedback, setFeedback] = useState<Feedback>(null);
   const [shotFlash, setShotFlash] = useState(false);
+  const [saveState, setSaveState] = useState<SaveState>({ status: "idle" });
 
   const phaseRef = useRef<GamePhase>("idle");
   const scoreRef = useRef(0);
@@ -124,6 +131,13 @@ export function WidowHoldShotGame() {
     setTimeLeft(0);
 
     const finalScore = scoreRef.current;
+    const finalAccuracy = shotsRef.current > 0
+      ? Math.round(((killsRef.current + bodyHitsRef.current) / shotsRef.current) * 100)
+      : 0;
+    const finalHeadshotRate = killsRef.current + bodyHitsRef.current > 0
+      ? Math.round((killsRef.current / (killsRef.current + bodyHitsRef.current)) * 100)
+      : 0;
+
     setBestScore((current) => {
       const next = Math.max(current, finalScore);
       try {
@@ -132,6 +146,19 @@ export function WidowHoldShotGame() {
         // localStorage가 막힌 환경에서는 현재 세션 기록만 유지한다.
       }
       return next;
+    });
+
+    setSaveState({ status: "saving" });
+    void submitTrainingScore({
+      gameKey: "widow",
+      score: finalScore,
+      accuracy: finalAccuracy,
+      headshotRate: finalHeadshotRate,
+      maxCombo: maxComboRef.current,
+    }).then((result) => {
+      setSaveState({ status: "saved", rank: result.rank, improved: result.improved });
+    }).catch(() => {
+      setSaveState({ status: "error" });
     });
   }, []);
 
@@ -216,6 +243,7 @@ export function WidowHoldShotGame() {
     setTargetDifficulty(0);
     setFeedback(null);
     setShotFlash(false);
+    setSaveState({ status: "idle" });
     scheduleTarget(420);
   }, [scheduleTarget]);
 
@@ -409,6 +437,11 @@ export function WidowHoldShotGame() {
               <div><span>최대 콤보</span><b>{maxCombo}x</b></div>
             </div>
             <small>최고 점수 {bestScore.toLocaleString()} · 빗나감/통과 {misses}</small>
+            {saveState.status === "saving" ? <small className="training-score-save-state is-saving">랭킹 기록 저장 중…</small> : null}
+            {saveState.status === "saved" ? (
+              <small className="training-score-save-state">DB 저장 완료 · 현재 {saveState.rank}위{saveState.improved ? " · 최고 기록 갱신" : ""}</small>
+            ) : null}
+            {saveState.status === "error" ? <small className="training-score-save-state is-error">DB 저장 실패 · 기기 기록은 유지됐습니다</small> : null}
             <button type="button" onPointerDown={(event) => event.stopPropagation()} onClick={startGame}>다시 도전</button>
           </div>
         ) : null}

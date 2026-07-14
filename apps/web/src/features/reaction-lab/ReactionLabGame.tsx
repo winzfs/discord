@@ -7,6 +7,7 @@ import {
   type PointerEvent as ReactPointerEvent,
 } from "react";
 import { playTrainingHit, playTrainingMiss, playTrainingShot } from "../training/audio";
+import { submitTrainingScore } from "../training/leaderboard";
 import {
   createReactionTargets,
   getRole,
@@ -26,6 +27,11 @@ type GamePhase = "idle" | "playing" | "result";
 type Feedback = { kind: "hit" | "miss"; text: string } | null;
 type Crosshair = { x: number; y: number; visible: boolean };
 type HitMarker = { x: number; y: number; kind: "hit" | "miss"; id: number } | null;
+type SaveState = {
+  status: "idle" | "saving" | "saved" | "error";
+  rank?: number;
+  improved?: boolean;
+};
 
 function readBestScore(): number {
   try {
@@ -52,6 +58,7 @@ export function ReactionLabGame() {
   const [hitMarker, setHitMarker] = useState<HitMarker>(null);
   const [shotFlash, setShotFlash] = useState(false);
   const [totalReactionMs, setTotalReactionMs] = useState(0);
+  const [saveState, setSaveState] = useState<SaveState>({ status: "idle" });
 
   const boardRef = useRef<HTMLDivElement | null>(null);
   const phaseRef = useRef<GamePhase>("idle");
@@ -132,6 +139,12 @@ export function ReactionLabGame() {
     setCrosshair((current) => ({ ...current, visible: false }));
 
     const finalScore = scoreRef.current;
+    const attempts = hitsRef.current + missesRef.current;
+    const finalAccuracy = attempts > 0 ? Math.round((hitsRef.current / attempts) * 100) : 0;
+    const finalAverageReaction = hitsRef.current > 0
+      ? Math.round(totalReactionMsRef.current / hitsRef.current)
+      : null;
+
     setBestScore((currentBest) => {
       const nextBest = Math.max(currentBest, finalScore);
       try {
@@ -140,6 +153,19 @@ export function ReactionLabGame() {
         // 저장소가 막힌 환경에서는 현재 세션 기록만 유지한다.
       }
       return nextBest;
+    });
+
+    setSaveState({ status: "saving" });
+    void submitTrainingScore({
+      gameKey: "reaction",
+      score: finalScore,
+      accuracy: finalAccuracy,
+      avgReactionMs: finalAverageReaction,
+      maxCombo: maxComboRef.current,
+    }).then((result) => {
+      setSaveState({ status: "saved", rank: result.rank, improved: result.improved });
+    }).catch(() => {
+      setSaveState({ status: "error" });
     });
   }, []);
 
@@ -217,6 +243,7 @@ export function ReactionLabGame() {
     setFeedback(null);
     setHitMarker(null);
     setShotFlash(false);
+    setSaveState({ status: "idle" });
     spawnRound();
   }, [spawnRound]);
 
@@ -280,6 +307,7 @@ export function ReactionLabGame() {
   const result = rankReactionScore(score);
   const accuracy = hits + misses > 0 ? Math.round((hits / (hits + misses)) * 100) : 0;
   const averageReaction = hits > 0 ? Math.round(totalReactionMs / hits) : 0;
+  const promptColor = prompt.key === "tank" ? "파란색" : prompt.key === "damage" ? "빨간색" : "초록색";
 
   return (
     <section className={`reaction-lab-game reaction-lab-game--${phase}`}>
@@ -326,8 +354,13 @@ export function ReactionLabGame() {
         {phase === "playing" ? (
           <>
             <div className={`reaction-lab-prompt reaction-lab-prompt--${prompt.key}`}>
-              <span>{prompt.symbol}</span>
-              <div><small>TARGET IDENTIFIED</small><strong>{prompt.instruction}</strong></div>
+              <span className="reaction-prompt-icon">{prompt.symbol}</span>
+              <div className="reaction-prompt-copy">
+                <small>지금 맞혀야 할 표적</small>
+                <strong>{prompt.label}</strong>
+                <em>{promptColor} 훈련봇만 사격하세요</em>
+              </div>
+              <b className="reaction-prompt-command">사격</b>
             </div>
             <div className={`reaction-lab-timer-bar ${timeLeft < 5000 ? "is-critical" : ""}`}>
               <i style={{ transform: `scaleX(${timeLeft / GAME_DURATION_MS})` }} />
@@ -407,6 +440,11 @@ export function ReactionLabGame() {
               <div><span>최대 콤보</span><b>{maxCombo}x</b></div>
             </div>
             <small className="reaction-result-best">최고 점수 {bestScore.toLocaleString()} · 실수 {misses}</small>
+            {saveState.status === "saving" ? <small className="training-score-save-state is-saving">랭킹 기록 저장 중…</small> : null}
+            {saveState.status === "saved" ? (
+              <small className="training-score-save-state">DB 저장 완료 · 현재 {saveState.rank}위{saveState.improved ? " · 최고 기록 갱신" : ""}</small>
+            ) : null}
+            {saveState.status === "error" ? <small className="training-score-save-state is-error">DB 저장 실패 · 기기 기록은 유지됐습니다</small> : null}
             <button type="button" className="reaction-lab-primary" onClick={startGame}>다시 도전</button>
           </div>
         ) : null}

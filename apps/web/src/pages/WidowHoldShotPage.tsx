@@ -2,6 +2,7 @@ import { WidowHoldShotGame } from "../features/widow-hold-shot/WidowHoldShotGame
 import "../styles/widow-hold-shot.css";
 import "../styles/widow-hold-shot-target.css";
 import "../styles/widow-hold-shot-v2.css";
+import "../styles/training-leaderboard.css";
 
 type WidowHoldShotPageProps = {
   onBack?: () => void;

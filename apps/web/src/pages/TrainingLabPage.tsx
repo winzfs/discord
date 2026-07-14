@@ -1,8 +1,15 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { TrainingLeaderboard } from "../features/training/TrainingLeaderboard";
+import {
+  getTrainingProfile,
+  updateTrainingNickname,
+  type TrainingProfile,
+} from "../features/training/leaderboard";
 import { ReactionLabPage } from "./ReactionLabPage";
 import { WidowHoldShotPage } from "./WidowHoldShotPage";
 import "../styles/training-lab.css";
+import "../styles/training-leaderboard.css";
 
 type TrainingGame = "menu" | "reaction" | "widow";
 
@@ -21,6 +28,8 @@ function readBestScore(key: string): number {
 
 export function TrainingLabPage({ activityMode = false }: TrainingLabPageProps) {
   const [game, setGame] = useState<TrainingGame>("menu");
+  const [profile, setProfile] = useState<TrainingProfile>(getTrainingProfile);
+  const [nicknameDraft, setNicknameDraft] = useState(profile.nickname);
 
   if (game === "reaction") {
     return <ReactionLabPage activityMode onBack={() => setGame("menu")} />;
@@ -32,6 +41,12 @@ export function TrainingLabPage({ activityMode = false }: TrainingLabPageProps) 
 
   const reactionBest = readBestScore("discord-random-defense:reaction-lab:best");
   const widowBest = readBestScore("discord-random-defense:widow-hold-shot:best");
+
+  const saveNickname = () => {
+    const next = updateTrainingNickname(nicknameDraft);
+    setProfile(next);
+    setNicknameDraft(next.nickname);
+  };
 
   return (
     <main className="training-lab-shell">
@@ -48,9 +63,33 @@ export function TrainingLabPage({ activityMode = false }: TrainingLabPageProps) 
         <section className="training-lab-intro">
           <div>
             <h2>짧게 반복하고, 실전 감각을 끌어올리세요.</h2>
-            <p>원하는 훈련을 선택하면 Activity 창 안에서 바로 시작됩니다.</p>
+            <p>게임이 끝나면 최고 기록이 자동으로 랭킹 서버에 저장됩니다.</p>
           </div>
           <div className="training-lab-count"><strong>2</strong><span>TRAINING MODES</span></div>
+        </section>
+
+        <section className="training-profile" aria-label="훈련소 호출명 설정">
+          <div>
+            <small>PLAYER CALLSIGN</small>
+            <strong>{profile.nickname}</strong>
+            <span>이 이름으로 훈련소 랭킹에 표시됩니다.</span>
+          </div>
+          <label>
+            <span>호출명</span>
+            <input
+              value={nicknameDraft}
+              maxLength={16}
+              autoComplete="off"
+              onChange={(event) => setNicknameDraft(event.target.value)}
+              onBlur={saveNickname}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  event.currentTarget.blur();
+                }
+              }}
+            />
+          </label>
+          <button type="button" onClick={saveNickname}>저장</button>
         </section>
 
         <div className="training-lab-grid">
@@ -60,12 +99,12 @@ export function TrainingLabPage({ activityMode = false }: TrainingLabPageProps) 
               <span /><i /><b />
             </div>
             <div className="training-card-copy">
-              <small>인지 · 반응</small>
-              <h2>반응속도 연습</h2>
-              <p>지시된 역할 표식을 빠르게 찾아 누르고 연속 정답 콤보를 이어가세요.</p>
+              <small>인지 · 탐색 · 에임 전환</small>
+              <h2>반응속도 에임 트레이너</h2>
+              <p>상단에 지정된 역할을 확인하고, 움직이는 사람형 표적 사이에서 빠르게 찾아 조준해 사격하세요.</p>
             </div>
             <div className="training-card-footer">
-              <div><span>BEST SCORE</span><strong>{reactionBest.toLocaleString()}</strong></div>
+              <div><span>DEVICE BEST</span><strong>{reactionBest.toLocaleString()}</strong></div>
               <button type="button" onClick={() => setGame("reaction")}>훈련 시작</button>
             </div>
           </article>
@@ -76,20 +115,22 @@ export function TrainingLabPage({ activityMode = false }: TrainingLabPageProps) 
               <span /><i /><b />
             </div>
             <div className="training-card-copy">
-              <small>조준 · 타이밍</small>
+              <small>조준 · 타이밍 · 무빙 예측</small>
               <h2>위도우 대기샷 연습</h2>
-              <p>조준점을 고정한 채 움직이는 표적의 머리가 중앙을 통과하는 순간 발사하세요.</p>
+              <p>조준점을 고정한 채 괴랄하게 스트레이프하는 표적의 머리가 중앙을 통과하는 순간 발사하세요.</p>
             </div>
             <div className="training-card-footer">
-              <div><span>BEST SCORE</span><strong>{widowBest.toLocaleString()}</strong></div>
+              <div><span>DEVICE BEST</span><strong>{widowBest.toLocaleString()}</strong></div>
               <button type="button" onClick={() => setGame("widow")}>훈련 시작</button>
             </div>
           </article>
         </div>
 
+        <TrainingLeaderboard />
+
         <footer className="training-lab-footer">
           <span>마우스 · 터치 · 키보드 지원</span>
-          <span>기록은 현재 기기에 저장됩니다</span>
+          <span>최고 기록은 DB와 현재 기기에 함께 저장됩니다</span>
         </footer>
       </section>
     </main>
