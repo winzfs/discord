@@ -1,0 +1,66 @@
+.training-ranking-connection-note {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 7px 2px 5px;
+  padding: 9px 11px;
+  border: 1px solid rgba(107, 204, 245, .14);
+  border-radius: 8px;
+  background: rgba(10, 25, 38, .76);
+  color: #7890a4;
+  font-size: .6rem;
+}
+
+.training-ranking-connection-note span {
+  color: #7ddcff;
+  font-weight: 900;
+}
+
+.training-ranking-connection-note b {
+  color: #8599ab;
+  font-weight: 750;
+}
+
+.training-ranking-connection-note button {
+  flex: 0 0 auto;
+  min-height: 30px;
+  padding: 0 10px;
+  border: 1px solid rgba(105, 211, 255, .3);
+  border-radius: 6px;
+  background: linear-gradient(180deg, #247baa, #154e6d);
+  color: #fff;
+  font: inherit;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.training-ranking-connection-note.is-loading {
+  opacity: .82;
+}
+
+.training-ranking-connection-note.is-error {
+  border-color: rgba(255, 116, 135, .2);
+  background: rgba(42, 13, 23, .5);
+}
+
+.training-ranking-connection-note.is-error span {
+  color: #ff95a4;
+}
+
+@media (max-width: 720px) {
+  .training-ranking-connection-note {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .training-ranking-connection-note b {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+
+  .training-ranking-connection-note button {
+    grid-column: 2;
+    grid-row: 1 / 3;
+  }
+}
