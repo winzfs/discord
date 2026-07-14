@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
 import {
-  ensureDiscordTrainingIdentity,
   retryDiscordTrainingIdentity,
   useDiscordTrainingIdentity,
 } from "./discordIdentity";
@@ -31,6 +30,7 @@ export function TrainingLeaderboard() {
   const load = useCallback(async () => {
     if (identityState.status !== "ready") {
       setStatus("waiting");
+      setEntries([]);
       return;
     }
 
@@ -46,11 +46,12 @@ export function TrainingLeaderboard() {
   }, [gameKey, identityState.identity?.guildId, identityState.status]);
 
   useEffect(() => {
-    if (identityState.status === "idle") {
-      void ensureDiscordTrainingIdentity().catch(() => undefined);
-      return;
+    if (identityState.status === "ready") {
+      void load();
+    } else {
+      setStatus("waiting");
+      setEntries([]);
     }
-    if (identityState.status === "ready") void load();
   }, [identityState.status, load]);
 
   const showIdentityState = identityState.status !== "ready";
@@ -88,9 +89,12 @@ export function TrainingLeaderboard() {
       <div className="training-ranking-list">
         {showIdentityState ? (
           <div className={`training-ranking-state training-ranking-auth is-${identityState.status}`}>
-            <p>{identityState.status === "loading" || identityState.status === "idle"
-              ? "Discord 서버 계정 연결 중…"
-              : identityState.message}</p>
+            <strong>Discord 계정 연결 필요</strong>
+            <p>{identityState.status === "loading"
+              ? "상단에서 Discord 계정을 연결하고 있어요…"
+              : identityState.status === "error"
+                ? identityState.message
+                : "상단의 ‘Discord 계정 연결’ 버튼을 누르면 현재 서버 랭킹을 확인하고 기록을 저장할 수 있어요."}</p>
             {identityState.status === "error" ? (
               <button type="button" onClick={retryDiscordTrainingIdentity}>다시 연결</button>
             ) : null}
@@ -99,7 +103,10 @@ export function TrainingLeaderboard() {
 
         {!showIdentityState && status === "loading" ? <p className="training-ranking-state">서버 랭킹 불러오는 중…</p> : null}
         {!showIdentityState && status === "error" ? (
-          <p className="training-ranking-state is-error">서버 랭킹을 불러오지 못했어요.</p>
+          <div className="training-ranking-state training-ranking-auth is-error">
+            <p>서버 랭킹을 불러오지 못했어요.</p>
+            <button type="button" onClick={() => void load()}>다시 불러오기</button>
+          </div>
         ) : null}
         {!showIdentityState && status === "ready" && entries.length === 0 ? (
           <p className="training-ranking-state">이 서버에는 아직 기록이 없습니다. 첫 기록을 남겨보세요.</p>
