@@ -1,5 +1,10 @@
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
-import { playTrainingHit, playTrainingMiss, playTrainingShot } from "../training/audio";
+import {
+  playTrainingHit,
+  playTrainingMiss,
+  playTrainingShot,
+  prepareTrainingAudio,
+} from "../training/audio";
 import { submitTrainingScore } from "../training/leaderboard";
 import {
   advanceWidowMotion,
@@ -16,6 +21,7 @@ import {
 } from "./movement";
 
 const GAME_DURATION_MS = 45_000;
+const HUD_REFRESH_MS = 50;
 const BEST_SCORE_KEY = "discord-random-defense:widow-hold-shot:best";
 
 type GamePhase = "idle" | "playing" | "result";
@@ -56,14 +62,15 @@ export function WidowHoldShotGame() {
   const [shots, setShots] = useState(0);
   const [timeLeft, setTimeLeft] = useState(GAME_DURATION_MS);
   const [targetVisible, setTargetVisible] = useState(false);
-  const [targetX, setTargetX] = useState(WIDOW_CROSSHAIR_X);
   const [targetScale, setTargetScale] = useState(1);
-  const [targetDirection, setTargetDirection] = useState<1 | -1>(1);
   const [targetDifficulty, setTargetDifficulty] = useState(0);
   const [feedback, setFeedback] = useState<Feedback>(null);
-  const [shotFlash, setShotFlash] = useState(false);
   const [saveState, setSaveState] = useState<SaveState>({ status: "idle" });
 
+  const rangeRef = useRef<HTMLDivElement | null>(null);
+  const targetRef = useRef<HTMLDivElement | null>(null);
+  const flashRef = useRef<HTMLDivElement | null>(null);
+  const ammoRef = useRef<HTMLDivElement | null>(null);
   const phaseRef = useRef<GamePhase>("idle");
   const scoreRef = useRef(0);
   const comboRef = useRef(0);
@@ -80,9 +87,11 @@ export function WidowHoldShotGame() {
   const gameStartedAtRef = useRef(0);
   const gameEndsAtRef = useRef(0);
   const lastFrameAtRef = useRef(0);
+  const lastHudAtRef = useRef(0);
   const lastShotAtRef = useRef(0);
+  const rangeWidthRef = useRef(0);
+  const lastDirectionRef = useRef<1 | -1>(1);
   const feedbackTimerRef = useRef<number | null>(null);
-  const flashTimerRef = useRef<number | null>(null);
 
   const showFeedback = useCallback((next: Feedback) => {
     setFeedback(next);
@@ -91,6 +100,50 @@ export function WidowHoldShotGame() {
       feedbackTimerRef.current = null;
       setFeedback(null);
     }, 620);
+  }, []);
+
+  const applyTargetVisual = useCallback((motion: WidowMotionState) => {
+    const target = targetRef.current;
+    if (target === null) return;
+
+    const width = rangeWidthRef.current || rangeRef.current?.clientWidth || 0;
+    const offsetPx = ((motion.x - WIDOW_CROSSHAIR_X) / 100) * width;
+    const direction = getWidowDirection(motion);
+    const velocityRatio = Math.max(-1, Math.min(1, motion.velocity / 70));
+    const lean = velocityRatio * (2.5 + difficultyRef.current * 5);
+
+    target.style.transform = `translate3d(calc(-50% + ${offsetPx.toFixed(2)}px), -50%, 0) scale(${targetScaleRef.current})`;
+    target.style.setProperty("--widow-lean", `${lean.toFixed(2)}deg`);
+    if (direction !== lastDirectionRef.current) {
+      lastDirectionRef.current = direction;
+      target.style.setProperty("--widow-facing", String(direction));
+    }
+  }, []);
+
+  const animateShot = useCallback(() => {
+    rangeRef.current?.animate(
+      [
+        { transform: "translate3d(0, 0, 0) scale(1)" },
+        { transform: "translate3d(0, 1.5px, 0) scale(1.002)" },
+        { transform: "translate3d(0, 0, 0) scale(1)" },
+      ],
+      { duration: 105, easing: "cubic-bezier(.18,.72,.25,1)" },
+    );
+    flashRef.current?.animate(
+      [
+        { opacity: 0.88, transform: "scale(0.96)" },
+        { opacity: 0, transform: "scale(1.035)" },
+      ],
+      { duration: 90, easing: "ease-out" },
+    );
+    ammoRef.current?.animate(
+      [
+        { transform: "translate3d(0, 0, 0)" },
+        { transform: "translate3d(0, 5px, 0)" },
+        { transform: "translate3d(0, 0, 0)" },
+      ],
+      { duration: 115, easing: "ease-out" },
+    );
   }, []);
 
   const scheduleTarget = useCallback((delay?: number) => {
@@ -112,11 +165,10 @@ export function WidowHoldShotGame() {
     targetScaleRef.current = scale;
     motionRef.current = motion;
     targetVisibleRef.current = true;
+    lastDirectionRef.current = direction;
 
-    setTargetDirection(direction);
     setTargetDifficulty(difficulty);
     setTargetScale(scale);
-    setTargetX(motion.x);
     setTargetVisible(true);
     spawnAtRef.current = Number.POSITIVE_INFINITY;
   }, []);
@@ -174,16 +226,41 @@ export function WidowHoldShotGame() {
   }, [scheduleTarget, showFeedback]);
 
   useEffect(() => {
+    const range = rangeRef.current;
+    if (range === null) return undefined;
+
+    const updateWidth = () => {
+      rangeWidthRef.current = range.clientWidth;
+      const motion = motionRef.current;
+      if (motion !== null) applyTargetVisual(motion);
+    };
+    updateWidth();
+
+    const observer = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(updateWidth);
+    observer?.observe(range);
+    window.addEventListener("resize", updateWidth, { passive: true });
+    return () => {
+      observer?.disconnect();
+      window.removeEventListener("resize", updateWidth);
+    };
+  }, [applyTargetVisual]);
+
+  useEffect(() => {
     if (phase !== "playing") return undefined;
 
     let animationFrame = 0;
     lastFrameAtRef.current = performance.now();
+    lastHudAtRef.current = 0;
 
     const tick = (now: number) => {
       const deltaSeconds = Math.min(0.05, (now - lastFrameAtRef.current) / 1000);
       lastFrameAtRef.current = now;
       const remaining = Math.max(0, gameEndsAtRef.current - now);
-      setTimeLeft(remaining);
+
+      if (now - lastHudAtRef.current >= HUD_REFRESH_MS || remaining <= 0) {
+        lastHudAtRef.current = now;
+        setTimeLeft(remaining);
+      }
 
       if (remaining <= 0) {
         finishGame();
@@ -197,8 +274,7 @@ export function WidowHoldShotGame() {
       const motion = motionRef.current;
       if (targetVisibleRef.current && motion !== null) {
         advanceWidowMotion(motion, now, deltaSeconds);
-        setTargetX(motion.x);
-        setTargetDirection(getWidowDirection(motion));
+        applyTargetVisual(motion);
         if (now >= motion.expiresAt) registerEscape();
       }
 
@@ -207,14 +283,14 @@ export function WidowHoldShotGame() {
 
     animationFrame = window.requestAnimationFrame(tick);
     return () => window.cancelAnimationFrame(animationFrame);
-  }, [finishGame, phase, registerEscape, spawnTarget]);
+  }, [applyTargetVisual, finishGame, phase, registerEscape, spawnTarget]);
 
   useEffect(() => () => {
     if (feedbackTimerRef.current !== null) window.clearTimeout(feedbackTimerRef.current);
-    if (flashTimerRef.current !== null) window.clearTimeout(flashTimerRef.current);
   }, []);
 
   const startGame = useCallback(() => {
+    prepareTrainingAudio();
     const now = performance.now();
     phaseRef.current = "playing";
     scoreRef.current = 0;
@@ -228,6 +304,7 @@ export function WidowHoldShotGame() {
     motionRef.current = null;
     difficultyRef.current = 0;
     lastShotAtRef.current = 0;
+    lastDirectionRef.current = 1;
     gameStartedAtRef.current = now;
     gameEndsAtRef.current = now + GAME_DURATION_MS;
 
@@ -242,7 +319,6 @@ export function WidowHoldShotGame() {
     setTimeLeft(GAME_DURATION_MS);
     setTargetDifficulty(0);
     setFeedback(null);
-    setShotFlash(false);
     setSaveState({ status: "idle" });
     scheduleTarget(420);
   }, [scheduleTarget]);
@@ -255,13 +331,8 @@ export function WidowHoldShotGame() {
 
     shotsRef.current += 1;
     setShots(shotsRef.current);
-    setShotFlash(true);
+    animateShot();
     playTrainingShot();
-    if (flashTimerRef.current !== null) window.clearTimeout(flashTimerRef.current);
-    flashTimerRef.current = window.setTimeout(() => {
-      flashTimerRef.current = null;
-      setShotFlash(false);
-    }, 85);
 
     const motion = motionRef.current;
     if (!targetVisibleRef.current || motion === null) {
@@ -321,7 +392,7 @@ export function WidowHoldShotGame() {
     setScore(scoreRef.current);
     showFeedback({ kind: "miss", text: "빗나감 -25" });
     playTrainingMiss();
-  }, [scheduleTarget, showFeedback]);
+  }, [animateShot, scheduleTarget, showFeedback]);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -340,12 +411,12 @@ export function WidowHoldShotGame() {
   const targetTopOffset = 44 * targetScale;
   const runDuration = Math.max(0.14, 0.42 - targetDifficulty * 0.22);
   const targetStyle = {
-    left: `${targetX}%`,
+    left: "50%",
     top: `calc(50% + ${targetTopOffset}px)`,
-    transform: `translate(-50%, -50%) scale(${targetScale})`,
-    "--widow-facing": targetDirection,
+    transform: `translate3d(-50%, -50%, 0) scale(${targetScale})`,
+    "--widow-facing": lastDirectionRef.current,
     "--widow-run-duration": `${runDuration}s`,
-    "--widow-lean": `${targetDirection * (2.5 + targetDifficulty * 5)}deg`,
+    "--widow-lean": "0deg",
   } as CSSProperties;
 
   return (
@@ -358,7 +429,8 @@ export function WidowHoldShotGame() {
       </div>
 
       <div
-        className={`widow-range ${shotFlash ? "is-firing" : ""}`}
+        ref={rangeRef}
+        className="widow-range"
         onPointerDown={phase === "playing" ? fire : undefined}
         role={phase === "playing" ? "button" : undefined}
         tabIndex={phase === "playing" ? 0 : -1}
@@ -375,7 +447,8 @@ export function WidowHoldShotGame() {
 
         {targetVisible ? (
           <div
-            className={`widow-target widow-target--${targetDirection === 1 ? "right" : "left"}`}
+            ref={targetRef}
+            className="widow-target"
             style={targetStyle}
             aria-label="움직이는 사람형 훈련 표적"
           >
@@ -407,12 +480,12 @@ export function WidowHoldShotGame() {
           ) : null}
         </div>
 
-        <div className={`widow-ammo ${shotFlash ? "is-recoiling" : ""}`} aria-hidden="true">
+        <div ref={ammoRef} className="widow-ammo" aria-hidden="true">
           <strong>∞</strong><span>READY</span>
         </div>
 
         {feedback ? <p className={`widow-feedback is-${feedback.kind}`}>{feedback.text}</p> : null}
-        {shotFlash ? <div className="widow-shot-flash" aria-hidden="true" /> : null}
+        <div ref={flashRef} className="widow-shot-flash widow-shot-flash--persistent" aria-hidden="true" />
 
         {phase === "idle" ? (
           <div className="widow-overlay">
