@@ -16,6 +16,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
@@ -28,12 +30,19 @@ jobs:
           node-version: 20
           cache: pnpm
 
-      - name: Generate lockfile
-        run: pnpm install --lockfile-only --no-frozen-lockfile
+      - name: Restore locked dependency versions
+        run: |
+          git show origin/main:apps/web/package.json > apps/web/package.json
+          git show origin/main:pnpm-lock.yaml > pnpm-lock.yaml
 
-      - name: Upload lockfile
+      - name: Add only the Discord SDK
+        run: pnpm --filter @discord-random-defense/web add @discord/embedded-app-sdk@2.5.0 --lockfile-only
+
+      - name: Upload generated files
         uses: actions/upload-artifact@v4
         with:
-          name: generated-pnpm-lock
-          path: pnpm-lock.yaml
+          name: generated-sdk-lock
+          path: |
+            apps/web/package.json
+            pnpm-lock.yaml
           if-no-files-found: error
