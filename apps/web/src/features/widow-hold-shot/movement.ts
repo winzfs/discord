@@ -119,13 +119,15 @@ function planNextSegment(state: WidowMotionState, now: number): void {
 
   if (roll < pauseChance) {
     state.desiredVelocity = 0;
-    state.forcedDirection = Math.random() < 0.62 + difficulty * 0.2 ? -current : current;
+    state.forcedDirection = Math.random() < 0.62 + difficulty * 0.2
+      ? ((-current) as WidowDirection)
+      : current;
     state.nextDecisionAt = now + randomBetween(lerp(190, 55, difficulty), lerp(390, 145, difficulty));
     return;
   }
 
   if (roll < pauseChance + doubleBackChance) {
-    const fakeDirection: WidowDirection = Math.random() < 0.76 ? -current : inwardDirection;
+    const fakeDirection: WidowDirection = Math.random() < 0.76 ? ((-current) as WidowDirection) : inwardDirection;
     state.desiredVelocity = fakeDirection * baseSpeed * randomBetween(1.0, 1.3);
     state.forcedDirection = (-fakeDirection) as WidowDirection;
     state.nextDecisionAt = now + randomBetween(lerp(230, 55, difficulty), lerp(430, 135, difficulty));
