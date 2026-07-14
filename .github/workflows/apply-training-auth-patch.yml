@@ -1,0 +1,35 @@
+name: Apply Training Auth Patch
+
+on:
+  push:
+    branches:
+      - agent/fix-ranking-auth-flow
+    paths:
+      - "scripts/patch_training_auth_flow.py"
+      - ".github/workflows/apply-training-auth-patch.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Apply patch
+        run: python scripts/patch_training_auth_flow.py
+
+      - name: Remove one-time files
+        run: rm scripts/patch_training_auth_flow.py .github/workflows/apply-training-auth-patch.yml
+
+      - name: Commit patch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Fix Discord ranking authorization flow"
+          git push origin HEAD:agent/fix-ranking-auth-flow
