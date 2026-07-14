@@ -6,6 +6,7 @@ import "../styles/reaction-lab-v3.css";
 import "../styles/reaction-lab-v4.css";
 import "../styles/reaction-lab-v5.css";
 import "../styles/reaction-lab-v6.css";
+import "../styles/reaction-lab-v7.css";
 import "../styles/training-performance.css";
 import "../styles/training-leaderboard.css";
 
@@ -36,7 +37,7 @@ export function ReactionLabPage({ activityMode = false, onBack }: ReactionLabPag
           </div>
         </header>
         <ReactionLabGame />
-        <p className="reaction-lab-help">상단 색상 확인 → 같은 색 훈련봇 탐색 → 조준 전환 → 사격</p>
+        <p className="reaction-lab-help">상단 색상 확인 → 같은 색 구형 타깃 탐색 → 조준 전환 → 사격</p>
         <p className="reaction-lab-disclaimer">비상업 팬게임 훈련 콘텐츠 · Blizzard Entertainment와 공식 관련 없음</p>
       </section>
     </main>
