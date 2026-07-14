@@ -2,7 +2,7 @@ import { DiscordSDK } from "@discord/embedded-app-sdk";
 import { useSyncExternalStore } from "react";
 import { isEmbeddedActivity } from "../../lib/activityMode";
 
-export const TRAINING_API_ENDPOINT = "https://pbjjjggnudihwynixqai.supabase.co/functions/v1/training-leaderboard";
+export const TRAINING_API_ENDPOINT = "https://pbjjjggnudihwynixqai.supabase.co/functions/v1/training-discord";
 
 export type DiscordTrainingIdentity = {
   accessToken: string;
