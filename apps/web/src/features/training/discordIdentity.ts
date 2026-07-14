@@ -2,7 +2,12 @@ import { DiscordSDK } from "@discord/embedded-app-sdk";
 import { useSyncExternalStore } from "react";
 import { isEmbeddedActivity } from "../../lib/activityMode";
 
-export const TRAINING_API_ENDPOINT = "https://pbjjjggnudihwynixqai.supabase.co/functions/v1/training-discord";
+const DIRECT_TRAINING_API_ENDPOINT = "https://pbjjjggnudihwynixqai.supabase.co/functions/v1/training-discord";
+const ACTIVITY_TRAINING_API_ENDPOINT = "/.proxy/training-api/training-discord";
+
+export const TRAINING_API_ENDPOINT = isEmbeddedActivity()
+  ? ACTIVITY_TRAINING_API_ENDPOINT
+  : DIRECT_TRAINING_API_ENDPOINT;
 
 export type DiscordTrainingIdentity = {
   accessToken: string;
@@ -77,6 +82,9 @@ function friendlyMessage(error: unknown): string {
   }
   if (message.includes("authorize") || message.includes("Authenticate")) {
     return "Discord 계정 권한 승인이 필요합니다.";
+  }
+  if (message.includes("Failed to fetch") || message.includes("NetworkError")) {
+    return "Discord Activity URL Mapping에서 training-api 연결을 확인해 주세요.";
   }
   return message || "Discord 계정 연결에 실패했습니다.";
 }
