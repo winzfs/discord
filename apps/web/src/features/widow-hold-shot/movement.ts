@@ -35,9 +35,9 @@ export function getWidowDifficulty(elapsedRatio: number, combo: number): number 
 }
 
 export function getWidowTargetScale(difficulty: number): number {
-  const minimum = lerp(0.92, 0.5, difficulty);
-  const maximum = lerp(1.08, 0.68, difficulty);
-  return randomBetween(minimum, maximum);
+  const baseScale = lerp(1, 0.52, difficulty);
+  const variance = lerp(0.05, 0.02, difficulty);
+  return clamp(baseScale + randomBetween(-variance, variance), 0.5, 1.05);
 }
 
 export function getWidowSpawnDelay(difficulty: number): number {
@@ -45,7 +45,7 @@ export function getWidowSpawnDelay(difficulty: number): number {
 }
 
 export function getWidowHeadWindow(scale: number, difficulty: number): number {
-  return Math.max(0.86, 2.15 * scale - difficulty * 0.48);
+  return Math.max(1, 2.25 * scale - difficulty * 0.28);
 }
 
 export function getWidowBodyWindow(scale: number, difficulty: number): number {
