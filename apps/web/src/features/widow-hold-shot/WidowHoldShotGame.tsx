@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
+import { playTrainingHit, playTrainingMiss, playTrainingShot } from "../training/audio";
 import {
   advanceWidowMotion,
   createWidowMotion,
@@ -52,6 +53,7 @@ export function WidowHoldShotGame() {
   const [targetX, setTargetX] = useState(WIDOW_CROSSHAIR_X);
   const [targetScale, setTargetScale] = useState(1);
   const [targetDirection, setTargetDirection] = useState<1 | -1>(1);
+  const [targetDifficulty, setTargetDifficulty] = useState(0);
   const [feedback, setFeedback] = useState<Feedback>(null);
   const [shotFlash, setShotFlash] = useState(false);
 
@@ -105,6 +107,7 @@ export function WidowHoldShotGame() {
     targetVisibleRef.current = true;
 
     setTargetDirection(direction);
+    setTargetDifficulty(difficulty);
     setTargetScale(scale);
     setTargetX(motion.x);
     setTargetVisible(true);
@@ -139,6 +142,7 @@ export function WidowHoldShotGame() {
     setMisses(missesRef.current);
     setCombo(0);
     showFeedback({ kind: "escape", text: "표적 이탈 · 무빙을 읽지 못했습니다" });
+    playTrainingMiss();
     scheduleTarget();
   }, [scheduleTarget, showFeedback]);
 
@@ -209,6 +213,7 @@ export function WidowHoldShotGame() {
     setMisses(0);
     setShots(0);
     setTimeLeft(GAME_DURATION_MS);
+    setTargetDifficulty(0);
     setFeedback(null);
     setShotFlash(false);
     scheduleTarget(420);
@@ -223,6 +228,7 @@ export function WidowHoldShotGame() {
     shotsRef.current += 1;
     setShots(shotsRef.current);
     setShotFlash(true);
+    playTrainingShot();
     if (flashTimerRef.current !== null) window.clearTimeout(flashTimerRef.current);
     flashTimerRef.current = window.setTimeout(() => {
       flashTimerRef.current = null;
@@ -238,6 +244,7 @@ export function WidowHoldShotGame() {
       setCombo(0);
       setScore(scoreRef.current);
       showFeedback({ kind: "miss", text: "빗나감 · 표적을 기다리세요" });
+      playTrainingMiss();
       return;
     }
 
@@ -260,6 +267,7 @@ export function WidowHoldShotGame() {
       setKills(killsRef.current);
       setScore(scoreRef.current);
       showFeedback({ kind: "headshot", text: `헤드샷 +${gained}` });
+      playTrainingHit(true);
       scheduleTarget(getWidowSpawnDelay(difficulty));
       return;
     }
@@ -272,6 +280,7 @@ export function WidowHoldShotGame() {
       setCombo(0);
       setScore(scoreRef.current);
       showFeedback({ kind: "body", text: "몸샷 +35 · 역무빙에 속았습니다" });
+      playTrainingHit(false);
       scheduleTarget(randomBetween(240, 430));
       return;
     }
@@ -283,6 +292,7 @@ export function WidowHoldShotGame() {
     setCombo(0);
     setScore(scoreRef.current);
     showFeedback({ kind: "miss", text: "빗나감 -25" });
+    playTrainingMiss();
   }, [scheduleTarget, showFeedback]);
 
   useEffect(() => {
@@ -300,6 +310,15 @@ export function WidowHoldShotGame() {
   const rank = getRank(score);
   const secondsLeft = (timeLeft / 1000).toFixed(1);
   const targetTopOffset = 44 * targetScale;
+  const runDuration = Math.max(0.14, 0.42 - targetDifficulty * 0.22);
+  const targetStyle = {
+    left: `${targetX}%`,
+    top: `calc(50% + ${targetTopOffset}px)`,
+    transform: `translate(-50%, -50%) scale(${targetScale})`,
+    "--widow-facing": targetDirection,
+    "--widow-run-duration": `${runDuration}s`,
+    "--widow-lean": `${targetDirection * (2.5 + targetDifficulty * 5)}deg`,
+  } as CSSProperties;
 
   return (
     <section className={`widow-drill widow-drill--${phase}`}>
@@ -322,20 +341,28 @@ export function WidowHoldShotGame() {
         <div className="widow-range-platform widow-range-platform--left" aria-hidden="true" />
         <div className="widow-range-platform widow-range-platform--right" aria-hidden="true" />
         <div className="widow-range-floor" aria-hidden="true" />
+        <div className="widow-range-haze" aria-hidden="true" />
+        <div className="widow-range-rail widow-range-rail--left" aria-hidden="true" />
+        <div className="widow-range-rail widow-range-rail--right" aria-hidden="true" />
 
         {targetVisible ? (
           <div
             className={`widow-target widow-target--${targetDirection === 1 ? "right" : "left"}`}
-            style={{
-              left: `${targetX}%`,
-              top: `calc(50% + ${targetTopOffset}px)`,
-              transform: `translate(-50%, -50%) scale(${targetScale})`,
-            }}
-            aria-label="움직이는 훈련 표적"
+            style={targetStyle}
+            aria-label="움직이는 사람형 훈련 표적"
           >
-            <span className="widow-target-head"><i /></span>
-            <span className="widow-target-body"><i /><b /></span>
-            <span className="widow-target-legs"><i /><b /></span>
+            <span className="widow-agent-shadow" />
+            <span className="widow-agent-character">
+              <span className="widow-agent-head"><i /><b /></span>
+              <span className="widow-agent-neck" />
+              <span className="widow-agent-torso"><i /><b /><em /></span>
+              <span className="widow-agent-arm widow-agent-arm--left"><i /></span>
+              <span className="widow-agent-arm widow-agent-arm--right"><i /></span>
+              <span className="widow-agent-hips" />
+              <span className="widow-agent-leg widow-agent-leg--left"><i /></span>
+              <span className="widow-agent-leg widow-agent-leg--right"><i /></span>
+            </span>
+            <span className="widow-agent-id">TRAINING UNIT</span>
           </div>
         ) : null}
 
@@ -346,6 +373,10 @@ export function WidowHoldShotGame() {
           <div className="widow-scope-line widow-scope-line--vertical" />
           <div className="widow-scope-center"><i /></div>
           <div className="widow-scope-charge"><strong>100%</strong><span>위력</span></div>
+          <div className="widow-difficulty-meter"><span style={{ transform: `scaleX(${targetDifficulty})` }} /></div>
+          {feedback?.kind === "headshot" || feedback?.kind === "body" ? (
+            <div className={`widow-scope-hit-marker is-${feedback.kind}`}><i /><i /><i /><i /></div>
+          ) : null}
         </div>
 
         <div className={`widow-ammo ${shotFlash ? "is-recoiling" : ""}`} aria-hidden="true">
