@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { ReactionLabGame } from "../features/reaction-lab/ReactionLabGame";
 import "../styles/reaction-lab.css";
 import "../styles/reaction-lab-v2.css";
+import "../styles/reaction-lab-v3.css";
 
 type ReactionLabPageProps = {
   activityMode?: boolean;
@@ -22,7 +23,7 @@ export function ReactionLabPage({ activityMode = false, onBack }: ReactionLabPag
           )}
           <div className="reaction-lab-brand">
             <p>TACTICAL AIM NETWORK</p>
-            <h1>반응속도 연습</h1>
+            <h1>반응속도 에임 트레이너</h1>
           </div>
           <div className="reaction-lab-status" aria-label="훈련 시스템 온라인">
             <i aria-hidden="true" />
@@ -30,7 +31,7 @@ export function ReactionLabPage({ activityMode = false, onBack }: ReactionLabPag
           </div>
         </header>
         <ReactionLabGame />
-        <p className="reaction-lab-help">마우스·터치 조준 지원 · 표적 식별과 빠른 에임 전환을 훈련합니다</p>
+        <p className="reaction-lab-help">상단 목표 역할 확인 → 표적 탐색 → 조준 전환 → 사격</p>
         <p className="reaction-lab-disclaimer">비상업 팬게임 훈련 콘텐츠 · Blizzard Entertainment와 공식 관련 없음</p>
       </section>
     </main>

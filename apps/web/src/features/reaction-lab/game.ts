@@ -22,9 +22,9 @@ export interface ReactionTarget {
 }
 
 export const REACTION_ROLES: readonly ReactionRoleDefinition[] = [
-  { key: "tank", label: "돌격", symbol: "◆", instruction: "파란 돌격 훈련봇을 사격하세요" },
-  { key: "damage", label: "공격", symbol: "✦", instruction: "붉은 공격 훈련봇을 사격하세요" },
-  { key: "support", label: "지원", symbol: "✚", instruction: "초록 지원 훈련봇을 사격하세요" },
+  { key: "tank", label: "돌격", symbol: "◆", instruction: "돌격" },
+  { key: "damage", label: "공격", symbol: "✦", instruction: "공격" },
+  { key: "support", label: "지원", symbol: "✚", instruction: "지원" },
 ] as const;
 
 function randomBetween(min: number, max: number): number {
