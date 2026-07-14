@@ -4,15 +4,12 @@ on:
   push:
     branches:
       - agent/discord-training-identity
-  pull_request:
-    branches:
-      - main
 
 jobs:
   generate-lockfile:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -38,11 +35,13 @@ jobs:
       - name: Add only the Discord SDK
         run: pnpm --filter @discord-random-defense/web add @discord/embedded-app-sdk@2.5.0 --lockfile-only
 
-      - name: Upload generated files
-        uses: actions/upload-artifact@v4
-        with:
-          name: generated-sdk-lock
-          path: |
-            apps/web/package.json
-            pnpm-lock.yaml
-          if-no-files-found: error
+      - name: Commit generated files
+        run: |
+          if git diff --quiet -- apps/web/package.json pnpm-lock.yaml; then
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add apps/web/package.json pnpm-lock.yaml
+          git commit -m "Lock Discord Embedded App SDK dependency"
+          git push origin HEAD:agent/discord-training-identity
